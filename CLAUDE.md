@@ -114,7 +114,7 @@ pnpm analyse:drift            # emits data/drift.json
 
 ## Conventions
 
-**TypeScript.** 5.6+, `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`. Node 22 LTS, pinned in `.nvmrc`. NodeNext modules. Project references.
+**TypeScript.** 5.6+, `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`. Node 24 LTS, pinned in `.nvmrc`. NodeNext modules. Project references.
 
 **Errors.** Throw a subclass from `@chaperone/errors`. Do not throw bare `Error`, do not throw strings, do not add a new class without adding it to the taxonomy file. `isRetryable` is the only retry predicate.
 
@@ -125,6 +125,11 @@ pnpm analyse:drift            # emits data/drift.json
 **Tests.** Vitest. `packages/policy` is gated at 100% statements and branches — it is 200 lines and it is the entire security property. Everything else 80%. Playwright for the two E2E specs. A flaky test is a failed phase, because a demo take will not be luckier than the suite.
 
 **External APIs.** Never mock them in the crawler. If an endpoint's shape differs from what a doc or a prompt claims, discover the real shape, use it, and append a friction-log entry.
+
+**Known deviations from a naive reading of the scripts — do not "restore" these.**
+
+- `typecheck` runs `tsc -b`, not `tsc -b --noEmit`. TypeScript refuses `--noEmit` on a composite project that another project references (`TS6310`) — the referenced project's `.d.ts` output is how the downstream project resolves cross-package types, so emit cannot be disabled in a project-references graph. `typecheck` and `build` therefore both run `tsc -b`; the second invocation is cheap because it's incremental via `.tsbuildinfo`.
+- `depcruise` runs `dependency-cruiser packages`, not `dependency-cruiser --validate`. `--validate` is not a flag in dependency-cruiser 16.x — validation against `.dependency-cruiser.cjs` runs by default whenever a ruleset is found. `dependency-cruiser` is pinned to the exact installed `16.10.4` in `package.json` rather than left on a caret range, so this behavior doesn't shift under a minor bump.
 
 ---
 

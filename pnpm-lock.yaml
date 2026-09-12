@@ -173,7 +173,7 @@ importers:
         specifier: ^22.9.0
         version: 22.20.2
       dependency-cruiser:
-        specifier: ^16.4.2
+        specifier: 16.10.4
         version: 16.10.4
       eslint:
         specifier: ^9.13.0
