@@ -1,11 +1,11 @@
-# Chaperone
-
 An assistant re-reads the instructions for every tool it owns, every time it
 connects, and remembers nothing about what they said last time. Chaperone is
 that memory. It sits alongside the assistant's connections to third-party
 tool servers, keeps a record of what each tool claimed the last time a
 resident approved it, and tells the household, in one sentence, the moment
 that claim changes.
+
+# Chaperone
 
 This is a placeholder README, committed at the start of the build window
 alongside the pre-registered corpus taxonomy and prediction block. It will be
