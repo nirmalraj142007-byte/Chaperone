@@ -182,3 +182,91 @@ specific older JDK for local tooling rather than relying on whatever `java`
 resolves to on `PATH` — this failure is specific to the Windows NIO
 selector implementation shipped in this JDK build and would not necessarily
 reproduce on Linux/macOS or an earlier JDK line.
+
+**Update, later session (2026-09-12):** Docker was installed on the machine
+between sessions. `docker compose up -d ddb` worked immediately — but
+bringing the ledger's live acceptance flow fully green still took another
+round of real debugging, not a clean pass. See Entry 004.
+
+---
+
+## Entry 004 — 2026-09-12
+
+**Task attempted:** Run this phase's actual acceptance flow (`docker
+compose up -d ddb && pnpm ddb:migrate && pnpm ddb:seed && pnpm
+verify-ledger`) now that Docker is installed, to close the gap Entry 003
+left open — verifying `packages/ledger` against a real DynamoDB Local
+instance rather than only the mocked-client test suite.
+
+**Steps taken:** `docker compose up -d ddb` started cleanly and
+`docker compose logs ddb` showed a normal-looking startup banner. But
+`pnpm ddb:migrate` then hung indefinitely with zero output, past a 60s
+timeout — not an error, a true hang. Isolated it step by step rather than
+guessing: `curl` and Node's built-in `fetch` both reached
+`http://127.0.0.1:8000/` in under 100ms (got the expected `400 Bad
+Request`/`MissingAuthenticationToken` for an unsigned request), which ruled
+out basic container/port/network problems. A raw `node:http` request with
+an unsigned body also completed in 11ms. That narrowed it specifically to
+`@aws-sdk/client-dynamodb`'s own request path, so I probed the SDK
+directly with `maxAttempts: 1` and an explicit
+`requestHandler: { requestTimeout: 5000, throwOnRequestTimeout: true }` —
+without `throwOnRequestTimeout`, `@smithy/node-http-handler` only logs a
+`[WARN]` after the timeout and the promise never settles, which is exactly
+why `migrate.ts` (using SDK defaults) hung with *no output at all* instead
+of failing loudly. With the explicit timeout it threw cleanly, confirming a
+real, signed request to DynamoDB Local genuinely never got a response.
+`docker compose logs ddb` at that point showed the real cause, repeating
+every 3 seconds: `com.almworks.sqlite4java.SQLiteException: [14] unable to
+open database file` / `SQLiteQueue[shared-local-instance.db]: stopped
+abnormally, reincarnating in 3000ms`. `docker exec chaperone-ddb sh -c "id;
+ls -la /home/dynamodblocal"` showed why: the image runs as
+`dynamodblocal` (uid 1000), but Docker creates a fresh named volume's mount
+point owned `root:root` with mode `755` — writable by root, read+execute
+only for everyone else. `-dbPath ./data` (added in `docker-compose.yml` so
+data survives a restart) pointed DynamoDB Local's SQLite backend at exactly
+that unwritable directory, so every table-creating/data-touching request
+(anything past a bare unauthenticated ping) hung forever waiting on a
+storage layer stuck in an infinite crash-reconnect loop.
+
+**Expected versus actual:** Expected `docker compose up -d ddb` plus this
+package's own scripts to just work, since the compose file and the ledger
+code were both already written and type-checked. Actual: the compose file
+itself had a real bug — the named-volume mount point's default ownership
+under Docker Desktop doesn't match the image's non-root user, and DynamoDB
+Local's Jetty layer accepts and holds the TCP connection open while the
+storage layer is failing behind it, so the client-visible symptom is an
+indefinite hang with no error, not a fast, diagnosable failure.
+
+**Severity:** blocker, until root-caused — a hang with no error message is
+the worst failure mode for anyone hitting this next, since every natural
+first instinct (check the container is up, curl the port, check the SDK
+version) comes back clean.
+
+**Workaround:** Added `user: root` to the `ddb` service in
+`docker-compose.yml`, so the container has full access to the volume Docker
+created for it — there's no privilege-drop step in the image's own
+entrypoint being bypassed, it runs `java` directly either way. Torn down
+and recreated the corrupted volume (`docker compose down -v`) before
+retrying, since the crash-looped instance had never successfully written
+anything worth keeping. After that fix, the full flow ran clean: 9 tables
+created, 2 tools pinned, `pnpm verify-ledger` reported `chain OK — 6 events
+verified` with exit 0, `aws dynamodb list-tables`/`describe-table` matched
+spec exactly, and the tamper test (mutating the payload of a mid-chain
+event directly via `aws dynamodb update-item`, leaving `payloadHash`
+untouched) made `verify-ledger` correctly report `chain BROKEN at index 3`
+with exit 1, before restoring the original payload and re-seeding back to
+a verified-green chain of 12 events.
+
+**Actionable suggestion:** Two separate ones. First, for this repo: anyone
+else standing this up fresh on Docker Desktop will hit the same volume
+permission mismatch — `user: root` is now committed in
+`docker-compose.yml` so this shouldn't recur, but it's worth knowing this
+was a real bug in what Phase 3 originally shipped, not an environment
+fluke like Entry 003. Second, more general: `@aws-sdk/client-dynamodb`'s
+default `NodeHttpHandler` behavior — warn-and-never-settle on a request
+timeout unless `throwOnRequestTimeout` is explicitly set — turned a
+diagnosable timeout into a silent, indefinite hang. Any script or service
+built on this SDK in this repo should set `requestTimeout` and
+`throwOnRequestTimeout: true` explicitly rather than trusting the default,
+so a real storage-layer failure surfaces as a fast, loud error instead of a
+hang indistinguishable from "still working."

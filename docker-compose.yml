@@ -2,6 +2,14 @@ services:
   ddb:
     image: amazon/dynamodb-local:latest
     container_name: chaperone-ddb
+    # The image's default user (dynamodblocal, uid 1000) can't write into a
+    # freshly-created named volume, which Docker mounts owned by root:root —
+    # DynamoDB Local's SQLite backend then fails with "unable to open
+    # database file" in an infinite reconnect loop, hanging every real
+    # request forever without ever erroring back to the client. Running the
+    # container as root sidesteps that permission mismatch; there's no
+    # privilege-drop step in the image's own entrypoint to preserve anyway.
+    user: root
     working_dir: /home/dynamodblocal
     command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-dbPath", "./data"]
     ports:

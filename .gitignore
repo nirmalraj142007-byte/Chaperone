@@ -41,3 +41,4 @@ infra/**/*.js
 
 # Local DynamoDB
 .dynamodb/
+/ddb-dump.json

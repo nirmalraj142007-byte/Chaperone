@@ -40,6 +40,11 @@ async function migrate(): Promise<void> {
   const config = loadConfig();
   const client = new DynamoDBClient({
     region: config.awsRegion,
+    // See packages/ledger/src/client.ts — without an explicit requestTimeout,
+    // a stuck DynamoDB Local (e.g. its storage layer failing behind an
+    // otherwise-open connection) hangs this script forever with no output
+    // instead of failing loudly.
+    requestHandler: { connectionTimeout: 3000, requestTimeout: 5000, throwOnRequestTimeout: true },
     ...(config.ddbEndpoint !== undefined
       ? {
           endpoint: config.ddbEndpoint,

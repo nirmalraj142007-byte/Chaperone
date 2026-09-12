@@ -16,6 +16,18 @@ export function getDdbDocClient(): DynamoDBDocumentClient {
     const config = loadConfig();
     const baseClient = new DynamoDBClient({
       region: config.awsRegion,
+      // The SDK's own default retry strategy would otherwise also retry a
+      // throttled call internally, on top of withDynamoErrors's own 3
+      // attempts — this client makes exactly one attempt per send() and
+      // withDynamoErrors is the sole retry authority, matching what's
+      // actually tested. Without an explicit requestTimeout,
+      // @smithy/node-http-handler only *warns* when a request hangs and
+      // the promise never settles — throwOnRequestTimeout turns a stuck
+      // storage layer into a fast, loud error instead of an indefinite
+      // hang indistinguishable from "still working" (see friction-log.md
+      // Entry 004, where exactly this hid a real DynamoDB Local outage).
+      maxAttempts: 1,
+      requestHandler: { connectionTimeout: 3000, requestTimeout: 5000, throwOnRequestTimeout: true },
       ...(config.ddbEndpoint !== undefined
         ? {
             endpoint: config.ddbEndpoint,

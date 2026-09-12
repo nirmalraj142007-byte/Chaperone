@@ -1,12 +1,14 @@
 import { ConfigError, LedgerWriteError } from "@chaperone/errors";
 
 /**
- * Delay before each of the three retry attempts *after* the original call —
- * i.e. up to 4 total DynamoDB calls (1 original + 3 retries), the last
- * delay always used as a real inter-call wait rather than a discarded one
- * spent right before giving up.
+ * Backoff delay after each of the 3 total attempts, indexed by attempt
+ * number (0, 1, 2). 3 attempts total, not 3 retries after an initial call —
+ * the delay after the 3rd attempt still elapses before `withDynamoErrors`
+ * gives up, so the caller's overall wait time matches "100/400/1600ms"
+ * exactly rather than silently dropping the last figure.
  */
 const RETRY_BACKOFF_MS = [100, 400, 1600] as const;
+const MAX_ATTEMPTS = RETRY_BACKOFF_MS.length;
 const THROTTLING_ERROR_NAMES = new Set([
   "ProvisionedThroughputExceededException",
   "ThrottlingException",
@@ -31,7 +33,7 @@ function sleep(ms: number): Promise<void> {
  */
 export async function withDynamoErrors<T>(op: () => Promise<T>): Promise<T> {
   let lastError: unknown;
-  for (let call = 0; call <= RETRY_BACKOFF_MS.length; call++) {
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     try {
       return await op();
     } catch (e) {
@@ -46,14 +48,13 @@ export async function withDynamoErrors<T>(op: () => Promise<T>): Promise<T> {
         throw e;
       }
       lastError = e;
-      const delay = RETRY_BACKOFF_MS[call];
-      if (delay === undefined) {
-        break; // all three retries exhausted
+      const delay = RETRY_BACKOFF_MS[attempt];
+      if (delay !== undefined) {
+        await sleep(delay);
       }
-      await sleep(delay);
     }
   }
-  throw new LedgerWriteError("DynamoDB write failed after 3 retries due to throttling", {
+  throw new LedgerWriteError("DynamoDB write failed after 3 attempts due to throttling", {
     cause: lastError,
   });
 }

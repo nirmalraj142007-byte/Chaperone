@@ -15,6 +15,7 @@
     "typecheck": "tsc -b && tsc --noEmit -p packages/ledger/scripts",
     "ddb:migrate": "tsx packages/ledger/scripts/migrate.ts",
     "ddb:seed": "tsx packages/ledger/scripts/seed.ts",
+    "ddb:dump": "tsx packages/ledger/scripts/dump.ts",
     "verify-ledger": "tsx packages/ledger/scripts/verify-ledger.ts"
   },
   "devDependencies": {

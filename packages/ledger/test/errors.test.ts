@@ -42,13 +42,17 @@ describe("withDynamoErrors", () => {
     expect(attempts).toBe(2);
   });
 
-  it("retries the original call 3 more times (4 total) then throws LedgerWriteError, never resolving on a storage error", async () => {
+  it("makes exactly 3 total attempts, waiting 100/400/1600ms, then throws LedgerWriteError, never resolving on a storage error", async () => {
     let attempts = 0;
     const op = async (): Promise<never> => {
       attempts++;
       throw namedError("ProvisionedThroughputExceededException");
     };
+    const start = Date.now();
     await expect(withDynamoErrors(op)).rejects.toBeInstanceOf(LedgerWriteError);
-    expect(attempts).toBe(4);
+    const elapsed = Date.now() - start;
+    expect(attempts).toBe(3);
+    // 100 + 400 + 1600 = 2100ms of backoff across the 3 attempts.
+    expect(elapsed).toBeGreaterThanOrEqual(2100);
   }, 10_000);
 });
