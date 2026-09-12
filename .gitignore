@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+.turbo/
+
+# Env and secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Test / coverage
+coverage/
+playwright-report/
+test-results/
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# Vite / React console build
+packages/console/dist/
+
+# CDK
+infra/cdk.out/
+infra/**/*.d.ts
+infra/**/*.js
+!infra/**/*.config.js
+
+# Local DynamoDB
+.dynamodb/
