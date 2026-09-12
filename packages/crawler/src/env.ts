@@ -8,8 +8,19 @@ import { ConfigError } from "@chaperone/errors";
  * ledger, so they don't belong in the shared runtime config.
  */
 const envSchema = z.object({
-  CRAWLER_REGISTRY_LIMIT: z.coerce.number().int().positive().default(150),
-  CRAWLER_SMITHERY_LIMIT: z.coerce.number().int().positive().default(150),
+  /**
+   * Raised from an initial 150/150 after a pre-crawl-1 composition check
+   * (2026-09-13) found the default caps left registry and Smithery each
+   * sampled from well under 3% of what they actually have on offer
+   * (thousands of registry entries; Smithery alone reports 14,502), while
+   * awesome-mcp-servers — a single hobby-maintained README — ended up
+   * contributing 350/610 (57%) with zero cross-source overlap. 400/400
+   * pulls registry and Smithery's institutional/hosted servers roughly to
+   * parity with the hobby-repo share rather than leaving them as a rounding
+   * error next to it.
+   */
+  CRAWLER_REGISTRY_LIMIT: z.coerce.number().int().positive().default(400),
+  CRAWLER_SMITHERY_LIMIT: z.coerce.number().int().positive().default(400),
   CRAWLER_AWESOME_LIMIT: z.coerce.number().int().positive().default(350),
   CRAWLER_MIN_TOTAL: z.coerce.number().int().positive().default(300),
   CRAWLER_HTTP_CACHE_DIR: z.string().min(1).default("packages/crawler/.cache/http"),
@@ -43,8 +54,8 @@ export interface CrawlerEnv {
 }
 
 const EXPECTED_SHAPE: Record<string, string> = {
-  CRAWLER_REGISTRY_LIMIT: "positive integer (default 150)",
-  CRAWLER_SMITHERY_LIMIT: "positive integer (default 150)",
+  CRAWLER_REGISTRY_LIMIT: "positive integer (default 400)",
+  CRAWLER_SMITHERY_LIMIT: "positive integer (default 400)",
   CRAWLER_AWESOME_LIMIT: "positive integer (default 350)",
   CRAWLER_MIN_TOTAL: "positive integer (default 300)",
   CRAWLER_HTTP_CACHE_DIR: "non-empty string (default packages/crawler/.cache/http)",

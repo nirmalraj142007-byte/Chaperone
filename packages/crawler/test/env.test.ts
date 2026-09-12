@@ -43,8 +43,8 @@ describe("crawler loadCrawlerEnv", () => {
       },
       () => {
         const env = loadCrawlerEnv();
-        expect(env.registryLimit).toBe(150);
-        expect(env.smitheryLimit).toBe(150);
+        expect(env.registryLimit).toBe(400);
+        expect(env.smitheryLimit).toBe(400);
         expect(env.awesomeLimit).toBe(350);
         expect(env.minTotal).toBe(300);
         expect(env.blockedHosts).toEqual([]);
