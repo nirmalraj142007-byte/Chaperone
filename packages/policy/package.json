@@ -12,7 +12,8 @@
     }
   },
   "scripts": {
-    "build": "tsc -b"
+    "build": "tsc -b",
+    "test": "vitest run --root ../.. packages/policy"
   },
   "dependencies": {
     "canonicalize": "^2.0.0"
