@@ -121,3 +121,64 @@ declares — the current `.d.ts` claims an ES module shape its own
 `package.json` doesn't back up, which is exactly the mismatch `NodeNext`
 resolution is designed to catch and instead surfaces as a confusing "not
 callable" error with no mention of the underlying interop cause.
+
+---
+
+## Entry 003 — 2026-09-12
+
+**Task attempted:** Bring up DynamoDB Local per this phase's own acceptance
+test (`docker compose up -d ddb && pnpm ddb:migrate && pnpm ddb:seed`) in the
+development sandbox this session runs in, so `packages/ledger` could be
+verified against a real local DynamoDB endpoint rather than only against
+mocked SDK calls, before declaring the phase done.
+
+**Steps taken:** Checked for `docker` on `PATH` and in the standard Windows
+install locations (`Program Files\Docker`, `ProgramData\DockerDesktop`) —
+absent; Docker Desktop is not installed on this machine. Fell back to the
+non-Docker path: downloaded the standalone `amazon/dynamodb-local` JAR
+distribution directly from
+`https://s3.us-west-2.amazonaws.com/dynamodb-local/dynamodb_local_latest.tar.gz`
+and ran it with the installed JDK (`java -jar DynamoDBLocal.jar -sharedDb
+-inMemory -port 8000`), confirming via `Get-NetTCPConnection` that the
+process bound port 8000. Tried both the default invocation and a retry with
+`-Djava.net.preferIPv4Stack=true`.
+
+**Expected versus actual:** Expected a listening DynamoDB Local instance
+reachable at `http://localhost:8000`. Actual: the process crashed on
+startup both times with `java.io.IOException: Unable to establish loopback
+connection`, thrown out of `sun.nio.ch.WEPollSelectorImpl`'s constructor
+while Jetty (DynamoDB Local's embedded HTTP server) opens its connector
+selector — a JDK-internal NIO `Pipe`/`Selector` implementation on Windows
+that itself depends on a loopback Unix Domain Socket connecting
+successfully, which failed with `SocketException: Invalid argument:
+connect`. This reproduced identically on both attempts and is a JVM/OS-level
+failure in the installed `java version "26.0.2"` runtime, not anything in
+this project's code — no other JDK version was available on this machine to
+cross-check whether an older JDK avoids it, and WSL is also not installed,
+closing off that alternate path too.
+
+**Severity:** major, for verification only — not a defect in the delivered
+code. `packages/ledger` is fully implemented and its business logic
+(hash-chain construction in `appendEvent`, tamper detection and break
+reporting in `verifyChain`, the `attribute_not_exists(sk)` race-retry, the
+`actor !== "model"` guard, `ResourceNotFoundException`/throttling error
+wrapping) is exercised by 18 unit tests against a mocked
+`DynamoDBDocumentClient`, all passing, plus a clean `tsc -b`, `pnpm lint`,
+and `pnpm depcruise`. What could not be run in this sandbox was the literal
+acceptance sequence this phase's own prompt specifies: `docker compose up -d
+ddb`, `pnpm ddb:migrate`, `pnpm ddb:seed`, `pnpm verify-ledger` against a
+real DynamoDB Local process, and the AWS-CLI tamper-and-re-verify check.
+
+**Workaround:** None available inside this sandbox — this is a genuine gap
+between "logic verified" and "verified against the real dependency," and it
+should be closed by running the exact `VERIFY` block from this phase's
+prompt on a machine with Docker installed before treating this phase as
+fully accepted, not by trusting the mocked-client test suite alone.
+
+**Actionable suggestion:** Either provision this kind of development sandbox
+with Docker available (the project's own `docker-compose.yml` already
+assumes it), or, if a Docker-less fallback is ever needed again, pin a
+specific older JDK for local tooling rather than relying on whatever `java`
+resolves to on `PATH` — this failure is specific to the Windows NIO
+selector implementation shipped in this JDK build and would not necessarily
+reproduce on Linux/macOS or an earlier JDK line.

@@ -1,0 +1,13 @@
+services:
+  ddb:
+    image: amazon/dynamodb-local:latest
+    container_name: chaperone-ddb
+    working_dir: /home/dynamodblocal
+    command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-dbPath", "./data"]
+    ports:
+      - "8000:8000"
+    volumes:
+      - ddb-data:/home/dynamodblocal/data
+
+volumes:
+  ddb-data:

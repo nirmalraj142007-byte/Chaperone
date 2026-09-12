@@ -4,6 +4,7 @@
     { "path": "packages/errors" },
     { "path": "packages/logger" },
     { "path": "packages/config" },
-    { "path": "packages/policy" }
+    { "path": "packages/policy" },
+    { "path": "packages/ledger" }
   ]
 }

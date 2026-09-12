@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { canonicalizeTool, hashTool } from "../src/canonical.js";
+import { canonicalizeTool, hashCanonicalJson, hashTool } from "../src/canonical.js";
 import { canonicalizeJson } from "../src/jcs.js";
 import type { ToolDefinition } from "../src/types.js";
 
@@ -85,5 +85,21 @@ describe("hashTool", () => {
   it("changes when the input schema changes", () => {
     const tool: ToolDefinition = { name: "x", description: "d", inputSchema: { a: 1 } };
     expect(hashTool(tool)).not.toBe(hashTool({ ...tool, inputSchema: { a: 2 } }));
+  });
+});
+
+describe("hashCanonicalJson", () => {
+  it("is the same pipeline hashTool builds on: hashing a tool's own canonical JSON matches hashTool", () => {
+    const tool: ToolDefinition = { name: "x", description: "d", inputSchema: { a: 1 } };
+    expect(hashCanonicalJson(canonicalizeTool(tool))).toBe(hashTool(tool));
+  });
+
+  it("returns sha256:<64 hex chars> for an arbitrary canonical string", () => {
+    expect(hashCanonicalJson('{"a":1}')).toMatch(/^sha256:[0-9a-f]{64}$/);
+  });
+
+  it("is deterministic and sensitive to a single-character change", () => {
+    expect(hashCanonicalJson('{"a":1}')).toBe(hashCanonicalJson('{"a":1}'));
+    expect(hashCanonicalJson('{"a":1}')).not.toBe(hashCanonicalJson('{"a":2}'));
   });
 });

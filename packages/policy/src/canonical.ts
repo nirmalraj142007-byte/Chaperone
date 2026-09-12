@@ -36,7 +36,18 @@ export function canonicalizeTool(tool: ToolDefinition): string {
   return canonical;
 }
 
-export function hashTool(tool: ToolDefinition): string {
-  const digest = createHash("sha256").update(canonicalizeTool(tool), "utf8").digest("hex");
+/**
+ * The shared hash primitive: sha256 over an already-canonicalized JSON
+ * string, prefixed `sha256:`. `hashTool` and `@chaperone/ledger`'s
+ * `appendEvent` both call this over their own canonicalized input — the
+ * canonicalize-then-hash pipeline is identical either way, only the shape
+ * being canonicalized differs (a tool definition vs. an event payload).
+ */
+export function hashCanonicalJson(canonicalJson: string): string {
+  const digest = createHash("sha256").update(canonicalJson, "utf8").digest("hex");
   return `sha256:${digest}`;
+}
+
+export function hashTool(tool: ToolDefinition): string {
+  return hashCanonicalJson(canonicalizeTool(tool));
 }
