@@ -270,3 +270,72 @@ built on this SDK in this repo should set `requestTimeout` and
 `throwOnRequestTimeout: true` explicitly rather than trusting the default,
 so a real storage-layer failure surfaces as a fast, loud error instead of a
 hang indistinguishable from "still working."
+
+---
+
+## Entry 005 — 2026-09-12
+
+**Task attempted:** Implement `packages/crawler`'s five metadata sources
+(registry, PulseMCP, Glama, Smithery, awesome-mcp-servers) against their
+real, live APIs, per this phase's prompt — which specified assumed shapes
+and auth behavior for each and asked that any discrepancy be recorded here
+rather than silently coded around.
+
+**Steps taken:** Before writing any source module, hit each real endpoint
+directly with `curl` and inspected the actual response (status, headers,
+body), per this repo's own rule to verify third-party surfaces rather than
+assume them. `registry.modelcontextprotocol.io/v0/servers` matched the
+prompt's assumption closely (cursor pagination via `metadata.nextCursor`,
+confirmed against the service's own published `openapi.yaml`). The other
+three did not:
+- **PulseMCP:** the prompt assumed a paginated public API. The `v0beta`
+  endpoint this would naturally target returns `410 Gone` with an
+  `API_SUNSET` error body stating it is "Fully sunset (100%)" as of
+  September 2026. Its replacement, `v0.1` (documented at
+  `https://www.pulsemcp.com/api/docs/v0.1`), requires an `X-API-Key` —
+  confirmed with a live `401 {"error":"Invalid or missing API key",...}` —
+  which this project does not hold.
+- **Glama:** `glama.ai/api/mcp/v1/servers` requires an API key on every
+  call, confirmed with a live `401` whose body points to
+  `glama.ai/settings/api-keys`. No public schema for the authenticated
+  response was found, unlike PulseMCP.
+- **Smithery:** the prompt anticipated needing 401-detection and graceful
+  degradation for this one specifically. The opposite is true —
+  `registry.smithery.ai/servers` is fully open, confirmed with a live `200`
+  and a real payload (14,502 total servers, page-based `pagination` object,
+  no key required at all).
+
+**Expected versus actual:** Expected PulseMCP and Smithery to behave as the
+prompt described (both roughly open, paginated); expected Glama's
+"cursor-paginated" characterization to be checkable against a real
+response. Actual: two of the three community directories the prompt
+treated as free now gate their list endpoint behind a key (PulseMCP as of
+this same month; Glama's error message gives no indication it was ever
+free), and the one directory flagged as possibly gated is the one that
+turned out to be fully open.
+
+**Severity:** minor. Each source degrades to contributing 0 with a clear
+log line rather than failing the run (`pulsemcp.ts`, `glama.ts`), so the
+overall corpus-assembly command still succeeds — verified end to end: a
+real run on 2026-09-12 produced 610 deduplicated servers (registry 131,
+smithery 129, awesome 350 unique contributions; pulsemcp and glama both 0)
+against the required floor of 300, with 419 carrying a `repoUrl`.
+
+**Workaround:** `pulsemcp.ts` reuses `registry.ts`'s `parseRegistryServer`
+(PulseMCP's own docs confirm the v0.1 response is the identical
+`server.json` schema), gated behind an optional `PULSEMCP_API_KEY` /
+`PULSEMCP_TENANT_ID` — implemented correctly per their documentation but
+never exercised end-to-end since no key is configured. `glama.ts` similarly
+supports an optional `GLAMA_API_KEY`, but its pagination shape
+(`first`/`after`/`pageInfo`) is a documented-nowhere best-effort guess and
+is explicitly commented as unverified dead code unless a key is supplied.
+`smithery.ts` keeps a 401/403 degrade path anyway as defensive-only code,
+since the current open policy could change.
+
+**Actionable suggestion:** Don't budget on PulseMCP or Glama contributing
+to the corpus unless a household is willing to pay for API keys on both
+before crawl 2 (2026-10-20) — if that's worth doing, it should happen well
+before crawl 2 so the source is exercised for real at least once first.
+Otherwise, the corpus's community-directory coverage is Smithery-only, and
+the registry + awesome-mcp-servers sources are carrying the real weight of
+clearing the N=300 floor, which they do comfortably on their own.

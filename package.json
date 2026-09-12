@@ -12,11 +12,12 @@
     "test": "vitest run",
     "lint": "eslint .",
     "depcruise": "dependency-cruiser packages",
-    "typecheck": "tsc -b && tsc --noEmit -p packages/ledger/scripts",
+    "typecheck": "tsc -b && tsc --noEmit -p packages/ledger/scripts && tsc --noEmit -p packages/crawler/scripts",
     "ddb:migrate": "tsx packages/ledger/scripts/migrate.ts",
     "ddb:seed": "tsx packages/ledger/scripts/seed.ts",
     "ddb:dump": "tsx packages/ledger/scripts/dump.ts",
-    "verify-ledger": "tsx packages/ledger/scripts/verify-ledger.ts"
+    "verify-ledger": "tsx packages/ledger/scripts/verify-ledger.ts",
+    "crawl:assemble": "tsx packages/crawler/scripts/assemble.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",

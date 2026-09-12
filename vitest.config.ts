@@ -11,6 +11,7 @@ export default defineConfig({
       "@chaperone/config": path.resolve(rootDir, "packages/config/src/index.ts"),
       "@chaperone/logger": path.resolve(rootDir, "packages/logger/src/index.ts"),
       "@chaperone/policy": path.resolve(rootDir, "packages/policy/src/index.ts"),
+      "@chaperone/ledger": path.resolve(rootDir, "packages/ledger/src/index.ts"),
     },
   },
   test: {

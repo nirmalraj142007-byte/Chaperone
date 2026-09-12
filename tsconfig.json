@@ -5,6 +5,7 @@
     { "path": "packages/logger" },
     { "path": "packages/config" },
     { "path": "packages/policy" },
-    { "path": "packages/ledger" }
+    { "path": "packages/ledger" },
+    { "path": "packages/crawler" }
   ]
 }

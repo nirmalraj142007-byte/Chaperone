@@ -42,3 +42,6 @@ infra/**/*.js
 # Local DynamoDB
 .dynamodb/
 /ddb-dump.json
+
+# Crawler HTTP cache and raw response archive (re-derivable, not evidence)
+packages/crawler/.cache/
