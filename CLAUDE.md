@@ -180,3 +180,5 @@ Run the acceptance commands yourself before declaring anything done, and paste t
 When the data disappoints, report the data. This project's entire argument is evidentiary discipline, and a number that came in low, honestly stated, is worth more than a framing that survives by being vague. That applies to drift rates, baseline refusal rates, boot success, and latency equally.
 
 Prefer boring and provable over impressive-sounding. The interesting part of this project is the protocol work; everything else should be dull enough to be obviously correct.
+
+End every phase by committing all work and pushing to `origin main`. Then run `git status` and paste the output. A phase that is not on origin is not done.

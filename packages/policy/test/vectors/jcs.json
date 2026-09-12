@@ -1,0 +1,26 @@
+[
+  {
+    "name": "key-ordering",
+    "description": "Object keys are sorted lexicographically by UTF-16 code unit, regardless of insertion order.",
+    "input": { "b": 2, "a": 1, "c": 3 },
+    "canonical": "{\"a\":1,\"b\":2,\"c\":3}"
+  },
+  {
+    "name": "unicode-not-escaped",
+    "description": "Non-ASCII characters are emitted as literal UTF-8 text, not \\u-escaped.",
+    "input": { "accent": "café", "emoji": "🎉" },
+    "canonical": "{\"accent\":\"café\",\"emoji\":\"🎉\"}"
+  },
+  {
+    "name": "nested-structures",
+    "description": "Array element order is preserved; nested object keys are sorted independently at every level.",
+    "input": { "a": [3, 1, 2], "nested": { "z": true, "a": null } },
+    "canonical": "{\"a\":[3,1,2],\"nested\":{\"a\":null,\"z\":true}}"
+  },
+  {
+    "name": "number-formatting",
+    "description": "Numbers use ES6 Number-to-string form: negative zero collapses to 0, and magnitudes below the exponential thresholds stay in plain decimal.",
+    "input": { "n": 1.5, "whole": 100000000000000000000, "negZero": -0, "small": 0.000001 },
+    "canonical": "{\"n\":1.5,\"negZero\":0,\"small\":0.000001,\"whole\":100000000000000000000}"
+  }
+]

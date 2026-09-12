@@ -226,6 +226,19 @@ importers:
         specifier: ^2.1.4
         version: 2.1.9(@types/node@22.20.2)(supports-color@7.2.0)
 
+  packages/policy:
+    dependencies:
+      canonicalize:
+        specifier: ^2.0.0
+        version: 2.1.0
+    devDependencies:
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.4
+        version: 2.1.9(@types/node@22.20.2)(supports-color@7.2.0)
+
 packages:
 
   '@esbuild/aix-ppc64@0.21.5':
@@ -735,6 +748,10 @@ packages:
   callsites@3.1.0:
     resolution: {integrity: sha512-P8BjAsXvZS+VIDUI11hHCQEv74YT67YUi5JJFNWIqL235sBmjX4+qx9Muvls5ivyNENctx46xQLQ3aTuE7ssaQ==}
     engines: {node: '>=6'}
+
+  canonicalize@2.1.0:
+    resolution: {integrity: sha512-F705O3xrsUtgt98j7leetNhTWPe+5S72rlL5O4jA1pKqBVQ/dT1O1D6PFxmSXvc0SUOinWS57DKx0I3CHrXJHQ==}
+    hasBin: true
 
   chai@5.3.3:
     resolution: {integrity: sha512-4zNhdJD/iOjSH0A05ea+Ke6MU5mmpQcbQsSOkgdaUMJ9zTlDTD/GYlwohmIE2u0gaxHYiVHEn1Fw9mZ/ktJWgw==}
@@ -1780,6 +1797,8 @@ snapshots:
   cac@6.7.14: {}
 
   callsites@3.1.0: {}
+
+  canonicalize@2.1.0: {}
 
   chai@5.3.3:
     dependencies:

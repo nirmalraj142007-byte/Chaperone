@@ -66,3 +66,58 @@ protocol revisions supported) at the top, not spread across a changelog, a
 migration guide, and a FAQ. A hackathon builder on a fixed deadline should not
 need three separate fetches to answer "which install target speaks the
 revision my track requires."
+
+---
+
+## Entry 002 — 2026-09-12
+
+**Task attempted:** Import `canonicalize` (the RFC 8785 JSON Canonicalization
+Scheme library — `packages/policy`'s only permitted third-party runtime
+dependency) as a default import in `packages/policy/src/canonical.ts`, under
+this repo's `module: "NodeNext"` + `verbatimModuleSyntax: true` TypeScript
+configuration.
+
+**Steps taken:** Installed `canonicalize@2.1.0`, read its shipped
+`lib/canonicalize.d.ts` (`export default function serialize(input: unknown):
+string | undefined;`) and its `lib/canonicalize.js`
+(`module.exports = function serialize (object) {...}`) directly out of
+`node_modules` before writing any call against it, per this repo's own rule
+to verify third-party surfaces rather than assume them. Wrote
+`import canonicalize from "canonicalize";` and ran `pnpm --filter
+@chaperone/policy build`.
+
+**Expected versus actual:** Expected `esModuleInterop` to synthesize a
+callable default from the package's CommonJS `module.exports`, since that is
+exactly what `esModuleInterop` exists for. Actual: `tsc` failed with
+`TS2349: This expression is not callable`, and the inferred type of the
+import was the *entire module namespace* (`typeof import(".../canonicalize")`),
+not the `serialize` function. The package has no `"type": "module"` and no
+`exports` field in its `package.json`, so TypeScript's `NodeNext` resolution
+treats the `.d.ts` as CommonJS-implied-format; a `.d.ts` written with ESM
+`export default` syntax under a CommonJS implied format does not get the
+synthetic-default treatment `esModuleInterop` normally provides — it appears
+to hand back the module's own namespace type instead. Trying
+`import { default as canonicalize } from "canonicalize";` produced the
+identical error, ruling out import-syntax as the cause. `import canonicalize
+= require("canonicalize")` was not usable either, since it is rejected by
+`tsc` when the emitting file itself is ESM output (this package has
+`"type": "module"`).
+
+**Severity:** minor. Fully worked around with no loss of type safety or
+correctness, but it cost real time to isolate against a fairly obscure
+corner of Node16/NodeNext module-interop rules, on the one dependency this
+package is contractually allowed to have.
+
+**Workaround:** Load the package via `node:module`'s `createRequire` and
+supply a hand-written type for its one export, verified line-by-line against
+the installed package's actual `.js` and `.d.ts` (see
+`packages/policy/src/jcs.ts`), rather than relying on the default-import
+interop path.
+
+**Actionable suggestion:** `canonicalize` should either ship a `"type"` field
+(and matching ESM build) or express its default export with `export = ` in
+its `.d.ts`, matching the CommonJS format its `package.json` already
+declares — the current `.d.ts` claims an ES module shape its own
+`package.json` doesn't back up, which is exactly the mismatch `NodeNext`
+resolution is designed to catch and instead surfaces as a confusing "not
+callable" error with no mention of the underlying interop cause.
