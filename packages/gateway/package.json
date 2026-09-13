@@ -1,0 +1,36 @@
+{
+  "name": "@chaperone/gateway",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "test": "vitest run --root ../.. packages/gateway",
+    "dev": "tsx watch src/index.ts"
+  },
+  "dependencies": {
+    "@chaperone/config": "workspace:*",
+    "@chaperone/errors": "workspace:*",
+    "@chaperone/ledger": "workspace:*",
+    "@chaperone/logger": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.17.0",
+    "express": "^5.1.0",
+    "ulid": "^3.0.2"
+  },
+  "devDependencies": {
+    "@chaperone/demo-upstream": "workspace:*",
+    "@types/express": "^5.0.0",
+    "aws-sdk-client-mock": "^4.1.0",
+    "tsx": "^4.23.13",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.4"
+  }
+}

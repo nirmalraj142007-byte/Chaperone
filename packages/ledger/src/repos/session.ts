@@ -1,4 +1,4 @@
-import { GetCommand, PutCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
+import { DeleteCommand, GetCommand, PutCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { getDdbDocClient } from "../client.js";
 import { tableName } from "../tables.js";
 import { withDynamoErrors } from "../errors.js";
@@ -40,5 +40,17 @@ export async function touchSession(sessionId: string, lastSeenAt: string, ttl: n
         ExpressionAttributeValues: { ":lastSeenAt": lastSeenAt, ":ttl": ttl },
       }),
     ),
+  );
+}
+
+/**
+ * Session rows are mutable operational state, not the hash-chained ledger —
+ * unlike `ledger-event`, deleting one here is not a non-negotiable
+ * violation. Used by `DELETE /mcp` termination so a subsequent request
+ * against the same session ID reliably 404s.
+ */
+export async function deleteSession(sessionId: string): Promise<void> {
+  await withDynamoErrors(() =>
+    getDdbDocClient().send(new DeleteCommand({ TableName: tableName("session"), Key: { sessionId } })),
   );
 }

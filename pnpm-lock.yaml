@@ -238,8 +238,79 @@ importers:
         specifier: ^2.1.4
         version: 2.1.9(@types/node@22.20.2)(supports-color@7.2.0)
 
+  packages/demo-upstream:
+    dependencies:
+      '@chaperone/logger':
+        specifier: workspace:*
+        version: link:../logger
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.17.0
+        version: 1.30.0(supports-color@7.2.0)(zod@3.25.76)
+      express:
+        specifier: ^5.1.0
+        version: 5.2.1(supports-color@7.2.0)
+      zod:
+        specifier: ^3.23.8
+        version: 3.25.76
+    devDependencies:
+      '@types/express':
+        specifier: ^5.0.0
+        version: 5.0.6
+      tsx:
+        specifier: ^4.23.13
+        version: 4.23.13
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.4
+        version: 2.1.9(@types/node@22.20.2)(supports-color@7.2.0)
+
   packages/errors:
     devDependencies:
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.4
+        version: 2.1.9(@types/node@22.20.2)(supports-color@7.2.0)
+
+  packages/gateway:
+    dependencies:
+      '@chaperone/config':
+        specifier: workspace:*
+        version: link:../config
+      '@chaperone/errors':
+        specifier: workspace:*
+        version: link:../errors
+      '@chaperone/ledger':
+        specifier: workspace:*
+        version: link:../ledger
+      '@chaperone/logger':
+        specifier: workspace:*
+        version: link:../logger
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.17.0
+        version: 1.30.0(supports-color@7.2.0)(zod@3.25.76)
+      express:
+        specifier: ^5.1.0
+        version: 5.2.1(supports-color@7.2.0)
+      ulid:
+        specifier: ^3.0.2
+        version: 3.0.2
+    devDependencies:
+      '@chaperone/demo-upstream':
+        specifier: workspace:*
+        version: link:../demo-upstream
+      '@types/express':
+        specifier: ^5.0.0
+        version: 5.0.6
+      aws-sdk-client-mock:
+        specifier: ^4.1.0
+        version: 4.1.0
+      tsx:
+        specifier: ^4.23.13
+        version: 4.23.13
       typescript:
         specifier: ^5.6.3
         version: 5.9.3

@@ -40,6 +40,17 @@ const upstreamsField = z
     return result.data;
   });
 
+const originAllowlistField = z
+  .string()
+  .min(1)
+  .default("http://localhost:*")
+  .transform((raw) =>
+    raw
+      .split(",")
+      .map((origin) => origin.trim())
+      .filter((origin) => origin.length > 0),
+  );
+
 const envSchema = z.object({
   AWS_REGION: z.string().min(1).default("us-east-1"),
   DDB_ENDPOINT: z.string().url().optional(),
@@ -50,6 +61,14 @@ const envSchema = z.object({
   GITHUB_TOKEN: z.string().min(1).optional(),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace"]).default("info"),
   PORT: z.coerce.number().int().positive().default(3000),
+  // Comma-separated. A trailing ":*" on an entry matches any port on that
+  // origin, so the default covers every localhost dev port without an
+  // operator having to list each one.
+  GATEWAY_ORIGIN_ALLOWLIST: originAllowlistField,
+  BIND_ALL: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((v) => v === "true"),
 });
 
 export interface Config {
@@ -62,6 +81,8 @@ export interface Config {
   githubToken?: string;
   logLevel: string;
   port: number;
+  originAllowlist: string[];
+  bindAll: boolean;
 }
 
 const EXPECTED_SHAPE: Record<string, string> = {
@@ -74,6 +95,8 @@ const EXPECTED_SHAPE: Record<string, string> = {
   GITHUB_TOKEN: "string, optional",
   LOG_LEVEL: 'one of "fatal" | "error" | "warn" | "info" | "debug" | "trace" (default "info")',
   PORT: "positive integer (default 3000)",
+  GATEWAY_ORIGIN_ALLOWLIST: 'comma-separated origins, e.g. "http://localhost:*,https://app.example.com" (default "http://localhost:*")',
+  BIND_ALL: 'one of "true" | "false" (default "false")',
 };
 
 function formatIssues(error: z.ZodError): string {
@@ -106,6 +129,8 @@ export function loadConfig(): Config {
     upstreams: env.CHAPERONE_UPSTREAMS,
     logLevel: env.LOG_LEVEL,
     port: env.PORT,
+    originAllowlist: env.GATEWAY_ORIGIN_ALLOWLIST,
+    bindAll: env.BIND_ALL,
     ...(env.DDB_ENDPOINT !== undefined ? { ddbEndpoint: env.DDB_ENDPOINT } : {}),
     ...(env.BEDROCK_MODEL_ID !== undefined ? { bedrockModelId: env.BEDROCK_MODEL_ID } : {}),
     ...(env.GITHUB_TOKEN !== undefined ? { githubToken: env.GITHUB_TOKEN } : {}),

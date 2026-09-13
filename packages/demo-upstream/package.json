@@ -1,0 +1,32 @@
+{
+  "name": "@chaperone/demo-upstream",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/lib.js",
+  "types": "./dist/lib.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/lib.d.ts",
+      "default": "./dist/lib.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "test": "vitest run --root ../.. packages/demo-upstream",
+    "dev": "tsx watch src/index.ts",
+    "stdio": "tsx src/stdio.ts"
+  },
+  "dependencies": {
+    "@chaperone/logger": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.17.0",
+    "express": "^5.1.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "tsx": "^4.23.13",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.4"
+  }
+}

@@ -588,3 +588,84 @@ this project's `{upstreamId}__{toolName}` gateway convention's *spirit* if
 not its exact separator) or switch to the SEP-986-conformant
 `chaperone_approve_change`/`chaperone-approve-change`, rather than carrying
 a startup warning into the real gateway by inertia.
+
+---
+
+## Entry 011 — 2026-09-13
+
+**Task attempted:** Build packages/gateway's upstream passthrough (Phase
+7): a real MCP client connects to a real upstream server, and the gateway
+re-exposes that upstream's tools byte-identically except for the
+`{upstreamId}__` name prefix — the one deliberately non-transparent piece
+of this proxy.
+
+**Steps taken:** First cut used `McpServer.registerTool(name, {
+description, inputSchema }, handler)`, passing the upstream's own raw
+`inputSchema` (a JSON-Schema object, exactly what `tools/list` returns)
+straight through. Typechecking failed. Read
+`server/zod-compat.d.ts`: `AnySchema = z3.ZodTypeAny | z4.$ZodType` —
+`registerTool`'s `inputSchema` must be an actual Zod schema instance (v3 or
+v4), not a plain JSON-Schema object. There is no documented adapter from a
+raw JSON-Schema `Tool.inputSchema` to `AnySchema`.
+
+**Expected versus actual:** Expected `McpServer.registerTool` to accept the
+same JSON-Schema shape `tools/list` reports, since that is the wire format
+every MCP tool definition is actually expressed in. Actual: it only accepts
+Zod, so a byte-transparent proxy cannot use `McpServer` for the tools it
+re-exposes — it would have to either lossy-convert an arbitrary upstream's
+JSON-Schema into Zod at runtime, or hand-author a Zod schema per tool,
+neither of which is transparent.
+
+**Severity:** major — this determined the gateway's core architecture, not
+a workaround at the margins. Anyone assuming `McpServer` is the right level
+for a passthrough/proxy server (a reasonable assumption — it's the
+"quick start" API and every SDK example server uses it) will hit this on
+the first upstream whose tool schema isn't hand-authored Zod.
+
+**Workaround:** Used the low-level `Server` class instead (`@deprecated ...
+Only use Server for advanced use cases` — a proxy re-exposing arbitrary
+upstream schemas unmodified is exactly that case). `Server.setRequestHandler`
+against `ListToolsRequestSchema`/`CallToolRequestSchema` works directly with
+plain JSON-RPC request/response shapes — the upstream's tool objects pass
+through with only `name` rewritten, and `tools/call` forwards the raw
+`arguments` object to the upstream client's own `callTool`. See
+packages/gateway/src/upstreamProxy.ts.
+
+**Actionable suggestion:** Phase 8's upstream pool (packages/upstream)
+inherits this same constraint — budget for `Server`, not `McpServer`, from
+the start rather than rediscovering this mid-phase. Worth a short note in
+`docs/DECISIONS.md` alongside the MCP App go/no-go entry, since both are
+"the high-level API doesn't cover this project's actual use case" findings
+about the same SDK.
+
+---
+
+## Entry 012 — 2026-09-13
+
+**Task attempted:** Connect the gateway's upstream client
+(`StreamableHTTPClientTransport` + `Client.connect`) inside
+packages/gateway/src/upstreamProxy.ts.
+
+**Steps taken:** `pnpm typecheck` after wiring the connection.
+
+**Expected versus actual:** Expected this to typecheck cleanly — the
+client-side transport looked like ordinary SDK usage. Actual: the same
+`exactOptionalPropertyTypes` mismatch packages/mcp-app/src/spike-server.ts
+already found on the *server*-side `StreamableHTTPServerTransport`
+(TS2379, `sessionId`) also applies to the *client*-side
+`StreamableHTTPClientTransport` — its `sessionId` is a getter typed
+`string | undefined`, wider than the exact-optional `sessionId?: string`
+the shared `Transport` interface requires. Both sides of the same
+transport pair share the same root cause; this had not been confirmed for
+the client side until this phase.
+
+**Severity:** minor — same fix as before (`as Transport` with a comment
+citing the exact field and SDK version), just a second instance of it.
+
+**Workaround:** `await upstreamClient.connect(clientTransport as Transport)`,
+documented inline in upstreamProxy.ts.
+
+**Actionable suggestion:** Phase 8's upstream pool will construct many of
+these client transports (one per pooled upstream connection) — worth
+pulling the cast into a tiny shared helper at that point instead of
+copy-pasting the same comment a third and fourth time.

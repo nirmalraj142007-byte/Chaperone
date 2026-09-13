@@ -7,6 +7,8 @@
     { "path": "packages/policy" },
     { "path": "packages/ledger" },
     { "path": "packages/crawler" },
-    { "path": "packages/mcp-app" }
+    { "path": "packages/mcp-app" },
+    { "path": "packages/demo-upstream" },
+    { "path": "packages/gateway" }
   ]
 }

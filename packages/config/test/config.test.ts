@@ -93,4 +93,41 @@ describe("@chaperone/config loadConfig", () => {
       expect(config.logLevel).toBe("debug");
     });
   });
+
+  it("defaults originAllowlist to localhost-any-port and bindAll to false", () => {
+    withEnv({ CHAPERONE_UPSTREAMS: VALID_UPSTREAMS }, () => {
+      const config = loadConfig();
+      expect(config.originAllowlist).toEqual(["http://localhost:*"]);
+      expect(config.bindAll).toBe(false);
+    });
+  });
+
+  it("splits a comma-separated GATEWAY_ORIGIN_ALLOWLIST and trims whitespace", () => {
+    withEnv(
+      {
+        CHAPERONE_UPSTREAMS: VALID_UPSTREAMS,
+        GATEWAY_ORIGIN_ALLOWLIST: "http://localhost:*, https://app.example.com ,https://deployed.example.com",
+      },
+      () => {
+        const config = loadConfig();
+        expect(config.originAllowlist).toEqual([
+          "http://localhost:*",
+          "https://app.example.com",
+          "https://deployed.example.com",
+        ]);
+      },
+    );
+  });
+
+  it("parses BIND_ALL=true", () => {
+    withEnv({ CHAPERONE_UPSTREAMS: VALID_UPSTREAMS, BIND_ALL: "true" }, () => {
+      expect(loadConfig().bindAll).toBe(true);
+    });
+  });
+
+  it("throws ConfigError when BIND_ALL is neither true nor false", () => {
+    withEnv({ CHAPERONE_UPSTREAMS: VALID_UPSTREAMS, BIND_ALL: "yes" }, () => {
+      expect(() => loadConfig()).toThrow(ConfigError);
+    });
+  });
 });

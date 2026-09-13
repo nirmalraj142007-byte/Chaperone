@@ -17,5 +17,36 @@ services:
     volumes:
       - ddb-data:/home/dynamodblocal/data
 
+  demo-upstream:
+    build:
+      context: .
+      dockerfile: docker/demo-upstream.Dockerfile
+    container_name: chaperone-demo-upstream
+    environment:
+      PORT: "4000"
+    ports:
+      - "4000:4000"
+
+  gateway:
+    build:
+      context: .
+      dockerfile: docker/gateway.Dockerfile
+    container_name: chaperone-gateway
+    depends_on:
+      - ddb
+      - demo-upstream
+    environment:
+      PORT: "3000"
+      # BIND_ALL=true: the container's own loopback interface is not what
+      # docker-compose's port mapping below reaches — see security.ts.
+      BIND_ALL: "true"
+      AWS_REGION: us-east-1
+      DDB_ENDPOINT: http://ddb:8000
+      DDB_TABLE_PREFIX: chaperone
+      HOUSEHOLD_ID: household-demo
+      CHAPERONE_UPSTREAMS: '[{"id":"grocery","url":"http://demo-upstream:4000/mcp","label":"Household Grocery"}]'
+    ports:
+      - "3000:3000"
+
 volumes:
   ddb-data:

@@ -1,0 +1,14 @@
+node_modules
+**/node_modules
+**/dist
+**/*.tsbuildinfo
+.git
+.pnpm-store
+coverage
+playwright-report
+test-results
+*.log
+data
+corpus/attacks
+.env
+.env.*
