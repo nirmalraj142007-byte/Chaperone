@@ -34,6 +34,18 @@ export interface CrawlReport {
   failedTimeout: number;
   bootSuccessRate: number;
   capturedServers: number;
+  /**
+   * Exactly the serverIds counted in `capturedServers` (BOOTED with >=1
+   * tool) — crawl 2's drift comparison is a diff against this exact set, so
+   * it needs to be an explicit list rather than something reconstructed
+   * from tool-snapshot rows months later. A candidate absent here can never
+   * enter the drift comparison, however its install path evolves before
+   * crawl 2 — which is also why a full run attempts every candidate in
+   * corpus/candidates.json, not just the ones with a resolved install path
+   * today: the corpus is frozen at crawl 1, but "attempted and got
+   * NO_INSTALL_PATH" still counts as being in that frozen set.
+   */
+  bootedServerIds: string[];
   totalToolsCaptured: number;
   capabilityDistribution: Record<string, number>;
   lowConfidenceCount: number;
@@ -176,6 +188,7 @@ export async function runCrawl(crawlId: string, opts: RunCrawlOptions = {}): Pro
   const counts: Counts = { noInstallPath: 0, booted: 0, refusedNoCreds: 0, failedInstall: 0, failedStart: 0, failedTimeout: 0 };
   let totalToolsCaptured = 0;
   let capturedServers = 0;
+  const bootedServerIds: string[] = [];
   const capabilityDistribution: Record<string, number> = {};
   const capabilitiesOut: CapabilityRow[] = [];
   const needsReview: CapabilityRow[] = [];
@@ -213,6 +226,7 @@ export async function runCrawl(crawlId: string, opts: RunCrawlOptions = {}): Pro
 
     if (result.status === "BOOTED" && result.tools.length > 0) {
       capturedServers++;
+      bootedServerIds.push(record.serverId);
       for (const tool of result.tools) {
         totalToolsCaptured++;
         const verdict = classifyCapability(tool);
@@ -262,6 +276,10 @@ export async function runCrawl(crawlId: string, opts: RunCrawlOptions = {}): Pro
     failedTimeout: counts.failedTimeout,
     bootSuccessRate: attempted > 0 ? (counts.booted / attempted) * 100 : 0,
     capturedServers,
+    // Sorted for a deterministic, diffable report — mapWithConcurrency's
+    // worker-pool scheduling makes the completion order nondeterministic
+    // across runs, and that order carries no meaning here anyway.
+    bootedServerIds: bootedServerIds.sort(),
     totalToolsCaptured,
     capabilityDistribution,
     lowConfidenceCount: needsReview.length,
