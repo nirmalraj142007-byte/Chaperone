@@ -387,3 +387,204 @@ Test one real install end-to-end before trusting the harness's failure
 categories on a genuinely broken server; a clean-looking `FAILED_INSTALL`
 distribution can be 100% environmental.
 clearing the N=300 floor, which they do comfortably on their own.
+
+---
+
+## Entry 007 — 2026-09-13
+
+**Task attempted:** Connect `McpServer.connect(transport)` on a
+`StreamableHTTPServerTransport` in `packages/mcp-app/src/spike-server.ts`,
+under this repo's `exactOptionalPropertyTypes: true` (`tsconfig.base.json`).
+
+**Steps taken:** Wrote the connection exactly as the SDK's own JSDoc usage
+example on `StreamableHTTPServerTransport` shows it, then ran `pnpm
+typecheck`. Read `node_modules/@modelcontextprotocol/sdk@1.30.0`'s
+`dist/esm/shared/transport.d.ts` and `dist/esm/server/streamableHttp.d.ts`
+directly (this repo's "verify rather than remember" rule) to confirm the
+class really does `implements Transport` in the SDK's own source before
+concluding this wasn't a typo on my part.
+
+**Expected versus actual:** Expected a clean compile, since the class
+literally declares `implements Transport`. Actual:
+`TS2379: Argument of type 'StreamableHTTPServerTransport' is not assignable
+to parameter of type 'Transport' with 'exactOptionalPropertyTypes: true'`,
+specifically on `onclose`. `Transport.onclose` is declared `onclose?: () =>
+void` (an optional property, exact under this flag: absent, or exactly
+`() => void`), but `StreamableHTTPServerTransport`'s own getter/setter pair
+types it `(() => void) | undefined` — a wider type that satisfies a *plain*
+optional property but not an *exact* one. The SDK's own build presumably
+doesn't set `exactOptionalPropertyTypes`, so its `implements Transport`
+clause never sees this mismatch; it only appears in a consumer repo that
+turns the flag on, which this one deliberately does repo-wide.
+
+**Severity:** minor. Fully worked around, one call site, no runtime
+behavior change — but it cost real time to confirm this was a genuine
+cross-package strictness mismatch and not a misuse of the API, since the
+error message alone doesn't say which property or why.
+
+**Workaround:** A single explicit `as Transport` cast at the one call site
+(`connectTransport` in `spike-server.ts`), with a code comment naming the
+exact incompatible property and the two `.d.ts` files it was verified
+against, rather than relaxing `exactOptionalPropertyTypes` for this package
+or the repo.
+
+**Actionable suggestion:** If the MCP TypeScript SDK wants to be usable
+from a consumer repo with `exactOptionalPropertyTypes: true` — an
+increasingly common strictness default, and one this project's own
+CLAUDE.md mandates — its own transport classes should type
+`onclose`/`onerror`/`onmessage` as bare optional properties (`() => void`,
+no `| undefined`) to match the `Transport` interface they implement, or the
+interface should widen to `(() => void) | undefined` to match what every
+concrete transport actually offers. Right now the two disagree, and only a
+consumer with the strict flag on ever finds out.
+
+---
+
+## Entry 008 — 2026-09-13
+
+**Task attempted:** Verify the spike server built for this phase
+(`packages/mcp-app/src/spike-server.ts`) against a second, independent
+client connection after already exercising it once with `npx
+@modelcontextprotocol/inspector --cli ... --method tools/list`.
+
+**Steps taken:** Ran a second `inspector --cli` invocation (a fresh OS
+process, so a fresh `initialize`) against the same running server without
+restarting it.
+
+**Expected versus actual:** Expected either a second independent session or
+at worst a clear "already connected" style error naming the constraint.
+Actual: `Invalid Request: Server already initialized` — because the first
+cut of `main()` created exactly one `StreamableHTTPServerTransport` for the
+whole process lifetime and connected one `McpServer` to it, per the
+simplest form of the SDK's own single-transport usage example. That example
+is correct for what it shows, but it silently only supports one MCP session
+ever, for the life of the process — a second `initialize`, from any client,
+at any later time, is rejected, not queued or replaced.
+
+**Severity:** minor for this spike (single-client testing), but would be a
+real defect if carried into `packages/gateway`, where serving exactly one
+household session ever, then refusing every session after, is silent
+data-loss-adjacent behavior with no error surfaced to the resident.
+
+**Workaround:** Rewrote `main()` to the SDK's session-map pattern instead:
+one `StreamableHTTPServerTransport` per session, keyed by the
+`mcp-session-id` header, created only on a real `initialize` request
+(checked via the SDK's own `isInitializeRequest`) and removed from the map
+in `transport.onclose`. Verified by running `resources/list`,
+`resources/read`, and `tools/call` as four separate CLI invocations against
+one running server with no restart, each getting its own session.
+
+**Actionable suggestion:** The SDK's single-transport JSDoc example
+(`server/streamableHttp.d.ts`) should say explicitly, in the example itself,
+that it supports exactly one session for the transport's lifetime — the
+multi-session map pattern is documented elsewhere in the ecosystem's
+examples, but not cross-referenced from the class's own doc comment, so the
+simpler (wrong-for-more-than-one-client) form reads as the canonical one.
+
+---
+
+## Entry 009 — 2026-09-13
+
+**Task attempted:** Verify, per this phase's explicit instruction, which
+mechanism the installed MCP SDK (`@modelcontextprotocol/sdk@1.30.0`) and
+protocol revision `2025-11-25` actually provide for UI resources — the
+`ui://` scheme, `@mcp-ui/server` conventions, or something else — before
+writing `render.ts`'s HTML output or `spike-server.ts`'s registration code.
+
+**Steps taken:** Read the SDK's own `types.d.ts` and `server/mcp.d.ts` —
+found `LATEST_PROTOCOL_VERSION = "2025-11-25"` and a generic
+`registerResource`, but no `ui://`-specific type or helper anywhere in the
+SDK itself. Fetched the official spec changelog
+(`modelcontextprotocol.io/specification/2025-11-25/changelog`) — no
+UI-resource or "MCP Apps" item in it at all; core-spec 2025-11-25 does not
+define this. Fetched `mcpui.dev`'s own docs, which state MCP-UI "pioneered"
+the concept and that current `@mcp-ui/*` packages "now implement the
+standardized MCP Apps specification rather than defining it independently"
+— i.e. MCP Apps is a separate, still-emerging extension, not core spec.
+Installed `@modelcontextprotocol/inspector@2.6.0` (`npx
+@modelcontextprotocol/inspector`) to test rendering, and found it ships its
+own official implementation of that extension,
+`@modelcontextprotocol/ext-apps@1.7.5` ("MCP Apps SDK", `github.com/
+modelcontextprotocol/ext-apps`), used internally by Inspector's `--app-info`
+CLI flag and by its web UI's "Apps" tab. Read `ext-apps`'s bundled
+`dist/src/app-bridge.js` directly (minified, no way to consult a changelog
+for an extension this new) to find the exact contract: a tool opts into
+having an associated UI resource via `_meta["ui/resourceUri"]` (or
+`_meta.ui.resourceUri`), the resource's canonical mimeType is
+`text/html;profile=mcp-app`, and the UI, once loaded, must perform a
+`ui/initialize` JSON-RPC request/response handshake over `postMessage`
+before it is allowed to call `tools/call` (as a further real JSON-RPC
+request, not an ad-hoc message) — full details and the exact experiment run
+against both surfaces are in `docs/DECISIONS.md`, "MCP App mechanism".
+
+**Expected versus actual:** Expected the answer to be "yes, `ui://` +
+`text/html`, straightforwardly." Actual: the mechanism this phase's own
+prompt asked me to build against (a plain `ui://` resource, `text/html`
+mimetype, informal `postMessage({type:'tool',...})` bridge — the `@mcp-ui/
+server`-flavored convention named in the prompt) renders in MCP Inspector's
+plain resource preview, but that preview sandboxes the iframe with
+`sandbox=""` (all script execution disabled, confirmed by reading the live
+DOM's `iframe` element) — so the card's own buttons can never work there,
+independent of what their `postMessage` payload contains. The mechanism
+that *does* allow scripts and a working round trip is the formally
+different `@modelcontextprotocol/ext-apps` bridge, which requires the
+`_meta` linkage and the `ui/initialize` handshake this phase's prompt did
+not ask for and I would not have known to build without reading the
+extension's source directly — there is no changelog or migration note
+anywhere that says "the informal `postMessage` convention your prompt
+describes is superseded by this JSON-RPC handshake."
+
+**Severity:** major, for anyone budgeting the resident-facing consent
+surface as "cheap, mostly done" based on the community convention alone —
+the gap between "renders" and "buttons actually work" is not a polish item,
+it is a different, undocumented wire protocol.
+
+**Workaround:** None needed for this phase — the spike's job was to find
+this out before, not during, the twelve hours of downstream P0 work. Recorded
+precisely, with the exact `_meta` key, mimetype, and handshake sequence
+needed, in `docs/DECISIONS.md`, so the follow-on work has a known target
+instead of a rediscovery cost.
+
+**Actionable suggestion:** `@modelcontextprotocol/ext-apps` is a brand-new
+(2026) extension with no changelog, no migration guide from the informal
+`@mcp-ui/server` convention it supersedes, and its only working
+documentation, in practice, is its own minified bundle. Anyone building an
+MCP App today should budget real time to read that bundle directly rather
+than trust `mcpui.dev`'s docs or a general web search to describe the
+current wire protocol — both were accurate about the concept and stale
+about the exact mechanism.
+
+---
+
+## Entry 010 — 2026-09-13
+
+**Task attempted:** Register the tool this phase's prompt specified,
+`chaperone/approve_change`, verbatim, on the spike `McpServer`.
+
+**Steps taken:** Ran `server.registerTool("chaperone/approve_change", ...)`
+and started the server.
+
+**Expected versus actual:** Expected silent success — the name is exactly
+what the prompt asked for. Actual: the SDK printed a startup-time warning to
+stderr: `Tool name contains invalid characters: "/"` / `Allowed characters
+are: A-Z, a-z, 0-9, underscore (_), dash (-), and dot (.)`, citing
+`modelcontextprotocol/modelcontextprotocol#986` ("Specify Format for Tool
+Names"). Registration proceeded anyway (the SDK only warns, it doesn't
+reject), and every test against it — `tools/list`, `tools/call`, MCP
+Inspector's CLI and web UI, the `--app-info` probe — worked without issue.
+
+**Severity:** minor today, forward-looking risk otherwise. Nothing observed
+in this phase's testing actually enforces the naming SEP yet, but the
+warning exists because some future SDK version, or some other host, may.
+
+**Workaround:** None applied — kept the literal name this phase's prompt
+specified, since changing it would break the resident-facing wire contract
+(`chaperone/approve_change` embedded in every consent card) for a
+naming-convention warning with no enforced failure today.
+
+**Actionable suggestion:** Before this tool name ships past a spike, decide
+deliberately whether to keep the `/`-namespaced style (readable, matches
+this project's `{upstreamId}__{toolName}` gateway convention's *spirit* if
+not its exact separator) or switch to the SEP-986-conformant
+`chaperone_approve_change`/`chaperone-approve-change`, rather than carrying
+a startup warning into the real gateway by inertia.
