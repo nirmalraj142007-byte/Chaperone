@@ -8,7 +8,7 @@ if a decision changes, a new dated entry supersedes the old one and says so.
 
 ## MCP App go/no-go — Phase 6 spike (2026-09-13)
 
-**Verdict: PARTIAL.**
+**Verdict: PARTIAL, and PARTIAL is a GO for planning purposes.**
 
 A real MCP host renders the consent card's HTML *and* runs its inline
 script, but the card's Approve/Keep-blocked buttons do not round-trip to a
@@ -19,6 +19,17 @@ different, more recent, formally JSON-RPC-based bridge instead. The gap is
 fully diagnosed (exact `_meta` key, exact mimetype, exact handshake — see
 below), not an open question, so this is a scoped two-part fix, not a
 rediscovery cost, for whoever picks up the next twelve hours of P0 work.
+
+**For Phase 11 scheduling: proceed.** The twelve hours of Phase 11 work
+should go ahead as planned. This PARTIAL is not "we don't know if the host
+can do this" — it is "we know exactly which package, which `_meta` key,
+and which handshake, and the remaining work is implementing a named
+protocol against a pinned version (`@modelcontextprotocol/ext-apps@1.7.5`),
+not researching whether one exists." That is a bounded 2–3 hour
+engineering task, not an open risk that should hold up the schedule. See
+"Recommendation for the twelve hours of downstream P0 work" below for the
+budget, and "Fallback" for what happens to the demo if that estimate is
+wrong.
 
 ### MCP App mechanism
 
@@ -185,6 +196,30 @@ this same manual Inspector sequence (Apps tab → Open App → Approve) as the
 acceptance check — a new `TOOLS/CALL chaperone/approve_change` entry in
 Inspector's protocol log, fired by the button rather than by "Open App"
 itself, is the signal that the fix landed.
+
+### Fallback if the handshake costs more than projected
+
+The 2–3 hour estimate above is a projection, not a guarantee — the
+`ui/initialize` handshake has not actually been implemented yet, only
+scoped. If it turns out to cost meaningfully more (a wire-format detail
+the minified bundle didn't make obvious, a version skew between
+`ext-apps@1.7.5` and whatever host the real demo runs against, etc.),
+**the fallback is UX-04's structured-text path, and it already works
+today.** `renderConsentCardText` (`packages/mcp-app/src/render.ts`) carries
+the identical information as `renderConsentCardHtml` — tool name,
+capability badge, approval date, both description texts with the changed
+clause bracketed, the model-generated advisory line, and both actions —
+as plain structured text, with no `postMessage` bridge, no `_meta` wiring,
+and no host-rendering dependency at all. It was built and snapshot-tested
+in this same phase specifically so the card would be an upgrade over a
+working baseline, not a dependency on one.
+
+**The demo is not blocked either way.** If the HTML round-trip fix lands
+in the Phase 11 budget, the demo shows the interactive card. If it
+doesn't, the demo shows the text card — same underlying model, same
+content, no gap in what the resident sees or what the assistant can act
+on. Nothing about the twelve-hour schedule, or the demo script, depends on
+which of the two renderers ends up on screen.
 
 ### Evidence
 

@@ -161,6 +161,7 @@ When you hit real friction with the MCP SDK, Bedrock, a registry API, Docker, CD
 - **No bulk-approve control exists.** Bulk approval is the failure this product exists to prevent. Do not add one for convenience.
 - **Namespacing tools as `{upstreamId}__{toolName}` is the one place the proxy is deliberately not byte-transparent.** It is asserted in the conformance suite rather than hidden.
 - **`packages/console` is a supporting surface.** It gets a five-second cutaway in the demo. Do not grow it into a dashboard.
+- **The MCP App consent card targets `@modelcontextprotocol/ext-apps`, not the `@mcp-ui/server` `postMessage` convention.** They look interchangeable from older examples and blog posts, but they are different wire protocols — `ext-apps` requires a `ui/initialize` JSON-RPC handshake before any `tools/call`, and a `_meta["ui/resourceUri"]` link from the tool to the resource; `@mcp-ui/server`'s informal `{type:"tool", payload:{...}}` message is silently dropped by an `ext-apps` host. See `docs/DECISIONS.md`, "MCP App go/no-go — Phase 6 spike," before reaching for the older convention.
 
 ---
 
