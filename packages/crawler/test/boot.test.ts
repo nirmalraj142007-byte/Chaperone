@@ -53,7 +53,17 @@ describe("bootAndList — NO_INSTALL_PATH short-circuit (no docker required)", (
       { serverId: "x", repoOwner: null, repoName: null, installMethod: null, installSpec: null },
       { timeoutMs: 30_000, network: "allowlist" },
     );
-    expect(result).toEqual({ serverId: "x", status: "NO_INSTALL_PATH", tools: [], stderrTail: "", durationMs: 0, transport: "unknown" });
+    const { durationMs, ...rest } = result;
+    expect(rest).toEqual({ serverId: "x", status: "NO_INSTALL_PATH", tools: [], stderrTail: "", transport: "unknown" });
+    // durationMs is a real Date.now() delta (boot.ts), not hardcoded — an
+    // exact-0 assertion here flaked under load (two Date.now() calls
+    // straddling a millisecond boundary during a scheduling delay).
+    // This short-circuit does no real I/O, so treat "small" as the actual
+    // property under test rather than "instant": non-negative and well
+    // under a second, generous enough to hold on a machine saturated by
+    // concurrent container boots during the real crawl.
+    expect(durationMs).toBeGreaterThanOrEqual(0);
+    expect(durationMs).toBeLessThan(1000);
   });
 
   it("returns NO_INSTALL_PATH for an installMethod this harness can't automate (docker, manual)", async () => {
