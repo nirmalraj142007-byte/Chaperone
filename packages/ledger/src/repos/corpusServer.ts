@@ -12,6 +12,7 @@ export interface CorpusServer {
   repoOwner: string;
   repoName: string;
   installMethod: string;
+  installSpec?: string;
   requiresCredentials: boolean;
   bootStatus: string;
   bootFailureDetail?: string;

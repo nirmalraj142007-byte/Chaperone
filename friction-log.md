@@ -339,3 +339,51 @@ before crawl 2 so the source is exercised for real at least once first.
 Otherwise, the corpus's community-directory coverage is Smithery-only, and
 the registry + awesome-mcp-servers sources are carrying the real weight of
 clearing the N=300 floor, which they do comfortably on their own.
+
+## Entry 006 — 2026-09-13
+
+**Task attempted:** Build the Phase 5 boot harness (`packages/crawler/src/boot.ts`)
+— boot each corpus candidate in a `--read-only`, network-restricted Docker
+container and call `tools/list` over stdio. First real end-to-end smoke test
+was `npx -y @1mcp/agent` against the built runtime image.
+
+**Steps taken:** The container built and the network/proxy allowlist worked
+exactly as designed (verified separately: `registry.npmjs.org`/`pypi.org`
+reachable, `example.com` blocked with `403 Filtered`, and no route out at all
+without the proxy env vars set). npx itself installed `@1mcp/agent`
+successfully — real network I/O, real npm resolution, ~30–35s wall time. The
+boot then failed with `sh: 1: 1mcp: Permission denied` (exit 126). Ran the
+same install manually inside an identical container to isolate it: the
+installed file had correct permissions (`-rwxr-xr-x`, confirmed via `stat`),
+and invoking it directly via `node <path>/build/index.js --help` worked fine
+— so the binary itself was never the problem. `mount` inside the container
+showed the actual cause: `tmpfs on /tmp type tmpfs (rw,nosuid,nodev,noexec,relatime)`.
+
+**Expected versus actual:** Expected `--tmpfs /tmp` (needed alongside
+`--read-only` so npm/pip/uv have anywhere writable at all) to behave like an
+ordinary writable directory. Actual: Docker's bare `--tmpfs /tmp` silently
+defaults to mounting with `noexec`, which has nothing to do with file
+permission bits — every install method this harness uses (`npx`, `pip`,
+`uvx`) downloads code and then *executes it from /tmp*, so this wasn't a
+one-off failure on one candidate, it would have silently misclassified every
+single successful install as `FAILED_INSTALL`/`FAILED_START` corpus-wide,
+with a stderr line ("Permission denied") that reads exactly like a real
+per-server bug rather than a harness-wide misconfiguration.
+
+**Severity:** blocker (would have been, if not caught before the real crawl —
+this surfaced on the very first smoke test, before any acceptance run).
+
+**Workaround:** pass tmpfs mount options explicitly:
+`--tmpfs /tmp:rw,exec,nosuid,size=1g` (also raising size past Docker's 64m
+default, since some npx dependency trees exceed it). Fixed in `boot.ts`'s
+`buildDockerArgs` before any timed acceptance run.
+
+**Actionable suggestion:** Anyone reproducing this harness outside this repo
+should not trust `--read-only --tmpfs /tmp` as a pattern from memory or from
+most Docker security write-ups (which usually only care about *writability*,
+not *executability*, since their threat model is a service writing exploit
+payloads to disk — ours is the opposite: /tmp is *supposed* to run code).
+Test one real install end-to-end before trusting the harness's failure
+categories on a genuinely broken server; a clean-looking `FAILED_INSTALL`
+distribution can be 100% environmental.
+clearing the N=300 floor, which they do comfortably on their own.

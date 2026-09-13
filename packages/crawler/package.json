@@ -19,6 +19,9 @@
     "@chaperone/errors": "workspace:*",
     "@chaperone/ledger": "workspace:*",
     "@chaperone/logger": "workspace:*",
+    "@chaperone/policy": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.17.0",
+    "smol-toml": "^1.3.1",
     "zod": "^3.23.8"
   },
   "devDependencies": {

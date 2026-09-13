@@ -1,0 +1,9 @@
+{
+  "attempted": 422,
+  "resolvedNpm": 95,
+  "resolvedPypi": 48,
+  "packageJsonNoBin": 92,
+  "pyprojectNoScripts": 19,
+  "notFound": 143,
+  "registryCheckFailed": 25
+}

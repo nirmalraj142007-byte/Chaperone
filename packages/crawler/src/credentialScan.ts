@@ -15,3 +15,23 @@ export function textRequiresCredentials(text: string): boolean {
 export function anyRequiresCredentials(texts: Array<string | undefined>): boolean {
   return texts.some((text) => text !== undefined && textRequiresCredentials(text));
 }
+
+/**
+ * The corpus only records a `requiresCredentials` boolean (see above) — it
+ * never captured *which* variables a server actually declares, and the boot
+ * harness needs concrete names to hand it real-shaped placeholders. Scans
+ * for env-var-shaped tokens (`FOO_BAR`, at least two segments so a bare word
+ * like `TOKEN` alone doesn't also match every incidental all-caps acronym in
+ * a README) that contain a credential keyword — the same signal
+ * `textRequiresCredentials` already uses, just captured by name instead of
+ * collapsed to a boolean. This is a real extraction from the server's own
+ * published text, not a guess: a name this misses just means the container
+ * gets one fewer irrelevant placeholder, never a wrong one.
+ */
+const ENV_VAR_TOKEN = /\b[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+\b/g;
+
+export function extractDeclaredEnvVarNames(text: string): string[] {
+  const matches = text.match(ENV_VAR_TOKEN) ?? [];
+  const names = new Set(matches.filter((token) => CREDENTIAL_PATTERN.test(token)));
+  return [...names];
+}

@@ -32,6 +32,7 @@ export interface CandidateRecord {
   repoOwner: string | null;
   repoName: string | null;
   installMethod: string | null;
+  installSpec: string | null;
   requiresCredentials: boolean;
   bootStatus: string;
   firstSeenAt: string;
@@ -75,6 +76,8 @@ async function runSource(source: RegistrySource): Promise<SourceRun> {
 
 function toCandidateRecord(
   candidate: MergedCandidate,
+  installMethod: string | null,
+  installSpec: string | null,
   requiresCredentials: boolean,
   bootStatus: string,
   firstSeenAt: string,
@@ -86,7 +89,8 @@ function toCandidateRecord(
     repoUrl: candidate.repoUrl ?? null,
     repoOwner: candidate.repo?.owner ?? null,
     repoName: candidate.repo?.name ?? null,
-    installMethod: candidate.installHint?.method ?? null,
+    installMethod,
+    installSpec,
     requiresCredentials,
     bootStatus,
     firstSeenAt,
@@ -137,6 +141,20 @@ export async function assembleCorpus(): Promise<AssembleReport> {
     const existing = await getCorpusServer(candidate.serverId);
     const firstSeenAt = existing?.firstSeenAt ?? runObservedAt;
     const bootStatus = existing?.bootStatus ?? "not_attempted";
+    // A live source run never rediscovers what Step 2's install-inference
+    // (packages/crawler/src/installInference.ts) found by reading a repo's
+    // package.json/pyproject.toml — that data doesn't live in any of the five
+    // sources. A prior run always persisted installMethod as a defined
+    // string, defaulting unresolved candidates to "manual" — so "an existing
+    // row that isn't 'manual'" is exactly "Step 2 (or a real source hint)
+    // resolved this one," and is preserved across reruns; a plain "manual"
+    // carries no more signal than having nothing at all.
+    const inferredMethod =
+      existing?.installMethod !== undefined && existing.installMethod !== "manual"
+        ? existing.installMethod
+        : undefined;
+    const installMethod = candidate.installHint?.method ?? inferredMethod;
+    const installSpec = candidate.installHint?.spec ?? (inferredMethod ? existing?.installSpec : undefined);
 
     await putCorpusServer({
       serverId: candidate.serverId,
@@ -145,14 +163,24 @@ export async function assembleCorpus(): Promise<AssembleReport> {
       repoUrl: candidate.repoUrl ?? "",
       repoOwner: candidate.repo?.owner ?? "",
       repoName: candidate.repo?.name ?? "",
-      installMethod: candidate.installHint?.method ?? "manual",
+      installMethod: installMethod ?? "manual",
+      ...(installSpec !== undefined ? { installSpec } : {}),
       requiresCredentials,
       bootStatus,
       ...(existing?.bootFailureDetail !== undefined ? { bootFailureDetail: existing.bootFailureDetail } : {}),
       firstSeenAt,
     });
 
-    records.push(toCandidateRecord(candidate, requiresCredentials, bootStatus, firstSeenAt));
+    records.push(
+      toCandidateRecord(
+        candidate,
+        installMethod ?? null,
+        installSpec ?? null,
+        requiresCredentials,
+        bootStatus,
+        firstSeenAt,
+      ),
+    );
   }
   records.sort((a, b) => a.serverId.localeCompare(b.serverId));
 

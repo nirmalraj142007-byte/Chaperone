@@ -19,7 +19,7 @@ const RETRYABLE_STATUS = new Set<number>([429]);
  * shared credential-scan README fetches, or "github-activity" for the
  * commit-recency check's `/repos/{owner}/{repo}` calls.
  */
-export type ArchiveBucket = SourceId | "readme" | "github-activity";
+export type ArchiveBucket = SourceId | "readme" | "github-activity" | "install-inference";
 
 export interface FetchOptions {
   sourceId?: ArchiveBucket;

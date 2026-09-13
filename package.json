@@ -18,6 +18,8 @@
     "ddb:dump": "tsx packages/ledger/scripts/dump.ts",
     "verify-ledger": "tsx packages/ledger/scripts/verify-ledger.ts",
     "crawl:assemble": "tsx packages/crawler/scripts/assemble.ts",
+    "crawl:infer-install": "tsx packages/crawler/scripts/infer-install.ts",
+    "crawl:run": "tsx packages/crawler/scripts/crawl.ts",
     "crawl:commit-recency": "node --env-file-if-exists=.env --import tsx packages/crawler/scripts/commit-recency.ts",
     "crawl:capability-report": "tsx packages/crawler/scripts/capability-report.ts"
   },
