@@ -37,6 +37,15 @@ const envSchema = z.object({
   PULSEMCP_API_KEY: z.string().min(1).optional(),
   PULSEMCP_TENANT_ID: z.string().min(1).optional(),
   GLAMA_API_KEY: z.string().min(1).optional(),
+  /**
+   * Read independently of @chaperone/config's own GITHUB_TOKEN key (both
+   * just read the same underlying env var) so commit-recency.ts doesn't
+   * need CHAPERONE_UPSTREAMS and the rest of the gateway's required config
+   * just to check GitHub. No scopes are required — public-repo metadata
+   * reads only need authentication to raise the rate ceiling from 60/hour
+   * to 5000/hour.
+   */
+  GITHUB_TOKEN: z.string().min(1).optional(),
 });
 
 export interface CrawlerEnv {
@@ -51,6 +60,7 @@ export interface CrawlerEnv {
   pulsemcpApiKey?: string;
   pulsemcpTenantId?: string;
   glamaApiKey?: string;
+  githubToken?: string;
 }
 
 const EXPECTED_SHAPE: Record<string, string> = {
@@ -65,6 +75,7 @@ const EXPECTED_SHAPE: Record<string, string> = {
   PULSEMCP_API_KEY: "string, optional",
   PULSEMCP_TENANT_ID: "string, optional",
   GLAMA_API_KEY: "string, optional",
+  GITHUB_TOKEN: "string, optional",
 };
 
 function formatIssues(error: z.ZodError): string {
@@ -101,6 +112,7 @@ export function loadCrawlerEnv(): CrawlerEnv {
     ...(env.PULSEMCP_API_KEY !== undefined ? { pulsemcpApiKey: env.PULSEMCP_API_KEY } : {}),
     ...(env.PULSEMCP_TENANT_ID !== undefined ? { pulsemcpTenantId: env.PULSEMCP_TENANT_ID } : {}),
     ...(env.GLAMA_API_KEY !== undefined ? { glamaApiKey: env.GLAMA_API_KEY } : {}),
+    ...(env.GITHUB_TOKEN !== undefined ? { githubToken: env.GITHUB_TOKEN } : {}),
   };
 
   return cached;

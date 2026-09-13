@@ -1,7 +1,7 @@
 import path from "node:path";
 import { mkdir, writeFile } from "node:fs/promises";
 import { childLogger } from "@chaperone/logger";
-import { putCorpusServer } from "@chaperone/ledger";
+import { getCorpusServer, putCorpusServer } from "@chaperone/ledger";
 import { registrySource } from "./sources/registry.js";
 import { pulsemcpSource } from "./sources/pulsemcp.js";
 import { glamaSource } from "./sources/glama.js";
@@ -33,7 +33,7 @@ export interface CandidateRecord {
   repoName: string | null;
   installMethod: string | null;
   requiresCredentials: boolean;
-  bootStatus: "not_attempted";
+  bootStatus: string;
   firstSeenAt: string;
 }
 
@@ -76,6 +76,7 @@ async function runSource(source: RegistrySource): Promise<SourceRun> {
 function toCandidateRecord(
   candidate: MergedCandidate,
   requiresCredentials: boolean,
+  bootStatus: string,
   firstSeenAt: string,
 ): CandidateRecord {
   return {
@@ -87,7 +88,7 @@ function toCandidateRecord(
     repoName: candidate.repo?.name ?? null,
     installMethod: candidate.installHint?.method ?? null,
     requiresCredentials,
-    bootStatus: "not_attempted",
+    bootStatus,
     firstSeenAt,
   };
 }
@@ -120,13 +121,22 @@ export async function assembleCorpus(): Promise<AssembleReport> {
 
   const allEntries = perSource.flatMap((p) => p.entries);
   const merged = dedupeCandidates(allEntries);
-  const firstSeenAt = new Date().toISOString();
+  const runObservedAt = new Date().toISOString();
 
   const records: CandidateRecord[] = [];
   for (const candidate of merged) {
     const memberTexts = candidate.members.map((m) => JSON.stringify(m.raw));
     const readme = candidate.repo ? await fetchRepoReadme(candidate.repo) : undefined;
     const requiresCredentials = anyRequiresCredentials([...memberTexts, readme]);
+
+    // assemble.ts is safe to re-run (e.g. for a composition check) at any
+    // point, including after Phase 5 has booted servers — so a candidate
+    // already on record keeps its true first-observed timestamp and
+    // whatever boot state Phase 5 recorded for it, rather than this run
+    // silently resetting both to "just now" / "not_attempted".
+    const existing = await getCorpusServer(candidate.serverId);
+    const firstSeenAt = existing?.firstSeenAt ?? runObservedAt;
+    const bootStatus = existing?.bootStatus ?? "not_attempted";
 
     await putCorpusServer({
       serverId: candidate.serverId,
@@ -137,11 +147,12 @@ export async function assembleCorpus(): Promise<AssembleReport> {
       repoName: candidate.repo?.name ?? "",
       installMethod: candidate.installHint?.method ?? "manual",
       requiresCredentials,
-      bootStatus: "not_attempted",
+      bootStatus,
+      ...(existing?.bootFailureDetail !== undefined ? { bootFailureDetail: existing.bootFailureDetail } : {}),
       firstSeenAt,
     });
 
-    records.push(toCandidateRecord(candidate, requiresCredentials, firstSeenAt));
+    records.push(toCandidateRecord(candidate, requiresCredentials, bootStatus, firstSeenAt));
   }
   records.sort((a, b) => a.serverId.localeCompare(b.serverId));
 

@@ -14,8 +14,12 @@ const MAX_ATTEMPTS = 4; // 1 initial attempt + 3 retries
 const BACKOFF_BASE_MS = 500;
 const RETRYABLE_STATUS = new Set<number>([429]);
 
-/** A raw-archive bucket name: one of the five sources, or "readme" for the shared credential-scan README fetches. */
-export type ArchiveBucket = SourceId | "readme";
+/**
+ * A raw-archive bucket name: one of the five sources, "readme" for the
+ * shared credential-scan README fetches, or "github-activity" for the
+ * commit-recency check's `/repos/{owner}/{repo}` calls.
+ */
+export type ArchiveBucket = SourceId | "readme" | "github-activity";
 
 export interface FetchOptions {
   sourceId?: ArchiveBucket;
