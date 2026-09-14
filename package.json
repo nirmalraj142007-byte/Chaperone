@@ -11,7 +11,7 @@
     "build": "tsc -b",
     "test": "vitest run",
     "spec": "vitest run --config spec/vitest.config.ts",
-    "test:resume": "vitest run spec/resumption.test.ts",
+    "test:resume": "vitest run spec/resumption.test.ts --reporter=verbose",
     "resume-demo": "tsx scripts/resume-demo.ts",
     "lint": "eslint .",
     "depcruise": "dependency-cruiser packages",

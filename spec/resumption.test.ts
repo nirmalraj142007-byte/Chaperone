@@ -17,6 +17,16 @@
  * reconnects over `fetch()`, which never exposes the underlying socket —
  * there is no supported way to kill it "at the TCP level" through the SDK
  * client.
+ *
+ * Deliberately 10 *independent* `it()` cases, not one test with a `for`
+ * loop inside it. A single test that loops internally reports one pass/
+ * fail for the whole run — a reader has to trust the loop actually
+ * executed 10 times and can't see individual iteration results without
+ * re-running with extra instrumentation. Ten separate cases give ten
+ * separate, independently-scored results in the reporter output, and each
+ * one prints its own invocation-count evidence (`--reporter=verbose` on
+ * the `test:resume` script) regardless of whether it passes or fails, so a
+ * reader never has to take "10/10" on faith.
  */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
@@ -56,11 +66,11 @@ afterAll(async () => {
   await setPlaceOrderDelay(control, 0);
 });
 
-describe("resumable SSE: kill-and-resume", () => {
-  it(
-    `survives a TCP-level socket kill mid-call, 10/10, with place_order invoked exactly once each time`,
-    async () => {
-      for (let iteration = 1; iteration <= ITERATIONS; iteration++) {
+describe("resumable SSE: kill-and-resume, 10 independent iterations", () => {
+  for (let iteration = 1; iteration <= ITERATIONS; iteration++) {
+    it(
+      `iteration ${iteration}/${ITERATIONS}: TCP-level socket kill mid-call, resume, place_order invoked exactly once`,
+      async () => {
         const session = await initializeSession(GATEWAY_URL, `resumption-test-${iteration}`);
         try {
           await setPlaceOrderDelay(control, PLACE_ORDER_DELAY_MS);
@@ -84,25 +94,35 @@ describe("resumable SSE: kill-and-resume", () => {
           });
           destroyConnection(req2, res2);
 
-          expect(result.error, `place_order returned an error on iteration ${iteration}: ${JSON.stringify(result.error)}`).toBeUndefined();
+          const after = await getStats(control);
+          const delta = after.placeOrderInvocations - before.placeOrderInvocations;
+
+          // Printed unconditionally — pass or fail — so the evidence this
+          // task asked for ("the actual iteration count and the
+          // invocation counter reading for each") is in the transcript
+          // without needing to re-run anything, and a failure doesn't have
+          // to be reproduced just to see what actually happened.
+          console.log(
+            `[resumption ${iteration}/${ITERATIONS}] lastEventId=${lastEventId} ` +
+              `replayedSeqs=[${seqsSeenOnReplay.join(",")}] ` +
+              `placeOrderInvocations: before=${before.placeOrderInvocations} after=${after.placeOrderInvocations} delta=${delta}`,
+          );
+
+          expect(result.error, `iteration ${iteration}: place_order returned an error: ${JSON.stringify(result.error)}`).toBeUndefined();
           const content = (result.result as { content?: Array<{ type: string; text?: string }> } | undefined)?.content;
           expect(content?.[0]?.text).toMatch(/Order demo-order-\d+ placed/);
 
           // No event with seq <= N was re-delivered on the resumed stream.
           for (const seq of seqsSeenOnReplay) {
-            expect(seq).toBeGreaterThan(lastSeq);
+            expect(seq, `iteration ${iteration}: replayed a stale event (seq ${seq} <= last-seen seq ${lastSeq})`).toBeGreaterThan(lastSeq);
           }
 
-          const after = await getStats(control);
-          expect(
-            after.placeOrderInvocations,
-            `iteration ${iteration}: expected exactly one place_order invocation (before=${before.placeOrderInvocations}, after=${after.placeOrderInvocations})`,
-          ).toBe(before.placeOrderInvocations + 1);
+          expect(delta, `iteration ${iteration}: expected exactly one place_order invocation`).toBe(1);
         } finally {
           await terminateSession(session).catch(() => {});
         }
-      }
-    },
-    { timeout: 120_000 },
-  );
+      },
+      { timeout: 20_000 },
+    );
+  }
 });
