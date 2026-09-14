@@ -18,6 +18,12 @@ export default defineConfig({
     },
   },
   test: {
-    include: ["packages/*/test/**/*.test.ts"],
+    // Explicit paths, not a glob, for the two spec/ entries: a glob wide
+    // enough to reach them (e.g. "spec/*.test.ts") would also pull in
+    // spec/conformance.spec.test.ts, which is `pnpm spec`'s in-process
+    // suite (own config, own timeout) and must not also run — and slow
+    // down — every plain `pnpm test`. See CLAUDE.md's `pnpm test --
+    // spec/long-stream.test.ts` and `test:resume` (package.json).
+    include: ["packages/*/test/**/*.test.ts", "spec/resumption.test.ts", "spec/long-stream.test.ts"],
   },
 });

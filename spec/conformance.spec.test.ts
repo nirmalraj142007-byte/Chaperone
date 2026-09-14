@@ -28,6 +28,10 @@ vi.mock("@chaperone/ledger", () => ({
   getSession: vi.fn(),
   touchSession: vi.fn(),
   deleteSession: vi.fn(),
+  nextSseSeq: vi.fn(),
+  putSseEvent: vi.fn(),
+  listSseEventsSince: vi.fn(),
+  sseEventTtl: vi.fn(),
 }));
 
 const { buildApp: buildGatewayApp } = await import("@chaperone/gateway");
@@ -52,6 +56,12 @@ let pool: UpstreamPool;
 let gatewayServer: HttpServer;
 let gatewayUrl: string;
 let sessionStore: Map<string, { sessionId: string; protocolVersion: string; ttl: number; [k: string]: unknown }>;
+let sseEvents: Map<string, Array<{ sessionId: string; streamId: string; seq: number; eventId: string; message: string; ts: string; ttl: number }>>;
+let sseSeqCounters: Map<string, number>;
+
+function sseKey(sessionId: string, streamId: string): string {
+  return `${sessionId}#${streamId}`;
+}
 
 beforeEach(async () => {
   resetControlStateForTests();
@@ -76,6 +86,26 @@ beforeEach(async () => {
   vi.mocked(ledger.deleteSession).mockImplementation(async (sessionId) => {
     sessionStore.delete(sessionId);
   });
+
+  sseEvents = new Map();
+  sseSeqCounters = new Map();
+  vi.mocked(ledger.nextSseSeq).mockImplementation(async (sessionId, streamId) => {
+    const key = sseKey(sessionId, streamId);
+    const next = (sseSeqCounters.get(key) ?? 0) + 1;
+    sseSeqCounters.set(key, next);
+    return next;
+  });
+  vi.mocked(ledger.putSseEvent).mockImplementation(async (event) => {
+    const key = sseKey(event.sessionId, event.streamId);
+    const arr = sseEvents.get(key) ?? [];
+    arr.push(event);
+    sseEvents.set(key, arr);
+  });
+  vi.mocked(ledger.listSseEventsSince).mockImplementation(async (sessionId, streamId, sinceSeq) => {
+    const key = sseKey(sessionId, streamId);
+    return (sseEvents.get(key) ?? []).filter((e) => e.seq > sinceSeq).sort((a, b) => a.seq - b.seq);
+  });
+  vi.mocked(ledger.sseEventTtl).mockImplementation(() => Math.floor(Date.now() / 1000) + 24 * 60 * 60);
 
   pool = await getPool([upstream]);
   const gw = await listen(buildGatewayApp(pool, [upstream], ["http://localhost:*"]));
@@ -106,20 +136,26 @@ function blocks(result: { content?: unknown }): ContentBlock[] {
 /**
  * `StreamableHTTPServerTransport` answers a successful (2xx) POST as either
  * a flat `application/json` body or a `text/event-stream` stream whose
- * payload is the same JSON-RPC message carried on one `data:` line
- * (verified against @modelcontextprotocol/sdk 1.30.0's
+ * payload is the JSON-RPC message carried on a `data:` line (verified
+ * against @modelcontextprotocol/sdk 1.30.0's
  * server/webStandardStreamableHttp.js `writeSSEEvent`) — synchronous 4xx
  * error responses (bad Origin, bad session, parse failure) are always flat
  * JSON, but a real 200 is not guaranteed to be, so every raw-fetch helper
  * below reads the body through this rather than `res.json()` directly.
+ *
+ * Since Phase 9 (event-store.ts), every such stream opens with a *priming*
+ * event first — `id: <eventId>\ndata: \n\n`, empty by design
+ * (`writePrimingEvent`) — so the first `data:` line is never the payload
+ * this helper wants. Skips to the first `data:` line with non-empty
+ * content after the prefix, rather than the first `data:` line at all.
  */
 async function readJsonRpcBody(res: Response): Promise<Record<string, unknown>> {
   const text = await res.text();
   const contentType = res.headers.get("content-type") ?? "";
   if (contentType.includes("text/event-stream")) {
-    const dataLine = text.split("\n").find((line) => line.startsWith("data:"));
+    const dataLine = text.split("\n").find((line) => line.startsWith("data:") && line.slice("data:".length).trim().length > 0);
     if (dataLine === undefined) {
-      throw new Error(`no "data:" line found in SSE response body: ${text}`);
+      throw new Error(`no non-empty "data:" line found in SSE response body: ${text}`);
     }
     return JSON.parse(dataLine.slice("data:".length).trim()) as Record<string, unknown>;
   }

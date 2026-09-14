@@ -1,0 +1,9 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": false,
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": ["lib/rawMcpClient.ts", "resumption.test.ts", "long-stream.test.ts"]
+}

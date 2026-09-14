@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { currentAddItemDescription, recordDeliveryCancellation, trackAddItemTool } from "./control.js";
+import {
+  currentAddItemDescription,
+  currentPlaceOrderDelayMs,
+  recordDeliveryCancellation,
+  recordPlaceOrderInvocation,
+  trackAddItemTool,
+} from "./control.js";
 
 export interface ListEntry {
   item: string;
@@ -95,6 +101,11 @@ export function registerGroceryTools(server: McpServer): () => void {
       },
     },
     async ({ confirm }) => {
+      // Counts every real invocation of this handler, independent of
+      // outcome — spec/resumption.test.ts's exactly-once assertion reads
+      // this via GET /control/stats rather than inferring it from how many
+      // HTTP requests the downstream connection made.
+      recordPlaceOrderInvocation();
       if (!confirm) {
         return {
           content: [{ type: "text" as const, text: "Order not placed: confirmation was not given." }],
@@ -106,6 +117,14 @@ export function registerGroceryTools(server: McpServer): () => void {
           content: [{ type: "text" as const, text: "Order not placed: the shopping list is empty." }],
           isError: true,
         };
+      }
+      // 0 for every caller except spec/resumption.test.ts and
+      // scripts/resume-demo.ts, which set it via POST /control/place-order-delay
+      // to hold this call in flight long enough to kill and resume the
+      // downstream connection mid-call.
+      const delayMs = currentPlaceOrderDelayMs();
+      if (delayMs > 0) {
+        await sleep(delayMs);
       }
       const orderId = `demo-order-${Date.now()}`;
       const itemCount = list.reduce((sum, entry) => sum + entry.quantity, 0);
@@ -126,18 +145,27 @@ export function registerGroceryTools(server: McpServer): () => void {
     {
       title: "Track delivery",
       description: TRACK_DELIVERY_DESCRIPTION,
-      inputSchema: {},
+      inputSchema: {
+        // Both optional and defaulted to the real product's own constants —
+        // only spec/long-stream.test.ts overrides them, to hold a real SSE
+        // stream open for ~180s (the ALB idle-timeout risk in infra/) without
+        // making every other caller of this tool wait that long too.
+        checkpoints: z.number().int().positive().max(120).optional().describe("Number of checkpoints to report. Defaults to 4."),
+        tickMs: z.number().int().positive().max(10_000).optional().describe("Milliseconds between checkpoints. Defaults to 150."),
+      },
     },
-    async (_args, extra) => {
+    async ({ checkpoints, tickMs }, extra) => {
+      const totalCheckpoints = checkpoints ?? DELIVERY_CHECKPOINTS;
+      const intervalMs = tickMs ?? DELIVERY_TICK_MS;
       // Only if the caller actually subscribed — never synthesise a
       // progress notification nobody asked for.
       const progressToken = extra._meta?.progressToken;
-      for (let checkpoint = 1; checkpoint <= DELIVERY_CHECKPOINTS; checkpoint++) {
+      for (let checkpoint = 1; checkpoint <= totalCheckpoints; checkpoint++) {
         if (extra.signal.aborted) {
           recordDeliveryCancellation();
           return { content: [{ type: "text" as const, text: "Delivery tracking cancelled." }], isError: true };
         }
-        await sleep(DELIVERY_TICK_MS);
+        await sleep(intervalMs);
         if (extra.signal.aborted) {
           recordDeliveryCancellation();
           return { content: [{ type: "text" as const, text: "Delivery tracking cancelled." }], isError: true };
@@ -148,8 +176,8 @@ export function registerGroceryTools(server: McpServer): () => void {
             params: {
               progressToken,
               progress: checkpoint,
-              total: DELIVERY_CHECKPOINTS,
-              message: `Driver checkpoint ${checkpoint} of ${DELIVERY_CHECKPOINTS}`,
+              total: totalCheckpoints,
+              message: `Driver checkpoint ${checkpoint} of ${totalCheckpoints}`,
             },
           });
         }

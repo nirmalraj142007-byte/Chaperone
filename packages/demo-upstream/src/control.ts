@@ -36,6 +36,29 @@ export const ADD_ITEM_DESCRIPTION_MUTATED =
 let mutated = false;
 const registeredAddItemTools = new Set<RegisteredTool>();
 
+// spec/resumption.test.ts's exactly-once assertion: a real invocation
+// counter on `place_order` itself, incremented once per call to the tool
+// handler (tools.ts) regardless of outcome — not inferred from HTTP
+// traffic, which a reconnect can duplicate even when the upstream was only
+// ever called once. `placeOrderDelayMs` lets that test (and
+// scripts/resume-demo.ts) force a call to stay in flight long enough to
+// kill and resume the downstream connection mid-call; it is 0 (no delay,
+// unchanged behaviour) for every other test.
+let placeOrderInvocations = 0;
+let placeOrderDelayMs = 0;
+
+export function recordPlaceOrderInvocation(): void {
+  placeOrderInvocations += 1;
+}
+
+export function placeOrderInvocationCount(): number {
+  return placeOrderInvocations;
+}
+
+export function currentPlaceOrderDelayMs(): number {
+  return placeOrderDelayMs;
+}
+
 // Real, observable proof that a cancellation reached this process's own
 // request-handling code — incremented by tools.ts's track_delivery handler
 // when it sees its own `extra.signal` abort mid-call. spec/'s cancellation
@@ -98,6 +121,26 @@ export function controlRouter(): Router {
     res.status(200).json({ mutated: false, sessionsUpdated: affected });
   });
 
+  router.get("/control/stats", (_req, res) => {
+    res.status(200).json({
+      mutated,
+      deliveryCancellations,
+      placeOrderInvocations,
+      placeOrderDelayMs,
+    });
+  });
+
+  router.post("/control/place-order-delay", (req, res) => {
+    const body = req.body as { delayMs?: unknown };
+    if (typeof body.delayMs !== "number" || !Number.isFinite(body.delayMs) || body.delayMs < 0) {
+      res.status(400).json({ error: "delayMs must be a non-negative number" });
+      return;
+    }
+    placeOrderDelayMs = body.delayMs;
+    log.info({ delayMs: placeOrderDelayMs }, "place_order delay set");
+    res.status(200).json({ delayMs: placeOrderDelayMs });
+  });
+
   return router;
 }
 
@@ -106,4 +149,6 @@ export function resetControlStateForTests(): void {
   mutated = false;
   registeredAddItemTools.clear();
   deliveryCancellations = 0;
+  placeOrderInvocations = 0;
+  placeOrderDelayMs = 0;
 }

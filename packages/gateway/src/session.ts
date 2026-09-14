@@ -31,6 +31,7 @@ import * as ledger from "@chaperone/ledger";
 import { ProtocolError } from "@chaperone/errors";
 import { childLogger } from "@chaperone/logger";
 import { assertSupportedProtocolVersion, echoProtocolVersionHeader } from "./protocol.js";
+import { createSessionEventStore } from "./event-store.js";
 
 const log = childLogger({ component: "gateway-session" });
 const SESSION_TTL_SECONDS = 24 * 60 * 60;
@@ -93,8 +94,14 @@ export async function handleInitialize(
   const clientInfo = (body?.params?.clientInfo as Record<string, unknown> | undefined) ?? {};
   const { server, dispose } = await buildServer();
 
+  // Minted up front, rather than inside `sessionIdGenerator`, so it's known
+  // in time to close the `eventStore` below over it — the SDK calls
+  // `sessionIdGenerator` internally before `onsessioninitialized` fires, so
+  // there is no earlier hook that hands the ID back before construction.
+  const sessionId = ulid();
   const transport = new StreamableHTTPServerTransport({
-    sessionIdGenerator: () => ulid(),
+    sessionIdGenerator: () => sessionId,
+    eventStore: createSessionEventStore(sessionId),
     onsessioninitialized: (sessionId) => {
       transports.set(sessionId, transport);
       const createdAt = nowIso();

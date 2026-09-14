@@ -1,0 +1,108 @@
+/**
+ * Phase 9 — resumable SSE, run by root script `pnpm test:resume`.
+ *
+ * Unlike spec/conformance.spec.test.ts (which builds the gateway and
+ * demo-upstream in-process, with @chaperone/ledger mocked), this suite
+ * talks to a *real* gateway, a real demo-upstream, and real DynamoDB over
+ * the network — event-store.ts's exactly-once and replay guarantees are
+ * only meaningful proven against real, independent processes: an
+ * in-process mock can't demonstrate that a TCP-level socket kill leaves the
+ * server-side `tools/call` running, only that our own mock behaves how we
+ * told it to. Requires `docker compose up -d` (ddb, demo-upstream, gateway)
+ * already running — `TARGET=https://<host>/mcp` (see CLAUDE.md) points this
+ * at a deployed environment instead of localhost.
+ *
+ * The raw HTTP client in spec/lib/rawMcpClient.ts exists specifically
+ * because @modelcontextprotocol/sdk's own `StreamableHTTPClientTransport`
+ * reconnects over `fetch()`, which never exposes the underlying socket —
+ * there is no supported way to kill it "at the TCP level" through the SDK
+ * client.
+ */
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import {
+  callToolAndAwaitResult,
+  destroyConnection,
+  getStats,
+  initializeSession,
+  openToolCallStream,
+  readUntilFirstEventId,
+  reconnectStream,
+  setPlaceOrderDelay,
+  terminateSession,
+  waitForResult,
+  type DemoUpstreamControl,
+} from "./lib/rawMcpClient.js";
+
+const GATEWAY_URL = process.env["TARGET"] ?? "http://localhost:3000/mcp";
+const DEMO_UPSTREAM_URL = process.env["DEMO_UPSTREAM_URL"] ?? "http://localhost:4000";
+const control: DemoUpstreamControl = { baseUrl: DEMO_UPSTREAM_URL };
+const PLACE_ORDER_DELAY_MS = 4_000;
+const ITERATIONS = 10;
+
+function seqOf(eventId: string): number {
+  const idx = eventId.lastIndexOf(":");
+  const seq = Number(eventId.slice(idx + 1));
+  if (idx === -1 || !Number.isFinite(seq)) {
+    throw new Error(`event ID "${eventId}" is not in the {streamId}:{seq} shape event-store.ts mints`);
+  }
+  return seq;
+}
+
+beforeAll(async () => {
+  await setPlaceOrderDelay(control, 0);
+});
+
+afterAll(async () => {
+  await setPlaceOrderDelay(control, 0);
+});
+
+describe("resumable SSE: kill-and-resume", () => {
+  it(
+    `survives a TCP-level socket kill mid-call, 10/10, with place_order invoked exactly once each time`,
+    async () => {
+      for (let iteration = 1; iteration <= ITERATIONS; iteration++) {
+        const session = await initializeSession(GATEWAY_URL, `resumption-test-${iteration}`);
+        try {
+          await setPlaceOrderDelay(control, PLACE_ORDER_DELAY_MS);
+          const before = await getStats(control);
+
+          await callToolAndAwaitResult(session, 2, "grocery__add_item", { item: "batteries", quantity: 1 });
+
+          const { req, res } = await openToolCallStream(session, 3, "grocery__place_order", { confirm: true });
+          const lastEventId = await readUntilFirstEventId(res);
+          const lastSeq = seqOf(lastEventId);
+
+          // Kill the connection carrying this call's SSE stream at the TCP
+          // level, mid-call — the 4s delay set above guarantees the
+          // handler is still awaiting `sleep(delayMs)` server-side.
+          destroyConnection(req, res);
+
+          const seqsSeenOnReplay: number[] = [];
+          const { req: req2, res: res2 } = await reconnectStream(session, lastEventId);
+          const result = await waitForResult(res2, 3, (eventId) => {
+            seqsSeenOnReplay.push(seqOf(eventId));
+          });
+          destroyConnection(req2, res2);
+
+          expect(result.error, `place_order returned an error on iteration ${iteration}: ${JSON.stringify(result.error)}`).toBeUndefined();
+          const content = (result.result as { content?: Array<{ type: string; text?: string }> } | undefined)?.content;
+          expect(content?.[0]?.text).toMatch(/Order demo-order-\d+ placed/);
+
+          // No event with seq <= N was re-delivered on the resumed stream.
+          for (const seq of seqsSeenOnReplay) {
+            expect(seq).toBeGreaterThan(lastSeq);
+          }
+
+          const after = await getStats(control);
+          expect(
+            after.placeOrderInvocations,
+            `iteration ${iteration}: expected exactly one place_order invocation (before=${before.placeOrderInvocations}, after=${after.placeOrderInvocations})`,
+          ).toBe(before.placeOrderInvocations + 1);
+        } finally {
+          await terminateSession(session).catch(() => {});
+        }
+      }
+    },
+    { timeout: 120_000 },
+  );
+});

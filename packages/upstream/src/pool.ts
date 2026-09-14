@@ -33,6 +33,23 @@ const log = childLogger({ component: "upstream-pool" });
 const CONNECT_ATTEMPT_TIMEOUT_MS = 3_000;
 /** Per-upstream budget for tools/list fan-out, so one slow/dead server can never hang the aggregate call. */
 const LIST_TOOLS_TIMEOUT_MS = 3_000;
+/**
+ * Without an explicit `timeout`, `Client.callTool` applies
+ * `DEFAULT_REQUEST_TIMEOUT_MSEC` (60_000ms — shared/protocol.js) to *this*
+ * hop, independent of and much shorter than anything the downstream side
+ * (session.ts's resumable SSE, a 300s ALB idle timeout) is built to
+ * tolerate — a real upstream call genuinely running past a minute (e.g.
+ * demo-upstream's `track_delivery` driven for spec/long-stream.test.ts's
+ * ~180s) would otherwise fail right here, inside the pool, well before the
+ * gateway's own downstream-facing timeout story ever applies. The proxy has
+ * no agent loop and no SLA of its own to enforce (CLAUDE.md): the only real
+ * cancellation authority is `ctx.signal` (a genuine downstream cancel or
+ * transport close), so this just raises the ceiling high enough that
+ * ordinary long-running real tool calls never hit it on their own —
+ * `resetTimeoutOnProgress: true` below means a call that's actively
+ * reporting progress re-arms it on every notification besides.
+ */
+const CALL_TOOL_TIMEOUT_MS = 10 * 60 * 1000;
 const BACKOFF_BASE_MS = 250;
 const BACKOFF_MAX_MS = 30_000;
 
@@ -191,7 +208,7 @@ class UpstreamPoolImpl implements UpstreamPool {
 
     await ensureConnected(handle, ctx.signal);
 
-    const options: RequestOptions = { signal: ctx.signal };
+    const options: RequestOptions = { signal: ctx.signal, timeout: CALL_TOOL_TIMEOUT_MS, resetTimeoutOnProgress: true };
     if (ctx.progressToken !== undefined) {
       const progressToken = ctx.progressToken;
       // The SDK's own `onprogress` plumbing (shared/protocol.js) strips the

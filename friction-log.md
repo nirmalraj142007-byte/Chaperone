@@ -1011,3 +1011,230 @@ connect failure vs. recovering a handle the pool itself believes is
 healthy), and only the second one catches a stuck-forever bug like this.
 Prefer testing recovery, not just degradation, for anything that pools or
 caches a connection.
+
+## Entry 019 — 2026-09-14
+
+**Task attempted:** Phase 9, resumable SSE. Wired `packages/gateway/src/event-store.ts`
+(a `@modelcontextprotocol/sdk` `EventStore` over the `sse-event` DynamoDB
+table) into `session.ts`, backed by a new `nextSseSeq` atomic counter in
+`packages/ledger/src/repos/sseEvent.ts`, then ran the mandated real
+`docker compose up -d` stack (not the in-process, ledger-mocked `pnpm spec`
+suite) to execute the actual VERIFY commands.
+
+**Steps taken:** `pnpm --filter @chaperone/ledger test` (a unit test using
+`aws-sdk-client-mock`) passed. `pnpm typecheck`/`lint`/`depcruise` were all
+clean. Then `docker compose up -d --build` and a plain `curl -X POST
+.../mcp` `initialize` against the real gateway and real DynamoDB Local.
+
+**Expected versus actual:** Expected the same `initialize` response the
+in-process suite already gets. Actual: every request that touched
+`nextSseSeq` — meaning every request, since `writePrimingEvent` calls
+`storeEvent` on the very first SSE response — came back
+`-32700 Parse error: ValidationException: Invalid UpdateExpression:
+Attribute name is a reserved keyword; reserved keyword: ttl`. `ttl` is a
+DynamoDB reserved word; the `UpdateExpression` (`"ADD nextSeq :incr SET
+ttl = if_not_exists(ttl, :ttl)"`) used the bare attribute name instead of
+an `ExpressionAttributeNames` alias. `aws-sdk-client-mock` doesn't validate
+expression syntax against DynamoDB's reserved-word list at all, so the
+mocked unit test for this exact function passed cleanly while the
+real-DynamoDB path was 100% broken — every single request, not an edge
+case.
+
+**Severity:** major, but narrowly averted: this repo already has the fix
+pattern one file away (`packages/ledger/src/repos/session.ts`'s
+`touchSession` aliases `ttl` as `#ttl` for exactly this reason), and
+CLAUDE.md's own working-style rule ("run the acceptance commands yourself
+... paste the real output") is what caught it — a session that stopped at
+the green mocked unit test and the clean `pnpm typecheck` would have
+shipped a gateway that 400s on every single request against real
+DynamoDB.
+
+**Workaround:** Changed the `UpdateExpression` to `"ADD nextSeq :incr SET
+#ttl = if_not_exists(#ttl, :ttl)"` with `ExpressionAttributeNames: {"#ttl":
+"ttl"}`, matching `touchSession`'s existing pattern. Updated the unit
+test's expectation to match, rebuilt the `gateway` and `demo-upstream`
+Docker images, and re-ran `initialize` — confirmed a clean priming event
+plus real result, then ran the full 10-iteration `pnpm test:resume` loop
+and the literal `aws dynamodb query` from CLAUDE.md's VERIFY block against
+the live table (see this phase's completion summary).
+
+**Actionable suggestion:** `aws-sdk-client-mock` cannot catch a reserved
+DynamoDB keyword used bare in an `UpdateExpression`/`ConditionExpression`,
+a missing `ExpressionAttributeNames` alias, or any other AWS-API-level
+validation error — it only proves the function calls the SDK with roughly
+the right shape, not that DynamoDB itself would accept it. Any new
+`UpdateExpression`/`ConditionExpression` string in `packages/ledger`
+should be smoke-tested against a real DynamoDB Local at least once before
+being declared done, the same way this phase's own CLAUDE.md instructions
+already require for the ledger package generally — a purely mocked green
+suite is not sufficient evidence for this class of bug.
+
+## Entry 020 — 2026-09-14
+
+**Task attempted:** Same Phase 9 session as Entry 019. Wrote
+`spec/long-stream.test.ts` — a ~180s held-open SSE stream against the real
+gateway, driven through `@modelcontextprotocol/sdk`'s own `Client` (not the
+raw HTTP client in `spec/lib/rawMcpClient.ts` that the resumption test
+uses), asserting no disconnect across 36 progress checkpoints 5s apart.
+
+**Steps taken:** Ran it against the real `docker compose up -d` gateway
+(the same stack Entry 019 fixed) via `pnpm test -- spec/long-stream.test.ts`.
+
+**Expected versus actual:** Expected the call to complete after ~180s with
+36 progress notifications observed. Actual: it failed at exactly 60.4s with
+`MCP error -32001: Request timed out`, thrown client-side from
+`shared/protocol.ts`'s `Timeout.timeoutHandler` — nothing to do with the
+gateway, the ALB-idle-timeout risk this test exists to guard against, or
+`track_delivery` itself, all of which were still running fine server-side.
+Root cause: `@modelcontextprotocol/sdk`'s `Client`/`Protocol.request()` has
+its own client-side per-request timeout,
+`DEFAULT_REQUEST_TIMEOUT_MSEC = 60000` (60s), applied regardless of how
+long the *server* is willing to keep the stream open — verified against
+`shared/protocol.d.ts`'s `RequestOptions`. `spec/conformance.spec.test.ts`'s
+existing progress test never surfaces this because `track_delivery`'s
+default duration (4 checkpoints × 150ms ≈ 0.6s) is nowhere near 60s.
+
+**Severity:** major for this specific test (it could never pass as
+written, at any real duration past a minute, regardless of transport or
+ALB behaviour) but zero product impact — this is a client-side ceiling in
+the test's own SDK client, not the gateway.
+
+**Workaround:** Passed `timeout: TOTAL_DURATION_MS + 30_000` and
+`resetTimeoutOnProgress: true` in the `callTool` `RequestOptions` — the
+latter means each of the 36 real progress notifications re-arms the
+client's timeout, so a stalled *connection* still times out promptly while
+a call that is making real, periodic progress does not, which is the
+actually-correct behaviour for this test to assert against (it should fail
+fast on a genuine hang, not only after the full nominal duration). Re-ran:
+passed in ~180s with all 36 progress values observed in order.
+
+**Actionable suggestion:** Any test (or production code) driving the MCP
+SDK's `Client` through a call expected to run longer than 60 real seconds
+must set `timeout` (and almost always `resetTimeoutOnProgress: true` for a
+call that reports progress) explicitly — the 60s default is a client-side
+request-level ceiling completely independent of transport keep-alive,
+server processing time, or any infrastructure timeout being tested. Easy
+to miss because nothing about the failure mode (`MCP error -32001: Request
+timed out`) points at the client's own default rather than the thing the
+test was actually trying to exercise.
+
+## Entry 021 — 2026-09-14
+
+**Task attempted:** Same Phase 9 session as Entries 019–020. Re-ran
+`spec/long-stream.test.ts` after Entry 020's fix (raising the *test's own*
+client timeout).
+
+**Steps taken:** `pnpm test -- spec/long-stream.test.ts` against the real
+`docker compose up -d` stack.
+
+**Expected versus actual:** Expected the call to now run the full ~180s.
+Actual: still failed at ~60.6s — but this time as a clean `isError: true`
+tool result (the frozen `REFUSAL_UPSTREAM_UNAVAILABLE` text from
+`upstreamProxy.ts`'s `catch` block), not a client-side `McpError -32001`.
+Different failure shape, same 60s number, which is what made this a second
+bug rather than the first one incompletely fixed: the *test's* client
+(test → gateway) now had a raised timeout, so this had to be a *second*,
+independent 60s ceiling on the *gateway's own* client (gateway →
+demo-upstream). Found it in `packages/upstream/src/pool.ts`'s `callTool`:
+`const options: RequestOptions = { signal: ctx.signal }` — no `timeout`
+override, so this internal hop also fell back to the SDK's
+`DEFAULT_REQUEST_TIMEOUT_MSEC` (60s), independent of the downstream-facing
+resumability work this whole phase is about. This is not a test artifact —
+it means *any* real upstream tool call genuinely taking longer than 60s
+would have failed inside the gateway in production, resumable SSE or not,
+regardless of how the demo/test client behaved.
+
+**Severity:** major — a real product-code bug (not test-only, unlike Entry
+020), and one Phase 9's own headline feature (resumable SSE surviving a
+long-running call) would have silently defeated itself on any call slower
+than a minute.
+
+**Workaround:** Added `CALL_TOOL_TIMEOUT_MS` (10 minutes) and
+`resetTimeoutOnProgress: true` to `pool.ts`'s `callTool` `RequestOptions`,
+mirroring the same reasoning as Entry 020 — the proxy has no agent loop and
+no SLA of its own to enforce (CLAUDE.md), so the real cancellation
+authority stays `ctx.signal` (a genuine downstream cancel or transport
+close) rather than an arbitrary client-side ceiling copied from the SDK's
+default. Rebuilt the `gateway` Docker image and re-ran: passed at ~180s
+with all 36 progress values observed in order.
+
+**Actionable suggestion:** A timeout-related bug at a fixed hop (here, the
+SDK client's `DEFAULT_REQUEST_TIMEOUT_MSEC`) tends to recur at *every* hop
+that uses the same client library, not just the one first noticed — this
+proxy has (at least) two independent SDK `Client` instances in the request
+path (test → gateway, gateway → upstream), each with its own default
+timeout, and fixing one told us nothing about the other. Any future
+multi-hop MCP proxy work in this repo should audit every `Client.request`/
+`callTool`/etc. call on the request path for its own `timeout` /
+`resetTimeoutOnProgress`, not assume fixing the outermost hop covers the
+inner ones.
+
+## Entry 022 — 2026-09-14
+
+**Task attempted:** Same Phase 9 session. Ran this phase's own literal
+VERIFY command, `pnpm test -- spec/long-stream.test.ts`, expecting it to
+run only that one ~180s file (per the comment next to it: `# expect: pass,
+~180s`).
+
+**Steps taken:** Ran it against the live `docker compose up -d` stack.
+Also independently isolated the mechanism with `pnpm run echoargs -- foo
+--bar baz` against a one-line diagnostic script (`console.log(JSON.stringify(
+process.argv.slice(2)))`) and with `pnpm exec vitest list -- spec/long-stream.test.ts`.
+
+**Expected versus actual:** Expected only `spec/long-stream.test.ts` to
+run. Actual: the entire suite ran — all `packages/*/test` files plus both
+`spec/resumption.test.ts` and `spec/long-stream.test.ts`, ~230s total, not
+~180s. Root cause, confirmed by the diagnostic script: this repo's pinned
+`pnpm@12.4.1` does **not** strip the `--` separator before forwarding args
+to a script — `pnpm run echoargs -- foo --bar baz` prints
+`["--","foo","--bar","baz"]`, the literal `--` included. vitest's CLI
+(`cac`) then receives that stray `"--"` as one of its own positional
+arguments alongside the real filter and — confirmed independently of pnpm
+via `pnpm exec vitest list -- spec/long-stream.test.ts`, which shows the
+same "lists everything" behaviour — stops applying the file-path filter
+entirely rather than erroring or ignoring the empty token. `pnpm test
+spec/long-stream.test.ts` (no `--` at all) forwards and filters correctly;
+pnpm auto-forwards trailing positional args to the script without needing
+a separator, unlike npm.
+
+**Severity:** minor — the command still ran to a real, honest pass (the
+whole suite is not incompatible with itself; nothing else in
+`packages/*/test` touches the live Docker `demo-upstream`, so no cross-
+contamination occurred in this single, otherwise-uncontaminated
+invocation), so nothing shipped broken. But it silently does ~30% more
+work than its own comment promises, and burned real debugging time this
+session tracing what looked at first like a resumption-suite regression
+(see the false alarm below) before the diagnostic script isolated it to
+`pnpm`+`vitest` argument handling.
+
+**False alarm this caused:** an *earlier*, genuinely contaminated run
+looked like a real regression — `spec/resumption.test.ts` failed
+"iteration 1: expected exactly one place_order invocation... expected 2 to
+be 1" — but that was this session running `pnpm test -- spec/long-stream.test.ts`
+in the background (which, per the above, silently also runs
+`spec/resumption.test.ts`) at the same wall-clock time as a separate,
+manually-launched `pnpm test:resume` in the foreground — two independent
+processes racing real HTTP calls against the one shared `demo-upstream`
+Docker container's place-order invocation counter. Re-running cleanly,
+without a second concurrent invocation touching the same container,
+reproduced neither failure. The resumption/exactly-once logic itself was
+never at fault; recorded here so a future session doesn't have to
+rediscover this red herring from scratch.
+
+**Workaround:** None applied to the repo's scripts — `pnpm test:resume`
+(package.json) already avoids the problem by not using `--` at all. This
+phase's own VERIFY text is the task-giver's, not this repo's, so it isn't
+this session's place to rewrite it; documented here instead so a future
+session (or a person running it) understands why the command legitimately
+takes longer than advertised and isn't a regression, and to warn against
+ever running two `pnpm test*` invocations against the shared Docker stack
+concurrently — that part *is* a real hazard, independent of the `--` bug.
+
+**Actionable suggestion:** Never invoke this repo's vitest-backed scripts
+via `pnpm <script> -- <filter>` — the `--` is unnecessary (pnpm forwards
+trailing positional args to the script on its own) and, on this pinned
+pnpm version, actively breaks vitest's file filtering. Use `pnpm <script>
+<filter>` instead. If a task's own instructions specify the `--` form
+verbatim, expect it to run the full suite rather than just the named file
+— slower and noisier, but not incorrect, as long as no second
+Docker-touching test process is started concurrently.

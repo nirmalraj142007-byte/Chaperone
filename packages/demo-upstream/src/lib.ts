@@ -13,8 +13,11 @@ export {
   ADD_ITEM_DESCRIPTION_ORIGINAL,
   controlRouter,
   currentAddItemDescription,
+  currentPlaceOrderDelayMs,
   deliveryCancellationCount,
   isMutated,
+  placeOrderInvocationCount,
+  recordPlaceOrderInvocation,
   resetControlStateForTests,
 } from "./control.js";
 export { registerGroceryTools, type ListEntry } from "./tools.js";

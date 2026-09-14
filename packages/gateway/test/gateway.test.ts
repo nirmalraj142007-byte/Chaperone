@@ -12,12 +12,20 @@ import { ADD_ITEM_DESCRIPTION_ORIGINAL, buildApp as buildDemoUpstreamApp } from 
 // wired up per test in beforeEach. Exercises session.ts's real logic
 // (TTL/expiry checks, 404-on-unknown, fail-closed-on-storage-error) against
 // a fake store rather than re-testing DynamoDB itself, which
-// packages/ledger/test/session.test.ts already covers.
+// packages/ledger/test/session.test.ts already covers. `nextSseSeq` /
+// `putSseEvent` / `listSseEventsSince` / `sseEventTtl` back event-store.ts —
+// every SDK client here negotiates 2025-11-25, so the transport's own
+// priming-event write (webStandardStreamableHttp.js's `writePrimingEvent`)
+// calls these on every POST response stream, not just the resumption suite.
 vi.mock("@chaperone/ledger", () => ({
   putSession: vi.fn(),
   getSession: vi.fn(),
   touchSession: vi.fn(),
   deleteSession: vi.fn(),
+  nextSseSeq: vi.fn(),
+  putSseEvent: vi.fn(),
+  listSseEventsSince: vi.fn(),
+  sseEventTtl: vi.fn(),
 }));
 
 const { buildApp } = await import("../src/app.js");
@@ -29,6 +37,12 @@ let upstream: UpstreamConfig;
 let pool: UpstreamPool;
 let gatewayUrl: string;
 let sessionStore: Map<string, { sessionId: string; protocolVersion: string; ttl: number; [k: string]: unknown }>;
+let sseEvents: Map<string, Array<{ sessionId: string; streamId: string; seq: number; eventId: string; message: string; ts: string; ttl: number }>>;
+let sseSeqCounters: Map<string, number>;
+
+function sseKey(sessionId: string, streamId: string): string {
+  return `${sessionId}#${streamId}`;
+}
 
 async function listen(app: express.Express): Promise<{ server: HttpServer; url: string }> {
   const server = app.listen(0);
@@ -59,6 +73,26 @@ beforeEach(async () => {
   vi.mocked(ledger.deleteSession).mockImplementation(async (sessionId) => {
     sessionStore.delete(sessionId);
   });
+
+  sseEvents = new Map();
+  sseSeqCounters = new Map();
+  vi.mocked(ledger.nextSseSeq).mockImplementation(async (sessionId, streamId) => {
+    const key = sseKey(sessionId, streamId);
+    const next = (sseSeqCounters.get(key) ?? 0) + 1;
+    sseSeqCounters.set(key, next);
+    return next;
+  });
+  vi.mocked(ledger.putSseEvent).mockImplementation(async (event) => {
+    const key = sseKey(event.sessionId, event.streamId);
+    const arr = sseEvents.get(key) ?? [];
+    arr.push(event);
+    sseEvents.set(key, arr);
+  });
+  vi.mocked(ledger.listSseEventsSince).mockImplementation(async (sessionId, streamId, sinceSeq) => {
+    const key = sseKey(sessionId, streamId);
+    return (sseEvents.get(key) ?? []).filter((e) => e.seq > sinceSeq).sort((a, b) => a.seq - b.seq);
+  });
+  vi.mocked(ledger.sseEventTtl).mockImplementation(() => Math.floor(Date.now() / 1000) + 24 * 60 * 60);
 
   pool = await getPool([upstream]);
   const gatewayApp = buildApp(pool, [upstream], ["http://localhost:*"]);

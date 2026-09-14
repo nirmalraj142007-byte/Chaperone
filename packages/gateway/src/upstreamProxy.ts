@@ -15,11 +15,12 @@
  */
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
-import type { ProgressNotification } from "@modelcontextprotocol/sdk/types.js";
+import type { CallToolResult, ProgressNotification } from "@modelcontextprotocol/sdk/types.js";
 import type { UpstreamConfig, UpstreamPool } from "@chaperone/upstream";
 import { UpstreamError } from "@chaperone/errors";
 import { REFUSAL_UPSTREAM_UNAVAILABLE } from "@chaperone/policy";
 import { childLogger } from "@chaperone/logger";
+import { createCallRegistry } from "./call-registry.js";
 
 const log = childLogger({ component: "gateway-upstream-proxy" });
 const NAMESPACE_SEPARATOR = "__";
@@ -66,6 +67,11 @@ export function buildPassthroughServer(pool: UpstreamPool, upstreams: readonly U
     { name: "chaperone-gateway", version: "0.0.0" },
     { capabilities: { tools: { listChanged: true } } },
   );
+  // One registry per session (this function is called once per session —
+  // see session.ts), so a duplicate `tools/call` for a request ID this
+  // session has already seen attaches to the original upstream call instead
+  // of re-invoking it. See call-registry.ts.
+  const callRegistry = createCallRegistry();
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     const entries = await pool.listAllTools();
@@ -91,22 +97,24 @@ export function buildPassthroughServer(pool: UpstreamPool, upstreams: readonly U
     let relayChain = Promise.resolve();
 
     try {
-      return await pool.callTool(resolved.upstreamId, resolved.toolName, request.params.arguments, {
-        downstreamRequestId: extra.requestId,
-        signal: extra.signal,
-        ...(progressToken !== undefined
-          ? {
-              progressToken,
-              onProgress: (notification: ProgressNotification) => {
-                relayChain = relayChain
-                  .then(() => extra.sendNotification(notification))
-                  .catch((error: unknown) => {
-                    log.warn({ error, upstreamId: resolved.upstreamId }, "failed to relay progress notification downstream");
-                  });
-              },
-            }
-          : {}),
-      });
+      return await callRegistry.runOnce<CallToolResult>(extra.requestId, () =>
+        pool.callTool(resolved.upstreamId, resolved.toolName, request.params.arguments, {
+          downstreamRequestId: extra.requestId,
+          signal: extra.signal,
+          ...(progressToken !== undefined
+            ? {
+                progressToken,
+                onProgress: (notification: ProgressNotification) => {
+                  relayChain = relayChain
+                    .then(() => extra.sendNotification(notification))
+                    .catch((error: unknown) => {
+                      log.warn({ error, upstreamId: resolved.upstreamId }, "failed to relay progress notification downstream");
+                    });
+                },
+              }
+            : {}),
+        }),
+      );
     } catch (error) {
       if (error instanceof UpstreamError) {
         log.warn(
