@@ -13,6 +13,7 @@ export {
   ADD_ITEM_DESCRIPTION_ORIGINAL,
   controlRouter,
   currentAddItemDescription,
+  deliveryCancellationCount,
   isMutated,
   resetControlStateForTests,
 } from "./control.js";

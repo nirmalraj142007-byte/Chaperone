@@ -1,90 +1,126 @@
 /**
- * Phase 7: a single hardcoded upstream connection per gateway session,
- * transparently proxying whatever the configured upstream currently
- * reports via `tools/list`. Phase 8 replaces this with packages/upstream's
- * pooled, hash-pinned client pool with policy enforcement (allow/deny by
- * pinned hash, quarantine on mismatch) — this module is deliberately not
- * that. It exists so the gateway has something real, end to end, to proxy
- * today: no mocked tool list, no hardcoded schema, a real MCP client
- * talking to a real upstream server.
+ * Phase 8: the downstream-facing side of the proxy, built on packages/upstream's
+ * pooled MCP client connections rather than Phase 7's single hardcoded
+ * upstream (see friction-log.md Entry 011 for why this is built on the
+ * low-level `Server` class rather than `McpServer` — that constraint is
+ * unchanged, this module just fans a single `tools/list`/`tools/call` out
+ * over N pooled upstreams instead of one).
  *
- * Built on the low-level `Server` class rather than `McpServer`.
- * `McpServer.registerTool`'s `inputSchema` must be a Zod schema
- * (`AnySchema` = `z3.ZodTypeAny | z4.$ZodType`, per
- * server/zod-compat.d.ts) — there is no supported way to hand it a raw
- * JSON-Schema object like the ones upstream MCP servers actually declare.
- * A transparent proxy should not reinterpret an upstream's schema as Zod
- * anyway: `Server` exposes `tools/list` and `tools/call` as plain
- * JSON-RPC handlers you implement yourself, which lets every field other
- * than `name` pass through byte-identical to what the upstream declared —
- * matching this repo's own documented choice that namespacing tool names
- * as `{upstreamId}__{toolName}` is the *only* place this proxy is
- * deliberately not byte-transparent.
+ * Every field of every tool definition passes through byte-identical to
+ * what the upstream declared, with exactly one deliberate exception:
+ * `{upstreamId}__{toolName}` namespacing on `tools/list`, undone on
+ * `tools/call` by matching the longest configured upstream-id prefix. This
+ * is the one place this proxy is not byte-transparent, and spec/ asserts it
+ * directly rather than leaving it implicit.
  */
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
-import type { UpstreamConfig } from "@chaperone/config";
+import type { ProgressNotification } from "@modelcontextprotocol/sdk/types.js";
+import type { UpstreamConfig, UpstreamPool } from "@chaperone/upstream";
+import { UpstreamError } from "@chaperone/errors";
+import { REFUSAL_UPSTREAM_UNAVAILABLE } from "@chaperone/policy";
 import { childLogger } from "@chaperone/logger";
 
 const log = childLogger({ component: "gateway-upstream-proxy" });
+const NAMESPACE_SEPARATOR = "__";
 
 export function namespacedToolName(upstreamId: string, toolName: string): string {
-  return `${upstreamId}__${toolName}`;
+  return `${upstreamId}${NAMESPACE_SEPARATOR}${toolName}`;
+}
+
+/**
+ * Splits a namespaced downstream tool name against the gateway's configured
+ * upstream ids, matching the first configured id whose `{id}__` prefix the
+ * name starts with. Returns undefined for a name that no configured
+ * upstream owns (an unknown or stale tool name).
+ */
+export function resolveNamespacedTool(
+  name: string,
+  upstreamIds: readonly string[],
+): { upstreamId: string; toolName: string } | undefined {
+  for (const upstreamId of upstreamIds) {
+    const prefix = namespacedToolName(upstreamId, "");
+    if (name.startsWith(prefix)) {
+      return { upstreamId, toolName: name.slice(prefix.length) };
+    }
+  }
+  return undefined;
 }
 
 export interface PassthroughServer {
   server: Server;
-  /** Closes the upstream client connection this session opened. */
+  /** No-op in Phase 8: upstream connections are pooled and shared across every gateway session (see index.ts), not opened per session, so there is nothing session-scoped left to dispose here. */
   dispose: () => Promise<void>;
 }
 
 /**
- * Opens a fresh upstream MCP session and builds a gateway-side `Server`
- * that proxies to it. One upstream connection per gateway session — no
- * connection pooling or reuse across sessions in this phase.
+ * Builds a gateway-side `Server` whose `tools/list` fans out across every
+ * pooled upstream (namespacing names on the way out) and whose `tools/call`
+ * routes by that namespace, forwarding arguments unmodified and returning
+ * the upstream's result unmodified — including `isError`, `content`, and
+ * `structuredContent`.
  */
-export async function buildPassthroughServer(upstream: UpstreamConfig): Promise<PassthroughServer> {
-  const upstreamClient = new Client({ name: "chaperone-gateway", version: "0.0.0" });
-  const clientTransport = new StreamableHTTPClientTransport(new URL(upstream.url));
-  // `StreamableHTTPClientTransport.sessionId` is a getter typed
-  // `string | undefined` — wider than the exact-optional `sessionId?:
-  // string` the `Transport` interface requires under this repo's
-  // `exactOptionalPropertyTypes`. Same class of finding as the server-side
-  // cast in session.ts, this time on the client transport. Verified
-  // against @modelcontextprotocol/sdk 1.30.0's client/streamableHttp.d.ts.
-  await upstreamClient.connect(clientTransport as Transport);
-
-  const prefix = `${namespacedToolName(upstream.id, "")}`;
+export function buildPassthroughServer(pool: UpstreamPool, upstreams: readonly UpstreamConfig[]): PassthroughServer {
+  const upstreamIds = upstreams.map((u) => u.id);
   const server = new Server(
     { name: "chaperone-gateway", version: "0.0.0" },
     { capabilities: { tools: { listChanged: true } } },
   );
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
-    const { tools } = await upstreamClient.listTools();
+    const entries = await pool.listAllTools();
     return {
-      tools: tools.map((tool) => ({ ...tool, name: namespacedToolName(upstream.id, tool.name) })),
+      tools: entries.map(({ upstreamId, tool }) => ({ ...tool, name: namespacedToolName(upstreamId, tool.name) })),
     };
   });
 
-  server.setRequestHandler(CallToolRequestSchema, async (request) => {
-    const { name, arguments: args } = request.params;
-    if (!name.startsWith(prefix)) {
-      throw new Error(`Unknown tool "${name}": not namespaced under upstream "${upstream.id}"`);
+  server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
+    const resolved = resolveNamespacedTool(request.params.name, upstreamIds);
+    if (resolved === undefined) {
+      throw new UpstreamError(`unknown tool "${request.params.name}": not namespaced under any configured upstream`, {
+        name: request.params.name,
+      });
     }
-    const upstreamToolName = name.slice(prefix.length);
-    return upstreamClient.callTool({ name: upstreamToolName, arguments: args });
-  });
 
-  log.info({ upstreamId: upstream.id, upstreamUrl: upstream.url }, "connected to upstream");
+    const progressToken = request.params._meta?.progressToken;
+    // Relays progress notifications strictly in arrival order even though
+    // `extra.sendNotification` is async and packages/upstream's `onProgress`
+    // callback fires synchronously — chaining onto the prior send's promise
+    // guarantees each notification reaches the wire before the next one is
+    // attempted, rather than racing concurrent sends.
+    let relayChain = Promise.resolve();
+
+    try {
+      return await pool.callTool(resolved.upstreamId, resolved.toolName, request.params.arguments, {
+        downstreamRequestId: extra.requestId,
+        signal: extra.signal,
+        ...(progressToken !== undefined
+          ? {
+              progressToken,
+              onProgress: (notification: ProgressNotification) => {
+                relayChain = relayChain
+                  .then(() => extra.sendNotification(notification))
+                  .catch((error: unknown) => {
+                    log.warn({ error, upstreamId: resolved.upstreamId }, "failed to relay progress notification downstream");
+                  });
+              },
+            }
+          : {}),
+      });
+    } catch (error) {
+      if (error instanceof UpstreamError) {
+        log.warn(
+          { error, upstreamId: resolved.upstreamId, tool: resolved.toolName },
+          "upstream unavailable for tools/call; returning frozen refusal",
+        );
+        return { content: [{ type: "text" as const, text: REFUSAL_UPSTREAM_UNAVAILABLE }], isError: true };
+      }
+      throw error;
+    }
+  });
 
   return {
     server,
-    dispose: async () => {
-      await upstreamClient.close();
-    },
+    dispose: async () => {},
   };
 }

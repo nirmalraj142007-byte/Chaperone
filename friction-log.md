@@ -669,3 +669,231 @@ documented inline in upstreamProxy.ts.
 these client transports (one per pooled upstream connection) — worth
 pulling the cast into a tiny shared helper at that point instead of
 copy-pasting the same comment a third and fourth time.
+
+---
+
+## Entry 013 — 2026-09-14
+
+**Task attempted:** Build `packages/upstream`'s `UpstreamPool.callTool`
+(Phase 8) with the declared return type `Promise<CallToolResult>`, calling
+the pooled `Client.callTool(params, CallToolResultSchema, options)`
+underneath, per this phase's own prompt — which explicitly says to pass
+`CallToolResultSchema`, not `CompatibilityCallToolResultSchema`.
+
+**Steps taken:** `pnpm --filter @chaperone/upstream build`. Read
+`client/index.d.ts`'s `callTool` declaration directly (this repo's own
+"verify rather than remember" rule) to confirm the return type before
+assuming a cast was the only fix.
+
+**Expected versus actual:** Expected `tsc` to narrow the return type to
+`CallToolResult` because `CallToolResultSchema` (not the compat one) was
+passed as the second argument. Actual: `TS2322` — `callTool`'s declared
+signature is `callTool(params, resultSchema?: typeof CallToolResultSchema |
+typeof CompatibilityCallToolResultSchema, options?): Promise<{...}>` where
+the return type is a **fixed, non-generic** union of
+`CallToolResult | { toolResult: unknown; ... }` (the 2024-10-07 legacy
+shape), regardless of which schema value is actually passed at the call
+site. The method isn't overloaded per-argument, so TypeScript has no way to
+narrow it even though the runtime behavior is fully determined by which
+schema you pass.
+
+**Severity:** minor. Purely a typing gap — passing `CallToolResultSchema`
+explicitly does guarantee the legacy branch can never be produced at
+runtime — but it cost time to confirm this wasn't a real ambiguity before
+reaching for a cast.
+
+**Workaround:** `(await handle.client.callTool(params, CallToolResultSchema,
+options)) as CallToolResult`, with a comment in `packages/upstream/src/pool.ts`
+citing the exact `.d.ts` shape and SDK version, so a future reader doesn't
+mistake this for an unverified "trust me" cast.
+
+**Actionable suggestion:** `Client.callTool`'s TypeScript signature should
+be generic/overloaded on the `resultSchema` parameter (return
+`CallToolResult` when `CallToolResultSchema` is passed, the compat union
+only when `CompatibilityCallToolResultSchema` is passed) — the runtime
+already branches on this value; the types should too.
+
+---
+
+## Entry 014 — 2026-09-14
+
+**Task attempted:** Forward a downstream `tools/call`'s `progressToken`
+upstream from `packages/upstream/src/pool.ts`, so a resident-side progress
+subscription actually reaches the real upstream tool call, per this
+phase's own `CallContext.progressToken` field.
+
+**Steps taken:** Read `shared/protocol.js`'s `request()` implementation
+directly before writing the forwarding logic, since the prompt's own
+friction-log convention here is to verify SDK internals rather than assume
+them.
+
+**Expected versus actual:** Expected `options.onprogress` combined with a
+`_meta.progressToken` I set myself in the outgoing request `params` to
+carry my chosen token value upstream. Actual: when `options?.onprogress` is
+set, `request()` unconditionally **overwrites** `params._meta.progressToken`
+with its own internally generated `messageId` (`jsonrpcRequest.params =
+{...request.params, _meta: {...(request.params?._meta || {}),
+progressToken: messageId}}`) — any token value the caller pre-set in
+`params._meta` is discarded. The callback that eventually fires is also
+invoked with the token already stripped back out
+(`const { progressToken, ...params } = notification.params; handler(params)`),
+so the SDK's own progress-correlation plumbing is entirely internal and
+opaque to the caller by design.
+
+**Severity:** minor — this determined a real design choice (see the
+`callTool` comment in `pool.ts`) rather than blocking anything, but it's
+exactly the kind of "the two hops don't literally share a token value"
+detail that's invisible until you read the source.
+
+**Workaround:** Stopped trying to make the literal upstream-bound
+`progressToken` match the downstream's own token. Instead: only request
+progress from upstream at all when the downstream supplied a token
+(`ctx.progressToken !== undefined`), and re-attach the **downstream's own**
+token when relaying each received progress notification back down. The
+upstream-bound token is connection-scoped SDK plumbing private to that hop;
+what must survive the hop is the subscription itself and the caller's own
+token on the way back, not a shared literal value.
+
+**Actionable suggestion:** None for the SDK — this is a deliberate,
+reasonable internal design (progress tokens are request-scoped
+correlation ids, not meant to be caller-supplied). Worth flagging for
+anyone building a multi-hop proxy from scratch: don't assume a
+`progressToken` is a value you can pass through byte-identical across
+hops the way `arguments` or `content` are.
+
+---
+
+## Entry 015 — 2026-09-14
+
+**Task attempted:** Assert `tools/call`/`initialize` response shapes in
+`spec/conformance.spec.test.ts` using raw `fetch()` + `res.json()` against
+both the gateway and `demo-upstream` directly — deliberately avoiding the
+SDK `Client` for these specific assertions so the test could also inspect
+raw headers (`MCP-Protocol-Version`, `Mcp-Session-Id`) alongside the body.
+
+**Steps taken:** Ran `pnpm spec`. When `res.json()` failed, read
+`server/webStandardStreamableHttp.js`'s `writeSSEEvent` directly rather
+than guessing at a workaround.
+
+**Expected versus actual:** Expected every successful (2xx) POST response
+to be a flat `application/json` body, since the request declared
+`Accept: application/json, text/event-stream` (both required — see Origin
+and Accept-header assertions elsewhere in this suite) and the request
+itself was a single, non-streaming call. Actual: `SyntaxError: Unexpected
+token 'e', "event: mes"... is not valid JSON` — `StreamableHTTPServerTransport`
+answers with `Content-Type: text/event-stream` and wraps the JSON-RPC
+response in an SSE frame (`event: message\ndata: {...}\n\n`) even for a
+single, immediately-resolvable request; only *error* responses that are
+rejected before reaching the transport at all (bad Origin, unknown session,
+malformed JSON) are guaranteed flat JSON, because those are written by this
+repo's own Express middleware, not by the SDK transport.
+
+**Severity:** minor. Every assertion using raw `fetch` against a
+successful response needed the same fix, so it cost more time than a
+single occurrence would have, but the fix is small and now shared.
+
+**Workaround:** Added `readJsonRpcBody(res)` to `spec/conformance.spec.test.ts`:
+checks `Content-Type`, and for `text/event-stream` extracts the JSON from
+the first `data:` line rather than assuming a flat body. Every raw-fetch
+helper in that file (`rawInitialize`, `rawSessionRequest`) now goes through
+it instead of `res.json()`.
+
+**Actionable suggestion:** Anyone writing raw-HTTP conformance tests
+against a Streamable HTTP server (rather than using the SDK `Client`,
+which already handles this) should not assume a 2xx JSON-RPC response is
+flat JSON just because the request wasn't obviously "streaming" — the
+transport's own choice of response format isn't something the caller
+controls or can predict from the request shape alone.
+
+---
+
+## Entry 016 — 2026-09-14
+
+**Task attempted:** Assert `pnpm spec`'s "malformed JSON returns -32700"
+conformance behaviour — required by this phase's own prompt — against the
+gateway built in Phase 7/8 (`packages/gateway/src/app.ts`).
+
+**Steps taken:** Wrote the assertion first (POST a body that fails
+`JSON.parse`, expect JSON-RPC code `-32700`), ran `pnpm spec`, and traced
+the actual response before assuming the test was wrong.
+
+**Expected versus actual:** Expected the existing catch-all Express error
+handler to already produce this, since some JSON-RPC error was clearly
+being returned. Actual: the handler unconditionally mapped every caught
+error to the generic `-32603` Internal Server Error — including the one
+case JSON-RPC has its own reserved code for. `express.json()` throws a
+genuine `SyntaxError` (verified against the installed `body-parser@2.3.0`'s
+`lib/read.js`, which wraps the parse failure via `createError(400, err,
+{type: err.type || 'entity.parse.failed'})`, preserving the original
+`SyntaxError` instance rather than replacing it) but nothing downstream was
+distinguishing "the body wasn't valid JSON" from any other unhandled
+failure.
+
+**Severity:** minor — a genuine, if narrow, correctness gap the phase's
+own written-first conformance suite caught before it shipped, which is
+the point of writing the suite before declaring the proxy done.
+
+**Workaround:** `app.ts`'s error-handling middleware now checks
+`error instanceof SyntaxError && (error as {type?: string}).type ===
+"entity.parse.failed"` before falling through to the generic 500/-32603
+path, and responds `400` with JSON-RPC code `-32700` instead.
+
+**Actionable suggestion:** None for the SDK or body-parser — this is a
+gap in this repo's own error-handling middleware, now closed. Worth a
+general note for future phases: a "catch-all maps to one generic code"
+error handler is exactly the kind of thing a written-in-advance spec
+assertion (rather than only informal manual testing) is good at
+surfacing, since nobody manually tests malformed JSON on the happy path.
+
+---
+
+## Entry 017 — 2026-09-14
+
+**Task attempted:** Run this phase's literal Docker-based VERIFY step —
+`docker compose up -d`, then `docker compose stop demo-upstream` mid-suite
+and `curl` the gateway directly to confirm `tools/list` degrades to an
+empty array within 3 seconds — in this development sandbox.
+
+**Steps taken:** Confirmed `docker --version` and `docker compose version`
+both report real versions on `PATH` (v29.7.2 / v5.5.1). Ran
+`docker compose up -d --build`. Checked for a running Docker daemon
+(`Get-Process` for anything named `*docker*`) and for a Docker Desktop
+install at its standard path
+(`C:\Program Files\Docker\Docker\Docker Desktop.exe`) and via
+`Get-ChildItem 'C:\Program Files'`/`Get-Service` for anything Docker-named.
+
+**Expected versus actual:** Expected a working daemon, since the CLI
+binaries are present and this repo's own `docker-compose.yml` assumes
+Docker is available (per friction-log Entry 003, which hit and resolved
+this exact class of problem in an earlier session). Actual:
+`docker compose up` failed immediately with `failed to connect to the
+docker API at npipe:////./pipe/dockerDesktopLinuxEngine ... The system
+cannot find the file specified`, and no Docker Desktop installation or
+running daemon process exists on this machine at all — a different, more
+total, gap than Entry 003's (that session had Docker Desktop installed but
+hit a JDK/DynamoDB Local–specific failure; this sandbox has the `docker`
+CLI on `PATH` with nothing backing it).
+
+**Severity:** major, for verification only — not a defect in the delivered
+code. The identical behaviour this manual step checks is exercised
+end-to-end by `pnpm spec`'s own "fails closed to an empty tools/list within
+the per-upstream budget when the upstream goes down" assertion (25/25
+passing), which kills a real (in-process, not Docker) upstream HTTP server
+mid-test and asserts against the same `packages/upstream`/`packages/gateway`
+production code path. What could not be run here specifically is the
+containerized deployment path and the literal `curl` against a
+`docker compose`-managed gateway.
+
+**Workaround:** None available in this sandbox. The automated spec
+assertion is a reasonable substitute for the underlying claim (fail-closed,
+bounded-time degradation), but it is not a substitute for actually
+verifying the Docker images build and run correctly together — that
+remains unverified this session and should be re-run on a machine with a
+working Docker daemon before treating the Docker deployment path itself as
+confirmed.
+
+**Actionable suggestion:** Before the next phase that depends on the
+Docker Compose stack (or before recording it in `docs/RUNBOOK.md` as
+verified), run this phase's literal VERIFY block on a machine with Docker
+Desktop actually installed and running, not just the CLI present on
+`PATH`.

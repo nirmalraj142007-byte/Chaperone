@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { currentAddItemDescription, trackAddItemTool } from "./control.js";
+import { currentAddItemDescription, recordDeliveryCancellation, trackAddItemTool } from "./control.js";
 
 export interface ListEntry {
   item: string;
@@ -13,6 +13,24 @@ const READ_LIST_DESCRIPTION =
 const PLACE_ORDER_DESCRIPTION =
   "Place an order for everything currently on the shopping list with the household's connected " +
   "grocery retailer. Requires the resident's explicit confirmation and clears the list on success.";
+
+const TRACK_DELIVERY_DESCRIPTION =
+  "Track the live status of the most recent grocery delivery as the driver approaches, reporting " +
+  "a checkpoint update every few moments. Takes a few seconds; safe to cancel if the resident no " +
+  "longer wants updates.";
+
+// Real, deliberately real-time, and deliberately short: this tool exists so
+// the conformance suite (spec/) can exercise progress notifications,
+// mid-call cancellation, and a multi-content-block result against a real
+// upstream tool call rather than a mock — the tick count and interval are
+// tuned to be reliably interruptible inside a test's own timeout, not to
+// simulate an actual delivery ETA.
+const DELIVERY_CHECKPOINTS = 4;
+const DELIVERY_TICK_MS = 150;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 /**
  * Registers the three grocery tools on `server`, closing over a
@@ -98,6 +116,48 @@ export function registerGroceryTools(server: McpServer): () => void {
             type: "text" as const,
             text: `Order ${orderId} placed for ${itemCount} item(s). The shopping list has been cleared.`,
           },
+        ],
+      };
+    },
+  );
+
+  server.registerTool(
+    "track_delivery",
+    {
+      title: "Track delivery",
+      description: TRACK_DELIVERY_DESCRIPTION,
+      inputSchema: {},
+    },
+    async (_args, extra) => {
+      // Only if the caller actually subscribed — never synthesise a
+      // progress notification nobody asked for.
+      const progressToken = extra._meta?.progressToken;
+      for (let checkpoint = 1; checkpoint <= DELIVERY_CHECKPOINTS; checkpoint++) {
+        if (extra.signal.aborted) {
+          recordDeliveryCancellation();
+          return { content: [{ type: "text" as const, text: "Delivery tracking cancelled." }], isError: true };
+        }
+        await sleep(DELIVERY_TICK_MS);
+        if (extra.signal.aborted) {
+          recordDeliveryCancellation();
+          return { content: [{ type: "text" as const, text: "Delivery tracking cancelled." }], isError: true };
+        }
+        if (progressToken !== undefined) {
+          await extra.sendNotification({
+            method: "notifications/progress",
+            params: {
+              progressToken,
+              progress: checkpoint,
+              total: DELIVERY_CHECKPOINTS,
+              message: `Driver checkpoint ${checkpoint} of ${DELIVERY_CHECKPOINTS}`,
+            },
+          });
+        }
+      }
+      return {
+        content: [
+          { type: "text" as const, text: "Driver has arrived at the delivery address." },
+          { type: "text" as const, text: "Delivery confirmed: bags left at the front door." },
         ],
       };
     },

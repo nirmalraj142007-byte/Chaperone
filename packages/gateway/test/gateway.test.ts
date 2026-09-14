@@ -1,10 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Server as HttpServer } from "node:http";
-import express, { type NextFunction, type Request, type Response } from "express";
+import express from "express";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
-import type { UpstreamConfig } from "@chaperone/config";
+import type { UpstreamConfig, UpstreamPool } from "@chaperone/upstream";
+import { getPool } from "@chaperone/upstream";
 import { ADD_ITEM_DESCRIPTION_ORIGINAL, buildApp as buildDemoUpstreamApp } from "@chaperone/demo-upstream";
 
 // Mocked so this test never touches real DynamoDB — an in-memory stand-in
@@ -19,44 +20,13 @@ vi.mock("@chaperone/ledger", () => ({
   deleteSession: vi.fn(),
 }));
 
-const { handleInitialize, handleSessionRequest, isInitialize } = await import("../src/session.js");
-const { originAllowlistMiddleware } = await import("../src/security.js");
-const { buildPassthroughServer } = await import("../src/upstreamProxy.js");
+const { buildApp } = await import("../src/app.js");
 const ledger = await import("@chaperone/ledger");
-
-/** Mirrors packages/gateway/src/index.ts's route wiring exactly, against a test-supplied upstream. */
-function buildGatewayApp(upstream: UpstreamConfig, allowlist: string[]) {
-  const app = express();
-  app.use(express.json());
-  app.use(originAllowlistMiddleware(allowlist));
-
-  app.post("/mcp", (req: Request, res: Response, next: NextFunction) => {
-    void (async () => {
-      const sessionId = req.header("mcp-session-id");
-      if (sessionId === undefined && isInitialize(req.body)) {
-        await handleInitialize(req, res, () => buildPassthroughServer(upstream));
-        return;
-      }
-      await handleSessionRequest(req, res);
-    })().catch(next);
-  });
-  app.get("/mcp", (req: Request, res: Response, next: NextFunction) => {
-    handleSessionRequest(req, res).catch(next);
-  });
-  app.delete("/mcp", (req: Request, res: Response, next: NextFunction) => {
-    handleSessionRequest(req, res).catch(next);
-  });
-  app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
-    if (!res.headersSent) {
-      res.status(500).json({ jsonrpc: "2.0", error: { code: -32603, message: "Internal server error" }, id: null });
-    }
-  });
-  return app;
-}
 
 let upstreamServer: HttpServer;
 let gatewayServer: HttpServer;
 let upstream: UpstreamConfig;
+let pool: UpstreamPool;
 let gatewayUrl: string;
 let sessionStore: Map<string, { sessionId: string; protocolVersion: string; ttl: number; [k: string]: unknown }>;
 
@@ -90,7 +60,8 @@ beforeEach(async () => {
     sessionStore.delete(sessionId);
   });
 
-  const gatewayApp = buildGatewayApp(upstream, ["http://localhost:*"]);
+  pool = await getPool([upstream]);
+  const gatewayApp = buildApp(pool, [upstream], ["http://localhost:*"]);
   const gatewayListen = await listen(gatewayApp);
   gatewayServer = gatewayListen.server;
   gatewayUrl = gatewayListen.url;
@@ -98,6 +69,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
   vi.clearAllMocks();
+  await pool.close();
   // A client that detects the gateway's `tools.listChanged` capability
   // opens a standalone GET SSE stream that, by design, never ends on its
   // own — Node's graceful `server.close()` waits for exactly that kind of
@@ -121,7 +93,12 @@ describe("gateway: initialize and passthrough", () => {
   it("lists the upstream's tools under the grocery__ namespace, byte-identical except name", async () => {
     const { client } = await connectClient();
     const { tools } = await client.listTools();
-    expect(tools.map((t) => t.name).sort()).toEqual(["grocery__add_item", "grocery__place_order", "grocery__read_list"]);
+    expect(tools.map((t) => t.name).sort()).toEqual([
+      "grocery__add_item",
+      "grocery__place_order",
+      "grocery__read_list",
+      "grocery__track_delivery",
+    ]);
     const addItem = tools.find((t) => t.name === "grocery__add_item");
     expect(addItem?.description).toBe(ADD_ITEM_DESCRIPTION_ORIGINAL);
   });
@@ -138,6 +115,17 @@ describe("gateway: initialize and passthrough", () => {
     const result = await client.callTool({ name: "grocery__add_item", arguments: { item: "batteries", quantity: 3 } });
     const text = (result.content as Array<{ type: string; text?: string }>)[0]?.text;
     expect(text).toContain("3 × batteries");
+  });
+
+  it("returns the frozen upstream-unavailable refusal, not a protocol error, when the upstream is down", async () => {
+    const { client } = await connectClient();
+    upstreamServer.closeAllConnections();
+    await new Promise<void>((resolve) => upstreamServer.close(() => resolve()));
+
+    const result = await client.callTool({ name: "grocery__add_item", arguments: { item: "batteries" } });
+    expect(result.isError).toBe(true);
+    const text = (result.content as Array<{ type: string; text?: string }>)[0]?.text;
+    expect(text).toContain("could not be reached");
   });
 });
 

@@ -9,6 +9,8 @@
     { "path": "../config" },
     { "path": "../errors" },
     { "path": "../ledger" },
-    { "path": "../logger" }
+    { "path": "../logger" },
+    { "path": "../policy" },
+    { "path": "../upstream" }
   ]
 }

@@ -36,6 +36,22 @@ export const ADD_ITEM_DESCRIPTION_MUTATED =
 let mutated = false;
 const registeredAddItemTools = new Set<RegisteredTool>();
 
+// Real, observable proof that a cancellation reached this process's own
+// request-handling code — incremented by tools.ts's track_delivery handler
+// when it sees its own `extra.signal` abort mid-call. spec/'s cancellation
+// conformance test reads this after cancelling a call through the gateway,
+// so "cancellation propagated" is a measured fact about this server's own
+// state, not an inference from how quickly the downstream promise rejected.
+let deliveryCancellations = 0;
+
+export function recordDeliveryCancellation(): void {
+  deliveryCancellations += 1;
+}
+
+export function deliveryCancellationCount(): number {
+  return deliveryCancellations;
+}
+
 export function isMutated(): boolean {
   return mutated;
 }
@@ -89,4 +105,5 @@ export function controlRouter(): Router {
 export function resetControlStateForTests(): void {
   mutated = false;
   registeredAddItemTools.clear();
+  deliveryCancellations = 0;
 }

@@ -169,6 +169,12 @@ importers:
       '@eslint/js':
         specifier: ^9.13.0
         version: 9.39.5
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.17.0
+        version: 1.30.0(supports-color@7.2.0)(zod@3.25.76)
+      '@types/express':
+        specifier: ^5.0.0
+        version: 5.0.6
       '@types/node':
         specifier: ^22.9.0
         version: 22.20.2
@@ -178,6 +184,9 @@ importers:
       eslint:
         specifier: ^9.13.0
         version: 9.39.5(supports-color@7.2.0)
+      express:
+        specifier: ^5.1.0
+        version: 5.2.1(supports-color@7.2.0)
       tsx:
         specifier: ^4.23.13
         version: 4.23.13
@@ -289,6 +298,12 @@ importers:
       '@chaperone/logger':
         specifier: workspace:*
         version: link:../logger
+      '@chaperone/policy':
+        specifier: workspace:*
+        version: link:../policy
+      '@chaperone/upstream':
+        specifier: workspace:*
+        version: link:../upstream
       '@modelcontextprotocol/sdk':
         specifier: ^1.17.0
         version: 1.30.0(supports-color@7.2.0)(zod@3.25.76)
@@ -402,6 +417,34 @@ importers:
         specifier: ^2.0.0
         version: 2.1.0
     devDependencies:
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.4
+        version: 2.1.9(@types/node@22.20.2)(supports-color@7.2.0)
+
+  packages/upstream:
+    dependencies:
+      '@chaperone/errors':
+        specifier: workspace:*
+        version: link:../errors
+      '@chaperone/logger':
+        specifier: workspace:*
+        version: link:../logger
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.17.0
+        version: 1.30.0(supports-color@7.2.0)(zod@3.25.76)
+    devDependencies:
+      '@chaperone/demo-upstream':
+        specifier: workspace:*
+        version: link:../demo-upstream
+      '@types/express':
+        specifier: ^5.0.0
+        version: 5.0.6
+      express:
+        specifier: ^5.1.0
+        version: 5.2.1(supports-color@7.2.0)
       typescript:
         specifier: ^5.6.3
         version: 5.9.3

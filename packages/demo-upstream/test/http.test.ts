@@ -5,6 +5,11 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 import { buildApp } from "../src/http.js";
 import { ADD_ITEM_DESCRIPTION_MUTATED, ADD_ITEM_DESCRIPTION_ORIGINAL, resetControlStateForTests } from "../src/control.js";
 
+// Mirrors tools.ts's own (unexported) per-checkpoint delay for
+// track_delivery, so the cancellation test can fire mid-checkpoint without
+// hardcoding a magic number twice.
+const DELIVERY_TICK_MS_FOR_TEST = 150;
+
 let server: Server;
 let baseUrl: string;
 
@@ -33,7 +38,7 @@ describe("demo-upstream HTTP transport", () => {
   it("lists the three grocery tools with the original add_item description", async () => {
     const client = await connectClient();
     const { tools } = await client.listTools();
-    expect(tools.map((t) => t.name).sort()).toEqual(["add_item", "place_order", "read_list"]);
+    expect(tools.map((t) => t.name).sort()).toEqual(["add_item", "place_order", "read_list", "track_delivery"]);
     const addItem = tools.find((t) => t.name === "add_item");
     expect(addItem?.description).toBe(ADD_ITEM_DESCRIPTION_ORIGINAL);
     await client.close();
@@ -99,6 +104,49 @@ describe("demo-upstream HTTP transport", () => {
     const { tools } = await client.listTools();
     const addItem = tools.find((t) => t.name === "add_item");
     expect(addItem?.description).toBe(ADD_ITEM_DESCRIPTION_MUTATED);
+    await client.close();
+  });
+
+  it("track_delivery resolves with two content blocks and no progress notifications when no token is supplied", async () => {
+    const client = await connectClient();
+    const result = await client.callTool({ name: "track_delivery", arguments: {} });
+    expect(result.isError).toBeUndefined();
+    const blocks = result.content as Array<{ type: string; text?: string }>;
+    expect(blocks).toHaveLength(2);
+    expect(blocks[0]?.text).toContain("arrived");
+    expect(blocks[1]?.text).toContain("Delivery confirmed");
+    await client.close();
+  });
+
+  it("track_delivery emits one progress notification per checkpoint, in order, before the result", async () => {
+    const client = await connectClient();
+    const progressUpdates: number[] = [];
+    let resolved = false;
+    const resultPromise = client.callTool(
+      { name: "track_delivery", arguments: {} },
+      undefined,
+      {
+        onprogress: (p) => {
+          progressUpdates.push(p.progress);
+          expect(resolved).toBe(false);
+        },
+      },
+    );
+    const result = await resultPromise;
+    resolved = true;
+    expect(result.isError).toBeUndefined();
+    expect(progressUpdates).toEqual([1, 2, 3, 4]);
+    await client.close();
+  });
+
+  it("cancelling track_delivery mid-flight aborts the server-side handler", async () => {
+    const client = await connectClient();
+    const controller = new AbortController();
+    const resultPromise = client.callTool({ name: "track_delivery", arguments: {} }, undefined, {
+      signal: controller.signal,
+    });
+    setTimeout(() => controller.abort(), DELIVERY_TICK_MS_FOR_TEST * 1.5);
+    await expect(resultPromise).rejects.toThrow();
     await client.close();
   });
 });
