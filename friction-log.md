@@ -897,3 +897,117 @@ Docker Compose stack (or before recording it in `docs/RUNBOOK.md` as
 verified), run this phase's literal VERIFY block on a machine with Docker
 Desktop actually installed and running, not just the CLI present on
 `PATH`.
+
+**Update, later session (2026-09-14):** Docker Desktop was actually
+installed on this machine the whole time — the daemon simply wasn't
+running when the checks above were done, which is a narrower, more
+mundane problem than what this entry originally concluded
+("no Docker Desktop installation ... exists on this machine at all"). That
+conclusion was wrong: `Get-Process`/`Get-Service`/`Get-ChildItem` checks
+that should have found a stopped-but-installed Docker Desktop apparently
+didn't surface it, and I reported "not installed" rather than "installed,
+not running" without a more targeted check (e.g. the Docker Desktop
+service name specifically, or attempting to launch it) to tell the two
+apart. Once the daemon was started (outside this session), `docker version`
+reported a real, running `Server: Docker Desktop 4.90.0` backend and the
+literal VERIFY block ran clean end to end:
+
+- `docker compose up -d --build` — both images build and all three
+  containers (`ddb`, `demo-upstream`, `gateway`) start and stay up.
+- A real `initialize` against the running gateway issues a session id and
+  a real `tools/list` on it returns all four `grocery__*` tools.
+- `docker compose stop demo-upstream`, then `tools/list` on that same
+  session: `{"result":{"tools":[]}}`, HTTP 200, ~3.1s wall time (matching
+  `LIST_TOOLS_TIMEOUT_MS`) — no hang, no 500. Gateway's own log:
+  `"tools/list failed for upstream; excluding from fan-out"` at warn level,
+  naming the upstream, not a silent failure.
+- `docker compose start demo-upstream`, then `tools/list` again on the
+  *same* session: this actually caught a real bug the earlier
+  spec-suite-only verification hadn't (see Entry 018) — fixed, then
+  re-verified clean: all four tools return again, in ~60–200ms, with the
+  gateway's log showing a fresh `"connected to upstream"` line rather than
+  the failed upstream staying silently excluded forever.
+
+The containerized deployment path is now genuinely confirmed, not just
+substituted for. The corrected general lesson: "the CLI reports a version"
+is not evidence a daemon is reachable, and "I didn't find an install" from
+a few targeted filesystem/process checks is weaker evidence than it reads
+as — the honest conclusion at the time should have been "daemon
+unreachable, cause undetermined" rather than asserting no installation
+existed.
+
+---
+
+## Entry 018 — 2026-09-14
+
+**Task attempted:** Completed the Entry 017 update above — restarting
+`demo-upstream` mid-VERIFY and confirming the gateway recovers, not just
+degrades gracefully while the upstream is down.
+
+**Steps taken:** After `docker compose start demo-upstream`, called
+`tools/list` again on the session that had been live since before the
+outage. Read the gateway's own structured logs for each step rather than
+trusting the HTTP status alone.
+
+**Expected versus actual:** Expected the pool to notice the upstream was
+back and transparently reconnect. Actual, on the first re-run: `tools/list`
+kept returning `{"tools":[]}` in ~90ms — fast, not the 3s timeout, but
+still empty — and stayed that way; the pool had gotten permanently stuck
+excluding "grocery" from every future `tools/list`, not just the one call
+during the outage. Root-caused to two compounding bugs in
+`packages/upstream/src/pool.ts`, both only reachable by a connection that
+was genuinely `ready` and then died mid-life (not merely never connected,
+which is all `pnpm spec`'s in-process suite had exercised):
+1. `listToolsForUpstream` never caught a `listTools()`-level failure and
+   called `markFailed` the way `callTool` already did — so a handle that
+   went bad after `ensureConnected` reported it `ready` just stayed
+   `"ready"` forever, and every subsequent call kept reusing the same
+   dead session instead of ever attempting a fresh connect.
+2. Once fixed to call `markFailed`, the *next* connect attempt threw
+   "Already connected to a transport. Call close() before connecting to a
+   new transport..." (`Protocol.connect`, shared/protocol.js) — the
+   client's internal `_transport` was still set to the old, silently-dead
+   transport, because nothing had ever called `client.close()` on it. That
+   guard only auto-clears on a failure *during* `Client.connect()` itself
+   (verified in Entry 013's investigation); a connection that died later,
+   outside of `connect()`, leaves it set.
+
+**Severity:** major — a real, user-visible defect this phase's own written
+report had not actually verified, because the in-process spec suite's
+"upstream down" fixture was always dead from the start and never
+transitioned live → dead → live-again-as-a-different-process on the same
+handle. A resident's household assistant would have silently and
+permanently lost a tool the moment its upstream server restarted once,
+recoverable only by restarting the gateway itself.
+
+**Severity of the earlier report being wrong:** the phase's prior summary
+claimed 25/25 spec assertions plus an in-process substitute "confirms the
+same production code path" as the Docker VERIFY step. That claim was true
+for the *going-down* half of the behaviour and silently false for the
+*coming-back-up* half, because no assertion (automated or manual) had
+actually exercised recovery until this session's real Docker run forced
+it.
+
+**Workaround:** Fixed both root causes in `packages/upstream/src/pool.ts`:
+`listToolsForUpstream` now catches its own `listTools()` failure and calls
+`markFailed(handle)`, symmetric with `callTool`; `attemptConnect` now
+calls `await handle.client.close()` unconditionally before building the
+fresh transport and reconnecting (a safe no-op on a never-connected
+client, since `Protocol.close()` is `this._transport?.close()`). Added a
+regression test,
+`packages/upstream/test/pool.test.ts` → "recovers after an already-ready
+upstream restarts with a fresh session, rather than staying permanently
+stuck", which kills and restarts a real HTTP server on the same port
+mid-test and asserts the pool excludes it once, then recovers. Re-ran the
+full local suite (`pnpm test`: 235/235, `pnpm spec`: 25/25,
+`pnpm typecheck`/`lint`/`depcruise`: clean) and the full literal Docker
+VERIFY sequence end to end again after the fix — see Entry 017's update.
+
+**Actionable suggestion:** For any future connection-pooling code in this
+repo (or anywhere): a fixture that is "always dead" is not a substitute
+for one that is "alive, then dies, then a fresh peer comes back on the
+same address" — the two exercise genuinely different code paths (initial
+connect failure vs. recovering a handle the pool itself believes is
+healthy), and only the second one catches a stuck-forever bug like this.
+Prefer testing recovery, not just degradation, for anything that pools or
+caches a connection.

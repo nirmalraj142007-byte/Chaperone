@@ -70,6 +70,54 @@ describe("getPool: listAllTools", () => {
     expect(elapsedMs).toBeLessThan(4_000);
     await pool.close();
   });
+
+  it("recovers after an already-ready upstream restarts with a fresh session, rather than staying permanently stuck", async () => {
+    // Reproduces a real bug found by running Phase 8's literal docker-compose
+    // VERIFY step against a running daemon (friction-log.md Entry 018): a
+    // handle that went `ready` and was then killed mid-life (not merely
+    // never connected) was never marked failed on a listTools()-level
+    // failure, so ensureConnected kept treating the same stale client as
+    // usable forever — and even once marked failed, the stale `Client`
+    // still held its old transport, so the *next* connect attempt threw
+    // "Already connected to a transport" instead of actually reconnecting.
+    const first = await listen(buildDemoUpstreamApp());
+    const port = (first.server.address() as AddressInfo).port;
+    const flaky: UpstreamConfig = { id: "flaky", url: `http://127.0.0.1:${port}/mcp`, label: "Flaky" };
+
+    const pool = await getPool([flaky]);
+    const before = await pool.listAllTools();
+    expect(before.length).toBeGreaterThan(0);
+
+    // Kill the server the pool is now `ready` against, and start a brand
+    // new instance on the exact same port with no memory of the old
+    // session — exactly like a container restart. closeAllConnections()
+    // (not a graceful close()) because the pool's own client holds a
+    // standalone GET SSE stream open against this server once it has seen
+    // `tools.listChanged`, and Node's graceful close() waits forever for
+    // exactly that kind of open keep-alive connection (same reasoning as
+    // packages/gateway/test/gateway.test.ts's own teardown).
+    first.server.closeAllConnections();
+    await new Promise<void>((resolve) => first.server.close(() => resolve()));
+    const replacement = buildDemoUpstreamApp().listen(port);
+    await new Promise<void>((resolve) => replacement.once("listening", resolve));
+
+    // First call after the restart: the pool still believes the old
+    // session is good, so this one is expected to fail and be excluded.
+    const immediatelyAfterRestart = await pool.listAllTools();
+    expect(immediatelyAfterRestart).toEqual([]);
+
+    // Past the reconnect backoff window, the pool must have flagged the
+    // handle failed and be willing to dial a genuinely fresh connection —
+    // not stay stuck excluding this upstream forever.
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    const afterRecovery = await pool.listAllTools();
+    expect(afterRecovery.length).toBeGreaterThan(0);
+    expect(afterRecovery.map((e) => e.tool.name).sort()).toEqual(before.map((e) => e.tool.name).sort());
+
+    await pool.close();
+    replacement.closeAllConnections();
+    await new Promise<void>((resolve) => replacement.close(() => resolve()));
+  }, 8_000);
 });
 
 describe("getPool: callTool", () => {

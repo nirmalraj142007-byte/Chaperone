@@ -75,11 +75,20 @@ async function connectTransport(client: Client, transport: StreamableHTTPClientT
 async function attemptConnect(handle: InternalHandle, callerSignal: AbortSignal): Promise<void> {
   const attemptSignal = AbortSignal.any([callerSignal, AbortSignal.timeout(CONNECT_ATTEMPT_TIMEOUT_MS)]);
   try {
-    // A fresh transport per attempt: the SDK's own `Client.connect` calls
-    // `this.close()` (which tears down the transport and clears the
-    // client's internal `_transport`, verified against shared/protocol.js)
-    // on a failed initialize, so the same `Client` instance — the one
-    // exposed on `UpstreamHandle.client` — is safe to reuse across retries.
+    // Explicitly close any prior transport before reconnecting. `Client`
+    // (`Protocol.connect`, shared/protocol.js) refuses a second `connect()`
+    // outright ("Already connected to a transport...") while its internal
+    // `_transport` is still set — which it still is here for a handle that
+    // was previously `ready` and then died silently between calls (a
+    // `listTools`/`callTool` failure does not go through `Client.connect`'s
+    // own catch block, so nothing clears it automatically that way; only a
+    // failure *during* `connect()` itself does that). `close()` on a
+    // never-yet-connected client is a safe no-op (`this._transport?.close()`
+    // short-circuits on `undefined`), so this is unconditional rather than
+    // gated on `handle.state`. See friction-log.md Entry 018.
+    await handle.client.close();
+    // A fresh transport per attempt, since the old one is either freshly
+    // closed above or was never opened.
     const transport = new StreamableHTTPClientTransport(new URL(handle.url));
     await connectTransport(handle.client, transport, attemptSignal);
     handle.sessionId = transport.sessionId ?? null;
@@ -154,8 +163,24 @@ class UpstreamPoolImpl implements UpstreamPool {
   private async listToolsForUpstream(handle: InternalHandle): Promise<Array<{ upstreamId: string; tool: ToolDefinition }>> {
     const timeoutSignal = AbortSignal.timeout(LIST_TOOLS_TIMEOUT_MS);
     await ensureConnected(handle, timeoutSignal);
-    const { tools } = await handle.client.listTools(undefined, { signal: timeoutSignal, timeout: LIST_TOOLS_TIMEOUT_MS });
-    return tools.map((tool) => ({ upstreamId: handle.id, tool }));
+    try {
+      const { tools } = await handle.client.listTools(undefined, { signal: timeoutSignal, timeout: LIST_TOOLS_TIMEOUT_MS });
+      return tools.map((tool) => ({ upstreamId: handle.id, tool }));
+    } catch (error) {
+      // A `listTools()` failure on a handle `ensureConnected` just reported
+      // `ready` means the connection died between calls — most commonly,
+      // the upstream process restarted and no longer recognises this
+      // client's remembered session. Mark it failed so the *next* call
+      // dials a fresh transport instead of a handle stuck permanently
+      // `ready` but silently unusable, retrying the same dead session
+      // forever. Symmetric with callTool's own catch below. See
+      // friction-log.md Entry 018 — this was a real bug, found only by
+      // running the literal docker-compose kill-and-restart VERIFY step,
+      // not by the in-process spec suite (which never re-uses a handle
+      // that was ready before the upstream died).
+      markFailed(handle);
+      throw error;
+    }
   }
 
   async callTool(upstreamId: string, name: string, args: unknown, ctx: CallContext): Promise<CallToolResult> {
