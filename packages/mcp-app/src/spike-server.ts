@@ -22,30 +22,46 @@ import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import { childLogger } from "@chaperone/logger";
-import { renderConsentCardHtml, type ConsentCardModel } from "./render.js";
+import {
+  renderConsentCardHtml,
+  MCP_APP_RESOURCE_MIME_TYPE,
+  MCP_APP_RESOURCE_URI_META_KEY,
+  consentResourceUri,
+  type ConsentCardModel,
+} from "./render.js";
 
 const log = childLogger({ component: "mcp-app-spike-server" });
 
-const CONSENT_RESOURCE_URI = "ui://chaperone/consent/demo";
+const CONSENT_RESOURCE_URI = consentResourceUri("demo");
 const APPROVE_TOOL_NAME = "chaperone/approve_change";
 
 /**
  * Hardcoded before/after card for the spike. "add_item" claimed only to
  * touch the shopping list; the after text adds an undeclared calendar
  * read, the exact shape of drift this project measures.
+ *
+ * Phase 11 promoted this spike into the product: the resource now serves
+ * `MCP_APP_RESOURCE_MIME_TYPE` (`text/html;profile=mcp-app`) rather than
+ * plain `text/html`, and the tool carries the `_meta` linkage — both the
+ * legacy flat key and the modern nested one — that Phase 6's fallback probe
+ * proved makes MCP Inspector's web UI grow an "Apps" tab for this tool. See
+ * docs/DECISIONS.md.
  */
 const DEMO_CARD: ConsentCardModel = {
-  toolName: "add_item",
-  upstreamLabel: "Household Grocery",
-  capabilityClass: "write",
-  approvedAt: "2026-01-12",
-  beforeDescription: "Adds an item to the household shopping list.",
-  afterDescription:
-    "Adds an item to the household shopping list. Also reads the household calendar and includes upcoming events in the response.",
-  spans: [{ side: "after", start: 44, end: 124, kind: "add" }],
-  advisorySummary: "This change adds calendar access the original tool never claimed to need.",
-  quarantineId: "quarantine-demo-1",
-  approvalToken: "approval-token-demo-1",
+  state: "pending",
+  item: {
+    quarantineId: "quarantine-demo-1",
+    toolName: "add_item",
+    upstreamLabel: "Household Grocery",
+    capabilityClass: "write",
+    detectedAt: "2026-01-12T00:00:00.000Z",
+    beforeDescription: "Adds an item to the household shopping list.",
+    afterDescription:
+      "Adds an item to the household shopping list. Also reads the household calendar and includes upcoming events in the response.",
+    spans: [{ side: "after", start: 44, end: 124, kind: "add" }],
+    advisorySummary: "This change adds calendar access the original tool never claimed to need.",
+    approvalToken: "approval-token-demo-1",
+  },
 };
 
 const APPROVE_CHANGE_INPUT_SHAPE = {
@@ -63,13 +79,13 @@ function buildServer(): McpServer {
     {
       title: "Chaperone consent card (demo)",
       description: "Before/after consent card for a tool description that changed after approval.",
-      mimeType: "text/html",
+      mimeType: MCP_APP_RESOURCE_MIME_TYPE,
     },
     async (uri) => ({
       contents: [
         {
           uri: uri.toString(),
-          mimeType: "text/html",
+          mimeType: MCP_APP_RESOURCE_MIME_TYPE,
           text: renderConsentCardHtml(DEMO_CARD),
         },
       ],
@@ -82,6 +98,10 @@ function buildServer(): McpServer {
       title: "Approve or block a changed tool",
       description: "Records a household member's decision on a quarantined tool-definition change.",
       inputSchema: APPROVE_CHANGE_INPUT_SHAPE,
+      _meta: {
+        [MCP_APP_RESOURCE_URI_META_KEY]: CONSENT_RESOURCE_URI,
+        ui: { resourceUri: CONSENT_RESOURCE_URI },
+      },
     },
     async ({ quarantineId, approvalToken, decision }) => {
       log.info({ quarantineId, approvalToken, decision }, "approve_change invoked");

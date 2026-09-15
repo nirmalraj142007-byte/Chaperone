@@ -1496,3 +1496,168 @@ sync with each other exactly like this. Consider a shared test helper
 (a `buildMockLedger()` used by both files) so a future gate.ts change
 only needs the mock updated once instead of twice, with the second site
 silently rotting until someone happens to run it.
+
+## Entry 027 — 2026-09-15
+
+**Task attempted:** Phase 11 — promote the Phase 6 MCP App spike into the
+gateway's real consent surface, per docs/DECISIONS.md's "Fix scoped: two
+changes needed" (the `_meta["ui/resourceUri"]` tool linkage, and the real
+`ui/initialize` → `ui/notifications/initialized` handshake in place of the
+informal `@mcp-ui/server` `postMessage` convention). Before writing either,
+pulled the actual `@modelcontextprotocol/ext-apps@1.7.5` tarball
+(`npm pack`) rather than trusting docs/DECISIONS.md's own description of it
+at face value, since that entry itself flags the exact SEP number and full
+wire contract as unverified.
+
+**Steps taken:** Extracted the tarball and read `dist/src/app.d.ts` and
+`dist/src/spec.types.d.ts` directly (the package ships no changelog).
+Confirmed `RESOURCE_URI_META_KEY = "ui/resourceUri"` and
+`RESOURCE_MIME_TYPE = "text/html;profile=mcp-app"` match docs/DECISIONS.md
+exactly. Then read `INITIALIZE_METHOD`/`INITIALIZED_METHOD`'s backing
+interfaces for the exact request/notification param shapes, and
+`server/index.d.ts` for `getUiCapability`/`EXTENSION_ID` — none of which
+docs/DECISIONS.md had recorded, since the Phase 6 spike's time-box ended
+before implementing the handshake at all.
+
+**Expected versus actual:** Expected `_meta[RESOURCE_URI_META_KEY]` on the
+tool definition to be this package's one, current way to link a tool to its
+UI resource, per how the phase prompt and docs/DECISIONS.md both describe
+it. Actual: the package's own JSDoc on `RESOURCE_URI_META_KEY` labels that
+flat key **"Deprecated: for backwards compatibility"** and directs server
+authors to a nested `_meta.ui.resourceUri` shape instead — a form that
+does not appear anywhere in docs/DECISIONS.md's Phase 6 findings, because
+the spike never got far enough to read this file. A host is documented to
+check both forms, so nothing about the Phase 6 spike's diagnosis was wrong
+— it just wasn't the complete current picture of the surface.
+
+**Severity:** minor. Both forms round-trip through the same field on the
+same object; this cost one extra read of the vendored `.d.ts`, not a design
+change. Flagged because "verify rather than remember" (CLAUDE.md) applies
+just as much to a prior *phase's own* verification as to memory of the SDK
+in general — a decision record is evidence of what was true when it was
+written, not a standing guarantee that nothing downstream of it moved.
+
+**Workaround:** `packages/gateway/src/firstPartyTools.ts`'s
+`APPROVE_CHANGE_TOOL._meta` sets both keys (`MCP_APP_RESOURCE_URI_META_KEY`
+flat, and a nested `ui: { resourceUri }`) pointing at the same
+`CONSENT_RESOURCE_URI_TEMPLATE`, so a host checking either form finds it.
+
+**Actionable suggestion:** When a decision record cites an external
+package's behavior as the basis for a scoped follow-up task (here: "budget
+2-3 hours for two named changes"), the follow-up session should re-verify
+against the actual installed/pinned version before implementing, not treat
+the decision record's own description as sufficient — exactly the same
+discipline CLAUDE.md already asks for the MCP SDK and Bedrock model IDs,
+just not yet written down as applying to this repo's *own* prior
+decisions too.
+
+## Entry 028 — 2026-09-15
+
+**Task attempted:** Live acceptance of the Phase 11 consent card against a
+real, running stack (`docker compose up`, DynamoDB Local migrated and
+seeded, demo-upstream mutated) and a real MCP Inspector 2.6.0 — both its
+`--cli` mode and its `--web` UI's dedicated Apps tab, per the phase's
+acceptance instruction to run the full mutate → refuse → card → approve →
+restore loop and capture it.
+
+**Steps taken:** In the web UI, opened the Apps tab, selected
+`chaperone/approve_change` (confirmed listed under "MCP Apps (1)" — the
+`_meta` linkage works), staged a real `quarantineId`/`approvalToken` in its
+input form, and clicked "Open App."
+
+**Expected versus actual:** Expected the staged `quarantineId` to be
+substituted into the tool's `_meta.ui.resourceUri` template
+(`ui://chaperone/consent/{quarantineId}`) before Inspector fetched it, so
+the interactive card would render in the sandboxed app iframe. Actual: the
+browser console showed `[mcp-app] failed to load UI resource into sandbox:
+... "no quarantine \"{quarantineId}\" for this household"` — Inspector's
+generic Apps-tab "Open App" affordance treats a tool's static
+`_meta.ui.resourceUri` as a literal URI and requests it as-is; it does not
+perform RFC 6570 template expansion using the staged input values. The
+underlying `tools/call` to `chaperone/approve_change` *did* still fire
+correctly with the staged arguments (confirmed via
+`notifications/tools/list_changed` and a follow-up `tools/list` showing
+`grocery__add_item` restored) — only the app iframe's own resource fetch
+failed, not the tool invocation.
+
+**Severity:** minor. This is a real gap in what one specific host affordance
+(a generic "preview this app-linked tool" panel) can do with a
+*parameterized* resource template, not a defect in this repo's server:
+`resources/read` against the same URI with the real id already substituted
+(exercised separately via `--cli --method resources/read --uri
+ui://chaperone/consent/<realId>`, and via the refusal's own embedded
+`resource` content block, both confirmed working and byte-identical to
+`renderConsentCardHtml`'s output) renders correctly. The product's actual
+delivery path for the interactive card — embedding the already-resolved
+HTML directly in the *triggering* tool's refusal result — never depends on
+a host resolving the template itself, which this finding retroactively
+validates as the right design rather than a redundant belt-and-suspenders
+choice.
+
+**Workaround:** None needed for the shipped design; noted here so a later
+session doesn't spend time trying to make Inspector's Apps-tab "Open App"
+preview work against the literal `{quarantineId}` template — that specific
+one-tool-one-static-resource affordance is not the mechanism this product
+relies on.
+
+**Actionable suggestion:** If a future MCP App on this gateway ever needs
+the Apps-tab preview-and-open-from-tool-metadata flow to work standalone
+(independent of being embedded in another tool's result), it would need a
+tool whose `_meta.ui.resourceUri` is a concrete URI, not a template — e.g.
+a tool that itself returns `{quarantineId}` and only becomes
+"openable" after being called once. Not needed for this product's own
+consent-card flow, which is deliberately triggered by a *different* tool's
+refusal.
+
+## Entry 029 — 2026-09-15
+
+**Task attempted:** Run `pnpm test:stack` (the 10-iteration resumption
+suite plus the long-stream suite) as the final acceptance check after the
+live MCP Inspector session above, to confirm Phase 11's changes to
+`app.ts`/`upstreamProxy.ts` (new resource capability, new `buildApp`
+parameter) didn't regress the resumable-SSE flagship claim.
+
+**Steps taken:** `docker compose up -d --build` (same containers used for
+the manual Inspector session, reusing the already-migrated,
+already-`pin:bootstrap`-ed `chaperone_ddb-data` named volume rather than a
+fresh one), then `pnpm test:stack`.
+
+**Expected versus actual:** Expected 10/10 resumption iterations green, per
+CLAUDE.md's own acceptance bar. Actual: all 10 failed with `"Order not
+placed: the shopping list is empty"` instead of a placed-order confirmation
+— `long-stream.test.ts` passed. Root cause, confirmed by hand (raw
+`tools/list` against the running gateway): `grocery__add_item` was
+excluded from `tools/list` — quarantined — because the DynamoDB volume
+still held the pin my own manual Inspector session had left approved
+against the *mutated* description, while `docker compose up --build`
+restarts `demo-upstream` with its in-memory mutation state reset to
+*original* on every container start. Pin says mutated, live tool says
+original: a real, correctly-detected hash mismatch, not a bug. The
+resumption test's own `callToolAndAwaitResult(session, 2,
+"grocery__add_item", ...)` doesn't assert `isError`, so it silently
+proceeded to `place_order` against a list that had never actually
+received an item, and the confusing failure surfaced two calls later
+instead of at its true source.
+
+**Severity:** minor — self-inflicted by manual testing sharing a
+long-lived Docker volume with the automated suite, not a defect in
+gate.ts, session.ts, or the resumption suite's normal operating
+assumptions (a fresh `docker compose up` + `ddb:migrate` +
+`pin:bootstrap` sequence, which nothing in this session's manual poking
+ever violates on its own). Confirmed by `docker compose down -v` (wiping
+the volume) + fresh `ddb:migrate` + `pin:bootstrap`: 10/10 resumption
+iterations and the long-stream suite all pass.
+
+**Workaround:** None needed in code. Operationally: after any manual
+Inspector/curl session against the compose stack that approves or refuses
+a quarantine, either `docker compose down -v` before the next
+`pnpm test:stack` run, or re-run `pnpm pin:bootstrap` to re-pin every tool
+to whatever the upstream is currently serving.
+
+**Actionable suggestion:** `callToolAndAwaitResult` in
+spec/resumption.test.ts (and any other spec/ helper with the same name or
+shape) should assert `!result.isError` right after the `add_item` seed
+call, with a message that names the actual refusal text — turning a
+"list is empty two calls later" red herring into an immediate, correctly
+located failure the next time stale pin state (or any other cause) quietly
+turns the seed call into a refusal instead of a mutation.

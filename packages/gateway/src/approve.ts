@@ -17,8 +17,13 @@ import {
 import * as ledger from "@chaperone/ledger";
 import { clearRevealedToken } from "./gate.js";
 
-/** A quarantine's approval token is only ever valid for this long after `detectedAt`. */
-const APPROVAL_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
+/**
+ * A quarantine's approval token is only ever valid for this long after
+ * `detectedAt`. Exported so consentCard.ts's "expired" rendering state uses
+ * the exact same threshold this module enforces at approve time, rather
+ * than a second 24h literal that could drift out of sync with this one.
+ */
+export const APPROVAL_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 
 export type ApprovalDecision = "approve" | "block";
 
@@ -26,6 +31,8 @@ export interface ApproveResult {
   quarantineId: string;
   decision: ApprovalDecision;
   status: ledger.QuarantineStatus;
+  /** Only set when `decision === "approve"` — the hash the tool is now pinned under. */
+  newHash?: string;
 }
 
 function sha256Hex(value: string): string {
@@ -126,7 +133,7 @@ export async function approveChange(
   await ledger.resolveQuarantine(householdId, quarantineId, status, resolvedAt);
   clearRevealedToken(quarantineId);
 
-  return { quarantineId, decision, status };
+  return { quarantineId, decision, status, ...(decision === "approve" ? { newHash: quarantine.toHash } : {}) };
 }
 
 /** Read-only: every quarantine still open for this household, for a host to surface without the console. */

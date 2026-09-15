@@ -226,3 +226,85 @@ which of the two renderers ends up on screen.
 See [`docs/spike/README.md`](spike/README.md) for why this entry has no
 screen recording, and for the full reproducible transcript (raw CLI JSON,
 exact DOM queries, exact click sequence) backing every claim above.
+
+---
+
+## MCP App fix landed — Phase 11 (2026-09-15)
+
+**Verdict: GO. The interactive card works, in the real gateway, against a
+real MCP Inspector 2.6.0, over both the resource-embedding path and the
+tool `_meta` linkage.**
+
+This supersedes the PARTIAL verdict above for the two named gaps only —
+everything else in the Phase 6 entry (the render functions, the mechanism
+survey, the fallback argument) stands unchanged.
+
+Both fixes the Phase 6 spike scoped were implemented against the actual
+`@modelcontextprotocol/ext-apps@1.7.5` package (pulled via `npm pack` and
+read directly — see friction-log.md Entry 027 for what that surfaced that
+this file's own Phase 6 findings hadn't):
+
+1. `packages/gateway/src/firstPartyTools.ts`'s `APPROVE_CHANGE_TOOL._meta`
+   now carries the resource link in both documented forms — the flat
+   `MCP_APP_RESOURCE_URI_META_KEY` key this file originally named, and the
+   nested `_meta.ui.resourceUri` form the package's own JSDoc marks
+   preferred.
+2. `packages/mcp-app/src/render.ts`'s inline script now performs the real
+   `ui/initialize` → `ui/notifications/initialized` handshake over
+   `postMessage`, then a real `tools/call` JSON-RPC request for
+   Approve/Keep-blocked — copied from the package's own
+   `message-transport.d.ts`/`spec.types.d.ts`, not the informal
+   `@mcp-ui/server` convention.
+
+The gateway registers `ui://chaperone/consent/{quarantineId}` as a real
+resource template (`ListResourceTemplatesRequestSchema`,
+`ReadResourceRequestSchema` on the low-level `Server` — the SDK still has
+no `ui://`-specific helper, unchanged from the Phase 6 finding), and
+`packages/gateway/src/consentCard.ts` is the one place that turns a
+quarantine row into one of the seven card states (loading, pending,
+advisory-unavailable, batch, approved, refused, expired), shared by the
+refusal path and the resource-read path so they can't disagree.
+
+**Live acceptance, against `docker compose up` (DynamoDB Local + real
+demo-upstream + real gateway) and a real MCP Inspector 2.6.0:**
+
+- `--cli --method tools/call --tool-name chaperone/approve_change
+  --app-info` → `{"hasApp":true, "resourceUri":"ui://chaperone/consent/{quarantineId}"}`.
+- The web UI's Apps tab lists `chaperone/approve_change` under "MCP Apps
+  (1)" and opens it in the cross-origin MCP-Apps sandbox
+  (`http://127.0.0.1:6275/sandbox`, confirmed via a real network request)
+  — no `sandbox=""` restriction this time, unlike the Phase 6 finding.
+- A live `resources/read` on a concrete (non-template) `ui://` URI returns
+  `renderConsentCardHtml`'s output byte-for-byte, `text/html;profile=mcp-app`.
+- The full mutate → refuse → card → approve → restore loop ran twice
+  end-to-end against the live stack: once via `chaperone/pending_changes` +
+  a direct `chaperone/approve_change` call (`grocery__add_item` excluded
+  from `tools/list`, then restored after approval, `notifications/tools/list_changed`
+  observed both in the CLI transcript and the web UI's protocol log), and
+  once with `MCP_APP_ENABLED=false` on a second gateway instance, confirming
+  the refusal drops to exactly two content blocks (frozen text + text card,
+  no embedded resource) with everything else identical.
+- One real gap found and left as a documented limitation, not worked
+  around: Inspector's Apps-tab "Open App" staging flow does not perform
+  RFC 6570 template expansion on a tool's static `_meta.ui.resourceUri` —
+  it requested the literal string `ui://chaperone/consent/{quarantineId}`
+  and got (correctly) a "no quarantine" error from the gateway. The
+  underlying `tools/call` still fired and succeeded from the same form.
+  See friction-log.md Entry 028. This does not affect the product's actual
+  delivery path: the resolved card is embedded directly in the refusal
+  result of the *tool that triggered the quarantine*, which never depends
+  on a host resolving the template itself.
+
+### Evidence
+
+`pnpm test` (334), `pnpm spec` (26), and `pnpm test:stack` (11, including
+all 10 resumption iterations against a freshly migrated stack — see
+friction-log.md Entry 029 for a false alarm caused by a stale Docker volume
+from manual testing, not a code defect) all pass. `packages/mcp-app/test/render.test.ts`
+covers all seven card states plus XSS/RTL-override containment for both
+renderers. `packages/gateway/test/consentCard.test.ts` covers state
+selection (loading/advisory-unavailable timing, batch grouping, expiry,
+approved/refused) against a mocked ledger. `packages/gateway/test/gateway.test.ts`
+covers the `_meta` linkage, the resource template, the embedded resource
+block, the `MCP_APP_ENABLED=false` fallback, and a 404 on an unknown
+quarantine id, all against a real in-process gateway + demo-upstream.

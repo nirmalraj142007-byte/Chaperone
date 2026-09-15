@@ -47,6 +47,10 @@ vi.mock("@chaperone/ledger", () => ({
   listQuarantineByStatus: vi.fn(),
   resolveQuarantine: vi.fn(),
   appendEvent: vi.fn(),
+  // Phase 11: consentCard.ts reads this on every refusal to decide
+  // loading/pending/advisory-unavailable — undefined (no advisory ever
+  // written in this suite) exercises the "Bedrock never answers" path.
+  getAdvisory: vi.fn(),
 }));
 
 const { buildApp: buildGatewayApp } = await import("@chaperone/gateway");
@@ -183,7 +187,7 @@ beforeEach(async () => {
 
   pool = await getPool([upstream]);
   await bootstrapPins();
-  const gw = await listen(buildGatewayApp(pool, [upstream], ["http://localhost:*"], HOUSEHOLD_ID));
+  const gw = await listen(buildGatewayApp(pool, [upstream], ["http://localhost:*"], HOUSEHOLD_ID, true));
   gatewayServer = gw.server;
   gatewayUrl = gw.url;
 });

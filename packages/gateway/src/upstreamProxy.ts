@@ -25,20 +25,32 @@
  * gated — there is no upstream definition of them to drift against.
  */
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+  ListResourceTemplatesRequestSchema,
+  ReadResourceRequestSchema,
+} from "@modelcontextprotocol/sdk/types.js";
 import type { CallToolResult, ProgressNotification } from "@modelcontextprotocol/sdk/types.js";
 import type { UpstreamConfig, UpstreamPool } from "@chaperone/upstream";
-import * as ledger from "@chaperone/ledger";
 import { UpstreamError } from "@chaperone/errors";
 import { REFUSAL_TOOL_CHANGED, REFUSAL_TOOL_UNPINNED, REFUSAL_UPSTREAM_UNAVAILABLE } from "@chaperone/policy";
+import {
+  renderConsentCardText,
+  renderConsentCardHtml,
+  MCP_APP_RESOURCE_MIME_TYPE,
+  CONSENT_RESOURCE_URI_TEMPLATE,
+  consentResourceUri,
+  parseConsentResourceUri,
+} from "@chaperone/mcp-app";
 import { childLogger } from "@chaperone/logger";
 import { createCallRegistry } from "./call-registry.js";
-import { gateToolCall, gateToolList, peekRevealedToken, type GateDecision } from "./gate.js";
+import { gateToolCall, gateToolList, type GateDecision } from "./gate.js";
+import { loadConsentCardModel } from "./consentCard.js";
 import {
   APPROVE_CHANGE_TOOL_NAME,
   FIRST_PARTY_TOOLS,
   PENDING_CHANGES_TOOL_NAME,
-  buildConsentCardText,
   handleApproveChange,
   handlePendingChanges,
 } from "./firstPartyTools.js";
@@ -90,13 +102,25 @@ function notifyListChanged(server: Server, reason: string): void {
  * text for "a ledger or quarantine write failed," and treating an
  * unreadable trust state as anything less cautious than "something about
  * this tool's approval can no longer be verified" would be the wrong
- * default to fail toward. A second content block — the consent card — is
- * added only when there's an actual quarantine row to show.
+ * default to fail toward.
+ *
+ * A second content block — the text consent card — is added whenever
+ * there's an actual quarantine row to show, so the card appears in the
+ * same turn as the refusal with no extra round trip. A *third* block, the
+ * MCP App HTML resource, is added on top of that whenever
+ * `MCP_APP_ENABLED` is true and this session hasn't been positively
+ * detected as lacking UI-resource support: `supportsMcpApp === false` is
+ * the only case that suppresses it, so an undetermined client (no
+ * `io.modelcontextprotocol/ui` extension declared either way) gets both —
+ * "when in doubt, return both, since a host that ignores one will show the
+ * other."
  */
 async function buildRefusalResult(
   householdId: string,
   upstreams: readonly UpstreamConfig[],
   decision: GateDecision,
+  mcpAppEnabled: boolean,
+  supportsMcpApp: boolean | undefined,
 ): Promise<CallToolResult> {
   if (decision.reason === "UNPINNED") {
     return { content: [{ type: "text" as const, text: REFUSAL_TOOL_UNPINNED }], isError: true };
@@ -104,14 +128,21 @@ async function buildRefusalResult(
 
   const content: CallToolResult["content"] = [{ type: "text" as const, text: REFUSAL_TOOL_CHANGED }];
   if (decision.quarantineId !== undefined) {
-    const quarantine = await ledger.getQuarantine(householdId, decision.quarantineId);
-    if (quarantine !== undefined) {
-      const token = decision.approvalToken ?? peekRevealedToken(decision.quarantineId);
-      const label = upstreams.find((u) => u.id === decision.upstreamId)?.label ?? decision.upstreamId;
-      content.push({
-        type: "text" as const,
-        text: buildConsentCardText(quarantine, label, token ?? "(already shown once — see the original consent message)"),
-      });
+    const model = await loadConsentCardModel(householdId, upstreams, decision.quarantineId, {
+      ...(decision.approvalToken !== undefined ? { approvalToken: decision.approvalToken } : {}),
+    });
+    if (model !== undefined) {
+      content.push({ type: "text" as const, text: renderConsentCardText(model) });
+      if (mcpAppEnabled && supportsMcpApp !== false) {
+        content.push({
+          type: "resource" as const,
+          resource: {
+            uri: consentResourceUri(decision.quarantineId),
+            mimeType: MCP_APP_RESOURCE_MIME_TYPE,
+            text: renderConsentCardHtml(model),
+          },
+        });
+      }
     }
   }
   return { content, isError: true };
@@ -129,17 +160,55 @@ export function buildPassthroughServer(
   pool: UpstreamPool,
   upstreams: readonly UpstreamConfig[],
   householdId: string,
+  mcpAppEnabled: boolean,
+  supportsMcpApp: boolean | undefined,
 ): PassthroughServer {
   const upstreamIds = upstreams.map((u) => u.id);
   const server = new Server(
     { name: "chaperone-gateway", version: "0.0.0" },
-    { capabilities: { tools: { listChanged: true } } },
+    { capabilities: { tools: { listChanged: true }, resources: {} } },
   );
   // One registry per session (this function is called once per session —
   // see session.ts), so a duplicate `tools/call` for a request ID this
   // session has already seen attaches to the original upstream call instead
   // of re-invoking it. See call-registry.ts.
   const callRegistry = createCallRegistry();
+
+  // The consent card's own resource surface — a single template, since
+  // every card is addressed by its quarantine id. Registered unconditionally
+  // (a client that never reads it costs nothing); `mcpAppEnabled` and
+  // `supportsMcpApp` only gate whether the *embedded* resource block gets
+  // attached to a refusal result below, not whether the template exists.
+  server.setRequestHandler(ListResourceTemplatesRequestSchema, async () => ({
+    resourceTemplates: [
+      {
+        uriTemplate: CONSENT_RESOURCE_URI_TEMPLATE,
+        name: "Chaperone consent card",
+        description: "The before/after review card for one quarantined tool-definition change.",
+        mimeType: MCP_APP_RESOURCE_MIME_TYPE,
+      },
+    ],
+  }));
+
+  server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+    const quarantineId = parseConsentResourceUri(request.params.uri);
+    if (quarantineId === undefined) {
+      throw new UpstreamError(`unknown resource "${request.params.uri}"`, { uri: request.params.uri });
+    }
+    const model = await loadConsentCardModel(householdId, upstreams, quarantineId);
+    if (model === undefined) {
+      throw new UpstreamError(`no quarantine "${quarantineId}" for this household`, { quarantineId });
+    }
+    return {
+      contents: [
+        {
+          uri: request.params.uri,
+          mimeType: MCP_APP_RESOURCE_MIME_TYPE,
+          text: renderConsentCardHtml(model),
+        },
+      ],
+    };
+  });
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     const entries = await pool.listAllTools();
@@ -190,7 +259,7 @@ export function buildPassthroughServer(
       if (decision.newlyQuarantined) {
         notifyListChanged(server, "tool quarantined during tools/call");
       }
-      return buildRefusalResult(householdId, upstreams, decision);
+      return buildRefusalResult(householdId, upstreams, decision, mcpAppEnabled, supportsMcpApp);
     }
 
     const progressToken = request.params._meta?.progressToken;

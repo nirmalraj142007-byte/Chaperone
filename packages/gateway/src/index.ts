@@ -25,7 +25,7 @@ const log = childLogger({ component: "gateway" });
 const config = loadConfig();
 
 const pool = await getPool(config.upstreams);
-const app = buildApp(pool, config.upstreams, config.originAllowlist, config.householdId);
+const app = buildApp(pool, config.upstreams, config.originAllowlist, config.householdId, config.mcpAppEnabled);
 
 const host = resolveBindHost(config.bindAll);
 const httpServer = app.listen(config.port, host, () => {

@@ -14,6 +14,11 @@ import {
   resetControlStateForTests,
 } from "@chaperone/demo-upstream";
 import { canonicalizeTool, hashTool, REFUSAL_TOOL_CHANGED, REFUSAL_TOOL_UNPINNED } from "@chaperone/policy";
+import {
+  MCP_APP_RESOURCE_MIME_TYPE,
+  MCP_APP_RESOURCE_URI_META_KEY,
+  consentResourceUri,
+} from "@chaperone/mcp-app";
 
 // Mocked so this test never touches real DynamoDB — an in-memory stand-in
 // wired up per test in beforeEach. Exercises session.ts's real logic
@@ -43,6 +48,10 @@ vi.mock("@chaperone/ledger", () => ({
   listQuarantineByStatus: vi.fn(),
   resolveQuarantine: vi.fn(),
   appendEvent: vi.fn(),
+  // Phase 11: consentCard.ts reads this on every refusal to decide
+  // loading/pending/advisory-unavailable — undefined (no advisory ever
+  // written in this suite) exercises the "Bedrock never answers" path.
+  getAdvisory: vi.fn(),
 }));
 
 const { buildApp } = await import("../src/app.js");
@@ -171,7 +180,7 @@ beforeEach(async () => {
 
   pool = await getPool([upstream]);
   await bootstrapPins();
-  const gatewayApp = buildApp(pool, [upstream], ["http://localhost:*"], HOUSEHOLD_ID);
+  const gatewayApp = buildApp(pool, [upstream], ["http://localhost:*"], HOUSEHOLD_ID, true);
   const gatewayListen = await listen(gatewayApp);
   gatewayServer = gatewayListen.server;
   gatewayUrl = gatewayListen.url;
@@ -468,5 +477,82 @@ describe("gateway: policy gate end to end (bootstrap -> mutate -> refuse -> appr
     const result = await client.callTool({ name: "grocery__add_item", arguments: { item: "batteries" } });
     expect(result.isError).toBe(true);
     expect((result.content as Array<{ text?: string }>)[0]?.text).toBe(REFUSAL_TOOL_CHANGED);
+  });
+});
+
+describe("gateway: MCP App consent card (Phase 11)", () => {
+  it("chaperone/approve_change carries the _meta ui/resourceUri linkage, both the legacy flat key and the modern nested one", async () => {
+    const { client } = await connectClient();
+    const { tools } = await client.listTools();
+    const approveChange = tools.find((t) => t.name === "chaperone/approve_change");
+    const meta = approveChange?._meta as Record<string, unknown> | undefined;
+    expect(meta?.[MCP_APP_RESOURCE_URI_META_KEY]).toBe("ui://chaperone/consent/{quarantineId}");
+    expect((meta?.["ui"] as { resourceUri?: string } | undefined)?.resourceUri).toBe(
+      "ui://chaperone/consent/{quarantineId}",
+    );
+  });
+
+  it("lists the consent card resource template", async () => {
+    const { client } = await connectClient();
+    const { resourceTemplates } = await client.listResourceTemplates();
+    expect(resourceTemplates).toHaveLength(1);
+    expect(resourceTemplates[0]?.uriTemplate).toBe("ui://chaperone/consent/{quarantineId}");
+    expect(resourceTemplates[0]?.mimeType).toBe(MCP_APP_RESOURCE_MIME_TYPE);
+  });
+
+  it("a refusal carries a third, embedded-resource content block with the HTML card when the client's UI-resource support is undetermined (\"when in doubt, return both\")", async () => {
+    const { client } = await connectClient();
+    await fetch(`http://127.0.0.1:${new URL(upstream.url).port}/control/mutate`, { method: "POST" });
+
+    const result = await client.callTool({ name: "grocery__add_item", arguments: { item: "batteries" } });
+    expect(result.isError).toBe(true);
+    const blocks = result.content as Array<{ type: string; text?: string; resource?: { uri: string; mimeType?: string; text?: string } }>;
+    expect(blocks).toHaveLength(3);
+    expect(blocks[0]?.text).toBe(REFUSAL_TOOL_CHANGED);
+    expect(blocks[1]?.type).toBe("text");
+    expect(blocks[2]?.type).toBe("resource");
+    expect(blocks[2]?.resource?.mimeType).toBe(MCP_APP_RESOURCE_MIME_TYPE);
+    expect(blocks[2]?.resource?.text).toContain("<button type=\"button\" class=\"approve\">");
+    expect(blocks[2]?.resource?.uri).toMatch(/^ui:\/\/chaperone\/consent\//);
+  });
+
+  it("the same card is independently readable via resources/read at the uri the refusal embedded", async () => {
+    const { client } = await connectClient();
+    await fetch(`http://127.0.0.1:${new URL(upstream.url).port}/control/mutate`, { method: "POST" });
+    const refusal = await client.callTool({ name: "grocery__add_item", arguments: { item: "batteries" } });
+    const resourceBlock = (refusal.content as Array<{ type: string; resource?: { uri: string } }>).find(
+      (b) => b.type === "resource",
+    );
+    const uri = resourceBlock?.resource?.uri;
+    expect(uri).toBeDefined();
+
+    const read = await client.readResource({ uri: uri! });
+    expect(read.contents[0]?.mimeType).toBe(MCP_APP_RESOURCE_MIME_TYPE);
+    expect(read.contents[0]?.text).toContain("add_item");
+  });
+
+  it("resources/read 404s (as an MCP error) for a quarantine id that doesn't exist", async () => {
+    const { client } = await connectClient();
+    await expect(client.readResource({ uri: consentResourceUri("no-such-quarantine") })).rejects.toThrow();
+  });
+
+  it("MCP_APP_ENABLED=false suppresses the embedded resource block — only the frozen text and the text consent card remain", async () => {
+    const { buildApp } = await import("../src/app.js");
+    const noAppGatewayApp = buildApp(pool, [upstream], ["http://localhost:*"], HOUSEHOLD_ID, false);
+    const { server: noAppServer, url: noAppUrl } = await listen(noAppGatewayApp);
+    try {
+      const transport = new StreamableHTTPClientTransport(new URL(`${noAppUrl}/mcp`));
+      const client = new Client({ name: "test-client-no-app", version: "0.0.0" });
+      await client.connect(transport as Transport);
+
+      await fetch(`http://127.0.0.1:${new URL(upstream.url).port}/control/mutate`, { method: "POST" });
+      const result = await client.callTool({ name: "grocery__add_item", arguments: { item: "batteries" } });
+      const blocks = result.content as Array<{ type: string }>;
+      expect(blocks).toHaveLength(2);
+      expect(blocks.every((b) => b.type === "text")).toBe(true);
+    } finally {
+      noAppServer.closeAllConnections();
+      await new Promise<void>((resolve) => noAppServer.close(() => resolve()));
+    }
   });
 });

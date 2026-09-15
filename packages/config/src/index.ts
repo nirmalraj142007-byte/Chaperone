@@ -69,6 +69,16 @@ const envSchema = z.object({
     .enum(["true", "false"])
     .default("false")
     .transform((v) => v === "true"),
+  // Phase 11: the master switch for the MCP App consent card. "false"
+  // forces every refusal down the text-only path regardless of what a
+  // client declares at initialize — the escape hatch for a host whose
+  // ext-apps implementation turns out to be broken on demo day, per
+  // docs/DECISIONS.md's "Fallback if the handshake costs more than
+  // projected."
+  MCP_APP_ENABLED: z
+    .enum(["true", "false"])
+    .default("true")
+    .transform((v) => v === "true"),
 });
 
 export interface Config {
@@ -83,6 +93,7 @@ export interface Config {
   port: number;
   originAllowlist: string[];
   bindAll: boolean;
+  mcpAppEnabled: boolean;
 }
 
 const EXPECTED_SHAPE: Record<string, string> = {
@@ -97,6 +108,7 @@ const EXPECTED_SHAPE: Record<string, string> = {
   PORT: "positive integer (default 3000)",
   GATEWAY_ORIGIN_ALLOWLIST: 'comma-separated origins, e.g. "http://localhost:*,https://app.example.com" (default "http://localhost:*")',
   BIND_ALL: 'one of "true" | "false" (default "false")',
+  MCP_APP_ENABLED: 'one of "true" | "false" (default "true")',
 };
 
 function formatIssues(error: z.ZodError): string {
@@ -131,6 +143,7 @@ export function loadConfig(): Config {
     port: env.PORT,
     originAllowlist: env.GATEWAY_ORIGIN_ALLOWLIST,
     bindAll: env.BIND_ALL,
+    mcpAppEnabled: env.MCP_APP_ENABLED,
     ...(env.DDB_ENDPOINT !== undefined ? { ddbEndpoint: env.DDB_ENDPOINT } : {}),
     ...(env.BEDROCK_MODEL_ID !== undefined ? { bedrockModelId: env.BEDROCK_MODEL_ID } : {}),
     ...(env.GITHUB_TOKEN !== undefined ? { githubToken: env.GITHUB_TOKEN } : {}),

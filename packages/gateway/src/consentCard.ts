@@ -1,0 +1,151 @@
+/**
+ * Turns a stored `Quarantine` row (plus its sibling rows, its advisory row,
+ * and — once resolved — its pin) into the `ConsentCardModel` render.ts
+ * knows how to draw. One function, called from both the refusal path
+ * (upstreamProxy.ts, so the card appears in the same turn as the refusal)
+ * and the `ui://chaperone/consent/{quarantineId}` resource template
+ * (registered in upstreamProxy.ts too), so the two paths can never disagree
+ * about which of the seven states a given quarantine is in.
+ */
+import type { UpstreamConfig } from "@chaperone/upstream";
+import type { CapabilityClass } from "@chaperone/policy";
+import * as ledger from "@chaperone/ledger";
+import type { ConsentCardItem, ConsentCardModel } from "@chaperone/mcp-app";
+import { childLogger } from "@chaperone/logger";
+import { APPROVAL_TOKEN_TTL_MS } from "./approve.js";
+import { peekRevealedToken } from "./gate.js";
+
+const log = childLogger({ component: "gateway-consent-card" });
+
+/** Once an advisory row exists but not longer than this, absence still reads as "still working" (loading) rather than "given up" (advisory-unavailable). */
+const ADVISORY_LOADING_WINDOW_MS = 8_000;
+
+const TOKEN_ALREADY_SHOWN_PLACEHOLDER = "(already shown once — see the original consent message)";
+
+export function upstreamLabelFor(upstreams: readonly UpstreamConfig[], upstreamId: string): string {
+  return upstreams.find((u) => u.id === upstreamId)?.label ?? upstreamId;
+}
+
+function resolveApprovalToken(quarantineId: string, providedToken: string | undefined): string {
+  return providedToken ?? peekRevealedToken(quarantineId) ?? TOKEN_ALREADY_SHOWN_PLACEHOLDER;
+}
+
+function isExpired(quarantine: ledger.Quarantine): boolean {
+  const detectedAtMs = Date.parse(quarantine.detectedAt);
+  return !Number.isFinite(detectedAtMs) || Date.now() - detectedAtMs > APPROVAL_TOKEN_TTL_MS;
+}
+
+/** A failure here degrades the card to "no advisory yet," never to a thrown error — the advisory is decoration, not the security decision. */
+async function loadAdvisorySummary(quarantineId: string): Promise<string | undefined> {
+  try {
+    const advisory = await ledger.getAdvisory(quarantineId);
+    return advisory?.summary;
+  } catch (error) {
+    log.warn({ error, quarantineId }, "advisory read failed; rendering the card without one");
+    return undefined;
+  }
+}
+
+function toItem(
+  quarantine: ledger.Quarantine,
+  upstreamLabel: string,
+  approvalToken: string,
+  advisorySummary: string | undefined,
+): ConsentCardItem {
+  const before = JSON.parse(quarantine.fromCanonicalJson) as { description?: string };
+  const after = JSON.parse(quarantine.toCanonicalJson) as { description?: string };
+  return {
+    quarantineId: quarantine.quarantineId,
+    toolName: quarantine.toolName,
+    upstreamLabel,
+    capabilityClass: quarantine.capabilityClass as CapabilityClass,
+    detectedAt: quarantine.detectedAt,
+    beforeDescription: before.description ?? "",
+    afterDescription: after.description ?? "",
+    spans: quarantine.diffSpans,
+    approvalToken,
+    ...(advisorySummary !== undefined ? { advisorySummary } : {}),
+  };
+}
+
+/** The single-item states: "loading" while an advisory might still land, "advisory-unavailable" once that window has passed, "pending" once one has. */
+function pendingStateFor(item: ConsentCardItem, quarantine: ledger.Quarantine, hasAdvisory: boolean): ConsentCardModel {
+  if (hasAdvisory) {
+    return { state: "pending", item };
+  }
+  const detectedAtMs = Date.parse(quarantine.detectedAt);
+  const stillWaiting = Number.isFinite(detectedAtMs) && Date.now() - detectedAtMs < ADVISORY_LOADING_WINDOW_MS;
+  return stillWaiting ? { state: "loading", item } : { state: "advisory-unavailable", item };
+}
+
+export interface LoadConsentCardOptions {
+  /**
+   * The plaintext token from *this* request's own gate decision, when this
+   * call is rendering the card for the quarantine that decision just
+   * (re)detected. Omitted for every other caller (a later `resources/read`,
+   * or a sibling row in a batch) — those fall back to whatever
+   * `peekRevealedToken` still remembers, or the placeholder if even that is
+   * gone.
+   */
+  approvalToken?: string;
+}
+
+/**
+ * Returns `undefined` only when the quarantine id itself doesn't exist for
+ * this household — every other condition (expired, resolved, no advisory
+ * yet, batched with siblings) is a real `ConsentCardModel` state, not an
+ * error.
+ */
+export async function loadConsentCardModel(
+  householdId: string,
+  upstreams: readonly UpstreamConfig[],
+  quarantineId: string,
+  options: LoadConsentCardOptions = {},
+): Promise<ConsentCardModel | undefined> {
+  const quarantine = await ledger.getQuarantine(householdId, quarantineId);
+  if (quarantine === undefined) {
+    return undefined;
+  }
+  const label = upstreamLabelFor(upstreams, quarantine.upstreamId);
+
+  if (quarantine.status === "approved") {
+    const pin = await ledger.getPin(householdId, quarantine.upstreamId, quarantine.toolName);
+    return {
+      state: "approved",
+      toolName: quarantine.toolName,
+      upstreamLabel: label,
+      newHashPrefix: pin?.approvedHash ?? quarantine.toHash,
+    };
+  }
+
+  if (quarantine.status === "refused") {
+    return { state: "refused", toolName: quarantine.toolName, upstreamLabel: label };
+  }
+
+  // status === "pending" from here on.
+  if (isExpired(quarantine)) {
+    return { state: "expired", toolName: quarantine.toolName, upstreamLabel: label, detectedAt: quarantine.detectedAt };
+  }
+
+  const siblings = (await ledger.listQuarantineByStatus("pending")).filter(
+    (q) => q.householdId === householdId && q.upstreamId === quarantine.upstreamId,
+  );
+
+  if (siblings.length >= 2) {
+    const items = await Promise.all(
+      siblings.map(async (sibling) => {
+        const advisorySummary = await loadAdvisorySummary(sibling.quarantineId);
+        const token = resolveApprovalToken(
+          sibling.quarantineId,
+          sibling.quarantineId === quarantineId ? options.approvalToken : undefined,
+        );
+        return toItem(sibling, label, token, advisorySummary);
+      }),
+    );
+    return { state: "batch", upstreamLabel: label, items };
+  }
+
+  const advisorySummary = await loadAdvisorySummary(quarantineId);
+  const item = toItem(quarantine, label, resolveApprovalToken(quarantineId, options.approvalToken), advisorySummary);
+  return pendingStateFor(item, quarantine, advisorySummary !== undefined);
+}

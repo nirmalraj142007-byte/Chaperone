@@ -5,16 +5,33 @@
  * never excluded from `tools/list`: they are the only surface a resident
  * (or a host acting on their behalf) has for resolving a quarantine without
  * the console.
+ *
+ * Phase 11: `APPROVE_CHANGE_TOOL` carries the `_meta` linkage
+ * (`MCP_APP_RESOURCE_URI_META_KEY`, both the flat legacy key and the
+ * nested modern one — ext-apps hosts are documented to check both) that
+ * the Phase 6 spike identified as the second missing piece, alongside the
+ * real `ui/initialize` handshake in render.ts, for MCP Inspector's Apps tab
+ * to treat this tool as UI-enabled. The concrete per-quarantine card itself
+ * is attached directly to the *triggering* tool's refusal result
+ * (upstreamProxy.ts's `buildRefusalResult`), not fetched separately through
+ * this tool — the `_meta` link exists so a host that inspects
+ * `chaperone/approve_change` on its own (as Inspector's Apps tab does)
+ * still discovers that it renders a UI, and so a host that prefers to
+ * dereference `ui://chaperone/consent/{quarantineId}` itself via
+ * `resources/read` (the template registered in upstreamProxy.ts) has a
+ * documented place to find that URI shape.
  */
 import type { Tool, CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { UpstreamConfig } from "@chaperone/upstream";
-import type { CapabilityClass } from "@chaperone/policy";
-import type { Quarantine } from "@chaperone/ledger";
-import { renderConsentCardText, type ConsentCardModel } from "@chaperone/mcp-app";
+import {
+  renderConsentCardText,
+  MCP_APP_RESOURCE_URI_META_KEY,
+  CONSENT_RESOURCE_URI_TEMPLATE,
+} from "@chaperone/mcp-app";
 import { ChaperoneError } from "@chaperone/errors";
 import { childLogger } from "@chaperone/logger";
+import { loadConsentCardModel, upstreamLabelFor } from "./consentCard.js";
 import { approveChange, listPendingChanges, type ApprovalDecision } from "./approve.js";
-import { peekRevealedToken } from "./gate.js";
 
 const log = childLogger({ component: "gateway-first-party-tools" });
 
@@ -35,6 +52,10 @@ export const APPROVE_CHANGE_TOOL: Tool = {
     },
     required: ["quarantineId", "approvalToken", "decision"],
   },
+  _meta: {
+    [MCP_APP_RESOURCE_URI_META_KEY]: CONSENT_RESOURCE_URI_TEMPLATE,
+    ui: { resourceUri: CONSENT_RESOURCE_URI_TEMPLATE },
+  },
 };
 
 export const PENDING_CHANGES_TOOL: Tool = {
@@ -47,35 +68,6 @@ export const FIRST_PARTY_TOOLS: readonly Tool[] = [APPROVE_CHANGE_TOOL, PENDING_
 
 function textResult(text: string, isError = false): CallToolResult {
   return { content: [{ type: "text" as const, text }], isError };
-}
-
-function upstreamLabel(upstreams: readonly UpstreamConfig[], upstreamId: string): string {
-  return upstreams.find((u) => u.id === upstreamId)?.label ?? upstreamId;
-}
-
-/**
- * Shared by `handlePendingChanges` below and upstreamProxy.ts's `tools/call`
- * refusal — the one place that turns a stored `Quarantine` row back into
- * resident-facing text. `approvalToken` is the caller's problem: pass the
- * real one-time token when this is the moment it's being revealed, or a
- * placeholder string when it has already been shown and can't be re-derived
- * (packages/gateway/src/gate.ts never persists the plaintext).
- */
-export function buildConsentCardText(quarantine: Quarantine, upstreamLabel: string, approvalToken: string): string {
-  const before = JSON.parse(quarantine.fromCanonicalJson) as { description?: string };
-  const after = JSON.parse(quarantine.toCanonicalJson) as { description?: string };
-  const model: ConsentCardModel = {
-    toolName: quarantine.toolName,
-    upstreamLabel,
-    capabilityClass: quarantine.capabilityClass as CapabilityClass,
-    approvedAt: quarantine.detectedAt,
-    beforeDescription: before.description ?? "",
-    afterDescription: after.description ?? "",
-    spans: quarantine.diffSpans,
-    quarantineId: quarantine.quarantineId,
-    approvalToken,
-  };
-  return renderConsentCardText(model);
 }
 
 interface ApproveChangeArgs {
@@ -128,6 +120,7 @@ export async function handleApproveChange(
     );
     if (result.decision === "approve") {
       onApproved();
+      return textResult(`Quarantine ${result.quarantineId} approved. New definition pinned as ${(result.newHash ?? "").slice(0, 12)}.`);
     }
     return textResult(`Quarantine ${result.quarantineId} ${result.status}.`);
   } catch (error) {
@@ -148,14 +141,31 @@ export async function handlePendingChanges(
     return textResult("No tool-definition changes are currently pending review.");
   }
 
-  const cards = pending.map((quarantine) => {
-    const revealedToken = peekRevealedToken(quarantine.quarantineId);
-    return buildConsentCardText(
-      quarantine,
-      upstreamLabel(upstreams, quarantine.upstreamId),
-      revealedToken ?? "(already shown once — see the original consent message)",
-    );
-  });
+  // Each quarantine's own card is loaded independently (rather than grouped
+  // into a single "batch" model) — this tool is a flat list-everything
+  // surface for hosts with no UI-resource rendering at all, distinct from
+  // the "batch" consent-card *state*, which groups siblings on one upstream
+  // into one collapsed-accordion card when a resident is looking at any one
+  // of them via the refusal path or the `ui://` resource template.
+  const cards = await Promise.all(
+    pending.map(async (quarantine) => {
+      const model = await loadConsentCardModel(householdId, upstreams, quarantine.quarantineId);
+      if (model === undefined) {
+        return `(quarantine ${quarantine.quarantineId} could not be loaded)`;
+      }
+      if (model.state === "batch") {
+        // This one quarantine has siblings; render just its own item so the
+        // flat list stays one card per pending change, not N nested cards.
+        const item = model.items.find((entry) => entry.quarantineId === quarantine.quarantineId);
+        return item === undefined
+          ? renderConsentCardText(model)
+          : renderConsentCardText({ state: "pending", item });
+      }
+      return renderConsentCardText(model);
+    }),
+  );
 
   return textResult(cards.join("\n\n---\n\n"));
 }
+
+export { upstreamLabelFor };

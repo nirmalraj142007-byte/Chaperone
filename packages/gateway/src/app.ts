@@ -11,7 +11,9 @@
  */
 import express, { type Express, type NextFunction, type Request, type Response } from "express";
 import { ulid } from "ulid";
+import { getUiCapability } from "@modelcontextprotocol/ext-apps/server";
 import type { UpstreamConfig, UpstreamPool } from "@chaperone/upstream";
+import { MCP_APP_RESOURCE_MIME_TYPE } from "@chaperone/mcp-app";
 import { childLogger, requestLogger } from "@chaperone/logger";
 import { originAllowlistMiddleware } from "./security.js";
 import { handleInitialize, handleSessionRequest, isInitialize } from "./session.js";
@@ -19,11 +21,33 @@ import { buildPassthroughServer } from "./upstreamProxy.js";
 
 const log = childLogger({ component: "gateway" });
 
+/**
+ * Whether *this* `initialize` declared MCP Apps support, via
+ * `@modelcontextprotocol/ext-apps`'s own `getUiCapability` — checked against
+ * the real installed package rather than hand-rolled, since the exact
+ * `extensions` key and shape are namespaced, versioned protocol surface,
+ * not something worth re-deriving from memory (see CLAUDE.md, "verify
+ * rather than remember"). `undefined` means the client said nothing either
+ * way — deliberately distinct from `false` (declared, but without our mime
+ * type) so upstreamProxy.ts can offer the HTML resource "when in doubt."
+ */
+function detectMcpAppSupport(body: unknown): boolean | undefined {
+  const capabilities = (body as { params?: { capabilities?: unknown } } | undefined)?.params?.capabilities as
+    | Parameters<typeof getUiCapability>[0]
+    | undefined;
+  const uiCapability = getUiCapability(capabilities);
+  if (uiCapability === undefined) {
+    return undefined;
+  }
+  return uiCapability.mimeTypes?.includes(MCP_APP_RESOURCE_MIME_TYPE) ?? false;
+}
+
 export function buildApp(
   pool: UpstreamPool,
   upstreams: readonly UpstreamConfig[],
   originAllowlist: readonly string[],
   householdId: string,
+  mcpAppEnabled: boolean,
 ): Express {
   const app = express();
   app.use(express.json());
@@ -51,7 +75,10 @@ export function buildApp(
     void (async () => {
       const sessionId = req.header("mcp-session-id");
       if (sessionId === undefined && isInitialize(req.body)) {
-        await handleInitialize(req, res, () => Promise.resolve(buildPassthroughServer(pool, upstreams, householdId)));
+        const supportsMcpApp = detectMcpAppSupport(req.body);
+        await handleInitialize(req, res, () =>
+          Promise.resolve(buildPassthroughServer(pool, upstreams, householdId, mcpAppEnabled, supportsMcpApp)),
+        );
         return;
       }
       await handleSessionRequest(req, res);
