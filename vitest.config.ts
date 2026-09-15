@@ -18,12 +18,14 @@ export default defineConfig({
     },
   },
   test: {
-    // Explicit paths, not a glob, for the two spec/ entries: a glob wide
-    // enough to reach them (e.g. "spec/*.test.ts") would also pull in
-    // spec/conformance.spec.test.ts, which is `pnpm spec`'s in-process
-    // suite (own config, own timeout) and must not also run — and slow
-    // down — every plain `pnpm test`. See CLAUDE.md's `pnpm test --
-    // spec/long-stream.test.ts` and `test:resume` (package.json).
-    include: ["packages/*/test/**/*.test.ts", "spec/resumption.test.ts", "spec/long-stream.test.ts"],
+    // `pnpm test` — unit and integration only, no Docker required. The two
+    // stack-dependent spec/ suites (resumption, long-stream) intentionally
+    // do NOT live here: they need a real, already-running gateway and
+    // demo-upstream (`docker compose up -d --build`) and would otherwise
+    // fail on every machine, and every CI run, that hasn't started that
+    // stack first — which is exactly what happened from Phase 9 onward
+    // (ci.yml ran `pnpm test`, which included them, without ever starting
+    // the stack; see spec/stack.vitest.config.ts and `pnpm test:stack`).
+    include: ["packages/*/test/**/*.test.ts"],
   },
 });

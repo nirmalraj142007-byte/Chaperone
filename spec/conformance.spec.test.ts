@@ -22,6 +22,7 @@ import { ProgressNotificationSchema } from "@modelcontextprotocol/sdk/types.js";
 import type { UpstreamConfig, UpstreamPool } from "@chaperone/upstream";
 import { getPool } from "@chaperone/upstream";
 import { buildApp as buildDemoUpstreamApp, deliveryCancellationCount, resetControlStateForTests } from "@chaperone/demo-upstream";
+import { canonicalizeTool, hashTool } from "@chaperone/policy";
 
 vi.mock("@chaperone/ledger", () => ({
   putSession: vi.fn(),
@@ -32,12 +33,29 @@ vi.mock("@chaperone/ledger", () => ({
   putSseEvent: vi.fn(),
   listSseEventsSince: vi.fn(),
   sseEventTtl: vi.fn(),
+  // Phase 10: gate.ts's storage — same in-memory-stand-in philosophy as the
+  // session/sse mocks above. Without these, gate.ts's `ledger.getPin(...)`
+  // call throws (calling `undefined` as a function), which gate.ts's own
+  // try/catch turns into a silent fail-closed deny on every single tool —
+  // exactly the regression this suite hit and didn't notice, because
+  // `pnpm spec` isn't part of `pnpm test` and nothing re-ran it after
+  // Phase 10 wired the gate in.
+  getPin: vi.fn(),
+  putPin: vi.fn(),
+  createQuarantine: vi.fn(),
+  getQuarantine: vi.fn(),
+  listQuarantineByStatus: vi.fn(),
+  resolveQuarantine: vi.fn(),
+  appendEvent: vi.fn(),
 }));
 
 const { buildApp: buildGatewayApp } = await import("@chaperone/gateway");
 const ledger = await import("@chaperone/ledger");
 
+const HOUSEHOLD_ID = "household-spec";
 const GROCERY_PREFIX = "grocery__";
+/** Gateway-native tools (chaperone/approve_change, chaperone/pending_changes) are unnamespaced and always present, unaffected by upstream health or pin state — every equivalence/emptiness check below is about upstream-sourced tools specifically, so these are filtered out first. */
+const isFirstPartyTool = (name: string): boolean => name.startsWith("chaperone/");
 
 type ContentBlock = { type: string; text?: string };
 
@@ -58,9 +76,34 @@ let gatewayUrl: string;
 let sessionStore: Map<string, { sessionId: string; protocolVersion: string; ttl: number; [k: string]: unknown }>;
 let sseEvents: Map<string, Array<{ sessionId: string; streamId: string; seq: number; eventId: string; message: string; ts: string; ttl: number }>>;
 let sseSeqCounters: Map<string, number>;
+let pins: Map<string, Record<string, unknown>>;
+let quarantines: Map<string, Record<string, unknown>>;
 
 function sseKey(sessionId: string, streamId: string): string {
   return `${sessionId}#${streamId}`;
+}
+
+function pinKey(upstreamId: string, toolName: string): string {
+  return `${upstreamId}#${toolName}`;
+}
+
+/** Pins every tool the real upstream currently lists — mirrors `pnpm pin:bootstrap` against a live upstream, so tools/list and tools/call both see them as allowed by default. */
+async function bootstrapPins(): Promise<void> {
+  const entries = await pool.listAllTools();
+  for (const { upstreamId, tool } of entries) {
+    const policyTool = { name: tool.name, description: tool.description, inputSchema: tool.inputSchema };
+    pins.set(pinKey(upstreamId, tool.name), {
+      householdId: HOUSEHOLD_ID,
+      upstreamId,
+      toolName: tool.name,
+      approvedHash: hashTool(policyTool),
+      approvedCanonicalJson: canonicalizeTool(policyTool),
+      approvedAt: "2026-09-15T00:00:00.000Z",
+      approvedBy: `resident:${HOUSEHOLD_ID}`,
+      consentEventId: "bootstrap",
+      capabilityClass: "write",
+    });
+  }
 }
 
 beforeEach(async () => {
@@ -107,8 +150,40 @@ beforeEach(async () => {
   });
   vi.mocked(ledger.sseEventTtl).mockImplementation(() => Math.floor(Date.now() / 1000) + 24 * 60 * 60);
 
+  pins = new Map();
+  quarantines = new Map();
+  vi.mocked(ledger.getPin).mockImplementation(
+    async (_householdId, upstreamId, toolName) => pins.get(pinKey(upstreamId, toolName)) as never,
+  );
+  vi.mocked(ledger.putPin).mockImplementation(async (pin) => {
+    pins.set(pinKey(pin.upstreamId, pin.toolName), pin as never);
+  });
+  vi.mocked(ledger.createQuarantine).mockImplementation(async (q) => {
+    quarantines.set(q.quarantineId, q as never);
+  });
+  vi.mocked(ledger.getQuarantine).mockImplementation(
+    async (_householdId, quarantineId) => quarantines.get(quarantineId) as never,
+  );
+  vi.mocked(ledger.listQuarantineByStatus).mockImplementation(
+    async (status) => [...quarantines.values()].filter((q) => q["status"] === status) as never,
+  );
+  vi.mocked(ledger.resolveQuarantine).mockImplementation(async (_householdId, quarantineId, status, resolvedAt) => {
+    const existing = quarantines.get(quarantineId);
+    if (existing) {
+      existing["status"] = status;
+      existing["resolvedAt"] = resolvedAt;
+    }
+  });
+  vi.mocked(ledger.appendEvent).mockImplementation(async ({ type, actor, payload }) => {
+    void type;
+    void actor;
+    void payload;
+    return { eventId: "evt", payloadHash: "hash", prevEventHash: "prev" };
+  });
+
   pool = await getPool([upstream]);
-  const gw = await listen(buildGatewayApp(pool, [upstream], ["http://localhost:*"]));
+  await bootstrapPins();
+  const gw = await listen(buildGatewayApp(pool, [upstream], ["http://localhost:*"], HOUSEHOLD_ID));
   gatewayServer = gw.server;
   gatewayUrl = gw.url;
 });
@@ -297,11 +372,20 @@ describe("spec: session lifecycle", () => {
 });
 
 describe("spec: tools/list equivalence", () => {
-  it("prefixes every gateway-listed tool name with {upstreamId}__ — the proxy's one deliberate non-transparency", async () => {
+  it("prefixes every upstream-sourced tool name with {upstreamId}__ — the proxy's one deliberate non-transparency", async () => {
     const { client: viaGateway } = await connectClient(gatewayUrl);
     const { tools: gatewayTools } = await viaGateway.listTools();
-    expect(gatewayTools.length).toBeGreaterThan(0);
-    expect(gatewayTools.every((t) => t.name.startsWith(GROCERY_PREFIX))).toBe(true);
+    const upstreamSourced = gatewayTools.filter((t) => !isFirstPartyTool(t.name));
+    expect(upstreamSourced.length).toBeGreaterThan(0);
+    expect(upstreamSourced.every((t) => t.name.startsWith(GROCERY_PREFIX))).toBe(true);
+  });
+
+  it("the gateway also lists its own two unnamespaced first-party tools alongside the upstream's", async () => {
+    const { client: viaGateway } = await connectClient(gatewayUrl);
+    const { tools: gatewayTools } = await viaGateway.listTools();
+    expect(gatewayTools.map((t) => t.name)).toEqual(
+      expect.arrayContaining(["chaperone/approve_change", "chaperone/pending_changes"]),
+    );
   });
 
   it("stripping that prefix exactly reconstructs the upstream's own tool name set, with every other field byte-identical", async () => {
@@ -309,7 +393,8 @@ describe("spec: tools/list equivalence", () => {
     const { client: viaGateway } = await connectClient(gatewayUrl);
 
     const { tools: directTools } = await direct.listTools();
-    const { tools: gatewayTools } = await viaGateway.listTools();
+    const { tools: allGatewayTools } = await viaGateway.listTools();
+    const gatewayTools = allGatewayTools.filter((t) => !isFirstPartyTool(t.name));
 
     const strippedNames = gatewayTools.map((t) => t.name.slice(GROCERY_PREFIX.length)).sort();
     expect(strippedNames).toEqual(directTools.map((t) => t.name).sort());
@@ -491,7 +576,7 @@ describe("spec: transport-level enforcement", () => {
 });
 
 describe("spec: upstream failure handling", () => {
-  it("fails closed to an empty tools/list within the per-upstream budget when the upstream goes down, rather than hanging or 500ing", async () => {
+  it("fails closed to an empty upstream-sourced tools/list within the per-upstream budget when the upstream goes down, rather than hanging or 500ing", async () => {
     const { client } = await connectClient(gatewayUrl);
     upstreamServer.closeAllConnections();
     await new Promise<void>((resolve) => upstreamServer.close(() => resolve()));
@@ -500,7 +585,9 @@ describe("spec: upstream failure handling", () => {
     const { tools } = await client.listTools();
     const elapsedMs = Date.now() - start;
 
-    expect(tools).toEqual([]);
+    // The gateway's own two first-party tools are unaffected by upstream
+    // health — only the upstream-sourced portion of the list must go empty.
+    expect(tools.filter((t) => !isFirstPartyTool(t.name))).toEqual([]);
     expect(elapsedMs).toBeLessThan(4_000);
   });
 });

@@ -1432,3 +1432,67 @@ load-bearing. A percentage paired with English-language framing
 ("did/did not") is exactly the shape of bug that a `.toFixed(1)` call and
 a plausible-sounding surrounding sentence will not catch on read-through;
 only recomputing catches it.
+
+---
+
+## Entry 026 — 2026-09-15
+
+**Task attempted:** Fix `.github/workflows/ci.yml`, which had been red
+since Phase 9 because `spec/resumption.test.ts` and
+`spec/long-stream.test.ts` need a live `docker compose` stack that CI
+never started. Part of that fix is confirming every `spec/` test either
+runs in CI or has a stated, honest reason it doesn't (rather than being
+silently left out) — which meant actually running `pnpm spec`
+(`spec/conformance.spec.test.ts`, the in-process MCP conformance suite)
+for the first time since Phase 10 wired `gate.ts` into the request path.
+
+**Steps taken:** Ran `pnpm spec` to confirm it was a safe, cheap
+in-process addition to CI (no Docker needed) before wiring it in.
+
+**Expected versus actual:** Expected 25/25 passing, since nothing in this
+CI-fix task touches gateway request-handling logic. Actual: 10 of 25
+failing. Root cause: `spec/conformance.spec.test.ts`'s `vi.mock("@chaperone/ledger",
+...)` predates Phase 10 and never gained `getPin`/`putPin`/`createQuarantine`/
+`getQuarantine`/`listQuarantineByStatus`/`resolveQuarantine`/`appendEvent` —
+exactly the gap `packages/gateway/test/gateway.test.ts` was fixed for
+during Phase 10 itself. Calling `ledger.getPin(...)` where `getPin` is
+`undefined` throws, `gate.ts`'s own try/catch turns that into a silent
+fail-closed deny, and every tool in the suite came back UNPINNED or
+REFUSAL_TOOL_CHANGED instead of a real result. A second, independent
+break, once the mock was fixed: the two new first-party tools
+(`chaperone/approve_change`, `chaperone/pending_changes`) are
+unnamespaced and always present, which broke three assertions written
+before they existed — "every gateway tool starts with `{upstreamId}__`",
+"stripping the prefix reconstructs the upstream's exact tool set", and
+"tools/list goes empty when the upstream is down" all needed to filter
+first-party tools out first, since those three properties were always
+about upstream-sourced tools specifically, not the gateway's own surface.
+
+**Severity:** major. This suite is Phase 8's 25+-assertion MCP
+conformance suite — CLAUDE.md calls its output filmed footage for the
+demo — and it had been silently broken for the entire span of Phase 10
+and both crawl-1 sessions, because `pnpm spec` is not part of `pnpm test`
+and nothing in that window ever ran it. The exact failure mode this
+whole CI task exists to eliminate (a real problem invisible because the
+check that would catch it never runs) was already present a second time,
+in a different suite, for a different reason.
+
+**Workaround:** Added the seven missing mock functions to
+`spec/conformance.spec.test.ts` (same in-memory-map pattern as
+`packages/gateway/test/gateway.test.ts`), added a `bootstrapPins()` helper
+mirroring `pnpm pin:bootstrap`, passed the gateway's now-required
+`householdId` argument, and updated the three tools/list assertions to
+filter on `isFirstPartyTool` before checking upstream-namespace
+properties. Added one new test asserting the first-party tools are
+present, so their existence is asserted somewhere rather than only
+implicitly relied upon. All 26 tests pass. `pnpm spec` is now wired into
+CI (it's in-process, no Docker, effectively free to include).
+
+**Actionable suggestion:** Any change to `packages/gateway/src/*` that
+touches the request path — not just `packages/gateway/test/*` — needs
+`pnpm spec` run before it's considered done, not only `pnpm test`. The
+two suites mock `@chaperone/ledger` independently and can drift out of
+sync with each other exactly like this. Consider a shared test helper
+(a `buildMockLedger()` used by both files) so a future gate.ts change
+only needs the mock updated once instead of twice, with the second site
+silently rotting until someone happens to run it.

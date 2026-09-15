@@ -5,8 +5,14 @@ on:
   pull_request:
 
 jobs:
-  test:
+  unit:
+    name: unit (no Docker)
     runs-on: ubuntu-latest
+    # typecheck+lint+depcruise+build+test+spec, all in-process/mocked —
+    # historically ~30-40s. Keep this job free of anything that needs the
+    # compose stack so the fast feedback loop stays fast; see the `stack`
+    # job for spec/resumption.test.ts and spec/long-stream.test.ts.
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -24,5 +30,119 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm depcruise
-      - run: pnpm test
       - run: pnpm build
+      - run: pnpm test
+      # The in-process MCP conformance suite (spec/conformance.spec.test.ts)
+      # — no Docker, mocks @chaperone/ledger the same way `pnpm test` does.
+      # Not part of `pnpm test` itself (own vitest config, own "verbose"
+      # reporter — see spec/vitest.config.ts) but just as cheap, so it runs
+      # here rather than being left out of CI entirely.
+      - run: pnpm spec
+
+  stack:
+    name: stack (docker compose)
+    runs-on: ubuntu-latest
+    # Runs in parallel with `unit`, not after it — the two are independent,
+    # and long-stream.test.ts alone holds a stream open for ~180s, which
+    # would otherwise slow down the fast unit feedback loop for no reason.
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.4.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: "pnpm"
+
+      - run: pnpm install --frozen-lockfile
+
+      # pnpm ddb:migrate / pnpm pin:bootstrap below run via tsx and resolve
+      # workspace packages (e.g. @chaperone/config) through their
+      # package.json main/exports, which point at dist/ — not through
+      # vitest's source aliases. Skipping this step makes both fail with
+      # ERR_MODULE_NOT_FOUND on a fresh checkout (confirmed locally by
+      # deleting every packages/*/dist and re-running ddb:migrate).
+      - run: pnpm build
+
+      - name: Start the compose stack (ddb, demo-upstream, gateway)
+        run: docker compose up -d --build
+
+      - name: Wait for DynamoDB Local (:8000)
+        run: |
+          for i in $(seq 1 60); do
+            if curl -s -o /dev/null http://localhost:8000; then
+              echo "DynamoDB Local is accepting connections."
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::DynamoDB Local (localhost:8000) never accepted a connection within 60s"
+          docker compose logs ddb
+          exit 1
+
+      # A fresh DynamoDB Local container has no tables at all — every
+      # ledger read/write in the stack tests below would fail with
+      # ConfigError without this.
+      - name: Migrate DynamoDB tables
+        env:
+          DDB_ENDPOINT: "http://localhost:8000"
+          CHAPERONE_UPSTREAMS: '[{"id":"grocery","url":"http://localhost:4000/mcp","label":"Household Grocery"}]'
+        run: pnpm ddb:migrate
+
+      - name: Wait for demo-upstream (:4000)
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf -o /dev/null http://localhost:4000/control/stats; then
+              echo "demo-upstream is ready."
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::demo-upstream (localhost:4000) never responded to GET /control/stats within 60s"
+          docker compose logs demo-upstream
+          exit 1
+
+      # No /healthz on the gateway yet (see CLAUDE.md's fail-closed
+      # non-negotiable, which already presupposes one) — a real MCP
+      # initialize round-trip is the next best readiness signal: it proves
+      # the process is up and actually serving the protocol, not just that
+      # the port is open.
+      - name: Wait for the gateway (:3000)
+        run: |
+          for i in $(seq 1 60); do
+            status=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:3000/mcp \
+              -H 'Content-Type: application/json' \
+              -H 'Accept: application/json, text/event-stream' \
+              -d '{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"ci-readiness","version":"0"}}}' || echo "000")
+            if [ "$status" = "200" ]; then
+              echo "gateway is ready (initialize round-trip returned 200)."
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::gateway (localhost:3000) never returned 200 on an initialize round-trip within 60s (last status: ${status:-none})"
+          docker compose logs gateway
+          exit 1
+
+      # gate.ts (Phase 10) denies any tool with no pin — without this, every
+      # stack-test tools/call gets REFUSAL_TOOL_UNPINNED instead of a real
+      # result, which looks like a resumability regression but isn't one.
+      - name: Pin the demo upstream's tools
+        env:
+          DDB_ENDPOINT: "http://localhost:8000"
+          CHAPERONE_UPSTREAMS: '[{"id":"grocery","url":"http://localhost:4000/mcp","label":"Household Grocery"}]'
+        run: pnpm pin:bootstrap
+
+      - run: pnpm test:stack
+
+      - name: Compose logs (only on failure)
+        if: failure()
+        run: docker compose logs
+
+      - name: Tear down the compose stack
+        if: always()
+        run: docker compose down -v

@@ -9,9 +9,11 @@
   "packageManager": "pnpm@12.4.1",
   "scripts": {
     "build": "tsc -b",
-    "test": "vitest run",
+    "test": "vitest run && echo \"(skipped: spec/resumption.test.ts, spec/long-stream.test.ts -- these need a running docker compose stack. Run 'pnpm test:stack' against one, or 'pnpm test:all' to run both.)\"",
+    "test:stack": "vitest run --config spec/stack.vitest.config.ts",
+    "test:all": "vitest run && vitest run --config spec/stack.vitest.config.ts",
     "spec": "vitest run --config spec/vitest.config.ts",
-    "test:resume": "vitest run spec/resumption.test.ts --reporter=verbose",
+    "test:resume": "vitest run --config spec/stack.vitest.config.ts spec/resumption.test.ts",
     "resume-demo": "tsx scripts/resume-demo.ts",
     "lint": "eslint .",
     "depcruise": "dependency-cruiser packages",
