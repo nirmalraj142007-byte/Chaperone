@@ -38,8 +38,9 @@ async function main(): Promise<void> {
 
   console.log("");
   console.log("boot status distribution:");
-  console.log(row("attempted:      ", String(report.candidatesConsidered)));
+  console.log(row("considered:     ", String(report.candidatesConsidered)));
   console.log(row("no-install-path:", String(report.noInstallPath)));
+  console.log(row("attempted:      ", String(report.attempted)));
   console.log(row("booted:         ", String(report.booted)));
   console.log(row("refused-no-creds:", String(report.refusedNoCreds)));
   console.log(row("failed-install: ", String(report.failedInstall)));
@@ -47,8 +48,13 @@ async function main(): Promise<void> {
   console.log(row("timed-out:      ", String(report.failedTimeout)));
 
   console.log("");
+  // report.bootSuccessRate is booted/attempted — a SUCCESS rate. The
+  // headline this project reports is the failure framing ("did not
+  // start"), so the printed percentage must be 100 minus that, not the
+  // success-rate number itself relabelled with failure language.
+  const didNotStartRate = 100 - report.bootSuccessRate;
   console.log(
-    `${report.bootSuccessRate.toFixed(1)}% of public MCP servers with a discoverable install command did not ` +
+    `${didNotStartRate.toFixed(1)}% of public MCP servers with a discoverable install command did not ` +
       `start from their own documented setup instructions.`,
   );
   console.log(`(${report.booted} booted of ${report.attempted} attempted; ${report.noInstallPath} had no discoverable install path at all.)`);
@@ -65,7 +71,7 @@ async function main(): Promise<void> {
   console.log("");
   console.log(`started:  ${report.startedAt}`);
   console.log(`finished: ${report.finishedAt}`);
-  console.log(`corpus/TAXONOMY.md commit: ${report.taxonomyCommitSha}`);
+  console.log(`corpus/TAXONOMY.md blob sha: ${report.taxonomyBlobSha}`);
 
   console.log("");
   if (report.capturedServers < GO_NO_GO_FLOOR) {

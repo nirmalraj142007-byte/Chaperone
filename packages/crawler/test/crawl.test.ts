@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CandidateRecord } from "../src/assemble.js";
-import { sortForCrawl } from "../src/crawl.js";
+import { seedFromString, seededSample, sortForCrawl } from "../src/crawl.js";
 
 function candidate(serverId: string, installMethod: CandidateRecord["installMethod"]): CandidateRecord {
   return {
@@ -42,5 +42,59 @@ describe("sortForCrawl", () => {
   it("is a no-op reordering when nothing is automatable", () => {
     const records = [candidate("a", null), candidate("b", "manual"), candidate("c", "docker")];
     expect(sortForCrawl(records).map((r) => r.serverId)).toEqual(["a", "b", "c"]);
+  });
+});
+
+describe("seedFromString", () => {
+  it("is deterministic — the same string always yields the same seed", () => {
+    expect(seedFromString("crawl-1")).toBe(seedFromString("crawl-1"));
+  });
+
+  it("distinguishes different crawl ids", () => {
+    expect(seedFromString("crawl-1")).not.toBe(seedFromString("crawl-2"));
+  });
+
+  it("returns a non-negative uint32", () => {
+    const seed = seedFromString("crawl-1");
+    expect(Number.isInteger(seed)).toBe(true);
+    expect(seed).toBeGreaterThanOrEqual(0);
+    expect(seed).toBeLessThanOrEqual(0xffffffff);
+  });
+});
+
+describe("seededSample", () => {
+  const population = Array.from({ length: 1000 }, (_, i) => i);
+
+  it("is deterministic — same items, same seed, same sample every time", () => {
+    const a = seededSample(population, 150, 42);
+    const b = seededSample(population, 150, 42);
+    expect(a).toEqual(b);
+  });
+
+  it("a different seed produces a different sample", () => {
+    const a = seededSample(population, 150, 42);
+    const b = seededSample(population, 150, 43);
+    expect(a).not.toEqual(b);
+  });
+
+  it("samples without replacement — no duplicates, and every item drawn from the population", () => {
+    const sample = seededSample(population, 150, 42);
+    expect(new Set(sample).size).toBe(150);
+    for (const item of sample) {
+      expect(population).toContain(item);
+    }
+  });
+
+  it("caps at the population size rather than padding or erroring when size exceeds it", () => {
+    const small = [1, 2, 3];
+    const sample = seededSample(small, 150, 42);
+    expect(sample).toHaveLength(3);
+    expect(new Set(sample)).toEqual(new Set(small));
+  });
+
+  it("does not mutate the input array", () => {
+    const original = [...population];
+    seededSample(population, 150, 42);
+    expect(population).toEqual(original);
   });
 });

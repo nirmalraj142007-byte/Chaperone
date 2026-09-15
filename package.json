@@ -25,7 +25,8 @@
     "crawl:infer-install": "tsx packages/crawler/scripts/infer-install.ts",
     "crawl:run": "tsx packages/crawler/scripts/crawl.ts",
     "crawl:commit-recency": "node --env-file-if-exists=.env --import tsx packages/crawler/scripts/commit-recency.ts",
-    "crawl:capability-report": "tsx packages/crawler/scripts/capability-report.ts"
+    "crawl:capability-report": "tsx packages/crawler/scripts/capability-report.ts",
+    "crawl:boot-rate": "tsx packages/crawler/scripts/boot-rate.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",

@@ -174,5 +174,5 @@
     "transact": 202
   },
   "lowConfidenceCount": 4381,
-  "taxonomyCommitSha": "0c896539006dbb6f8dfacc1f02ebbf179c50eec2"
+  "taxonomyBlobSha": "0c896539006dbb6f8dfacc1f02ebbf179c50eec2"
 }

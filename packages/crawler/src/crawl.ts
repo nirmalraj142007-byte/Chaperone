@@ -16,6 +16,17 @@ const CONCURRENCY = 6;
 const START_TIMEOUT_MS = 30_000;
 const AUTOMATABLE_METHODS = new Set(["npx", "uvx", "pip"]);
 
+/**
+ * "Low confidence" and "read" are the same set by construction of
+ * classifyCapability (every unmatched-verb verdict defaults to
+ * `{class: "read", confidence: "low"}`), so the full population is in the
+ * thousands — nobody reviews 4,381 tools. A fixed-size, seeded random
+ * sample is a number a human can actually work through and still supports
+ * a real inter-rater agreement statistic later, which a review queue that
+ * scales with corpus size never would.
+ */
+export const NEEDS_REVIEW_SAMPLE_SIZE = 150;
+
 export interface RunCrawlOptions {
   limit?: number;
 }
@@ -49,7 +60,8 @@ export interface CrawlReport {
   totalToolsCaptured: number;
   capabilityDistribution: Record<string, number>;
   lowConfidenceCount: number;
-  taxonomyCommitSha: string;
+  /** Content-addressed hash of corpus/TAXONOMY.md's exact bytes at HEAD — a git blob SHA, not a commit SHA. See getTaxonomyBlobSha. */
+  taxonomyBlobSha: string;
 }
 
 interface CapabilityRow {
@@ -57,6 +69,16 @@ interface CapabilityRow {
   toolName: string;
   capabilityClass: string;
   confidence: string;
+}
+
+export interface NeedsReviewSample {
+  seed: number;
+  /** How to recompute `seed` from scratch, so it never has to be trusted blindly. */
+  seedDerivation: string;
+  sampleSize: number;
+  /** The full low-confidence population this was sampled from — always >= sampleSize. */
+  totalLowConfidence: number;
+  items: CapabilityRow[];
 }
 
 interface Counts {
@@ -103,6 +125,48 @@ export function sortForCrawl(records: CandidateRecord[]): CandidateRecord[] {
   return [...attemptable, ...rest];
 }
 
+/** FNV-1a, 32-bit. Turns an arbitrary string (a crawlId) into a deterministic uint32 seed — same string in, same seed out, every time, on every machine. */
+export function seedFromString(input: string): number {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < input.length; i++) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return hash >>> 0;
+}
+
+/** mulberry32 — a small, fast, seeded PRNG. Deterministic: the same seed always produces the same sequence of [0, 1) values, on every machine and every run. */
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * A seeded, reproducible sample of `size` items from `items`, without
+ * replacement, order-preserved-then-shuffled (a partial Fisher-Yates driven
+ * by `mulberry32(seed)`). The same `items` array and the same `seed` always
+ * produce the exact same sample in the exact same order — that's the whole
+ * point: a reviewer, or a future agreement-statistic script, can regenerate
+ * it from the recorded seed rather than trusting a committed file blindly.
+ */
+export function seededSample<T>(items: readonly T[], size: number, seed: number): T[] {
+  const pool = [...items];
+  const rand = mulberry32(seed);
+  const take = Math.min(size, pool.length);
+  for (let i = 0; i < take; i++) {
+    const j = i + Math.floor(rand() * (pool.length - i));
+    const tmp = pool[i]!;
+    pool[i] = pool[j]!;
+    pool[j] = tmp;
+  }
+  return pool.slice(0, take);
+}
+
 async function mapWithConcurrency<T>(items: T[], limit: number, fn: (item: T) => Promise<void>): Promise<void> {
   let next = 0;
   async function worker(): Promise<void> {
@@ -130,12 +194,20 @@ async function readArchived(archivePath: string): Promise<BootResult | undefined
   }
 }
 
-async function getTaxonomyCommitSha(): Promise<string> {
+/**
+ * `git rev-parse HEAD:<path>` resolves to the blob object for that path in
+ * the HEAD tree — a hash of the file's exact bytes, not of any commit. That
+ * is deliberately stronger evidence than a commit SHA (immune to an
+ * unrelated commit that happens to also touch this file), but the name
+ * must say so plainly: a field called "commit SHA" that is actually a blob
+ * hash reads as a mistake to anyone who checks it against `git log`.
+ */
+async function getTaxonomyBlobSha(): Promise<string> {
   try {
     const { stdout } = await execFileAsync("git", ["rev-parse", "HEAD:corpus/TAXONOMY.md"]);
     return stdout.trim();
   } catch (e) {
-    log.warn({ error: e instanceof Error ? e.message : String(e) }, "could not resolve corpus/TAXONOMY.md commit SHA");
+    log.warn({ error: e instanceof Error ? e.message : String(e) }, "could not resolve corpus/TAXONOMY.md blob SHA");
     return "unknown";
   }
 }
@@ -145,7 +217,7 @@ async function getTaxonomyCommitSha(): Promise<string> {
  * the rest of CRAWL_DATES.md is frozen prose from before crawl 1 and must
  * never be touched by anything but this targeted substitution.
  */
-async function updateCrawlDatesFile(crawlId: string, startedAt: string, finishedAt: string, taxonomySha: string): Promise<void> {
+async function updateCrawlDatesFile(crawlId: string, startedAt: string, finishedAt: string, taxonomyBlobSha: string): Promise<void> {
   const match = /^crawl-(\d+)$/.exec(crawlId);
   if (!match) {
     log.warn({ crawlId }, "crawlId doesn't match 'crawl-N'; leaving CRAWL_DATES.md untouched");
@@ -159,7 +231,7 @@ async function updateCrawlDatesFile(crawlId: string, startedAt: string, finished
     log.warn({ crawlId }, "CRAWL_DATES.md has no matching 'Crawl N executed at' line to update");
     return;
   }
-  const replacement = `- Crawl ${crawlNumber} executed at: ${startedAt} (finished ${finishedAt}; corpus/TAXONOMY.md at commit ${taxonomySha})`;
+  const replacement = `- Crawl ${crawlNumber} executed at: ${startedAt} (finished ${finishedAt}; corpus/TAXONOMY.md blob ${taxonomyBlobSha})`;
   await writeFile(filePath, content.replace(pattern, replacement), "utf8");
 }
 
@@ -259,7 +331,7 @@ export async function runCrawl(crawlId: string, opts: RunCrawlOptions = {}): Pro
   });
 
   const finishedAt = new Date().toISOString();
-  const taxonomyCommitSha = await getTaxonomyCommitSha();
+  const taxonomyBlobSha = await getTaxonomyBlobSha();
   const attempted = targets.length - counts.noInstallPath;
 
   const report: CrawlReport = {
@@ -283,13 +355,22 @@ export async function runCrawl(crawlId: string, opts: RunCrawlOptions = {}): Pro
     totalToolsCaptured,
     capabilityDistribution,
     lowConfidenceCount: needsReview.length,
-    taxonomyCommitSha,
+    taxonomyBlobSha,
+  };
+
+  const reviewSeed = seedFromString(crawlId);
+  const reviewSample: NeedsReviewSample = {
+    seed: reviewSeed,
+    seedDerivation: `seedFromString(${JSON.stringify(crawlId)})`,
+    sampleSize: Math.min(NEEDS_REVIEW_SAMPLE_SIZE, needsReview.length),
+    totalLowConfidence: needsReview.length,
+    items: seededSample(needsReview, NEEDS_REVIEW_SAMPLE_SIZE, reviewSeed),
   };
 
   await writeFile(path.join("data", `${crawlId}-report.json`), `${JSON.stringify(report, null, 2)}\n`, "utf8");
-  await writeFile(path.join("data", `${crawlId}-needs-review.json`), `${JSON.stringify(needsReview, null, 2)}\n`, "utf8");
+  await writeFile(path.join("data", `${crawlId}-needs-review.json`), `${JSON.stringify(reviewSample, null, 2)}\n`, "utf8");
   await writeFile(path.join("data", `${crawlId}-capabilities.json`), `${JSON.stringify(capabilitiesOut, null, 2)}\n`, "utf8");
-  await updateCrawlDatesFile(crawlId, startedAt, finishedAt, taxonomyCommitSha);
+  await updateCrawlDatesFile(crawlId, startedAt, finishedAt, taxonomyBlobSha);
 
   return report;
 }

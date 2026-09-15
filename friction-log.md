@@ -1373,3 +1373,62 @@ queries or updates by an attribute named after a common English word
 (`status`, `type`, `name`, `size`, ...) should be grepped against
 DynamoDB's reserved-word list before it ships, not discovered by a
 `ValidationException` in a live container.
+
+---
+
+## Entry 025 — 2026-09-15
+
+**Task attempted:** After crawl 1 ran for real (947 candidates, 152
+booted), report the boot-rate finding sentence back to the user and, as a
+same-session follow-up, promote that number into a standalone
+`data/boot-rate.json` for Phase 16's bench package to read.
+
+**Steps taken:** Copied `packages/crawler/scripts/crawl.ts`'s own printed
+sentence verbatim into the first summary rather than re-deriving the
+percentage from the underlying counts. When asked to write the same
+number into `data/boot-rate.json` in a shape a future script could rely
+on, recomputed the failure percentage independently from `booted` (152)
+and `attempted` (291) as a sanity check before trusting the script's own
+output a second time.
+
+**Expected versus actual:** Expected `152/291 = 52.2%` to be consistent
+with "52.2% did not start," since that was the number already printed and
+already handed to the user as the finding sentence. Actual: `152/291 =
+52.2%` is the **success** rate — 152 of 291 attempted servers booted
+successfully. The **failure** rate ("did not start") is `100 - 52.2% =
+47.8%` (139 of 291). `report.bootSuccessRate` (`packages/crawler/src/crawl.ts`)
+is correctly named and correctly computed as `booted/attempted`; the bug
+was entirely in `packages/crawler/scripts/crawl.ts`'s console output,
+which printed that success-rate number next to failure-framed language
+("did not start") without inverting it. The wrong sentence had already
+been reported to the user as this project's headline finding one turn
+earlier.
+
+**Severity:** major — this is, in the user's own words, "one of the
+strongest things in this project," and the number as first reported was
+backwards by roughly 4.5 percentage points in the wrong direction (52.2%
+instead of 47.8%), silently changing a success framing into a failure
+framing with the same digits. It survived one full report to the user
+uncaught, because the check was "does this sentence match what the script
+printed," not "does this sentence match the arithmetic."
+
+**Workaround:** Fixed `packages/crawler/scripts/crawl.ts` to compute
+`didNotStartRate = 100 - report.bootSuccessRate` and print that, not
+`report.bootSuccessRate` itself, next to the "did not start" wording.
+Also relabelled that same script's `attempted:` distribution row, which
+was printing `report.candidatesConsidered` (947, every candidate
+considered including no-install-path ones) rather than `report.attempted`
+(291, only those with a resolved install path) — a second, adjacent
+mislabeling in the same block, caught while already in the file for the
+rate bug. `packages/crawler/scripts/boot-rate.ts` (new) derives
+`data/boot-rate.json` from a crawl report using the same corrected
+formula, so the artifact and the console output can never diverge again.
+
+**Actionable suggestion:** Never copy a script's printed sentence into a
+report verbatim on the strength of "the script said so" — recompute the
+headline number independently from the raw counts it claims to
+summarize, every time, especially for a number explicitly flagged as
+load-bearing. A percentage paired with English-language framing
+("did/did not") is exactly the shape of bug that a `.toFixed(1)` call and
+a plausible-sounding surrounding sentence will not catch on read-through;
+only recomputing catches it.
