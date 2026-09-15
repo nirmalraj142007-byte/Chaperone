@@ -1661,3 +1661,90 @@ call, with a message that names the actual refusal text — turning a
 "list is empty two calls later" red herring into an immediate, correctly
 located failure the next time stale pin state (or any other cause) quietly
 turns the seed call into a refusal instead of a mutation.
+
+## Entry 030 — 2026-09-15
+
+**Task attempted:** Diagnose a `spec/long-stream.test.ts` CI failure — 35 of
+36 `notifications/progress` received, always the last one, never a middle
+one — and determine whether it's a test-side race (resolve on the result
+before draining the last notification) or a real proxy ordering defect,
+per MCP-03's requirement that progress stays ordered relative to the
+result, before touching anything.
+
+**Steps taken:** Read `demo-upstream`'s `track_delivery` handler first:
+it `await`s `extra.sendNotification` for every checkpoint, including the
+last, before returning its result — so the *upstream* hop always sends
+checkpoint N before its own result, by construction. Then read
+`upstreamProxy.ts`'s relay: each `onProgress` callback chains onto a local
+`relayChain` promise via `extra.sendNotification(notification)`, but the
+handler's `return await callRegistry.runOnce(...)` never awaits
+`relayChain` — it only awaits `pool.callTool(...)`. Read the installed
+`@modelcontextprotocol/sdk@1.30.0`'s `shared/protocol.js` directly (per
+CLAUDE.md's "verify rather than remember") to check whether the SDK itself
+serializes notification-sends against the result-send on the same
+transport: it does not — `_onrequest`'s response path is
+`.then(() => handler(...)).then(async (result) => { ...; await
+transport.send(response); })`, a completely separate promise chain from
+our own `relayChain`, and `event-store.ts`'s `storeEvent` (called inside
+every `transport.send`) does two real DynamoDB calls before the SSE frame
+is written — real async I/O with room for either chain to finish first.
+This explains "always the last, never a middle one" exactly: checkpoints
+1..(N-1) each have a full tick interval (5s in this suite) as slack for
+their write to land before anything else happens; only the last one races
+the result's own write with zero slack.
+
+To turn that code-reading into evidence rather than a plausible story,
+reproduced it *deterministically* rather than chasing the real (rare,
+network-timing-dependent) CI race: extended `spec/conformance.spec.test.ts`'s
+existing (fully synchronous) `ledger` mock so `putSseEvent` adds an
+artificial 300ms delay to exactly the final checkpoint's write and none
+other, then ran the existing `track_delivery` progress test against the
+unfixed proxy. It failed every time — `[1, 2, 3]` instead of `[1, 2, 3,
+4]` — with no dependence on real timing luck, which is what makes this
+proof rather than a hypothesis: a fully deterministic mock produced the
+same failure shape the flaky real-network CI run did, so the defect is in
+the code path both exercise, not in that one CI run's luck. This is also
+why the pre-existing "relays every notifications/progress ... in order,
+before the final result" test in the same file never caught it: its
+`ledger` mock resolves synchronously, so there was never a real gap for
+the untested race to fall into.
+
+**Expected versus actual:** Expected either a client-side draining bug in
+the test or nothing (a false alarm from CI flakiness). Actual: a real
+gateway defect — `upstreamProxy.ts`'s `tools/call` handler can return the
+tool result before its own relayed final progress notification has
+finished being written to the downstream transport, because nothing
+awaits the relay chain before returning.
+
+**Severity:** major. This is the flagship resumable-SSE code path
+(CLAUDE.md: "Resumable SSE is the flagship technical claim and gets 20
+seconds of the demo video"), and a progress bar that silently never
+reaches 100% is exactly the kind of defect that's invisible in a
+30-second demo take and then visible the one time a judge watches the
+full run — plus a direct violation of MCP-03 (progress ordering relative
+to the result), not just a cosmetic gap.
+
+**Workaround:** Fixed at the source, not worked around:
+`upstreamProxy.ts`'s `tools/call` handler now captures `pool.callTool(...)`'s
+result, `await`s `relayChain` (empty/no-op when there was no
+`progressToken`, or already resolved for every checkpoint but a slow last
+one), and only then returns the result — guaranteeing the last relayed
+notification's write completes, and therefore reaches the client, before
+the result's write begins. Verified: the new deterministic regression
+test passes; the full `spec/conformance.spec.test.ts` suite (27/27) and
+`pnpm test` (334/334) still pass; `pnpm test:stack` (11/11, including all
+10 resumption iterations and one full real 180s/36-checkpoint long-stream
+run each time) passed three consecutive times against a real
+`docker compose` stack.
+
+**Actionable suggestion:** Any gateway code that relays notifications via
+a fire-and-forget promise chain alongside a separately-resolved main
+result needs the same audit: grep for `relayChain`-shaped patterns
+(a local promise reassigned inside a callback, never awaited by the
+enclosing `return`) elsewhere in `packages/gateway/src` and
+`packages/upstream/src`. More generally: a suite whose only mock for a
+dependency is fully synchronous can structurally never catch an ordering
+bug that only exists because the real dependency is async — worth a
+standing note next to any `vi.mock("@chaperone/ledger", ...)` block that
+the mock's speed is itself a test-coverage gap for exactly this class of
+defect, not just a convenience.

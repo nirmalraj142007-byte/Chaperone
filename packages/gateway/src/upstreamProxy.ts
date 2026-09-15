@@ -268,10 +268,25 @@ export function buildPassthroughServer(
     // callback fires synchronously — chaining onto the prior send's promise
     // guarantees each notification reaches the wire before the next one is
     // attempted, rather than racing concurrent sends.
+    //
+    // MCP-03 requires progress relayed with ordering preserved relative to
+    // the result too, not just relative to other notifications — and the
+    // SDK's own response path (`Protocol._onrequest`: resolve the handler,
+    // then `await transport.send(response)`) shares no queue with this
+    // relay chain. Without awaiting `relayChain` before returning below, the
+    // result's own `transport.send()` — a real write, with its own
+    // event-store round trip — can finish and reach the client while the
+    // last-relayed notification's write is still in flight, dropping or
+    // reordering exactly that one notification. Every checkpoint but the
+    // last has the tool's own tick interval as slack for its write to land
+    // first; the last one races the result with none. Regression test:
+    // spec/conformance.spec.test.ts, "spec: progress" ("REGRESSION: the
+    // final progress notification's downstream write is not raced against
+    // the result").
     let relayChain = Promise.resolve();
 
     try {
-      return await callRegistry.runOnce<CallToolResult>(extra.requestId, () =>
+      const result = await callRegistry.runOnce<CallToolResult>(extra.requestId, () =>
         pool.callTool(resolved.upstreamId, resolved.toolName, request.params.arguments, {
           downstreamRequestId: extra.requestId,
           signal: extra.signal,
@@ -289,6 +304,8 @@ export function buildPassthroughServer(
             : {}),
         }),
       );
+      await relayChain;
+      return result;
     } catch (error) {
       if (error instanceof UpstreamError) {
         log.warn(

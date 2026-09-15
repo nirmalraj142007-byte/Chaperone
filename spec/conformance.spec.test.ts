@@ -478,6 +478,63 @@ describe("spec: progress", () => {
     expect(seen).toEqual([1, 2, 3, 4]);
   });
 
+  it("REGRESSION: the final progress notification's downstream write is not raced against the result (MCP-03 ordering)", async () => {
+    // Reproduces, deterministically, the CI failure where spec/long-stream.test.ts
+    // received 35 of 36 progress notifications — always the last one, never a
+    // middle one. Root cause: upstreamProxy.ts's tools/call handler kicks off
+    // each relayed `notifications/progress` via `extra.sendNotification(...)`
+    // inside a fire-and-forget `relayChain` promise, but never awaits that
+    // chain before returning the tool's result. The SDK's own response path
+    // (protocol.js: `.then(() => handler(...)).then(async (result) => { await
+    // transport.send(response); })`) has no shared queue with our relay, so
+    // nothing stops the result's own `transport.send()` — which does its own
+    // real event-store write — from finishing and reaching the client before
+    // a still-in-flight notification write does. For checkpoints 1..(N-1) this
+    // never surfaces: each has the tool's own tick interval (150ms here, 5s in
+    // the long-stream test) to comfortably finish its write with room to
+    // spare. Only the *last* checkpoint races the result directly, with no
+    // slack at all — which is exactly the "always the last one" shape the CI
+    // failure showed.
+    //
+    // This suite's ledger mock is normally synchronous, which is precisely
+    // why this defect never showed up here before: with no real async gap on
+    // either side, the untested race never had room to go the wrong way. This
+    // test manufactures that gap on purpose — an artificial delay standing in
+    // for the real DynamoDB round trip `event-store.ts`'s `storeEvent` makes on
+    // every write — applied only to the final checkpoint's notification, and
+    // not to the result. If the proxy doesn't wait for its own relay to
+    // finish, this fails on every run, not just an unlucky one.
+    const basePutSseEvent = vi.mocked(ledger.putSseEvent).getMockImplementation();
+    if (!basePutSseEvent) {
+      throw new Error("putSseEvent mock has no base implementation to wrap — check beforeEach's setup order");
+    }
+    vi.mocked(ledger.putSseEvent).mockImplementation(async (event) => {
+      const message = JSON.parse(event.message) as {
+        method?: string;
+        params?: { progress?: number; total?: number };
+      };
+      if (message.method === "notifications/progress" && message.params?.progress === message.params?.total) {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      }
+      return basePutSseEvent(event);
+    });
+
+    const { client } = await connectClient(gatewayUrl);
+    const seen: number[] = [];
+
+    const result = await client.callTool({ name: `${GROCERY_PREFIX}track_delivery`, arguments: {} }, undefined, {
+      onprogress: (p) => {
+        seen.push(p.progress);
+      },
+    });
+
+    expect(result.isError).toBeUndefined();
+    // The bug drops or reorders exactly the last checkpoint — assert the
+    // exact sequence, not just the count, so a reorder (delivered but out of
+    // place) fails this the same way a drop does.
+    expect(seen).toEqual([1, 2, 3, 4]);
+  });
+
   it("never sends a progress notification when the call carried no progressToken", async () => {
     const { client } = await connectClient(gatewayUrl);
     let progressCount = 0;
