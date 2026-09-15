@@ -12,7 +12,7 @@ pre-registration after the first observation is not pre-registration.
 **Interval: 35 days.**
 
 All public claims use the day count, never a rounded week count. "35 days" is
-correct; "five weeks" is correct only as a colloquial aside, never as the
+correct; "five weeks" is correct only as a colloquial aside, never as the <!-- check-claims:allow: this line names the banned phrase to explain the rule, not as a claimed interval -->
 number that appears next to a percentage. `pnpm check-claims` greps committed
 prose for rounded-week language and fails CI if it finds any.
 

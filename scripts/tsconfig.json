@@ -5,5 +5,5 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["resume-demo.ts"]
+  "include": ["resume-demo.ts", "check-claims.ts"]
 }

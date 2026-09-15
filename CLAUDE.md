@@ -42,7 +42,7 @@ These are correctness properties, not preferences. If a change would violate one
 
 9. **Only `semantic-intent` enters a headline number.** Cosmetic and schema-additive changes are counted and published separately. If a stated drift rate anywhere includes them, it is wrong.
 
-10. **Say the day count, never a rounded week count.** Crawl 1 was Sept 15; crawl 2 is Oct 20; that is **35 days**. `pnpm check-claims` greps committed prose for "six weeks" and fails CI. Do not reintroduce it in a commit message either.
+10. **Say the day count, never a rounded week count.** Crawl 1 was Sept 15; crawl 2 is Oct 20; that is **35 days**. `pnpm check-claims` greps committed prose for "six weeks" and fails CI. Do not reintroduce it in a commit message either. <!-- check-claims:allow: this line names the banned phrase to explain the rule, not as a claimed interval -->
 
 ---
 
@@ -178,6 +178,8 @@ If a task seems to require any of the above, it is out of scope — say so rathe
 Finish each unit of work with the repo **runnable**. Never leave it broken pending a follow-up.
 
 Run the acceptance commands yourself before declaring anything done, and paste the real output — not a description of what it would say. If a command fails, report the failure rather than adjusting the claim to match.
+
+Any command claimed as verification must be shown doing work — a test count, an assertion list, real output — not just an exit code: two suites have silently run nothing while appearing green (`pnpm --filter <pkg> test` in Phase 2, `pnpm spec` in Phase 10), and `check-claims` was described in this file for phases before it existed at all. Exit 0 is not evidence.
 
 When the data disappoints, report the data. This project's entire argument is evidentiary discipline, and a number that came in low, honestly stated, is worth more than a framing that survives by being vague. That applies to drift rates, baseline refusal rates, boot success, and latency equally.
 

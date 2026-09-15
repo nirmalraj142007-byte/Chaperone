@@ -17,6 +17,7 @@
     "resume-demo": "tsx scripts/resume-demo.ts",
     "lint": "eslint .",
     "depcruise": "dependency-cruiser packages",
+    "check-claims": "tsx scripts/check-claims.ts",
     "typecheck": "tsc -b && tsc --noEmit -p packages/ledger/scripts && tsc --noEmit -p packages/crawler/scripts && tsc --noEmit -p packages/gateway/scripts && tsc --noEmit -p spec && tsc --noEmit -p scripts",
     "ddb:migrate": "tsx packages/ledger/scripts/migrate.ts",
     "ddb:seed": "tsx packages/ledger/scripts/seed.ts",

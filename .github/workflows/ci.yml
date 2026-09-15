@@ -30,6 +30,7 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm depcruise
+      - run: pnpm check-claims
       - run: pnpm build
       - run: pnpm test
       # The in-process MCP conformance suite (spec/conformance.spec.test.ts)
