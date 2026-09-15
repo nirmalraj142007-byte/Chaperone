@@ -21,6 +21,7 @@
     "@chaperone/errors": "workspace:*",
     "@chaperone/ledger": "workspace:*",
     "@chaperone/logger": "workspace:*",
+    "@chaperone/mcp-app": "workspace:*",
     "@chaperone/policy": "workspace:*",
     "@chaperone/upstream": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.17.0",

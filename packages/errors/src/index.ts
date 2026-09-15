@@ -13,7 +13,11 @@ export type ErrorCode =
   | "ADVISORY_UNAVAILABLE_ERROR"
   | "BOOT_FAILURE_ERROR"
   | "SESSION_NOT_FOUND_ERROR"
-  | "PROTOCOL_ERROR";
+  | "PROTOCOL_ERROR"
+  | "QUARANTINE_NOT_FOUND_ERROR"
+  | "QUARANTINE_ALREADY_RESOLVED_ERROR"
+  | "APPROVAL_TOKEN_EXPIRED_ERROR"
+  | "INVALID_APPROVAL_TOKEN_ERROR";
 
 export abstract class ChaperoneError extends Error {
   abstract readonly code: ErrorCode;
@@ -71,6 +75,30 @@ export class SessionNotFoundError extends ChaperoneError {
 
 export class ProtocolError extends ChaperoneError {
   readonly code = "PROTOCOL_ERROR" as const;
+  readonly retryable = false;
+}
+
+/** `chaperone/approve_change` was given a `quarantineId` this household has no record of. */
+export class QuarantineNotFoundError extends ChaperoneError {
+  readonly code = "QUARANTINE_NOT_FOUND_ERROR" as const;
+  readonly retryable = false;
+}
+
+/** The quarantine was already approved or refused; a token cannot be redeemed twice. */
+export class QuarantineAlreadyResolvedError extends ChaperoneError {
+  readonly code = "QUARANTINE_ALREADY_RESOLVED_ERROR" as const;
+  readonly retryable = false;
+}
+
+/** More than 24 hours have passed since the change was detected. */
+export class ApprovalTokenExpiredError extends ChaperoneError {
+  readonly code = "APPROVAL_TOKEN_EXPIRED_ERROR" as const;
+  readonly retryable = false;
+}
+
+/** The provided token's hash does not match the quarantine's stored `approvalTokenHash`. */
+export class InvalidApprovalTokenError extends ChaperoneError {
+  readonly code = "INVALID_APPROVAL_TOKEN_ERROR" as const;
   readonly retryable = false;
 }
 

@@ -12,15 +12,36 @@
  * `tools/call` by matching the longest configured upstream-id prefix. This
  * is the one place this proxy is not byte-transparent, and spec/ asserts it
  * directly rather than leaving it implicit.
+ *
+ * Phase 10: every namespaced tool now passes through gate.ts before it
+ * reaches either side of the wire. `tools/list` excludes anything gate.ts
+ * denies — CLAUDE.md: "a tool the model can see is a tool the model can be
+ * talked into calling" — and `tools/call` re-checks the *current* upstream
+ * definition (not a cached one from the last `tools/list`) before ever
+ * forwarding to `pool.callTool`, so a mutation that lands between a
+ * client's list and its call is still caught. Two gateway-native tools,
+ * `chaperone/approve_change` and `chaperone/pending_changes`
+ * (firstPartyTools.ts), are appended unnamespaced and are never themselves
+ * gated — there is no upstream definition of them to drift against.
  */
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import type { CallToolResult, ProgressNotification } from "@modelcontextprotocol/sdk/types.js";
 import type { UpstreamConfig, UpstreamPool } from "@chaperone/upstream";
+import * as ledger from "@chaperone/ledger";
 import { UpstreamError } from "@chaperone/errors";
-import { REFUSAL_UPSTREAM_UNAVAILABLE } from "@chaperone/policy";
+import { REFUSAL_TOOL_CHANGED, REFUSAL_TOOL_UNPINNED, REFUSAL_UPSTREAM_UNAVAILABLE } from "@chaperone/policy";
 import { childLogger } from "@chaperone/logger";
 import { createCallRegistry } from "./call-registry.js";
+import { gateToolCall, gateToolList, peekRevealedToken, type GateDecision } from "./gate.js";
+import {
+  APPROVE_CHANGE_TOOL_NAME,
+  FIRST_PARTY_TOOLS,
+  PENDING_CHANGES_TOOL_NAME,
+  buildConsentCardText,
+  handleApproveChange,
+  handlePendingChanges,
+} from "./firstPartyTools.js";
 
 const log = childLogger({ component: "gateway-upstream-proxy" });
 const NAMESPACE_SEPARATOR = "__";
@@ -54,14 +75,61 @@ export interface PassthroughServer {
   dispose: () => Promise<void>;
 }
 
+function notifyListChanged(server: Server, reason: string): void {
+  void server.sendToolListChanged().catch((error: unknown) => {
+    log.warn({ error, reason }, "failed to send notifications/tools/list_changed");
+  });
+}
+
+/**
+ * Builds the refusal for a denied `tools/call`. `REFUSAL_TOOL_UNPINNED` is
+ * only for the one condition it names — a tool that has never been
+ * approved at all. Every other denial, including a pin-read failure that
+ * left the gate unable to tell mismatch from unpinned, is withheld under
+ * `REFUSAL_TOOL_CHANGED`: CLAUDE.md's fail-closed rule names this exact
+ * text for "a ledger or quarantine write failed," and treating an
+ * unreadable trust state as anything less cautious than "something about
+ * this tool's approval can no longer be verified" would be the wrong
+ * default to fail toward. A second content block — the consent card — is
+ * added only when there's an actual quarantine row to show.
+ */
+async function buildRefusalResult(
+  householdId: string,
+  upstreams: readonly UpstreamConfig[],
+  decision: GateDecision,
+): Promise<CallToolResult> {
+  if (decision.reason === "UNPINNED") {
+    return { content: [{ type: "text" as const, text: REFUSAL_TOOL_UNPINNED }], isError: true };
+  }
+
+  const content: CallToolResult["content"] = [{ type: "text" as const, text: REFUSAL_TOOL_CHANGED }];
+  if (decision.quarantineId !== undefined) {
+    const quarantine = await ledger.getQuarantine(householdId, decision.quarantineId);
+    if (quarantine !== undefined) {
+      const token = decision.approvalToken ?? peekRevealedToken(decision.quarantineId);
+      const label = upstreams.find((u) => u.id === decision.upstreamId)?.label ?? decision.upstreamId;
+      content.push({
+        type: "text" as const,
+        text: buildConsentCardText(quarantine, label, token ?? "(already shown once — see the original consent message)"),
+      });
+    }
+  }
+  return { content, isError: true };
+}
+
 /**
  * Builds a gateway-side `Server` whose `tools/list` fans out across every
- * pooled upstream (namespacing names on the way out) and whose `tools/call`
- * routes by that namespace, forwarding arguments unmodified and returning
- * the upstream's result unmodified — including `isError`, `content`, and
- * `structuredContent`.
+ * pooled upstream (namespacing names on the way out, gating on the way
+ * out) and whose `tools/call` routes by that namespace, re-gates against
+ * the upstream's *current* definition, and — once allowed — forwards
+ * arguments unmodified and returns the upstream's result unmodified,
+ * including `isError`, `content`, and `structuredContent`.
  */
-export function buildPassthroughServer(pool: UpstreamPool, upstreams: readonly UpstreamConfig[]): PassthroughServer {
+export function buildPassthroughServer(
+  pool: UpstreamPool,
+  upstreams: readonly UpstreamConfig[],
+  householdId: string,
+): PassthroughServer {
   const upstreamIds = upstreams.map((u) => u.id);
   const server = new Server(
     { name: "chaperone-gateway", version: "0.0.0" },
@@ -75,17 +143,54 @@ export function buildPassthroughServer(pool: UpstreamPool, upstreams: readonly U
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     const entries = await pool.listAllTools();
-    return {
-      tools: entries.map(({ upstreamId, tool }) => ({ ...tool, name: namespacedToolName(upstreamId, tool.name) })),
-    };
+    const decisions = await gateToolList(householdId, entries);
+
+    if (decisions.some((d) => d.newlyQuarantined)) {
+      notifyListChanged(server, "tool quarantined during tools/list");
+    }
+
+    const tools = decisions
+      .filter((d) => d.allowed)
+      .map((d) => ({ ...d.tool, name: namespacedToolName(d.upstreamId, d.tool.name) }));
+
+    return { tools: [...tools, ...FIRST_PARTY_TOOLS] };
   });
 
   server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
+    if (request.params.name === APPROVE_CHANGE_TOOL_NAME) {
+      return handleApproveChange(householdId, request.params.arguments, () => {
+        notifyListChanged(server, "quarantine approved");
+      });
+    }
+    if (request.params.name === PENDING_CHANGES_TOOL_NAME) {
+      return handlePendingChanges(householdId, upstreams);
+    }
+
     const resolved = resolveNamespacedTool(request.params.name, upstreamIds);
     if (resolved === undefined) {
       throw new UpstreamError(`unknown tool "${request.params.name}": not namespaced under any configured upstream`, {
         name: request.params.name,
       });
+    }
+
+    // Re-fetched fresh, not read from the last `tools/list` this session
+    // saw — a mutation landing between that list and this call must still
+    // be caught, not forwarded on a stale, already-approved definition.
+    const entries = await pool.listAllTools();
+    const currentEntry = entries.find(
+      (entry) => entry.upstreamId === resolved.upstreamId && entry.tool.name === resolved.toolName,
+    );
+    if (currentEntry === undefined) {
+      log.warn({ upstreamId: resolved.upstreamId, tool: resolved.toolName }, "tool not currently listed by upstream; returning frozen refusal");
+      return { content: [{ type: "text" as const, text: REFUSAL_UPSTREAM_UNAVAILABLE }], isError: true };
+    }
+
+    const decision = await gateToolCall(householdId, resolved.upstreamId, resolved.toolName, currentEntry.tool);
+    if (!decision.allowed) {
+      if (decision.newlyQuarantined) {
+        notifyListChanged(server, "tool quarantined during tools/call");
+      }
+      return buildRefusalResult(householdId, upstreams, decision);
     }
 
     const progressToken = request.params._meta?.progressToken;

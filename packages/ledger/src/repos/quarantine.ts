@@ -13,6 +13,15 @@ export interface Quarantine {
   toolName: string;
   fromHash: string;
   toHash: string;
+  /**
+   * The exact canonical JSON on either side of the mismatch, captured at
+   * detection time rather than re-derived at approval time — re-fetching
+   * "the current tool" from the upstream when a resident later approves
+   * would let a *second*, unreviewed change slip through under the hash the
+   * resident actually looked at.
+   */
+  fromCanonicalJson: string;
+  toCanonicalJson: string;
   diffSpans: DiffSpan[];
   approvalTokenHash: string;
   status: QuarantineStatus;
@@ -78,7 +87,14 @@ export async function listQuarantineByStatus(status: QuarantineStatus): Promise<
       new QueryCommand({
         TableName: tableName("quarantine"),
         IndexName: "GSI1",
-        KeyConditionExpression: "status = :status",
+        // "status" is a DynamoDB reserved keyword — an unaliased
+        // KeyConditionExpression referencing it fails with
+        // ValidationException against real DynamoDB (and DynamoDB Local),
+        // even though aws-sdk-client-mock's fake response never exercises
+        // real expression parsing and so never caught this. resolveQuarantine
+        // below already aliases it correctly for its UpdateExpression.
+        KeyConditionExpression: "#status = :status",
+        ExpressionAttributeNames: { "#status": "status" },
         ExpressionAttributeValues: { ":status": status },
         ScanIndexForward: false,
       }),

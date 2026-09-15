@@ -1,12 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
   AdvisoryUnavailableError,
+  ApprovalTokenExpiredError,
   BootFailureError,
   ChaperoneError,
   ConfigError,
+  InvalidApprovalTokenError,
   LedgerWriteError,
   PolicyViolationError,
   ProtocolError,
+  QuarantineAlreadyResolvedError,
+  QuarantineNotFoundError,
   SessionNotFoundError,
   UpstreamError,
   UpstreamTimeoutError,
@@ -25,6 +29,10 @@ describe("@chaperone/errors taxonomy", () => {
     expect(isRetryable(new BootFailureError("x"))).toBe(false);
     expect(isRetryable(new SessionNotFoundError("x"))).toBe(false);
     expect(isRetryable(new ProtocolError("x"))).toBe(false);
+    expect(isRetryable(new QuarantineNotFoundError("x"))).toBe(false);
+    expect(isRetryable(new QuarantineAlreadyResolvedError("x"))).toBe(false);
+    expect(isRetryable(new ApprovalTokenExpiredError("x"))).toBe(false);
+    expect(isRetryable(new InvalidApprovalTokenError("x"))).toBe(false);
   });
 
   it("returns false for non-ChaperoneError values", () => {

@@ -3,10 +3,17 @@ import type { Server as HttpServer } from "node:http";
 import express from "express";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { ToolListChangedNotificationSchema } from "@modelcontextprotocol/sdk/types.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import type { UpstreamConfig, UpstreamPool } from "@chaperone/upstream";
 import { getPool } from "@chaperone/upstream";
-import { ADD_ITEM_DESCRIPTION_ORIGINAL, buildApp as buildDemoUpstreamApp } from "@chaperone/demo-upstream";
+import {
+  ADD_ITEM_DESCRIPTION_MUTATED,
+  ADD_ITEM_DESCRIPTION_ORIGINAL,
+  buildApp as buildDemoUpstreamApp,
+  resetControlStateForTests,
+} from "@chaperone/demo-upstream";
+import { canonicalizeTool, hashTool, REFUSAL_TOOL_CHANGED, REFUSAL_TOOL_UNPINNED } from "@chaperone/policy";
 
 // Mocked so this test never touches real DynamoDB — an in-memory stand-in
 // wired up per test in beforeEach. Exercises session.ts's real logic
@@ -26,10 +33,22 @@ vi.mock("@chaperone/ledger", () => ({
   putSseEvent: vi.fn(),
   listSseEventsSince: vi.fn(),
   sseEventTtl: vi.fn(),
+  // Phase 10: gate.ts/approve.ts's storage — the same in-memory-stand-in
+  // philosophy as the session/sse mocks above, real DynamoDB behaviour
+  // already covered by packages/ledger/test/{pin,quarantine}.test.ts.
+  getPin: vi.fn(),
+  putPin: vi.fn(),
+  createQuarantine: vi.fn(),
+  getQuarantine: vi.fn(),
+  listQuarantineByStatus: vi.fn(),
+  resolveQuarantine: vi.fn(),
+  appendEvent: vi.fn(),
 }));
 
 const { buildApp } = await import("../src/app.js");
 const ledger = await import("@chaperone/ledger");
+
+const HOUSEHOLD_ID = "household-demo";
 
 let upstreamServer: HttpServer;
 let gatewayServer: HttpServer;
@@ -39,9 +58,35 @@ let gatewayUrl: string;
 let sessionStore: Map<string, { sessionId: string; protocolVersion: string; ttl: number; [k: string]: unknown }>;
 let sseEvents: Map<string, Array<{ sessionId: string; streamId: string; seq: number; eventId: string; message: string; ts: string; ttl: number }>>;
 let sseSeqCounters: Map<string, number>;
+let pins: Map<string, Record<string, unknown>>;
+let quarantines: Map<string, Record<string, unknown>>;
+let ledgerEvents: Array<{ type: string; actor: string; payload: unknown }>;
 
 function sseKey(sessionId: string, streamId: string): string {
   return `${sessionId}#${streamId}`;
+}
+
+function pinKey(upstreamId: string, toolName: string): string {
+  return `${upstreamId}#${toolName}`;
+}
+
+/** Pins every tool the real (test) upstream currently lists, so tools appear by default — mirrors `pnpm pin:bootstrap` against a live upstream. */
+async function bootstrapPins(): Promise<void> {
+  const entries = await pool.listAllTools();
+  for (const { upstreamId, tool } of entries) {
+    const policyTool = { name: tool.name, description: tool.description, inputSchema: tool.inputSchema };
+    pins.set(pinKey(upstreamId, tool.name), {
+      householdId: HOUSEHOLD_ID,
+      upstreamId,
+      toolName: tool.name,
+      approvedHash: hashTool(policyTool),
+      approvedCanonicalJson: canonicalizeTool(policyTool),
+      approvedAt: "2026-09-13T00:00:00.000Z",
+      approvedBy: `resident:${HOUSEHOLD_ID}`,
+      consentEventId: "bootstrap",
+      capabilityClass: "write",
+    });
+  }
 }
 
 async function listen(app: express.Express): Promise<{ server: HttpServer; url: string }> {
@@ -94,8 +139,39 @@ beforeEach(async () => {
   });
   vi.mocked(ledger.sseEventTtl).mockImplementation(() => Math.floor(Date.now() / 1000) + 24 * 60 * 60);
 
+  pins = new Map();
+  quarantines = new Map();
+  ledgerEvents = [];
+  vi.mocked(ledger.getPin).mockImplementation(
+    async (_householdId, upstreamId, toolName) => pins.get(pinKey(upstreamId, toolName)) as never,
+  );
+  vi.mocked(ledger.putPin).mockImplementation(async (pin) => {
+    pins.set(pinKey(pin.upstreamId, pin.toolName), pin as never);
+  });
+  vi.mocked(ledger.createQuarantine).mockImplementation(async (q) => {
+    quarantines.set(q.quarantineId, q as never);
+  });
+  vi.mocked(ledger.getQuarantine).mockImplementation(
+    async (_householdId, quarantineId) => quarantines.get(quarantineId) as never,
+  );
+  vi.mocked(ledger.listQuarantineByStatus).mockImplementation(
+    async (status) => [...quarantines.values()].filter((q) => q["status"] === status) as never,
+  );
+  vi.mocked(ledger.resolveQuarantine).mockImplementation(async (_householdId, quarantineId, status, resolvedAt) => {
+    const existing = quarantines.get(quarantineId);
+    if (existing) {
+      existing["status"] = status;
+      existing["resolvedAt"] = resolvedAt;
+    }
+  });
+  vi.mocked(ledger.appendEvent).mockImplementation(async ({ type, actor, payload }) => {
+    ledgerEvents.push({ type, actor, payload });
+    return { eventId: `evt-${ledgerEvents.length}`, payloadHash: "hash", prevEventHash: "prev" };
+  });
+
   pool = await getPool([upstream]);
-  const gatewayApp = buildApp(pool, [upstream], ["http://localhost:*"]);
+  await bootstrapPins();
+  const gatewayApp = buildApp(pool, [upstream], ["http://localhost:*"], HOUSEHOLD_ID);
   const gatewayListen = await listen(gatewayApp);
   gatewayServer = gatewayListen.server;
   gatewayUrl = gatewayListen.url;
@@ -103,6 +179,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
   vi.clearAllMocks();
+  resetControlStateForTests();
   await pool.close();
   // A client that detects the gateway's `tools.listChanged` capability
   // opens a standalone GET SSE stream that, by design, never ends on its
@@ -124,10 +201,12 @@ async function connectClient(): Promise<{ client: Client; transport: StreamableH
 }
 
 describe("gateway: initialize and passthrough", () => {
-  it("lists the upstream's tools under the grocery__ namespace, byte-identical except name", async () => {
+  it("lists the upstream's tools under the grocery__ namespace, byte-identical except name, plus the gateway's own two tools", async () => {
     const { client } = await connectClient();
     const { tools } = await client.listTools();
     expect(tools.map((t) => t.name).sort()).toEqual([
+      "chaperone/approve_change",
+      "chaperone/pending_changes",
       "grocery__add_item",
       "grocery__place_order",
       "grocery__read_list",
@@ -290,5 +369,104 @@ describe("gateway: Origin allowlist", () => {
     });
     // Rejected downstream (no session), but NOT by the origin middleware.
     expect(res.status).not.toBe(403);
+  });
+});
+
+describe("gateway: policy gate end to end (bootstrap -> mutate -> refuse -> approve -> replay fails)", () => {
+  async function connectClientWithListChangedCounter(): Promise<{
+    client: Client;
+    listChangedCount: () => number;
+  }> {
+    const { client } = await connectClient();
+    let count = 0;
+    client.setNotificationHandler(ToolListChangedNotificationSchema, () => {
+      count += 1;
+    });
+    return { client, listChangedCount: () => count };
+  }
+
+  it("excludes a mutated tool from tools/list and fires notifications/tools/list_changed", async () => {
+    const { client, listChangedCount } = await connectClientWithListChangedCounter();
+    const before = await client.listTools();
+    expect(before.tools.map((t) => t.name)).toContain("grocery__add_item");
+
+    await fetch(`http://127.0.0.1:${new URL(upstream.url).port}/control/mutate`, { method: "POST" });
+
+    const after = await client.listTools();
+    expect(after.tools.map((t) => t.name)).not.toContain("grocery__add_item");
+    // The other, untouched tools stay listed — only the drifted one is withheld.
+    expect(after.tools.map((t) => t.name)).toContain("grocery__read_list");
+
+    await vi.waitFor(() => expect(listChangedCount()).toBeGreaterThan(0));
+  });
+
+  it("returns the frozen REFUSAL_TOOL_CHANGED verbatim plus a consent card on tools/call, and records the detection events", async () => {
+    const { client } = await connectClient();
+    await client.listTools(); // establishes nothing pin-relevant; mutate first
+    await fetch(`http://127.0.0.1:${new URL(upstream.url).port}/control/mutate`, { method: "POST" });
+
+    const result = await client.callTool({ name: "grocery__add_item", arguments: { item: "batteries" } });
+    expect(result.isError).toBe(true);
+    const blocks = result.content as Array<{ type: string; text?: string }>;
+    expect(blocks[0]?.text).toBe(REFUSAL_TOOL_CHANGED);
+    expect(blocks[1]?.text).toContain("add_item");
+
+    expect(ledgerEvents.map((e) => e.type)).toEqual(["MISMATCH_DETECTED", "TOOL_QUARANTINED", "CONSENT_SHOWN"]);
+    expect(ledgerEvents.every((e) => e.actor !== "model")).toBe(true);
+  });
+
+  it("chaperone/pending_changes surfaces the open quarantine; approving with the token restores the tool; replaying the same token fails distinctly", async () => {
+    const { client } = await connectClient();
+    await fetch(`http://127.0.0.1:${new URL(upstream.url).port}/control/mutate`, { method: "POST" });
+    // Trip the quarantine and capture the token from the refusal's consent card.
+    const refusal = await client.callTool({ name: "grocery__add_item", arguments: { item: "batteries" } });
+    const card = (refusal.content as Array<{ type: string; text?: string }>)[1]?.text ?? "";
+    const tokenMatch = /approvalToken=(\S+)/.exec(card);
+    const quarantineMatch = /quarantineId=(\S+)/.exec(card);
+    expect(tokenMatch?.[1]).toBeDefined();
+    expect(quarantineMatch?.[1]).toBeDefined();
+    const approvalToken = tokenMatch![1]!;
+    const quarantineId = quarantineMatch![1]!;
+
+    const pending = await client.callTool({ name: "chaperone/pending_changes", arguments: {} });
+    expect((pending.content as Array<{ text?: string }>)[0]?.text).toContain(quarantineId);
+
+    const approveResult = await client.callTool({
+      name: "chaperone/approve_change",
+      arguments: { quarantineId, approvalToken, decision: "approve" },
+    });
+    expect(approveResult.isError).toBeFalsy();
+
+    const afterApproval = await client.listTools();
+    expect(afterApproval.tools.map((t) => t.name)).toContain("grocery__add_item");
+    const addItem = afterApproval.tools.find((t) => t.name === "grocery__add_item");
+    expect(addItem?.description).toBe(ADD_ITEM_DESCRIPTION_MUTATED);
+
+    const replay = await client.callTool({
+      name: "chaperone/approve_change",
+      arguments: { quarantineId, approvalToken, decision: "approve" },
+    });
+    expect(replay.isError).toBe(true);
+    expect((replay.content as Array<{ text?: string }>)[0]?.text).toContain("already resolved");
+  });
+
+  it("denies a tool with no pin at all as REFUSAL_TOOL_UNPINNED, distinct from a changed tool", async () => {
+    pins.delete(pinKey("grocery", "read_list"));
+    const { client } = await connectClient();
+    const { tools } = await client.listTools();
+    expect(tools.map((t) => t.name)).not.toContain("grocery__read_list");
+
+    const result = await client.callTool({ name: "grocery__read_list", arguments: {} });
+    expect(result.isError).toBe(true);
+    expect((result.content as Array<{ text?: string }>)[0]?.text).toBe(REFUSAL_TOOL_UNPINNED);
+  });
+
+  it("fails closed on tools/call when the pin store is unreachable: verbatim REFUSAL_TOOL_CHANGED, tool never invoked", async () => {
+    const { client } = await connectClient();
+    vi.mocked(ledger.getPin).mockRejectedValueOnce(new Error("DynamoDB unreachable"));
+
+    const result = await client.callTool({ name: "grocery__add_item", arguments: { item: "batteries" } });
+    expect(result.isError).toBe(true);
+    expect((result.content as Array<{ text?: string }>)[0]?.text).toBe(REFUSAL_TOOL_CHANGED);
   });
 });

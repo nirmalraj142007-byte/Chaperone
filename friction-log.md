@@ -1238,3 +1238,138 @@ pnpm version, actively breaks vitest's file filtering. Use `pnpm <script>
 verbatim, expect it to run the full suite rather than just the named file
 — slower and noisier, but not incorrect, as long as no second
 Docker-touching test process is started concurrently.
+
+---
+
+## Entry 023 — 2026-09-14
+
+**Task attempted:** Phase 10 — register `chaperone/approve_change` and
+`chaperone/pending_changes` as first-party tools on the gateway's own
+`Server` instance (the same low-level class `packages/gateway/src/
+upstreamProxy.ts` already uses for the pooled-upstream passthrough,
+per Entry 011), and have the approval flow rely on the declared
+`inputSchema` to keep bad calls from ever reaching `approveChange`.
+
+**Steps taken:** Read `Server.setRequestHandler` in `@modelcontextprotocol/
+sdk@1.30.0`'s `server/index.d.ts` (the exact version pinned in this repo,
+same one Entry 011/012/018 already verified against) and compared it
+against `McpServer.registerTool` in `server/mcp.d.ts`, which is what
+`packages/demo-upstream` uses for its own three tools.
+
+**Expected versus actual:** Expected `tools/call` argument validation
+against a tool's declared `inputSchema` to be a property of the MCP
+*server* concept generally, independent of which SDK class exposes it —
+i.e., that registering `chaperone/approve_change` with a JSON-Schema
+`inputSchema` naming `quarantineId`/`approvalToken`/`decision` as
+`required` would be enough to keep a malformed call from ever reaching the
+handler. Actual: only `McpServer.registerTool` does this (it builds a Zod
+schema from the tool's shape and parses `request.params.arguments` against
+it before invoking the handler — visible in `mcp.d.ts`'s `RegisteredTool`
+callback signature, which receives already-validated, typed args). The
+low-level `Server` class's `setRequestHandler(CallToolRequestSchema,
+handler)` validates only the JSON-RPC envelope shape (that `arguments` is
+present as *some* object, per `CallToolRequestSchema`) and hands the
+handler `request.params.arguments: Record<string, unknown> | undefined`
+completely unvalidated against the tool's own `inputSchema` — the schema
+declared in `tools/list` is purely descriptive metadata on this class, not
+an enforced contract.
+
+**Severity:** minor. Not a blocker — the fix is a few lines of manual
+`typeof` checks (`packages/gateway/src/firstPartyTools.ts`'s
+`parseApproveChangeArgs`) — but it is exactly the kind of assumption that
+would have shipped a genuine input-validation gap (CLAUDE.md's "validate
+at every boundary") if this repo hadn't already deliberately committed to
+the low-level `Server` class for the upstream passthrough, and only
+noticed the gap by cross-reading `mcp.d.ts` for comparison rather than by
+being warned anywhere in `Server`'s own types or docs.
+
+**Workaround:** `firstPartyTools.ts` hand-validates
+`chaperone/approve_change`'s three arguments before calling into
+`approveChange`, returning `isError: true` with a plain descriptive
+message (not a thrown, taxonomy error — there is no failure *state* here,
+just a malformed *request*) rather than trusting the declared
+`inputSchema` to have done anything.
+
+**Actionable suggestion:** Any future first-party tool registered on this
+gateway's `Server` instance needs the same explicit manual validation —
+there is no shortcut via a shared Zod-to-low-level-Server adapter in the
+SDK as installed. If a later phase adds a third or fourth first-party
+tool, factor the "parse `unknown` args against a declared shape, return a
+typed ok/err result" pattern out of `parseApproveChangeArgs` rather than
+re-deriving it per tool.
+
+---
+
+## Entry 024 — 2026-09-15
+
+**Task attempted:** Ran this phase's own literal VERIFY sequence end to
+end against a freshly rebuilt `docker compose` stack (real DynamoDB, real
+demo-upstream, real gateway) rather than declaring done on the mocked test
+suite alone: `pnpm pin:bootstrap`, `POST /control/mutate`, `tools/list`
+over real curl, `tools/call` on the excluded tool, an `aws dynamodb scan`/
+`query` against the real tables, `pnpm verify-ledger`, approve with the
+token, replay it.
+
+**Steps taken:** `docker compose down -v && docker compose build --no-cache
+gateway demo-upstream && docker compose up -d`, then `pnpm ddb:migrate`
+and `pnpm pin:bootstrap` against the exposed ports from the host. The
+mocked suite (`packages/gateway/test/gate.test.ts`,
+`packages/gateway/test/gateway.test.ts`, `packages/ledger/test/
+quarantine.test.ts`) had already passed, all using either a hand-rolled
+in-memory `@chaperone/ledger` mock or `aws-sdk-client-mock`'s fake
+DynamoDB responses.
+
+**Expected versus actual:** Expected the first `tools/call` against the
+mutated tool to return the frozen refusal *and* the consent card (the
+quarantine having just been created moments earlier, in the preceding
+`tools/list`). Actual: the refusal came back with only the frozen text —
+no second content block. The gateway's own logs showed why:
+`listQuarantineByStatus` (`packages/ledger/src/repos/quarantine.ts`,
+written in an earlier phase, before anything ever called it) builds its
+`KeyConditionExpression` as the literal string `"status = :status"` with
+no `ExpressionAttributeNames` alias. `status` is a DynamoDB reserved
+keyword — real DynamoDB (and DynamoDB Local, which enforces the same
+reserved-word table) rejects this with `ValidationException: Attribute
+name is a reserved keyword`. `resolveQuarantine`, three functions below it
+in the same file, already gets this right (`#status` in its
+`UpdateExpression`) — the two functions had simply never been exercised
+side by side before this phase made `listQuarantineByStatus` the first
+real caller. `aws-sdk-client-mock` never caught this because it fakes the
+SDK's response and never parses the expression string at all — a `Query`-
+by-status test with `ddbMock.on(QueryCommand).resolves(...)` "passes"
+against a request DynamoDB itself would reject outright.
+
+**Severity:** major, and the specific reason this phase's instructions
+insist on the live docker VERIFY rather than stopping at the mocked
+suite. Every gate.ts call that hit a genuine mismatch was silently losing
+its quarantine row and its one-time approval token — the tool still
+stayed correctly withheld (the `allow()` verdict itself never depended on
+this call), but the resident-facing consent card, and the
+`chaperone/pending_changes` review queue, would have been permanently
+empty in production. A demo relying on the approve flow would have had no
+way to ever un-quarantine a tool.
+
+**Workaround:** Fixed `listQuarantineByStatus` to alias `status` via
+`ExpressionAttributeNames: { "#status": "status" }` and
+`KeyConditionExpression: "#status = :status"`, matching `resolveQuarantine`'s
+existing pattern. Updated `packages/ledger/test/quarantine.test.ts`'s
+assertion to match the corrected (and now DynamoDB-valid) expression.
+Rebuilt the gateway image and re-ran the full VERIFY sequence clean: tool
+excluded, verbatim refusal plus a real consent card with the token,
+`MISMATCH_DETECTED`/`TOOL_QUARANTINED`/`CONSENT_SHOWN` in the real ledger,
+`pnpm verify-ledger` green, approve restores the tool with its new
+description, and replaying the same token fails with
+`QuarantineAlreadyResolvedError`'s message rather than a silent second
+approval.
+
+**Actionable suggestion:** `aws-sdk-client-mock`-based repo tests are not
+sufficient proof that a `KeyConditionExpression`/`UpdateExpression`
+string is valid DynamoDB syntax — they should be paired with, not
+substituted for, a real DynamoDB Local run of any *new* query pattern
+before it's trusted, and this phase's insistence on running the literal
+docker VERIFY sequence (not just `pnpm test`) is why this was caught
+before a demo take rather than during one. Any future repo function that
+queries or updates by an attribute named after a common English word
+(`status`, `type`, `name`, `size`, ...) should be grepped against
+DynamoDB's reserved-word list before it ships, not discovered by a
+`ValidationException` in a live container.

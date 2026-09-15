@@ -19,7 +19,12 @@ import { buildPassthroughServer } from "./upstreamProxy.js";
 
 const log = childLogger({ component: "gateway" });
 
-export function buildApp(pool: UpstreamPool, upstreams: readonly UpstreamConfig[], originAllowlist: readonly string[]): Express {
+export function buildApp(
+  pool: UpstreamPool,
+  upstreams: readonly UpstreamConfig[],
+  originAllowlist: readonly string[],
+  householdId: string,
+): Express {
   const app = express();
   app.use(express.json());
   app.use(originAllowlistMiddleware(originAllowlist));
@@ -46,7 +51,7 @@ export function buildApp(pool: UpstreamPool, upstreams: readonly UpstreamConfig[
     void (async () => {
       const sessionId = req.header("mcp-session-id");
       if (sessionId === undefined && isInitialize(req.body)) {
-        await handleInitialize(req, res, () => Promise.resolve(buildPassthroughServer(pool, upstreams)));
+        await handleInitialize(req, res, () => Promise.resolve(buildPassthroughServer(pool, upstreams, householdId)));
         return;
       }
       await handleSessionRequest(req, res);
