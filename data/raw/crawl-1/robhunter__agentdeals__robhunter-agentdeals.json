@@ -1,0 +1,295 @@
+{
+  "serverId": "robhunter__agentdeals__robhunter-agentdeals",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "list_categories",
+      "description": "Browse 52 categories of developer infrastructure deals (databases, cloud hosting, CI/CD, monitoring, auth, search, and more). Call this first to see what's available before searching.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "search_offers",
+      "description": "Find free tiers, credits, and discounts for developer tools. Use when choosing infrastructure for a new project, comparing vendor pricing, or finding cost savings. Covers 1,500+ offers from vendors like AWS, Vercel, Supabase, Cloudflare, and more. Supports filtering by category, eligibility (public, startup, OSS, student), and sorting by recency.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "description": "Keyword to search for in vendor names, descriptions, and tags",
+            "type": "string"
+          },
+          "category": {
+            "description": "Filter results to a specific category (e.g. 'Databases', 'Cloud Hosting')",
+            "type": "string"
+          },
+          "eligibility_type": {
+            "description": "Filter by eligibility type: public, accelerator, oss, student, fintech, geographic, enterprise",
+            "type": "string",
+            "enum": [
+              "public",
+              "accelerator",
+              "oss",
+              "student",
+              "fintech",
+              "geographic",
+              "enterprise"
+            ]
+          },
+          "sort": {
+            "description": "Sort results: vendor (alphabetical by vendor name), category (by category then vendor), newest (most recently verified first)",
+            "type": "string",
+            "enum": [
+              "vendor",
+              "category",
+              "newest"
+            ]
+          },
+          "limit": {
+            "description": "Maximum results to return (default: all results, or 20 when offset is provided)",
+            "type": "number"
+          },
+          "offset": {
+            "description": "Number of results to skip (default: 0)",
+            "type": "number"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_offer_details",
+      "description": "Get full pricing details for a specific vendor's free tier or deal. Use include_alternatives to compare up to 5 similar vendors in the same category — ideal for recommending alternatives or evaluating options.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "vendor": {
+            "type": "string",
+            "description": "Vendor name (case-insensitive match)"
+          },
+          "include_alternatives": {
+            "description": "When true, includes full deal objects for up to 5 alternative vendors in the same category",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "vendor"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_new_offers",
+      "description": "Check what developer tool deals were recently added or updated. Returns offers verified within the last N days, sorted newest first. Use for periodic checks to stay current on new free tiers and credits.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "description": "Number of days to look back (default: 7, max: 30)",
+            "type": "number"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_newest_deals",
+      "description": "See what's new in the AgentDeals index. Returns deals sorted by verified date (newest first), with days_since_update for each result. Use for periodic 'what's new' checks — pairs with monitor-vendor-changes prompt for a complete recurring usage loop.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "since": {
+            "description": "ISO date string (YYYY-MM-DD). Only return deals verified/added after this date. Default: 30 days ago",
+            "type": "string"
+          },
+          "limit": {
+            "description": "Max results to return (default: 20, max: 50)",
+            "type": "number"
+          },
+          "category": {
+            "description": "Filter by category name",
+            "type": "string"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_deal_changes",
+      "description": "Check which developer tools recently changed their pricing or free tiers. Tracks removals, limit reductions, limit increases, new free tiers, and restructures. Use when advising on vendor lock-in risk or staying current on pricing shifts.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "since": {
+            "description": "ISO date string (YYYY-MM-DD). Only return changes on or after this date. Default: 30 days ago",
+            "type": "string"
+          },
+          "change_type": {
+            "description": "Filter by type of change",
+            "type": "string",
+            "enum": [
+              "free_tier_removed",
+              "limits_reduced",
+              "limits_increased",
+              "new_free_tier",
+              "pricing_restructured",
+              "open_source_killed",
+              "pricing_model_change",
+              "startup_program_expanded",
+              "pricing_postponed",
+              "product_deprecated"
+            ]
+          },
+          "vendor": {
+            "description": "Filter by vendor name (case-insensitive partial match)",
+            "type": "string"
+          },
+          "vendors": {
+            "description": "Comma-separated vendor names to filter by (case-insensitive partial match). Use to track changes affecting your specific stack, e.g. 'Vercel,Supabase,Clerk'",
+            "type": "string"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_stack_recommendation",
+      "description": "Get a complete free-tier infrastructure stack recommendation for your project. Instead of searching category by category, describe what you're building and get a curated stack with hosting, database, auth, and more — all free tier. Covers SaaS apps, API backends, static sites, mobile apps, AI/ML projects, e-commerce, and DevOps.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "use_case": {
+            "type": "string",
+            "description": "What you're building (e.g., 'Next.js SaaS app', 'Python API backend', 'static blog', 'mobile app', 'AI chatbot')"
+          },
+          "requirements": {
+            "description": "Specific infrastructure needs to include (e.g., ['database', 'auth', 'email', 'monitoring']). Overrides template defaults when provided.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "use_case"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "estimate_costs",
+      "description": "Estimate infrastructure costs for your current stack at different scales. Pass the vendor names you're using (e.g. Vercel, Supabase, Clerk) and a scale (hobby/startup/growth) to get per-service cost analysis, free tier limits, free alternatives, and warnings about recent pricing changes. Use during project planning, code reviews, or deployment setup.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "services": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Vendor names to analyze (e.g. ['Vercel', 'Supabase', 'Clerk'])"
+          },
+          "scale": {
+            "description": "Scale: hobby (free tiers), startup (some paid), growth (mostly paid). Default: hobby",
+            "type": "string",
+            "enum": [
+              "hobby",
+              "startup",
+              "growth"
+            ]
+          }
+        },
+        "required": [
+          "services"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "compare_services",
+      "description": "Compare two developer tool vendors side by side. Returns free tier limits, pricing tiers, key differentiators, and recent deal changes for both. Use when deciding between two options (e.g., Supabase vs Neon, Vercel vs Netlify).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "vendor_a": {
+            "type": "string",
+            "description": "First vendor name (case-insensitive, fuzzy match supported)"
+          },
+          "vendor_b": {
+            "type": "string",
+            "description": "Second vendor name (case-insensitive, fuzzy match supported)"
+          }
+        },
+        "required": [
+          "vendor_a",
+          "vendor_b"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "check_vendor_risk",
+      "description": "Before depending on a vendor's free tier, check if their pricing is stable. Returns risk level (stable/caution/risky), pricing change history, free tier longevity, and more-stable alternatives. We track 52+ real pricing changes — use this to avoid vendors that have broken trust.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "vendor": {
+            "type": "string",
+            "description": "Vendor name to check (case-insensitive, fuzzy match supported)"
+          }
+        },
+        "required": [
+          "vendor"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "audit_stack",
+      "description": "Audit your current infrastructure stack for cost savings, pricing risks, and missing capabilities. Pass the services you use today. Returns per-service risk assessment, cheaper alternatives, gap analysis for common categories (databases, hosting, CI/CD, auth, monitoring, logging, email, search, feature flags), and actionable recommendations.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "services": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Vendor/service names you currently use (e.g. ['Vercel', 'Supabase', 'Clerk', 'Datadog'])"
+          }
+        },
+        "required": [
+          "services"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_expiring_deals",
+      "description": "Check which developer tool deals, free tiers, or credits are expiring soon. Use to avoid service disruptions and find replacements before deadlines.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "within_days": {
+            "description": "Number of days to look ahead (default: 30, max: 365)",
+            "type": "number"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_weekly_digest",
+      "description": "Get a curated weekly summary of developer tool pricing changes, new offers, and upcoming deadlines. Use for regular check-ins on what's changed in developer pricing. Falls back to 30-day window if fewer than 3 changes in the past week.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "agentdeals MCP server running on stdio\n",
+  "durationMs": 20663,
+  "transport": "stdio"
+}

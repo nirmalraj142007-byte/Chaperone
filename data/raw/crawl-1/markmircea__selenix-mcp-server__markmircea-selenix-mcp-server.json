@@ -1,0 +1,8 @@
+{
+  "serverId": "markmircea__selenix-mcp-server__markmircea-selenix-mcp-server",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "/tmp/npm-cache/_npx/5beb01de2dbb7f94/node_modules/.bin/selenix-mcp-server: 1: use strict: not found\n/tmp/npm-cache/_npx/5beb01de2dbb7f94/node_modules/.bin/selenix-mcp-server: 2: var: not found\n/tmp/npm-cache/_npx/5beb01de2dbb7f94/node_modules/.bin/selenix-mcp-server: 3: Syntax error: \"(\" unexpected\nnpm notice\nnpm notice New major version of npm available! 10.9.8 -> 12.0.2\nnpm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2\nnpm notice To update run: npm install -g npm@12.0.2\nnpm notice\n",
+  "durationMs": 21341,
+  "transport": "stdio"
+}

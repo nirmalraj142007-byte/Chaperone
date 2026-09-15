@@ -1,0 +1,8 @@
+{
+  "serverId": "daedalusdevelopmentgroup__ddg-agent-payable-services__daedalusdevelopmentgroup-ddg-age",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "sh: 1: exec: ddg-agent-services-mcp: not found\n",
+  "durationMs": 82394,
+  "transport": "stdio"
+}

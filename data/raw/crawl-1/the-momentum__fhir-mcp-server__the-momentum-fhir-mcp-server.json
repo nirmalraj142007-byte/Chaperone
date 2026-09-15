@@ -1,0 +1,8 @@
+{
+  "serverId": "the-momentum__fhir-mcp-server__the-momentum-fhir-mcp-server",
+  "status": "FAILED_TIMEOUT",
+  "tools": [],
+  "stderrTail": "Downloading pydantic-core (2.0MiB)\nDownloading pygments (1.2MiB)\nDownloading aiohttp (1.6MiB)\n Downloaded pygments\n Downloaded aiohttp\n Downloaded pydantic-core\nInstalled 41 packages in 13ms\n/tmp/uv-cache/archive-v0/FbqI3OKn2mdLgHXX/lib/python3.12/site-packages/pydantic_settings/sources/utils.py:47: IncompleteFieldDefinitionWarning: Field 'lifespan' has an incomplete definition: its annotation contains an unresolved forward reference, so settings sources may fail to correctly resolve its value. Call `model_rebuild()` on the model where the field is defined, once all the referenced types are defined.\n  warnings.warn(\n[2026-09-15 06:48:46,444] INFO {fhir_mcp_server.server.main:809} - Starting FHIR MCP server with streamable-http transport\nINFO:     Started server process [58]\nINFO:     Waiting for application startup.\n[2026-09-15 06:48:46,520] INFO {mcp.server.streamable_http_manager.run:109} - StreamableHTTP session manager started\nINFO:     Application startup complete.\nINFO:     Uvicorn running on http://localhost:8000 (Press CTRL+C to quit)\n",
+  "durationMs": 120552,
+  "transport": "stdio"
+}

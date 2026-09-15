@@ -1,0 +1,8 @@
+{
+  "serverId": "humanforai__humanforai-mcp__humanforai-humanforai-mcp",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "[humanforai-mcp] could not reach https://humanforai.dev/mcp: fetch failed\n[humanforai-mcp] check your network connection and try again.\nnpm notice\nnpm notice New major version of npm available! 10.9.8 -> 12.0.2\nnpm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2\nnpm notice To update run: npm install -g npm@12.0.2\nnpm notice\n",
+  "durationMs": 17108,
+  "transport": "stdio"
+}

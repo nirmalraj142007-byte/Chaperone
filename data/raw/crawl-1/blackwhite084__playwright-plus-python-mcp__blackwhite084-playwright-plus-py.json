@@ -1,0 +1,8 @@
+{
+  "serverId": "blackwhite084__playwright-plus-python-mcp__blackwhite084-playwright-plus-py",
+  "status": "FAILED_TIMEOUT",
+  "tools": [],
+  "stderrTail": "Downloading pydantic-core (2.0MiB)\nDownloading cryptography (4.5MiB)\nDownloading playwright (45.5MiB)\n Downloaded pydantic-core\n Downloaded cryptography\n",
+  "durationMs": 120088,
+  "transport": "stdio"
+}

@@ -1,0 +1,8 @@
+{
+  "serverId": "alexar76__aimarket-plugins__alexar76-aimarket-plugins",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "sh: 1: exec: aimarket-mcp-packager: not found\n",
+  "durationMs": 33910,
+  "transport": "stdio"
+}

@@ -1,0 +1,700 @@
+{
+  "serverId": "fouradata__mcp__ai-foura-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "foura_single",
+      "description": "Send one HTTP request and return the response. Use it for static pages, JSON APIs, and server-rendered HTML. Set browser, os, or version when a target refuses the default Chrome. Switch to foura_proxy if the response is blocked, and use foura_browser when the page needs JavaScript.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "method": {
+            "type": "string",
+            "minLength": 1,
+            "description": "HTTP method (GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS, or any WebDAV verb like PROPFIND/MKCOL)"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Public target URL. Private or reserved targets return `ssrf_blocked`. Use {ts} in the URL to insert the current Unix timestamp. Example: https://api.example.com/v1/users."
+          },
+          "headers": {
+            "description": "Custom HTTP headers as [name, value] tuples. Example: [[\"Accept\", \"application/json\"], [\"Referer\", \"https://google.com/\"]]",
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "string"
+                }
+              ],
+              "additionalItems": false,
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "unblocker": {
+            "description": "Send a full browser header set, including User-Agent and Sec-Ch-Ua. Default true. Set false for a plain HTTP request; profile selection needs it on and errors when it is off.",
+            "type": "boolean"
+          },
+          "profile": {
+            "description": "Exact profile id from the public catalogue at https://api.foura.ai/api/profiles. Use browser/os/version when you do not have an id.",
+            "type": "string"
+          },
+          "browser": {
+            "description": "Browser to present: Chrome, Edge, Safari, Firefox, or Tor. Omit every profile field and the request presents the latest Google Chrome.",
+            "type": "string"
+          },
+          "os": {
+            "description": "Operating system to present: Windows, macOS, Android, or iOS. A family name accepts any of its versions.",
+            "type": "string"
+          },
+          "version": {
+            "description": "Browser version to present, as listed in the catalogue. The newest match wins when several fit. An impossible combination returns an error listing what is available; no other browser is substituted.",
+            "type": "string"
+          },
+          "data": {
+            "description": "Request body. Strings sent as-is; objects auto-serialized to JSON. Example: {\"query\": \"hello\"} for POST APIs.",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
+              }
+            ]
+          },
+          "proxy": {
+            "description": "Optional proxy. Two forms: (1) URL `http://host:port` or `socks5://host:port`; (2) base36 ID from foura_proxy (e.g. `4DZ3VE`) to reuse the same exit. For rotation, use foura_proxy.",
+            "type": "string"
+          },
+          "timeout_ms": {
+            "description": "Overall request timeout in ms (max 120000, default 15000)",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 120000
+          },
+          "connect_timeout_ms": {
+            "description": "Timeout in ms for establishing the TCP/TLS connection (0-120000). Omit to use the default.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 120000
+          },
+          "accept_timeout_ms": {
+            "description": "Timeout in ms to receive the first response byte after the request is sent (0-120000). Omit for the default.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 120000
+          },
+          "server_response_timeout_ms": {
+            "description": "Timeout in ms for the server to send the complete response (0-120000). Omit for the default.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 120000
+          },
+          "dns_cache_timeout_sec": {
+            "description": "How long (seconds) to cache the target's resolved DNS (0-240). Omit for the default.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 240
+          },
+          "followRedirects": {
+            "description": "Max number of redirects to follow (0-20). Omit to disable redirect following.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 20
+          },
+          "tryJsonData": {
+            "description": "If true, attempt JSON.parse on the response body. On success, `data` is the parsed value (typically object or array). On parse failure, `data` silently stays as the original string - no error, no warning. Set false (or omit) when you need to detect parse failures explicitly.",
+            "type": "boolean"
+          },
+          "returnBuffer": {
+            "description": "Return raw bytes as a serialized Buffer JSON shape (`{type:\"Buffer\", data:[byte, ...]}`, bytes 0-255) instead of decoded string. Use for binary responses (images, protobuf). Reconstruct: `Buffer.from(data.data)` in Node, `new Uint8Array(data.data)` elsewhere.",
+            "type": "boolean"
+          },
+          "validate": {
+            "description": "Post-fetch response validation. When the response fails these checks the tool returns an error envelope.",
+            "type": "object",
+            "properties": {
+              "status": {
+                "description": "Status-code validation: which HTTP status codes count as success (accept) or failure (fail).",
+                "type": "object",
+                "properties": {
+                  "accept": {
+                    "description": "HTTP status codes to treat as success",
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "fail": {
+                    "description": "HTTP status codes to treat as failure",
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  }
+                }
+              },
+              "headers": {
+                "description": "Header validation: pass when an accepted header matches, fail when a blocklisted header matches.",
+                "type": "object",
+                "properties": {
+                  "accept": {
+                    "description": "Case-insensitive header substring rules. The response passes when at least one name/value pair matches across the redirect chain.",
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  },
+                  "fail": {
+                    "description": "Case-insensitive header substring rules that reject the response when any name/value pair matches.",
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "data": {
+                "description": "Body validation: pass when the body contains an expected substring (accept), fail when it contains a blocked one (fail).",
+                "type": "object",
+                "properties": {
+                  "accept": {
+                    "description": "Substrings the response body must contain",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "fail": {
+                    "description": "Substrings the response body must not contain",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "offload_large": {
+            "description": "If true, response bodies of 50 KB or more are returned as a resource_link instead of inlined. Default false. Read the returned offloaded_resource_uri with resources/read.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "method",
+          "url"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "foura_proxy",
+      "description": "Route an HTTP request through rotating proxies with automatic retry. Use it when foura_single is blocked or the target requires a specific exit country. The response includes the proxy ID that succeeded; reuse it with foura_single or foura_browser, or exclude it with ignoreProxies. Use foura_browser when the page needs JavaScript. Set exitCountries for a strict country allowlist, and request.browser, request.os, or request.version to present a different browser.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "request": {
+            "type": "object",
+            "properties": {
+              "method": {
+                "type": "string",
+                "minLength": 1,
+                "description": "HTTP method (GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS, or any WebDAV verb)"
+              },
+              "url": {
+                "type": "string",
+                "format": "uri",
+                "description": "Public target URL. Private or reserved targets return `ssrf_blocked`. Use {ts} in the URL to insert the current Unix timestamp. Example: https://shop.example.com/pricing."
+              },
+              "headers": {
+                "description": "Custom HTTP headers as [name, value] tuples. Example: [[\"Accept\", \"application/json\"]]",
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ],
+                  "additionalItems": false,
+                  "minItems": 2,
+                  "maxItems": 2
+                }
+              },
+              "unblocker": {
+                "description": "Send a full browser header set, including User-Agent and Sec-Ch-Ua. Default true. Set false for a plain HTTP request; profile selection needs it on and errors when it is off.",
+                "type": "boolean"
+              },
+              "profile": {
+                "description": "Exact profile id from the public catalogue at https://api.foura.ai/api/profiles. Use browser/os/version when you do not have an id.",
+                "type": "string"
+              },
+              "browser": {
+                "description": "Browser to present: Chrome, Edge, Safari, Firefox, or Tor. Omit every profile field and the request presents the latest Google Chrome.",
+                "type": "string"
+              },
+              "os": {
+                "description": "Operating system to present: Windows, macOS, Android, or iOS. A family name accepts any of its versions.",
+                "type": "string"
+              },
+              "version": {
+                "description": "Browser version to present, as listed in the catalogue. The newest match wins when several fit. An impossible combination returns an error listing what is available; no other browser is substituted.",
+                "type": "string"
+              },
+              "data": {
+                "description": "Request body.",
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {}
+                  }
+                ]
+              },
+              "timeout_ms": {
+                "description": "Per-attempt timeout in ms",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 120000
+              },
+              "connect_timeout_ms": {
+                "description": "Timeout in ms for establishing the connection to the target through the proxy (0-120000). Omit for the default.",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 120000
+              },
+              "accept_timeout_ms": {
+                "description": "Timeout in ms to receive the first response byte after the request is sent (0-120000). Omit for the default.",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 120000
+              },
+              "server_response_timeout_ms": {
+                "description": "Timeout in ms for the server to send the complete response (0-120000). Omit for the default.",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 120000
+              },
+              "dns_cache_timeout_sec": {
+                "description": "How long (seconds) to cache the target's resolved DNS (0-240). Omit for the default.",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 240
+              },
+              "followRedirects": {
+                "description": "Max number of redirects to follow (0-20). Omit to disable redirect following.",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 20
+              },
+              "tryJsonData": {
+                "description": "If true, attempt JSON.parse on the response body; on success `data` is the parsed value, otherwise it stays the original string. Omit to keep the body as-is.",
+                "type": "boolean"
+              },
+              "returnBuffer": {
+                "description": "Return raw bytes as a serialized Buffer JSON shape ({type:\"Buffer\", data:[byte, ...]}) instead of a decoded string. Use for binary responses (images, protobuf).",
+                "type": "boolean"
+              },
+              "validate": {
+                "description": "Per-attempt response validation. A proxy attempt that fails these checks is treated as failed and the next proxy is tried.",
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "description": "Status-code validation: which HTTP status codes count as success (accept) or failure (fail).",
+                    "type": "object",
+                    "properties": {
+                      "accept": {
+                        "description": "HTTP status codes to treat as success",
+                        "type": "array",
+                        "items": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "fail": {
+                        "description": "HTTP status codes to treat as failure",
+                        "type": "array",
+                        "items": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      }
+                    }
+                  },
+                  "headers": {
+                    "description": "Header validation: pass when an accepted header matches, fail when a blocklisted header matches.",
+                    "type": "object",
+                    "properties": {
+                      "accept": {
+                        "description": "Case-insensitive header substring rules. The response passes when at least one name/value pair matches across the redirect chain.",
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {
+                          "type": "string"
+                        }
+                      },
+                      "fail": {
+                        "description": "Case-insensitive header substring rules that reject the response when any name/value pair matches.",
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "data": {
+                    "description": "Body validation: pass when the body contains an expected substring (accept), fail when it contains a blocked one (fail).",
+                    "type": "object",
+                    "properties": {
+                      "accept": {
+                        "description": "Substrings the response body must contain to pass.",
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "fail": {
+                        "description": "Substrings that, if present in the body, mark the response as failed.",
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "required": [
+              "method",
+              "url"
+            ],
+            "description": "The inner HTTP request to send through each proxy attempt. Validation rules here determine when a proxy is treated as failed and retried."
+          },
+          "maxTries": {
+            "description": "Maximum rotation attempts before giving up (default 5, max 90). Difficult protected targets may need 25-30. Use exitCountries for country scope.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 90
+          },
+          "timeout_ms": {
+            "description": "Overall timeout across all rotation attempts in ms (default 45000, max 120000). Must be positive.",
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 120000
+          },
+          "ignoreProxies": {
+            "description": "Encoded proxy IDs (base36 strings like \"4DZ3VE\") or proxy URLs to exclude from rotation.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "exitCountries": {
+            "description": "Optional target-visible proxy countries as two-letter provider codes, for example [\"CZ\", \"GB\"]. Use codes supplied by the user or target requirements. When geography matters, do not guess codes or substitute unscoped rotation. Values are trimmed, uppercased, and deduplicated. Unknown exits are excluded and the request never falls back to another country.",
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Z]{2}$"
+            }
+          },
+          "offload_large": {
+            "description": "If true, response bodies of 50 KB or more are returned as a resource_link instead of inlined. Default false. Read the returned offloaded_resource_uri with resources/read.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "request"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "foura_browser",
+      "description": "Load a public URL in a full browser session. JavaScript runs, the DOM renders, and cookies come back with the response. Use it for single-page apps, lazy-loaded content, or supported browser challenges. For a protected page, call foura_proxy first and pass its returned proxy ID here to reuse that exit. Set unblocker:false when you want the page exactly as it loads.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Public URL to load in a full browser session. Private or reserved targets return `ssrf_blocked`. Example: https://shop.example.com/product/123."
+          },
+          "headers": {
+            "description": "Custom HTTP headers as a key-value object rather than [name, value] tuples. Example: {\"Referer\": \"https://google.com/\"}",
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "cookies": {
+            "description": "Cookies to set before navigation: [{ name, value, domain? }]",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Cookie name."
+                },
+                "value": {
+                  "type": "string",
+                  "description": "Cookie value."
+                },
+                "domain": {
+                  "description": "Cookie domain (e.g. .example.com). Omit to scope it to the navigated URL's host.",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "value"
+              ]
+            }
+          },
+          "userAgent": {
+            "description": "Override the browser's User-Agent string",
+            "type": "string"
+          },
+          "proxy": {
+            "description": "Optional proxy. Three forms: (1) URL `http://user:pass@host:port` or `socks5://host:port`; (2) base36 ID from foura_proxy (e.g. `4DZ3VE`) to reuse the same exit; (3) omit to use the default route.",
+            "type": "string"
+          },
+          "timeout_ms": {
+            "description": "Page load timeout in ms (default 30000, max 120000)",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 120000
+          },
+          "checkStatus": {
+            "description": "Expected HTTP status code. A different status returns an error envelope carrying the actual value. Example: 200 for a product page.",
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "checkText": {
+            "description": "Validate the rendered HTML once navigation completes. This is a substring check, not a waiter, and it doesn't poll. A missing substring returns an error envelope. Example: \"add to cart\" for a product page.",
+            "type": "string"
+          },
+          "unblocker": {
+            "description": "Handle supported anti-bot or captcha challenges during navigation. Default true. Set false to return the page exactly as it loads, including any challenge page.",
+            "type": "boolean"
+          },
+          "offload_large": {
+            "description": "If true, response bodies of 50 KB or more are returned as a resource_link instead of inlined. Default false. Read the returned offloaded_resource_uri with resources/read.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "foura_auto",
+      "description": "Give it a public URL and get the content back. This is the default when you don't want to choose between HTTP, proxy rotation, and a full browser. On protected targets, or whenever HTTP 200 may still be a challenge or incomplete page, pass validate.data.accept with text unique to the real content. Auto makes bounded attempts and returns either validated content or a failure; it cannot guarantee a match. The response includes completion details and, by default, reusable session values for follow-up calls. Use a lower-level tool when you need direct control over HTTP, proxy selection, or browser navigation, or to choose which browser is presented to the target: that lives on foura_single and foura_proxy.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Public target URL. Private or reserved targets return `ssrf_blocked`. Use {ts} in the URL to insert the current Unix timestamp. Example: https://example.com/page."
+          },
+          "method": {
+            "description": "HTTP method for the target request (default GET).",
+            "type": "string",
+            "minLength": 1
+          },
+          "headers": {
+            "description": "Custom HTTP headers as [name, value] tuples. Example: [[\"Accept\", \"application/json\"], [\"Authorization\", \"Bearer ...\"]]",
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "string"
+                }
+              ],
+              "additionalItems": false,
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "data": {
+            "description": "Request body for non-GET methods. Strings sent as-is; objects auto-serialized to JSON.",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
+              }
+            ]
+          },
+          "validate": {
+            "description": "Post-fetch response validation. When the response fails these checks foura_auto returns an error envelope.",
+            "type": "object",
+            "properties": {
+              "status": {
+                "description": "Status-code validation: which HTTP status codes count as success (accept) or failure (fail).",
+                "type": "object",
+                "properties": {
+                  "accept": {
+                    "description": "HTTP status codes to treat as success",
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "fail": {
+                    "description": "HTTP status codes to treat as failure",
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  }
+                }
+              },
+              "headers": {
+                "description": "Header validation: pass when an accepted header matches, fail when a blocklisted header matches.",
+                "type": "object",
+                "properties": {
+                  "accept": {
+                    "description": "Case-insensitive header substring rules. The response passes when at least one name/value pair matches.",
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  },
+                  "fail": {
+                    "description": "Case-insensitive header substring rules that reject the response when any name/value pair matches.",
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "data": {
+                "description": "Body validation: pass when the body contains an expected substring (accept), fail when it contains a blocked one (fail).",
+                "type": "object",
+                "properties": {
+                  "accept": {
+                    "description": "Case-sensitive substrings the final body must contain. Use this on protected targets to distinguish the real page from a challenge page.",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "fail": {
+                    "description": "Substrings the final body must not contain",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "returnSession": {
+            "description": "Return reusable {proxy, cookies, userAgent} values for follow-up calls. Default true. Send false for a leaner response when you only need the content.",
+            "type": "boolean"
+          },
+          "forceProxy": {
+            "description": "Require proxy routing for every target request. Default true. Send false to allow direct HTTP when suitable.",
+            "type": "boolean"
+          },
+          "timeout_ms": {
+            "description": "Total time budget in ms for the whole operation. Every attempt must fit inside it. Default 120000, max 180000.",
+            "type": "integer",
+            "minimum": 5000,
+            "maximum": 180000
+          },
+          "ignoreProxies": {
+            "description": "Exits to avoid - base36 proxy IDs (like \"4DZ3VE\") or proxy URLs. Use this to rotate away from an exit that was just blocked.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "followRedirects": {
+            "description": "Follow up to N redirects for HTTP and proxy requests. Default 5; 0 means don't follow. Browser navigation handles redirects itself.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 20
+          },
+          "offload_large": {
+            "description": "If true, response bodies of 50 KB or more are returned as a resource_link instead of inlined. Default false. Read the returned offloaded_resource_uri with resources/read.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 23474,
+  "transport": "stdio"
+}

@@ -1,0 +1,8 @@
+{
+  "serverId": "the-momentum__apple-health-mcp-server__the-momentum-apple-health-mcp-se",
+  "status": "FAILED_TIMEOUT",
+  "tools": [],
+  "stderrTail": "Downloading pygments (1.2MiB)\nDownloading cryptography (4.5MiB)\nDownloading lxml (5.0MiB)\nDownloading pydantic-core (2.0MiB)\nDownloading duckdb (20.5MiB)\nDownloading pyarrow (47.8MiB)\nDownloading chardet (1.4MiB)\n Downloaded pygments\n Downloaded chardet\n Downloaded pydantic-core\n Downloaded cryptography\n Downloaded lxml\n",
+  "durationMs": 120315,
+  "transport": "stdio"
+}

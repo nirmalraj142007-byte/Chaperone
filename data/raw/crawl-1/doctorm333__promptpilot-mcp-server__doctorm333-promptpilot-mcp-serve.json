@@ -1,0 +1,313 @@
+{
+  "serverId": "doctorm333__promptpilot-mcp-server__doctorm333-promptpilot-mcp-serve",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "list_models",
+      "description": "List all available models for image, video, and audio generation with their type and pricing",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "list_styles",
+      "description": "List all available styles, lighting, camera angles, moods, colors, and quality tags for prompt building",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "build_prompt",
+      "description": "Build an optimized prompt from subject + style/lighting/camera/mood/color/quality options",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string",
+            "description": "Main subject of the image"
+          },
+          "style": {
+            "type": "string",
+            "enum": [
+              "photorealistic",
+              "cinematic",
+              "anime",
+              "digitalArt",
+              "oilPainting",
+              "watercolor",
+              "3dRender",
+              "pixelArt",
+              "comicBook",
+              "cyberpunk",
+              "fantasy",
+              "minimalist"
+            ],
+            "description": "Visual style"
+          },
+          "lighting": {
+            "type": "string",
+            "enum": [
+              "natural",
+              "studio",
+              "neon",
+              "goldenHour",
+              "dramatic",
+              "soft",
+              "backlit"
+            ],
+            "description": "Lighting type"
+          },
+          "camera": {
+            "type": "string",
+            "enum": [
+              "closeUp",
+              "wideAngle",
+              "portrait",
+              "aerial",
+              "macro",
+              "lowAngle",
+              "highAngle"
+            ],
+            "description": "Camera angle"
+          },
+          "mood": {
+            "type": "string",
+            "enum": [
+              "happy",
+              "mysterious",
+              "epic",
+              "calm",
+              "dark",
+              "romantic",
+              "energetic"
+            ],
+            "description": "Mood/atmosphere"
+          },
+          "color": {
+            "type": "string",
+            "enum": [
+              "vibrant",
+              "pastel",
+              "monochrome",
+              "warm",
+              "cold",
+              "neon"
+            ],
+            "description": "Color palette"
+          },
+          "quality_tags": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "8k",
+                "detailed",
+                "award",
+                "professional",
+                "masterpiece"
+              ]
+            },
+            "description": "Quality enhancement tags"
+          }
+        },
+        "required": [
+          "subject"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "generate_image",
+      "description": "Generate an image using Pollinations API. Returns a URL to the generated image.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "Text prompt for image generation"
+          },
+          "model": {
+            "type": "string",
+            "default": "flux",
+            "description": "Model ID (default: flux)"
+          },
+          "width": {
+            "type": "number",
+            "minimum": 256,
+            "maximum": 2048,
+            "default": 1024,
+            "description": "Image width"
+          },
+          "height": {
+            "type": "number",
+            "minimum": 256,
+            "maximum": 2048,
+            "default": 1024,
+            "description": "Image height"
+          },
+          "enhance": {
+            "type": "boolean",
+            "default": true,
+            "description": "Enhance prompt with AI"
+          },
+          "seed": {
+            "type": "number",
+            "description": "Seed for reproducibility"
+          }
+        },
+        "required": [
+          "prompt"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "generate_video",
+      "description": "Generate a video using Pollinations API. Returns a URL to the generated video.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "Text prompt for video generation"
+          },
+          "model": {
+            "type": "string",
+            "default": "grok-video",
+            "description": "Model ID (default: grok-video)"
+          },
+          "aspect_ratio": {
+            "type": "string",
+            "enum": [
+              "1:1",
+              "16:9",
+              "9:16"
+            ],
+            "default": "1:1",
+            "description": "Aspect ratio"
+          },
+          "duration": {
+            "type": "number",
+            "description": "Duration in seconds (model-dependent)"
+          },
+          "seed": {
+            "type": "number",
+            "description": "Seed for reproducibility"
+          }
+        },
+        "required": [
+          "prompt"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "generate_audio",
+      "description": "Generate audio (speech or music) using Pollinations API. Returns a URL to the generated audio.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "Text for speech or music prompt"
+          },
+          "model": {
+            "type": "string",
+            "enum": [
+              "elevenlabs",
+              "elevenmusic"
+            ],
+            "default": "elevenlabs",
+            "description": "Audio model"
+          },
+          "voice": {
+            "type": "string",
+            "enum": [
+              "alloy",
+              "echo",
+              "fable",
+              "onyx",
+              "nova",
+              "shimmer"
+            ],
+            "default": "nova",
+            "description": "Voice (elevenlabs only)"
+          }
+        },
+        "required": [
+          "prompt"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "check_balance",
+      "description": "Check your Pollinations API balance (pollen). Shows remaining credits for paid models.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "generate_batch",
+      "description": "Generate multiple images in one call (up to 10). More efficient than calling generate_image repeatedly.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "prompts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "prompt": {
+                  "type": "string",
+                  "description": "Text prompt"
+                },
+                "model": {
+                  "type": "string",
+                  "default": "flux",
+                  "description": "Model ID"
+                },
+                "width": {
+                  "type": "number",
+                  "default": 1024
+                },
+                "height": {
+                  "type": "number",
+                  "default": 1024
+                },
+                "seed": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "prompt"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1,
+            "maxItems": 10,
+            "description": "Array of image prompts to generate (max 10)"
+          }
+        },
+        "required": [
+          "prompts"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 3721,
+  "transport": "stdio"
+}

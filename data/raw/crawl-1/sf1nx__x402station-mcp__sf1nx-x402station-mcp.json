@@ -1,0 +1,236 @@
+{
+  "serverId": "sf1nx__x402station-mcp__sf1nx-x402station-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "preflight",
+      "description": "Preflight x402 scam check: endpoint risk before you pay — decoy / zombie / price-trap / never-paid? Trust verdict in ~200ms before PAYMENT-SIGNATURE.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "The full URL of the x402 endpoint the agent is about to pay."
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "forensics",
+      "description": "Forensic x402 scam/risk report for a suspicious endpoint: probe history, signatures, decoy / price-trap patterns.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "The full URL of the x402 endpoint to analyse."
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "catalog_decoys",
+      "description": "Searchable catalog of x402 endpoint risk signals; scam-like decoys, zombies, and price-traps flagged.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "buy_credits",
+      "description": "Prepaid credit pack for high-frequency x402 scam checks, preflight, and verified calls. Returns { creditId, balance, expiresAt }; use X-Credit-Id on subsequent preflight calls.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "credits_status",
+      "description": "Free, no payment required. Returns { creditId, balance, initialBalance, used, paidAmount, createdAt, expiresAt, expired, paymentTx, paymentNetwork }. UUID-only access — anyone holding the creditId can read state, same as decrement. 404 covers both 'malformed UUID' and 'no such credit' (same body so an attacker scraping random UUIDs can't tell them apart).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "creditId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The creditId UUID returned by buy_credits."
+          }
+        },
+        "required": [
+          "creditId"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "whats_new",
+      "description": "Polling-friendly catalog diff. Body { since?, limit? } (default since=now-24h, limit=200, max 500). Returns added_endpoints[] (first_seen_at >= since AND is_active=true), removed_endpoints[] (flipped to is_active=false since), service-level counts, polls_in_window, and current active totals. Cheap ($0.001 USDC) so hourly polling stays under $1/month — perfect for aggregator agents that need a fresh delta without re-pulling the whole catalog. Internal ingest cron runs every 5 min, so polling more often than that returns identical data.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "since": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp. Default = now() - 24h. Cannot be older than 30 days or in the future."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500,
+            "description": "Per-list cap (1..500, default 200). Applied independently to added_endpoints and removed_endpoints."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "alternatives",
+      "description": "Avoid paying unsafe x402 endpoints: ranked safe alternatives for the same capability.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL flagged by preflight (or otherwise rejected). Looked up in the catalog to extract provider / domain / category / price band as match keys."
+          },
+          "taskClass": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "pattern": "\\S",
+            "description": "Service category hint (e.g. 'llm-completions', 'Inference'). Used as a fallback match key when `url` is unknown to the catalog, OR alone for category-only discovery."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10,
+            "description": "Max alternatives to return (1..10, default 5)."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "watch_subscribe",
+      "description": "Monitor x402 endpoint risk; webhook on scam-like decoy / zombie / price-trap status changes. Returns watchId + secret; x402station.io posts HMAC-SHA256-signed JSON when subscribed signals fire or clear.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "The x402 endpoint URL to watch."
+          },
+          "webhookUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "Where x402station should POST alert payloads. Must be HTTPS, reachable from the public internet, and contain no userinfo (no user:pass@host). Loopback (127.0.0.1, ::1, localhost), private (RFC1918, link-local 169.254/16 incl. cloud metadata, CGNAT/Tailscale 100.64/10) and IPv6 ULA / multicast / NAT64 / 6to4 / Teredo hosts are rejected client-side; the server applies the same SSRF guard if you bypass this check."
+          },
+          "signals": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "unknown_endpoint",
+                "no_history",
+                "dead",
+                "zombie",
+                "decoy_price_extreme",
+                "suspicious_high_price",
+                "slow",
+                "new_provider",
+                "dead_7d",
+                "mostly_dead",
+                "slow_p99",
+                "price_outlier_high",
+                "high_concentration"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 20,
+            "description": "Signal names to alert on. Defaults to ['dead', 'zombie', 'decoy_price_extreme']. Full vocabulary covers preflight + forensics signals."
+          }
+        },
+        "required": [
+          "url",
+          "webhookUrl"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "watch_status",
+      "description": "Returns the current state of a watch: active/expired, alerts remaining (out of 100 prepaid), last 10 alert deliveries with their delivery_status, and the last computed signal snapshot. Free — no payment required, secret-gated. The secret is the one returned by watch_subscribe.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "watchId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The watchId UUID returned by watch_subscribe."
+          },
+          "secret": {
+            "type": "string",
+            "minLength": 64,
+            "maxLength": 64,
+            "description": "The 64-char hex secret returned by watch_subscribe."
+          }
+        },
+        "required": [
+          "watchId",
+          "secret"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "watch_unsubscribe",
+      "description": "Deactivates the watch — no further alerts will be queued or delivered. The subscription is set is_active=false but the row + alert history is retained for audit. Free — no payment required, secret-gated. There is no refund for unused prepaid alerts.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "watchId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The watchId UUID returned by watch_subscribe."
+          },
+          "secret": {
+            "type": "string",
+            "minLength": 64,
+            "maxLength": 64,
+            "description": "The 64-char hex secret returned by watch_subscribe."
+          }
+        },
+        "required": [
+          "watchId",
+          "secret"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 33286,
+  "transport": "stdio"
+}

@@ -1,0 +1,661 @@
+{
+  "serverId": "viperjuice__mcp-gateway__viperjuice-mcp-gateway",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "gateway.auth_connect",
+      "description": "Store credentials for a server and make them available to provisioning. Use this when gateway.provision reports missing authentication.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "server_name": {
+            "type": "string",
+            "description": "Server name that needs authentication"
+          },
+          "credential": {
+            "type": "string",
+            "description": "API key, token, or subscription credential to store"
+          },
+          "auth_mode": {
+            "type": "string",
+            "enum": [
+              "api_key",
+              "url_elicitation"
+            ],
+            "default": "api_key",
+            "description": "API-key storage or URL-mode elicitation acknowledgement"
+          },
+          "elicitation_id": {
+            "type": "string",
+            "description": "URL-mode elicitation identifier"
+          },
+          "elicitation_url": {
+            "type": "string",
+            "description": "Sanitized URL-mode elicitation URL"
+          },
+          "consent_acknowledged": {
+            "type": "boolean",
+            "default": false,
+            "description": "Acknowledge that the out-of-band URL flow was completed"
+          },
+          "env_var": {
+            "type": "string",
+            "description": "Optional explicit environment variable key"
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "user",
+              "project"
+            ],
+            "default": "user",
+            "description": "Where to store the credential"
+          }
+        },
+        "required": [
+          "server_name"
+        ]
+      }
+    },
+    {
+      "name": "gateway.cancel",
+      "description": "Cancel a pending tool invocation. By default, refuses to cancel healthy requests (recent heartbeat). Use force=true to cancel anyway. Use gateway.list_pending first to see request IDs and health status.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "description": "Request ID in format \"server_name::local_id\" from gateway.list_pending"
+          },
+          "force": {
+            "type": "boolean",
+            "default": false,
+            "description": "Force cancel even if request is healthy (has recent heartbeat)"
+          }
+        },
+        "required": [
+          "request_id"
+        ]
+      }
+    },
+    {
+      "name": "gateway.catalog_search",
+      "description": "Search for available tools across all connected MCP servers. Returns compact capability cards without full schemas. Use filters to narrow results by server, tags, or risk level. Set include_offline=True to also discover provisionable servers not yet running. This is the primary tool discovery entry point.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search query to match against tool names, descriptions, and tags"
+          },
+          "filters": {
+            "type": "object",
+            "properties": {
+              "server": {
+                "type": "string",
+                "description": "Filter to tools from a specific server"
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Filter to tools with any of these tags"
+              },
+              "risk_max": {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ],
+                "description": "Maximum risk level to include"
+              }
+            }
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 20,
+            "description": "Maximum number of results to return"
+          },
+          "include_offline": {
+            "type": "boolean",
+            "default": false,
+            "description": "Include tools from offline servers"
+          }
+        }
+      }
+    },
+    {
+      "name": "gateway.config_status",
+      "description": "Show read-only effective configuration and startup policy status with source attribution and non-secret diagnostics.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "gateway.connect_server",
+      "description": "Connect or start a known downstream MCP server by name. Resolves configured, provisioned manifest, and registered discovered servers.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "server_name": {
+            "type": "string",
+            "description": "Name of the server to connect"
+          }
+        },
+        "required": [
+          "server_name"
+        ]
+      }
+    },
+    {
+      "name": "gateway.describe",
+      "description": "Get detailed information about a specific tool, including its arguments and constraints. Use this before invoking a tool to understand its requirements.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tool_id": {
+            "type": "string",
+            "description": "The tool ID in format \"server_name::tool_name\""
+          }
+        },
+        "required": [
+          "tool_id"
+        ]
+      }
+    },
+    {
+      "name": "gateway.disconnect_server",
+      "description": "Disconnect a running downstream MCP server without changing persistent config. Refuses by default when that server has pending requests; set force=true to cancel them.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "server_name": {
+            "type": "string",
+            "description": "Name of the server to disconnect"
+          },
+          "force": {
+            "type": "boolean",
+            "default": false,
+            "description": "Cancel this server's pending requests before disconnecting"
+          }
+        },
+        "required": [
+          "server_name"
+        ]
+      }
+    },
+    {
+      "name": "gateway.get_startup_policy",
+      "description": "Return persisted autoStart and legacy disableAutoStart entries grouped by config source.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "gateway.health",
+      "description": "Get the health status of the gateway and all connected MCP servers. Shows server status, tool counts, and last refresh time.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "gateway.invoke",
+      "description": "Invoke a tool on a downstream MCP server. Arguments are validated against the tool schema before execution. Output is automatically truncated if too large.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tool_id": {
+            "type": "string",
+            "description": "The tool ID in format \"server_name::tool_name\""
+          },
+          "arguments": {
+            "type": "object",
+            "description": "Arguments to pass to the tool (must match tool schema)"
+          },
+          "run_correlation_id": {
+            "type": "string",
+            "description": "Scoped-advisor run correlation ID"
+          },
+          "seat_correlation_id": {
+            "type": "string",
+            "description": "Scoped-advisor seat correlation ID"
+          },
+          "evidence_label_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "SHA-256 digest of the caller evidence label"
+          },
+          "options": {
+            "type": "object",
+            "properties": {
+              "timeout_ms": {
+                "type": "integer",
+                "minimum": 1000,
+                "maximum": 300000,
+                "default": 30000,
+                "description": "Timeout in milliseconds"
+              },
+              "max_output_chars": {
+                "type": "integer",
+                "minimum": 100,
+                "maximum": 100000,
+                "description": "Maximum output characters (truncated if exceeded)"
+              },
+              "redact_secrets": {
+                "type": "boolean",
+                "default": false,
+                "description": "Redact detected secrets from output"
+              }
+            }
+          }
+        },
+        "required": [
+          "tool_id"
+        ]
+      }
+    },
+    {
+      "name": "gateway.list_pending",
+      "description": "List all pending tool invocations with health status. Shows elapsed time, heartbeat age, and current state for each request. Use this to monitor long-running operations before deciding to cancel.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "server": {
+            "type": "string",
+            "description": "Filter to pending requests on a specific server (optional)"
+          }
+        }
+      }
+    },
+    {
+      "name": "gateway.provision",
+      "description": "Provision (install and start) a specific MCP server from the manifest. Use this after reviewing candidates from gateway.request_capability. Returns immediately with a job_id for tracking. Poll gateway.provision_status to check progress. Use gateway.request_capability instead if you don't know the exact server name.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "server_name": {
+            "type": "string",
+            "description": "Name of the server to provision (from manifest)"
+          }
+        },
+        "required": [
+          "server_name"
+        ]
+      }
+    },
+    {
+      "name": "gateway.provision_status",
+      "description": "Check the status of a running server installation. Use after gateway.provision returns a job_id. Returns progress percentage, output log, and final tools when complete.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "description": "Job ID from gateway.provision response"
+          }
+        },
+        "required": [
+          "job_id"
+        ]
+      }
+    },
+    {
+      "name": "gateway.refresh",
+      "description": "Reload backend MCP server configurations and reconnect. Use this when new MCP servers have been configured or to recover from connection errors. Refuses by default while downstream requests are pending; set force=true to cancel them.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "claude_config",
+              "custom"
+            ],
+            "description": "Config source to reload from"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Reason for refresh (for logging)"
+          },
+          "force": {
+            "type": "boolean",
+            "default": false,
+            "description": "Cancel pending downstream requests before refreshing"
+          }
+        }
+      }
+    },
+    {
+      "name": "gateway.register_discovered_server",
+      "description": "Register an externally-discovered MCP server package so it can be provisioned. Call this after gateway.search_registry to register the chosen package, then call gateway.provision to install and start it.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "package": {
+            "type": "string",
+            "description": "npm package identifier (e.g. '@modelcontextprotocol/server-github')"
+          },
+          "server_name": {
+            "type": "string",
+            "description": "Logical name for this server (e.g. 'github') used with gateway.provision"
+          },
+          "env_vars": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Required environment variable names (e.g. ['GITHUB_TOKEN'])"
+          },
+          "description": {
+            "type": "string",
+            "description": "Short description of the server's purpose"
+          }
+        },
+        "required": [
+          "package",
+          "server_name"
+        ]
+      }
+    },
+    {
+      "name": "gateway.request_capability",
+      "description": "Recommend the right tool for a task — describe what you need in natural language. Examples: 'scrape a website', 'search Slack messages', 'query Postgres', 'browse the web'. Matches against installed CLIs and 90+ provisionable MCP servers and returns ranked candidates; it does NOT start anything — call gateway.provision to actually install/start the recommended server. Prefer this over gateway.provision when you don't already know the exact server name.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Natural language description of the capability needed (e.g., 'I need to scrape a website', 'browser automation')"
+          },
+          "available_clis": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Optional: CLIs known to be available in the environment"
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }
+    },
+    {
+      "name": "gateway.restart_server",
+      "description": "Restart a known downstream MCP server without changing persistent config. Refuses by default when that server has pending requests; set force=true to cancel them.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "server_name": {
+            "type": "string",
+            "description": "Name of the server to restart"
+          },
+          "force": {
+            "type": "boolean",
+            "default": false,
+            "description": "Cancel this server's pending requests before restarting"
+          }
+        },
+        "required": [
+          "server_name"
+        ]
+      }
+    },
+    {
+      "name": "gateway.search_registry",
+      "description": "Search the public MCP Registry for external servers not in the local manifest. Use this when gateway.request_capability returns not_available. Returns package names and metadata; call gateway.register_discovered_server then gateway.provision to install.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Natural language description of the capability needed"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20,
+            "default": 5,
+            "description": "Maximum number of results to return"
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }
+    },
+    {
+      "name": "gateway.set_startup_policy",
+      "description": "Preview or explicitly apply an autoStart add/remove/set operation against one selected config source or path.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "add",
+              "remove",
+              "set"
+            ]
+          },
+          "names": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "project",
+              "user",
+              "custom"
+            ]
+          },
+          "path": {
+            "type": "string"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "default": true
+          },
+          "apply": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "operation"
+        ]
+      }
+    },
+    {
+      "name": "gateway.submit_feedback",
+      "description": "Prepare and optionally submit a PMCP feedback issue to GitHub. By default returns an exact preview payload; set confirm_submission=true to submit.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Issue title"
+          },
+          "description": {
+            "type": "string",
+            "description": "Issue details (technical data only)"
+          },
+          "issue_type": {
+            "type": "string",
+            "enum": [
+              "bug",
+              "feature_request"
+            ],
+            "default": "bug"
+          },
+          "subordinate_server": {
+            "type": "string",
+            "description": "Subordinate MCP server involved (if known)"
+          },
+          "failed_tool_call": {
+            "type": "string",
+            "description": "Specific failed tool call (if known)"
+          },
+          "confirm_submission": {
+            "type": "boolean",
+            "default": false,
+            "description": "Set true only after user confirms submission"
+          }
+        },
+        "required": [
+          "title",
+          "description"
+        ]
+      }
+    },
+    {
+      "name": "gateway.sync_environment",
+      "description": "Sync environment information from the host. Detects the platform (mac/wsl/linux/windows) and probes for installed CLIs. This information is used to prefer CLIs over MCP servers when matching capabilities.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "platform": {
+            "type": "string",
+            "enum": [
+              "mac",
+              "wsl",
+              "linux",
+              "windows"
+            ],
+            "description": "Override detected platform (optional)"
+          },
+          "detected_clis": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Override detected CLIs (optional)"
+          }
+        }
+      }
+    },
+    {
+      "name": "gateway.tasks_cancel",
+      "description": "Cancel a downstream MCP task by opaque task ID. Use gateway.cancel only for PMCP request IDs from gateway.list_pending.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "server_name": {
+            "type": "string"
+          },
+          "task_id": {
+            "type": "string"
+          },
+          "force": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "server_name",
+          "task_id"
+        ]
+      }
+    },
+    {
+      "name": "gateway.tasks_get",
+      "description": "Get current status for one downstream MCP task.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "server_name": {
+            "type": "string"
+          },
+          "task_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "server_name",
+          "task_id"
+        ]
+      }
+    },
+    {
+      "name": "gateway.tasks_list",
+      "description": "List brokered downstream MCP tasks. MCP task IDs are opaque downstream task identifiers, not PMCP request IDs.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "server_name": {
+            "type": "string",
+            "description": "Optional server filter"
+          },
+          "cursor": {
+            "type": "string",
+            "description": "Optional downstream pagination cursor"
+          }
+        }
+      }
+    },
+    {
+      "name": "gateway.tasks_result",
+      "description": "Fetch a downstream MCP task result and apply the same output redaction and truncation options as gateway.invoke.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "server_name": {
+            "type": "string"
+          },
+          "task_id": {
+            "type": "string"
+          },
+          "options": {
+            "type": "object",
+            "properties": {
+              "max_output_chars": {
+                "type": "integer"
+              },
+              "redact_secrets": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "required": [
+          "server_name",
+          "task_id"
+        ]
+      }
+    },
+    {
+      "name": "gateway.update_server",
+      "description": "Update a subordinate MCP server package to latest version and restart it so the new version is actually running. Call this to check for and apply an update -- the gateway does not volunteer update notices, so nothing will prompt you. Refuses to restart by default when the server has pending requests; set force=true to cancel them.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "server_name": {
+            "type": "string",
+            "description": "Name of server to update"
+          },
+          "force": {
+            "type": "boolean",
+            "default": false,
+            "description": "Cancel this server's pending requests before restarting"
+          }
+        },
+        "required": [
+          "server_name"
+        ]
+      }
+    }
+  ],
+  "stderrTail": "istered lazy server: xero\n[2026-09-15T06:49:26] [INFO] Registered lazy server: paypal\n[2026-09-15T06:49:26] [INFO] Registered lazy server: twilio\n[2026-09-15T06:49:26] [INFO] Registered lazy server: telnyx\n[2026-09-15T06:49:26] [INFO] Registered lazy server: mailgun\n[2026-09-15T06:49:26] [INFO] Registered lazy server: line\n[2026-09-15T06:49:26] [INFO] Registered lazy server: mysql\n[2026-09-15T06:49:26] [INFO] Registered lazy server: mongodb\n[2026-09-15T06:49:26] [INFO] Registered lazy server: clickhouse\n[2026-09-15T06:49:26] [INFO] Registered lazy server: neo4j\n[2026-09-15T06:49:26] [INFO] Registered lazy server: meilisearch\n[2026-09-15T06:49:26] [INFO] Registered lazy server: circleci\n[2026-09-15T06:49:26] [INFO] Registered lazy server: argocd\n[2026-09-15T06:49:26] [INFO] Registered lazy server: kubernetes\n[2026-09-15T06:49:26] [INFO] Registered lazy server: postman\n[2026-09-15T06:49:26] [INFO] Registered lazy server: eslint\n[2026-09-15T06:49:26] [INFO] Registered lazy server: index-it-mcp\n[2026-09-15T06:49:26] [INFO] Registered lazy server: jira\n[2026-09-15T06:49:26] [INFO] Registered lazy server: confluence\n[2026-09-15T06:49:26] [INFO] Registered lazy server: asana\n[2026-09-15T06:49:26] [INFO] Registered lazy server: clickup\n[2026-09-15T06:49:26] [INFO] Registered lazy server: todoist\n[2026-09-15T06:49:26] [INFO] Registered lazy server: plane\n[2026-09-15T06:49:26] [INFO] Registered lazy server: figma\n[2026-09-15T06:49:26] [INFO] Registered lazy server: miro\n[2026-09-15T06:49:26] [INFO] Registered lazy server: excalidraw\n[2026-09-15T06:49:26] [INFO] Registered lazy server: mux\n[2026-09-15T06:49:26] [INFO] Registered lazy server: elevenlabs\n[2026-09-15T06:49:26] [INFO] Registered lazy server: datadog\n[2026-09-15T06:49:26] [INFO] Registered lazy server: grafana\n[2026-09-15T06:49:26] [INFO] Registered lazy server: dynatrace\n[2026-09-15T06:49:26] [INFO] Registered lazy server: langfuse\n[2026-09-15T06:49:26] [INFO] Registered lazy server: airtable\n[2026-09-15T06:49:26] [INFO] Registered lazy server: contentful\n[2026-09-15T06:49:26] [INFO] Registered lazy server: webflow\n[2026-09-15T06:49:26] [INFO] Registered lazy server: wordpress\n[2026-09-15T06:49:26] [INFO] Registered lazy server: obsidian\n[2026-09-15T06:49:26] [INFO] Registered lazy server: perplexity\n[2026-09-15T06:49:26] [INFO] Registered lazy server: apify\n[2026-09-15T06:49:26] [INFO] Registered lazy server: jina\n[2026-09-15T06:49:26] [INFO] Registered lazy server: hyperbrowser\n[2026-09-15T06:49:26] [INFO] Registered lazy server: mapbox\n[2026-09-15T06:49:26] [INFO] Registered lazy server: dbt\n[2026-09-15T06:49:26] [INFO] Registered lazy server: tailscale\n[2026-09-15T06:49:26] [INFO] Registered lazy server: home-assistant\n[2026-09-15T06:49:26] [INFO] Registered lazy server: excel\n[2026-09-15T06:49:26] [INFO] Registered lazy server: airbnb\n[2026-09-15T06:49:26] [INFO] Registered lazy server: okta\n[2026-09-15T06:49:26] [INFO] Registered lazy server: zapier\n[2026-09-15T06:49:26] [INFO] Registered lazy server: shopify-dev\n[2026-09-15T06:49:26] [INFO] Registered lazy server: square\n[2026-09-15T06:49:26] [INFO] Registered lazy server: snowflake\n[2026-09-15T06:49:26] [INFO] Registered lazy server: pinecone\n[2026-09-15T06:49:26] [INFO] Registered lazy server: azure-devops\n[2026-09-15T06:49:26] [INFO] Registered lazy server: gitlab-duo\n[2026-09-15T06:49:26] [INFO] Registered lazy server: elasticsearch\n[2026-09-15T06:49:26] [INFO] Registered lazy server: chroma\n[2026-09-15T06:49:26] [INFO] Registered lazy server: redis\n[2026-09-15T06:49:26] [INFO] Registered lazy server: databricks\n[2026-09-15T06:49:26] [INFO] Registered lazy server: storybook\n[2026-09-15T06:49:26] [INFO] Registered lazy server: cloudinary\n[2026-09-15T06:49:26] [INFO] Started health monitor background task\n[2026-09-15T06:49:26] [INFO] Gateway initialized: 0/107 servers online, 0 tools indexed\n[2026-09-15T06:49:26] [INFO] Generating capability summary...\n[2026-09-15T06:49:26] [INFO] MCP Gateway server started (stdio)\n",
+  "durationMs": 18794,
+  "transport": "stdio"
+}

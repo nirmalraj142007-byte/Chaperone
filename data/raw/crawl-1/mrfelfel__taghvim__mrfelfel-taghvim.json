@@ -1,0 +1,539 @@
+{
+  "serverId": "mrfelfel__taghvim__mrfelfel-taghvim",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "now",
+      "description": "Return the current deterministic time. Do NOT let the LLM infer the current date/time — call this tool instead. Returns UTC and local time, weekday, UTC offset, and DST status.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "timezone": {
+            "type": "string",
+            "default": "UTC",
+            "description": "IANA timezone, e.g. 'America/New_York', 'Asia/Tokyo'"
+          },
+          "calendar": {
+            "type": "string",
+            "enum": [
+              "gregorian",
+              "persian",
+              "iso-week"
+            ],
+            "default": "gregorian",
+            "description": "Calendar system for date representation"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "resolve_time",
+      "description": "Resolve a natural-language date/time expression into a deterministic ISO timestamp. Use this whenever the user mentions relative dates ('tomorrow', 'next Friday', 'in two weeks', 'the first Monday of next month'). The LLM interprets the language; this tool performs the actual temporal computation. Returns structured result with UTC, local, and precision info.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "expression": {
+            "type": "string",
+            "description": "Natural-language temporal expression, e.g. 'tomorrow at 3pm', 'next Friday', 'in 3 weeks'"
+          },
+          "reference_time": {
+            "type": "string",
+            "description": "Reference time as ISO 8601. Defaults to now. Use when relative to a specific date."
+          },
+          "timezone": {
+            "type": "string",
+            "default": "UTC",
+            "description": "IANA timezone for resolution, e.g. 'Europe/London'"
+          },
+          "locale": {
+            "type": "string",
+            "default": "en-US",
+            "description": "Locale for date interpretation"
+          }
+        },
+        "required": [
+          "expression"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "calculate_date",
+      "description": "Perform deterministic date arithmetic: add/subtract units, snap to day/week/month/quarter/year boundaries, or compute differences between dates. Handles leap years and month-end edge cases correctly. Example: 2026-01-31 + 1 month → 2026-02-28.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "description": "ISO 8601 date or datetime"
+          },
+          "operation": {
+            "type": "string",
+            "enum": [
+              "add",
+              "subtract",
+              "diff",
+              "start_of",
+              "end_of",
+              "next_weekday",
+              "previous_weekday"
+            ],
+            "description": "Operation: add/subtract value+unit, diff two dates, start_of/end_of period, next/previous weekday"
+          },
+          "value": {
+            "type": "number",
+            "description": "Numeric amount for add/subtract/diff"
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "days",
+              "weeks",
+              "months",
+              "years",
+              "hours",
+              "minutes",
+              "seconds"
+            ],
+            "description": "Unit for add/subtract"
+          },
+          "target_date": {
+            "type": "string",
+            "description": "Second date for diff or comparison"
+          },
+          "weekday": {
+            "type": "string",
+            "enum": [
+              "monday",
+              "tuesday",
+              "wednesday",
+              "thursday",
+              "friday",
+              "saturday",
+              "sunday"
+            ],
+            "description": "Weekday name for next_weekday/previous_weekday"
+          },
+          "period": {
+            "type": "string",
+            "enum": [
+              "day",
+              "week",
+              "month",
+              "quarter",
+              "year"
+            ],
+            "description": "Period for start_of/end_of"
+          },
+          "timezone": {
+            "type": "string",
+            "default": "UTC"
+          },
+          "calendar": {
+            "type": "string",
+            "enum": [
+              "gregorian",
+              "persian",
+              "iso-week"
+            ],
+            "default": "gregorian"
+          }
+        },
+        "required": [
+          "date",
+          "operation"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "convert_time",
+      "description": "Convert a datetime between IANA timezones. Correctly handles DST transitions and date-boundary changes. Never hardcodes UTC offsets. Use IANA timezone names (e.g. 'America/New_York', 'Asia/Tokyo'). Can convert to multiple timezones at once.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "datetime": {
+            "type": "string",
+            "description": "ISO 8601 datetime to convert"
+          },
+          "from_timezone": {
+            "type": "string",
+            "description": "Source IANA timezone"
+          },
+          "to_timezone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ],
+            "description": "Target IANA timezone(s). Pass a string or array for multiple targets."
+          }
+        },
+        "required": [
+          "datetime",
+          "from_timezone",
+          "to_timezone"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "timezone_info",
+      "description": "Get deterministic timezone information: UTC offset, DST status, abbreviation, and next/previous DST transitions. Uses the IANA timezone database. Handles zones with no DST correctly.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "timezone": {
+            "type": "string",
+            "description": "IANA timezone, e.g. 'America/New_York', 'Asia/Tehran'"
+          },
+          "reference_time": {
+            "type": "string",
+            "description": "ISO 8601 reference time. Defaults to now."
+          }
+        },
+        "required": [
+          "timezone"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "business_days",
+      "description": "Business-day calculations: check if a date is a business day, find next/previous business day, add business days, count business days between dates. Supports configurable weekends and public holidays by country (US, UK, DE, JP, IR, UAE, etc.). Does NOT assume Saturday/Sunday weekend globally.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "is_business_day",
+              "next",
+              "previous",
+              "add",
+              "count",
+              "last_of_month",
+              "range"
+            ],
+            "description": "Operation to perform"
+          },
+          "date": {
+            "type": "string",
+            "description": "Target date (YYYY-MM-DD)"
+          },
+          "start_date": {
+            "type": "string",
+            "description": "Start date for count/range"
+          },
+          "end_date": {
+            "type": "string",
+            "description": "End date for count/range"
+          },
+          "count": {
+            "type": "number",
+            "description": "Number of business days to add"
+          },
+          "country_code": {
+            "type": "string",
+            "default": "US",
+            "description": "ISO 3166-1 alpha-2 country code, e.g. 'US', 'GB', 'DE', 'JP', 'IR'"
+          },
+          "year": {
+            "type": "number",
+            "description": "Year for last_of_month"
+          },
+          "month": {
+            "type": "number",
+            "description": "Month (1-12) for last_of_month"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "holidays",
+      "description": "Public holiday intelligence: list all holidays for a country and year, check if a specific date is a holiday, find the next upcoming holiday, or get holidays in a date range. Supports 100+ countries via the IATA holiday database. Distinguishes between actual and observed holiday dates.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "list",
+              "is_holiday",
+              "next",
+              "between",
+              "countries"
+            ],
+            "description": "Query operation"
+          },
+          "country_code": {
+            "type": "string",
+            "description": "ISO 3166-1 alpha-2 country code, e.g. 'US', 'GB', 'DE', 'JP'"
+          },
+          "year": {
+            "type": "number",
+            "description": "Year (defaults to current year)"
+          },
+          "date": {
+            "type": "string",
+            "description": "Date to check (YYYY-MM-DD)"
+          },
+          "start_date": {
+            "type": "string",
+            "description": "Range start date (YYYY-MM-DD)"
+          },
+          "end_date": {
+            "type": "string",
+            "description": "Range end date (YYYY-MM-DD)"
+          },
+          "region": {
+            "type": "string",
+            "description": "State/province code where applicable"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "recurrence",
+      "description": "Generate recurring date schedules using RFC 5545 RRULE. Supports natural language patterns ('every Monday', 'first Friday of every month', 'every 90 days') converted deterministically to RRULE where possible. Always generates bounded results within a date range. Never generates infinite recurrences.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "rrule": {
+            "type": "string",
+            "description": "RFC 5545 RRULE string, e.g. 'FREQ=WEEKLY;BYDAY=MO'"
+          },
+          "natural_language": {
+            "type": "string",
+            "description": "Human-readable pattern, e.g. 'every Monday', 'first Friday of every month'"
+          },
+          "start_date": {
+            "type": "string",
+            "description": "Start date (YYYY-MM-DD) for occurrence generation"
+          },
+          "end_date": {
+            "type": "string",
+            "description": "End date (YYYY-MM-DD) bounding occurrences"
+          },
+          "max_occurrences": {
+            "type": "number",
+            "default": 100,
+            "description": "Maximum occurrences to generate (max 500)"
+          },
+          "timezone": {
+            "type": "string",
+            "default": "UTC"
+          }
+        },
+        "required": [
+          "start_date"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "calendar",
+      "description": "Calendar system operations: convert between Gregorian, Persian/Jalali, and ISO week calendars. Validate dates, get weekday information, generate month calendars. Persian/Jalali is a first-class supported calendar.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "convert",
+              "validate",
+              "weekday",
+              "month_info",
+              "month_calendar",
+              "events"
+            ],
+            "description": "Calendar operation"
+          },
+          "date": {
+            "type": "string",
+            "description": "Date in source calendar format (YYYY-MM-DD)"
+          },
+          "source_calendar": {
+            "type": "string",
+            "enum": [
+              "gregorian",
+              "persian",
+              "iso-week"
+            ],
+            "default": "gregorian",
+            "description": "Source calendar system"
+          },
+          "target_calendar": {
+            "type": "string",
+            "enum": [
+              "gregorian",
+              "persian",
+              "iso-week"
+            ],
+            "description": "Target calendar for conversion"
+          },
+          "year": {
+            "type": "number",
+            "description": "Year for month_info/month_calendar"
+          },
+          "month": {
+            "type": "number",
+            "description": "Month (1-12) for month_info/month_calendar"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "format_time",
+      "description": "Deterministically format a datetime string. Supports ISO 8601, RFC 3339, locale-aware formats (en-US, de-DE, ja-JP, fa-IR, etc.), Jalali, human-readable, and custom Luxon format strings. Use Intl.DateTimeFormat for locale-specific output.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "datetime": {
+            "type": "string",
+            "description": "ISO 8601 datetime to format"
+          },
+          "format": {
+            "type": "string",
+            "description": "Format name or pattern: iso8601, rfc3339, utc, unix, relative, human, jalali, weekday, date-short/medium/long/full, time-short/medium/long, datetime-short/medium/long/full, or a Luxon format string"
+          },
+          "timezone": {
+            "type": "string",
+            "default": "UTC"
+          },
+          "locale": {
+            "type": "string",
+            "default": "en-US"
+          },
+          "calendar": {
+            "type": "string",
+            "enum": [
+              "gregorian",
+              "persian",
+              "iso-week"
+            ],
+            "default": "gregorian"
+          }
+        },
+        "required": [
+          "datetime",
+          "format"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "temporal_verify",
+      "description": "Verify a temporal claim deterministically. Prevents temporal hallucinations by checking facts like: 'Is 2026-12-31 a Thursday?', 'Is December 25 2027 a Saturday?', 'Is 3 PM London before 10 AM New York?', 'Is 2024 a leap year?'. Always returns structured facts.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "claim": {
+            "type": "string",
+            "description": "Natural language temporal claim to verify"
+          },
+          "date": {
+            "type": "string",
+            "description": "Date (YYYY-MM-DD) referenced in the claim"
+          },
+          "datetime": {
+            "type": "string",
+            "description": "Datetime (ISO 8601) referenced in the claim"
+          },
+          "timezone": {
+            "type": "string",
+            "default": "UTC"
+          }
+        },
+        "required": [
+          "claim"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "jalali_persian",
+      "description": "Persian/Jalali calendar operations: convert dates, look up events, get month overviews, calculate days until Jalali dates. This is a convenience wrapper for Jalali-specific functionality. For universal calendar operations, use the 'calendar' tool instead.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "now",
+              "convert_to_jalali",
+              "convert_to_gregorian",
+              "get_events",
+              "days_until",
+              "jalali_range",
+              "month_overview"
+            ],
+            "description": "Jalali-specific operation"
+          },
+          "date": {
+            "type": "string",
+            "description": "Date in YYYY-MM-DD format"
+          },
+          "keyword": {
+            "type": "string",
+            "description": "Search keyword for events"
+          },
+          "month": {
+            "type": "number",
+            "description": "Jalali month (1-12)"
+          },
+          "year": {
+            "type": "number",
+            "description": "Jalali year"
+          },
+          "from": {
+            "type": "string",
+            "description": "Start date (Jalali YYYY-MM-DD) for range"
+          },
+          "to": {
+            "type": "string",
+            "description": "End date (Jalali YYYY-MM-DD) for range"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "Taghvim MCP server running on stdio\n",
+  "durationMs": 53229,
+  "transport": "stdio"
+}

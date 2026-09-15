@@ -1,0 +1,126 @@
+{
+  "serverId": "smeet666__mcp-lrclib__smeet666-mcp-lrclib",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "search_tracks",
+      "description": "Search LRCLIB for tracks by title, artist or album, and get the id needed to fetch lyrics with get_lyrics. Give either 'query' as free text, or 'track_name' and 'artist_name' separately for a narrower search. Results carry metadata only: title, artist, album, duration, and whether plain and time-synced lyrics exist. Use 'duration_seconds' and 'album_name' in the results to tell releases and re-recordings of the same song apart, and 'has_synced_lyrics' to know whether karaoke-style timed lyrics are available before fetching them. LRCLIB indexes tracks by their metadata, so it cannot search for a word appearing inside the lyrics.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Free-text search, for example 'nino ferrer le sud'. Use this or the fields below."
+          },
+          "track_name": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Song title, for a structured search."
+          },
+          "artist_name": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Artist name, for a structured search."
+          },
+          "album_name": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Album name, to narrow a structured search."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "default": 10,
+            "description": "Maximum tracks to return. LRCLIB returns up to 20 per search."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_lyrics",
+      "description": "Fetch the lyrics of one track from LRCLIB, given the id returned by search_tracks, or an exact artist and title. Set 'format' to \"synced\" for karaoke-style lyrics with a timestamp on every line, \"plain\" for the text alone, or \"both\". Check 'has_synced_lyrics' in the search results first: not every track has timed lyrics. Lyrics can be long, so the text is truncated by default: check 'truncated' and call again with 'offset' set to 'next_offset' to continue reading. Instrumental tracks come back with status \"instrumental\" and no text, which is a valid answer, so do not retry them. Always cite 'attribution' when showing lyrics to a user.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "LRCLIB track id, as returned by search_tracks. Preferred over the name fields."
+          },
+          "artist_name": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Artist name, matched exactly by LRCLIB. Required when 'id' is absent."
+          },
+          "track_name": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Song title, matched exactly by LRCLIB. Required when 'id' is absent."
+          },
+          "album_name": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Album name, to pick between releases."
+          },
+          "duration_seconds": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "Track duration, to pick between versions of differing length."
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "plain",
+              "synced",
+              "both"
+            ],
+            "default": "plain",
+            "description": "'plain' returns the text only. 'synced' returns LRC text plus a parsed list of timestamped lines. 'both' returns each of them."
+          },
+          "max_chars": {
+            "type": "integer",
+            "minimum": 200,
+            "maximum": 20000,
+            "default": 6000,
+            "description": "Maximum characters of lyrics text to return in this call."
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0,
+            "description": "Character offset to resume from, for lyrics longer than max_chars."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_track",
+      "description": "Look up one LRCLIB track by its id and return its metadata without the lyrics: title, artist, album, duration, and whether plain and time-synced lyrics exist. Use this to confirm you have the right release or version before calling get_lyrics, or to check whether timed lyrics exist for a track id you already hold.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "LRCLIB track id, as returned by search_tracks."
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 15708,
+  "transport": "stdio"
+}

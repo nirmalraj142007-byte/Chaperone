@@ -1,0 +1,727 @@
+{
+  "serverId": "tatsuju__opdstar-nhi-mcp__tatsuju-opdstar-nhi-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "lookup_rejection_code",
+      "description": "Look up a single Taiwan NHI rejection code (5-character format `NNNNL` — 4 digits + 1 uppercase letter A/B/C/..., e.g. '0317A', '0338A', '0114A'). Returns severity (low / medium / high), category (00 診療品質 · 01 病歷紀錄 · 02 基本診療 · 03 藥品特材 · 04 手術處置 · 05 檢查檢驗 · 06 論病例計酬 · 07 復健精神 · 08 其他 · 09 法令 — first two digits encode the category), and the official Chinese description from 健保署 專業審查不予支付理由代碼. Returns a not-found message (not an error) if the code does not exist. **Use when** an agent encounters a known rejection code in a notice or claim response and needs the human-readable explanation, or when triaging which category a code belongs to. **Typical follow-up**: call `get_drug_rules({rejection_code})` if the code is in category 03 (藥品特材) to surface the drug rule behind the rejection; call `search_audit_guidelines({query: <code>})` for codes in 04 / 05 to read the underlying audit-clause text; call `count_appeal_precedents_for_rejection_code({rejection_code})` to gauge whether disputes for this code are commonly successful. **Don't use** to enumerate codes by category — call `get_rejection_code_category({category})` instead. **Reference only** — the official 健保署 code list is authoritative. Curated by OPDSTAR (https://opdstar.com).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Required. The exact 5-character NHI rejection code in `NNNNL` format (4 digits followed by 1 uppercase letter). Lowercase letters are auto-uppercased; whitespace is trimmed. Examples: '0317A' (病歷紀錄不全) / '0338A' (藥品特材) / '0114A' (病歷紀錄). The first two digits identify the category (00-09).",
+            "pattern": "^[0-9]{4}[A-Z]$",
+            "minLength": 5,
+            "maxLength": 5
+          }
+        },
+        "required": [
+          "code"
+        ]
+      }
+    },
+    {
+      "name": "get_procedures_for_icd",
+      "description": "Given a Taiwan ICD-10 code and a medical specialty, return the NHI procedure codes plausibly applicable to that diagnosis within that specialty. Each result includes the procedure code, Chinese name, English name, nhi_points (payment points), and audit_notes (specialty-specific review caveats and risk hints). Results are ordered by curated relevance (most commonly applied codes first), capped at `limit` (default 10, max 20). Returns an empty list (not an error) when no curated mapping exists for the given (icd10, specialty) pair — this is common because the mapping is intentionally conservative. **Use when** an agent is drafting SOAP and needs a starting set of procedure codes for the diagnosis within the clinician's specialty context — e.g. dermatologist with `L30.9` (chronic eczema) needs candidate procedure codes. **Typical follow-up**: for each candidate code, call `lookup_fee_code({q: <code>})` to confirm current points and effective dates, and `lookup_audit_clauses_for_procedure({procedure_code})` to surface any audit-clause caveats. **Don't use** as a billing source of truth — the original NHI fee schedule has no ICD field, this is a curated, intentionally conservative mapping that prefers false negatives over false positives; for the canonical fee-schedule entry of a known code, call `lookup_fee_code`. **Reference only** — final code selection remains the clinician's responsibility. Curated by OPDSTAR (https://opdstar.com).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "icd10": {
+            "type": "string",
+            "description": "Required. ICD-10-CM code in standard `LNN.N` format (letter + 2 digits + optional decimal + 1-4 sub-digits). Whitespace is trimmed; case is preserved (ICD-10 letters are uppercase by convention). Match is exact-prefix (passing 'L30' may match 'L30.0' / 'L30.9' depending on curation granularity). Examples: 'L30.9' (chronic eczema, dermatology) / 'J06.9' (acute URI, family / ent / pediatrics) / 'H66.9' (otitis media, ent / pediatrics) / 'M25.5' (joint pain, orthopedics / pmr).",
+            "pattern": "^[A-Z][0-9]{2}(\\.[0-9A-Z]{1,4})?$",
+            "minLength": 3
+          },
+          "specialty": {
+            "type": "string",
+            "description": "Required. The clinician's specialty (lowercase ID). Curated mappings differ by specialty because procedure relevance is specialty-specific (e.g. L30.9 in dermatology surfaces topical-treatment codes; in family medicine surfaces general-care codes). Pass the closest match — e.g. 'internal' for internal medicine, 'obgyn' for OB/GYN, 'general_surgery' for general surgery, 'gastroenterology' for GI, 'infectious_disease' for ID, 'tcm' for traditional Chinese medicine.",
+            "enum": [
+              "dermatology",
+              "internal",
+              "family",
+              "pediatrics",
+              "ent",
+              "ophthalmology",
+              "orthopedics",
+              "pmr",
+              "gastroenterology",
+              "urology",
+              "psychiatry",
+              "neurology",
+              "cardiology",
+              "pulmonology",
+              "general_surgery",
+              "obgyn",
+              "infectious_disease",
+              "rheumatology",
+              "dentistry",
+              "tcm"
+            ]
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Optional. Maximum number of procedure-code candidates to return, ordered by curated relevance. Range 1-20. Default 10. Lower limits (3-5) work well when the agent only needs the top candidates; higher limits help when the diagnosis is broad and many codes may apply.",
+            "minimum": 1,
+            "maximum": 20,
+            "default": 10
+          }
+        },
+        "required": [
+          "icd10",
+          "specialty"
+        ]
+      }
+    },
+    {
+      "name": "get_indicator",
+      "description": "Look up a single Taiwan NHI prescribing-pattern indicator. These are short codes (numeric, or 'P'-prefixed) that encode common over-prescribing patterns such as antibiotic-on-URI, multi-drug co-prescribing, or duration limits. Returns the indicator name, the threshold (e.g. '7-day URI episode'), applicable drugs / diagnoses, and the compliance meaning. Returns a not-found message (not an error) if the code does not exist. **Use when** an agent needs the human-readable explanation for a specific indicator code referenced during a SOAP review or audit response — e.g. an audit notice cites an indicator and the agent needs to surface what it monitors and why a prescription tripped it. **Typical follow-up**: call `get_drug_rules({rejection_code})` with the indicator's downstream rejection code to read the formal payment rule, or `search_audit_guidelines({query})` to read related audit-clause text. **Don't use** for the official 分析審查不予支付指標 (percentage-cap audit) list — that's a different system — call `lookup_audit_indicator` instead. **Reference only** — thresholds and applicable lists reflect published guidance and may change with each NHI release; agents should re-read the indicator each session rather than caching values across sessions. Curated by OPDSTAR (https://opdstar.com).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Required. The exact prescribing-pattern indicator code. Format: 1-3 digits OR 'P' + 1-3 digits. Whitespace is trimmed. Numeric codes are NOT zero-padded automatically — pass the code exactly as cited (e.g. '008' not '8'). Lowercase 'p' is accepted but normalized to uppercase.",
+            "minLength": 1,
+            "maxLength": 4
+          }
+        },
+        "required": [
+          "code"
+        ]
+      }
+    },
+    {
+      "name": "search_nhi_wiki",
+      "description": "Search across Taiwan's official NHI knowledge base (健保署全球資訊網) for natural-language background questions. Covers 9 categories: audit (審查 — review rules / rejection grounds), drugs (藥品特材 — formulary, payment limits), fees (費用 — copay, premiums, contribution), plans (醫療計畫 — disease-management programs), services (醫療服務 — covered benefits), insurance (投保 — enrollment), forms (表單 — applications), records (紀錄 — documentation rules), admin (行政 — contracting, accreditation). Returns up to 10 ranked excerpts (most relevant first); each result includes title, content snippet, source URL, and category tag. Returns an empty list (not an error) when the query has no matches. **Use when** an agent needs broad NHI policy background not tied to a specific code — e.g. '慢性病連續處方箋天數上限' / 'how does balance billing work for orthodontics' / 'what are the rules for telemedicine reimbursement'. **Typical follow-up**: when an excerpt mentions a specific code (e.g. '0317A', '00101B'), call the appropriate code-specific tool (`lookup_rejection_code`, `lookup_fee_code`) for the canonical entry. **Don't use** when you already know a specific rejection code, procedure code, drug name, or audit-clause topic — those have dedicated tools that return structured fields rather than excerpts. **Reference only** — official 健保署 publications are authoritative; ranked excerpts may lag the latest revision and the snippet is not the full document. Curated by OPDSTAR (https://opdstar.com).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Required. Natural-language query in Traditional Chinese or English. Multi-word phrases work best (concept + qualifier). Examples: \"慢性病連續處方箋天數上限\" / \"急診轉診費用\" / \"telemedicine reimbursement rules\" / \"orthodontic balance billing\". Single Chinese characters or 1-letter strings are unlikely to return useful matches.",
+            "minLength": 2
+          },
+          "category": {
+            "type": "string",
+            "description": "Optional. Narrows the search to one category. Use `audit` for review/rejection rules, `drugs` for formulary/payment limits, `fees` for copay/premiums, `plans` for disease-management programs, `services` for covered benefits, `insurance` for enrollment, `forms` for applications, `records` for documentation rules, `admin` for contracting/accreditation. Omit to search all categories (recommended when the topic is unclear).",
+            "enum": [
+              "audit",
+              "drugs",
+              "fees",
+              "plans",
+              "services",
+              "insurance",
+              "forms",
+              "records",
+              "admin"
+            ]
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Optional. Maximum number of ranked excerpts to return. Range 1-10. Default 5. Increase to 10 when surveying a topic; keep at 5 for targeted look-ups to save context.",
+            "minimum": 1,
+            "maximum": 10,
+            "default": 5
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }
+    },
+    {
+      "name": "search_nhi_interpretations",
+      "description": "Search Taiwan's official NHI administrative interpretations (健保署行政函釋 / 函令) — the binding 公告 and 解釋函 issued by the National Health Insurance Administration that clarify how payment rules, drug-formulary provisions, special-material coverage, and review policy apply in practice. Each result returns the official document number (字號), issue date, 主旨 (subject), a content excerpt, and the source URL on the government law portal. Returns up to 10 ranked excerpts (most relevant first); returns an empty list (not an error) when nothing matches. **Use when** a question turns on an official ruling rather than a code definition — e.g. '函釋怎麼說人工水晶體的給付規定' / 'is there an interpretation on continuous-prescription day limits' — or when the user cites a 函釋 文號 directly (e.g. 健保審字第 1090017813 號). **Don't use** when you already have a specific rejection code, fee code, or drug name — those have dedicated lookup tools (`lookup_rejection_code`, `lookup_fee_code`, `lookup_drug`). **Reference only** — the official 健保署 / 衛福部 publication is authoritative; an excerpt may lag the latest revision and is not the full document, so open the source URL for the binding text. Curated by OPDSTAR (https://opdstar.com).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Required. Natural-language query in Traditional Chinese or English, OR a 函釋 document number. Multi-word phrases work best (concept + qualifier). Examples: \"人工水晶體 給付規定\" / \"continuous prescription day limit interpretation\" / \"健保審字第1090017813號\". Single characters or 1-letter strings are unlikely to return useful matches.",
+            "minLength": 2
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Optional. Maximum number of ranked excerpts to return. Range 1-10. Default 5. Increase to 10 when surveying a topic; keep at 5 for a targeted look-up to save context.",
+            "minimum": 1,
+            "maximum": 10,
+            "default": 5
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }
+    },
+    {
+      "name": "get_drug_rules",
+      "description": "Look up Taiwan NHI drug payment rules (藥品給付規定) — when a drug class is / isn't reimbursable, with severity and source citation. Filter by `specialty`, `rejection_code`, or `drug_category_query` (at least one required). **Use when** an agent is checking whether a drug choice will trigger a rejection before submission, or wants to read the rule behind a known rejection code. **Don't use** to identify a specific drug (brand / generic / strength) — call `lookup_drug` instead; for the underlying audit clauses, use `lookup_audit_clauses_for_procedure` or `lookup_audit_clauses_for_specialty`. **Reference only** — official 健保藥品給付規定 is authoritative; curated subset, not exhaustive. Curated by OPDSTAR (https://opdstar.com).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "specialty": {
+            "type": "string",
+            "description": "Specialty filter (e.g. 'all', 'pediatrics', 'dermatology', 'family'). 'all' rules apply to every specialty."
+          },
+          "rejection_code": {
+            "type": "string",
+            "description": "Filter rules that trigger a specific rejection code, e.g. '0311A'",
+            "pattern": "^[0-9]{4}[A-Z]$"
+          },
+          "drug_category_query": {
+            "type": "string",
+            "description": "Free-text filter on drug_category (ILIKE match), e.g. 'antibiotic', 'PPI', '類固醇'"
+          }
+        }
+      }
+    },
+    {
+      "name": "get_safe_phrases",
+      "description": "Preview which documentation scenarios have OPDSTAR-curated NHI-safe phrasing patterns for a given specialty (e.g. dermatology + 抗生素) — returns scenario name, high-risk wording to avoid, the key difference, and the first sentence of the safe-phrasing example. Up to 5 scenarios per call. **Use when** an agent is helping draft SOAP wording and needs to flag risky phrasing before submission. **Don't use** to retrieve full ready-to-copy templates (full library is part of the paid OPDSTAR product — link the user to opdstar.com); for the underlying audit rule that motivates a safe phrase, call `search_audit_guidelines`. **Reference only** — phrasing patterns reflect curated review experience, not formal NHI directives. Curated by OPDSTAR (https://opdstar.com).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "specialty": {
+            "type": "string",
+            "description": "Required specialty, e.g. 'dermatology', 'internal', 'pediatrics', 'family', 'tcm'."
+          },
+          "scenario_query": {
+            "type": "string",
+            "description": "Optional free-text filter on scenario (ILIKE match), e.g. '抗生素', '類固醇', '慢性處方'"
+          }
+        },
+        "required": [
+          "specialty"
+        ]
+      }
+    },
+    {
+      "name": "search_audit_guidelines",
+      "description": "Free-text search over Taiwan NHI 審查注意事項 rules — returns reason + suggestion summaries (first sentence only) for up to 10 rules matching a keyword (Traditional Chinese or English). **Use when** an agent is exploring whether any audit rule covers a topic (e.g. '抗生素', '檢查頻率', '慢性病處方') without knowing a specific code. **Don't use** for clauses tied to a known procedure code — call `lookup_audit_clauses_for_procedure` instead. Full SOAP example templates and detailed reasoning are part of the paid OPDSTAR product. **Reference only** — official 健保署 審查注意事項 is authoritative; results are previews. Curated by OPDSTAR (https://opdstar.com).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Free-text query (2+ chars), Traditional Chinese or English. Examples: '抗生素', '檢查頻率', '慢性病處方'.",
+            "minLength": 2
+          },
+          "specialty": {
+            "type": "string",
+            "description": "Optional specialty filter (e.g. 'tcm', 'dermatology'). Omit to search all specialties."
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }
+    },
+    {
+      "name": "get_rejection_code_category",
+      "description": "Browse Taiwan NHI rejection codes by category (00-09) for discovery — returns code, severity, and short description, up to 50 per call. Categories: 00 診療品質 · 01 病歷紀錄 · 02 基本診療 · 03 藥品特材 · 04 手術處置 · 05 檢查檢驗 · 06 論病例計酬 · 07 復健精神 · 08 其他 · 09 法令. **Use when** an agent needs to enumerate all rejection codes within a workflow domain (e.g. all surgery-handling codes). **Don't use** to look up a known specific code — call `lookup_rejection_code` instead. **Reference only** — official 健保署 不予支付理由代碼 is authoritative. Curated by OPDSTAR (https://opdstar.com).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "description": "Two-digit category code, '00' through '09'",
+            "enum": [
+              "00",
+              "01",
+              "02",
+              "03",
+              "04",
+              "05",
+              "06",
+              "07",
+              "08",
+              "09"
+            ]
+          },
+          "opdstar_relevant_only": {
+            "type": "boolean",
+            "description": "When true, filter to codes flagged as outpatient-relevant by OPDSTAR. Default false (return all).",
+            "default": false
+          }
+        },
+        "required": [
+          "category"
+        ]
+      }
+    },
+    {
+      "name": "lookup_drug",
+      "description": "Look up the active Taiwan NHI drug catalog by generic name, brand name, NHI drug code, or alias — returns up to 10 matches with strength, dosage form, route, ATC code, therapeutic class, and brand list. **Use when** an agent needs to identify or disambiguate a drug before recommending dosage / formulation in a SOAP draft. **Don't use** to look up payment / reimbursement rules for the drug — call `get_drug_rules` instead; for an audit clause referencing the drug, call `search_audit_guidelines`. **Reference only** — official 健保署 藥品給付項目及支付標準 is authoritative; the catalog is a working snapshot. Curated by OPDSTAR (https://opdstar.com).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string",
+            "description": "Required ≥2 chars. Search across generic_name, brand_names, aliases, normalized_key. Also accepts NHI 9-10 char drug code (e.g. 'A02229715'). Examples: 'augmentin', 'amoxicillin', 'A02229715', '阿司匹林', 'lamisil'.",
+            "minLength": 2
+          },
+          "specialty": {
+            "type": "string",
+            "description": "Optional specialty filter (e.g. 'dermatology', 'internal', 'pediatrics'). Only returns drugs tagged with this specialty."
+          },
+          "dosage_form": {
+            "type": "string",
+            "description": "Optional dosage form filter: 'tablet', 'capsule', 'cream', 'ointment', 'syrup', 'solution', 'suspension', 'inj', 'supp', 'eye drops', 'ear drops', 'nasal spray', 'inhalation', 'patch', 'powder', 'gel', 'lotion', 'vaginal tablet'."
+          },
+          "route": {
+            "type": "string",
+            "description": "Optional route filter: 'oral', 'topical', 'injection', 'ophthalmic', 'otic', 'nasal', 'inhalation', 'rectal'."
+          }
+        },
+        "required": [
+          "q"
+        ]
+      }
+    },
+    {
+      "name": "lookup_fee_code",
+      "description": "Look up the Taiwan NHI fee schedule (全民健康保險醫療服務給付項目及支付標準, current effective edition). Search by exact code (e.g. '00101B', 'P15001') or by Chinese / English name (e.g. '門診診察', 'ICU') — returns code, points, effective dates, and audit notes (truncated to 600 chars). Use `category` prefix to scope ('00' 基本診療, '06' 手術, 'P1' 病例計酬, 'N2' 護理). **Use when** an agent needs the canonical fee entry for a known procedure code, or wants to discover codes by name. **Don't use** for drugs (call `lookup_drug`) or for ICD-10 → procedure suggestions (call `get_procedures_for_icd`). The optional `icd` filter applies an OPDSTAR-curated mapping that is intentionally sparse (the original NHI data has no ICD field) — most codes will return no result with `icd` active. **Reference only** — official 健保署 支付標準 is authoritative. Curated by OPDSTAR (https://opdstar.com).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string",
+            "description": "Required ≥2 chars. Exact code match for 2-8 char alphanumerics (e.g. '00101B', 'OT1', 'P15001'); otherwise ILIKE search across name_zh + name_en. Examples: '00101B', '門診診察費', 'ICU', '麻醉', 'physical therapy'.",
+            "minLength": 2
+          },
+          "category": {
+            "type": "string",
+            "description": "Optional category filter. Exact match on the code's first two characters (a bucket, not a free-text prefix search): '00101B' is bucket '00'. Examples: '00' 基本診療, '01' 麻醉, '06' 手術, '08' 檢驗, 'P1'/'P4' 病例計酬, 'N2' 護理; 中醫 buckets include 'A0', 'A4', 'A5', 'B7', 'C0', 'CH', 'D0', 'F1'-'F8'. A few buckets mix 中醫 with 西醫 items ('A1', 'A2', 'A3', 'E1', 'F0')."
+          },
+          "icd": {
+            "type": "string",
+            "description": "Optional ICD-10 code to filter by OPDSTAR-curated applicable_icd_pattern. NOTE: this mapping is sparse — original NHI data has no ICD field; OPDSTAR enriches incrementally. Most codes will return no result with icd filter active."
+          }
+        },
+        "required": [
+          "q"
+        ]
+      }
+    },
+    {
+      "name": "lookup_audit_clauses_for_procedure",
+      "description": "Find Taiwan NHI 審查注意事項 clauses that reference a specific procedure code (e.g. '00101B', '51017C') — each result indicates whether the clause carries an amount limit, frequency rule, or indication restriction (critical signals for rejection-risk assessment). Returns clause summary, specialty, and risk flags. **Use when** an agent has a candidate procedure code and needs to surface the audit context attached to it. **Don't use** for the procedure's fee-schedule entry (points / effective dates) — call `lookup_fee_code`; for browsing all clauses within a specialty, call `lookup_audit_clauses_for_specialty`. **Reference only** — clause summaries are first-sentence previews; official 健保署 審查注意事項 is the source of truth. Curated by OPDSTAR (https://opdstar.com).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "procedure_code": {
+            "type": "string",
+            "description": "Required NHI procedure code (5-8 alphanumeric chars). Examples: '00101B', '51017C', 'P15001'. Case-insensitive.",
+            "minLength": 3
+          },
+          "specialty": {
+            "type": "string",
+            "description": "Optional specialty filter (e.g. 'dermatology', 'internal_medicine', 'tcm'). Narrows the result to one specialty section."
+          }
+        },
+        "required": [
+          "procedure_code"
+        ]
+      }
+    },
+    {
+      "name": "lookup_audit_clauses_for_specialty",
+      "description": "Browse Taiwan NHI 審查注意事項 clauses for a specific medical specialty (dermatology, ophthalmology, ENT, TCM, dentistry, family medicine, etc.) — returns clause headlines with risk flags (amount_limit / frequency_rule / indication) and a short preview of the procedures each clause governs. **Use when** an agent needs section-wide audit context before assisting with claim coding for a specialty. **Don't use** for clauses tied to a known specific procedure code — call `lookup_audit_clauses_for_procedure` instead. **Reference only** — official 健保署 審查注意事項 (current edition) is authoritative; clause summaries are previews. Curated by OPDSTAR (https://opdstar.com).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "specialty": {
+            "type": "string",
+            "description": "Required specialty id. Common values: 'dermatology', 'internal_medicine', 'family_medicine', 'pediatrics', 'ophthalmology', 'ent', 'orthopedics', 'surgery', 'obstetrics_gynecology', 'urology', 'psychiatry', 'neurology', 'neurosurgery', 'pulmonology', 'rehabilitation', 'anesthesiology', 'radiology', 'pathology', 'tcm', 'dentistry', 'general_principles_clinic', 'appendix_clinic'."
+          },
+          "keyword": {
+            "type": "string",
+            "description": "Optional keyword (Chinese or English) to narrow within the specialty. Matches against clause text."
+          },
+          "risk_flag": {
+            "type": "string",
+            "enum": [
+              "amount_limit",
+              "frequency_rule",
+              "indication",
+              "any"
+            ],
+            "description": "Optional filter to return only clauses tagged with a specific risk flag. 'any' returns clauses that have at least one of the three flags set."
+          }
+        },
+        "required": [
+          "specialty"
+        ]
+      }
+    },
+    {
+      "name": "lookup_major_illness",
+      "description": "Browse Taiwan NHI 重大傷病 (major illness) categories — official categories that grant copayment exemption and a more lenient claim-review process. Returns category name, ICD-10 code coverage, application requirement, and validity period. **Use when** an agent needs to enumerate or filter major-illness categories (e.g. 'all cancer categories', 'categories that don't require an application'). **Don't use** if you already have an ICD-10 code and want to know which categories it qualifies for — call `check_icd_for_major_illness_eligibility` instead. **Reference only** — final eligibility requires a formal application with supporting documentation per the official 重大傷病範圍及項目. Curated by OPDSTAR (https://opdstar.com).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "category_code": {
+            "type": "string",
+            "description": "Optional 1-3 char category code (e.g. '001' = 癌症, '005' = 慢性腎衰竭). If omitted, returns the full official list."
+          },
+          "keyword": {
+            "type": "string",
+            "description": "Optional Chinese keyword (e.g. '癌症', '透析', '罕見') to filter category names."
+          }
+        }
+      }
+    },
+    {
+      "name": "check_icd_for_major_illness_eligibility",
+      "description": "Reverse-lookup: given a single ICD-10 code, return the Taiwan NHI 重大傷病 (major illness) categories the diagnosis may qualify for, including category name, the ICD pattern that matched, and copayment-exemption flag. **Use when** an agent has a diagnosis and needs to flag major-illness applicability before claim submission. **Don't use** to browse all categories — call `lookup_major_illness` instead (also use it for the category → applicable ICDs direction). **Reference only** — confirmed eligibility still requires a formal application with supporting documentation per the official 重大傷病範圍及項目. Curated by OPDSTAR (https://opdstar.com).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "icd_code": {
+            "type": "string",
+            "description": "Required ICD-10 code (e.g. 'C50.9' breast cancer, 'N18.6' end-stage renal disease, 'F20.9' schizophrenia). Case-insensitive. Prefix-matches against the official ICD-10 ranges defined per category.",
+            "minLength": 2
+          }
+        },
+        "required": [
+          "icd_code"
+        ]
+      }
+    },
+    {
+      "name": "lookup_audit_indicator",
+      "description": "Look up Taiwan NHI 分析審查不予支付指標 (official threshold-based audit rules where claims exceeding a percentage are denied) — returns indicator code, category, threshold, applicable specialty, monitored procedure codes, and official action description. **Use when** an agent needs to know whether a procedure code is under a percentage-cap audit (e.g. '23401C' is monitored by indicator 001 眼科局部處置申報率, 30% threshold). Omit `indicator_code` to browse by category / specialty / procedure. **Don't use** for prescribing-pattern indicators — those live in `get_indicator`. **Reference only** — thresholds change with each official release. Curated by OPDSTAR (https://opdstar.com).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "indicator_code": {
+            "type": "string",
+            "description": "Optional 1-4 char indicator code. If omitted, returns indicators filtered by other params."
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "西醫基層總額",
+              "醫院總額",
+              "牙醫門診總額"
+            ],
+            "description": "Optional category filter. Same indicator code may appear under multiple categories with different thresholds."
+          },
+          "specialty": {
+            "type": "string",
+            "description": "Optional applicable_specialty filter (e.g. 'ophthalmology', 'obstetrics_gynecology', 'ent', 'tcm', 'dentistry')."
+          },
+          "procedure_code": {
+            "type": "string",
+            "description": "Optional 5-8 char NHI procedure code (e.g. '23401C', '55009C'). Returns indicators that monitor this code."
+          }
+        }
+      }
+    },
+    {
+      "name": "lookup_appeal_statistics_by_category",
+      "description": "Aggregate dispute-resolution statistics for Taiwan NHI claim disputes, broken down by category and (optionally) review stage — returns category counts and rough win-rate signals only, never individual case details, case numbers, or arguments. **Use when** an agent is helping a clinician understand the general dispute landscape (e.g. 'how often do fee-calculation disputes resolve in the claimant's favor at the first court tier?'). **Don't use** for code-specific signals — call `count_appeal_precedents_for_rejection_code` instead. **Reference only** — historical signal does not predict future outcomes; final decisions rest with the responsible review body. Curated by OPDSTAR (https://opdstar.com).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "dispute_category": {
+            "type": "string",
+            "enum": [
+              "medication",
+              "procedure",
+              "examination",
+              "special_material",
+              "major_illness",
+              "admission",
+              "fee_calculation",
+              "qualification",
+              "other"
+            ],
+            "description": "Category of dispute. medication = drug/payment rules; procedure = treatment/handling codes; fee_calculation = fee scheduling/calculation; qualification = contract qualification (停約/終止特約 etc.); special_material = implants/IOL/stents; admission = inpatient billing; other = miscellaneous."
+          },
+          "stage_tier": {
+            "type": "string",
+            "enum": [
+              "stage_1_initial_review",
+              "stage_2_first_court",
+              "stage_3_appeals_court"
+            ],
+            "description": "Optional resolution-stage filter. stage_1_initial_review = first-tier administrative review; stage_2_first_court = first-instance administrative court; stage_3_appeals_court = highest administrative court. Omit to aggregate across all stages."
+          }
+        },
+        "required": [
+          "dispute_category"
+        ]
+      }
+    },
+    {
+      "name": "count_appeal_precedents_for_rejection_code",
+      "description": "Aggregate signal-only summary of how disputes involving a given Taiwan NHI rejection code (e.g. '0312A', '0114A') or procedure code (e.g. '86008C') historically resolve — returns rough volume bucket (none / few / several / many), claimant win-rate signal (rare / occasional / moderate / common), and which review stages have on-record outcomes. **Use when** an agent is helping triage whether contesting a specific code is worth pursuing. **Don't use** to fetch individual case details (none are exposed) — for the broader landscape across categories, call `lookup_appeal_statistics_by_category` instead. **Reference only** — historical signal does not predict future outcomes; final review decisions rest with the responsible authority. Curated by OPDSTAR (https://opdstar.com).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "rejection_code": {
+            "type": "string",
+            "description": "Optional 5-char NHI rejection code (e.g. '0312A', '0114A'). At least one of rejection_code or procedure_code must be provided."
+          },
+          "procedure_code": {
+            "type": "string",
+            "description": "Optional 5-8 char NHI procedure code (e.g. '86008C', '97608C'). At least one of rejection_code or procedure_code must be provided."
+          }
+        }
+      }
+    },
+    {
+      "name": "recent_nhi_amendments",
+      "description": "List recent amendments to Taiwan NHI rules and audit guidelines (健保署「醫療費用審查注意事項」近一年修正公告). Returns the publication / effective dates, the amendment title and type ('primary' = main regulation update, 'comparison' = side-by-side diff document), and direct links to the official DOCX / ODT / PDF announcement files plus the 健保署 listing page. **Use when** an agent needs to answer 'what NHI rule changes are coming?', 'when does the new 審查注意事項 take effect?', or wants to check whether a specific rule has been recently amended before quoting it. **Typical follow-up**: call `search_audit_guidelines({query})` to pull the post-amendment clause text, or `lookup_rejection_code({code})` to see how it ties into existing rejection codes. **Reference only** — official 健保署 announcements are authoritative. Curated by OPDSTAR (https://opdstar.com).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "since_days": {
+            "type": "integer",
+            "description": "Limit to amendments effective within N days from today (1..3650). Default 365 (近一年).",
+            "minimum": 1,
+            "maximum": 3650,
+            "default": 365
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "primary",
+              "comparison",
+              "all"
+            ],
+            "description": "'primary' = main regulation update (affects nhi_audit_clauses content); 'comparison' = side-by-side diff document. 'all' returns both. Default 'all'.",
+            "default": "all"
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Max results (1..50). Default 20.",
+            "minimum": 1,
+            "maximum": 50,
+            "default": 20
+          }
+        }
+      }
+    },
+    {
+      "name": "search_taiwan_drug",
+      "description": "Search Taiwan drugs across NHI and TFDA registries with unified cross-reference. Returns generic name (EN + 中文學名), all brand names + aliases, NHI 9碼 billing code, ATC code, dosage form, strength, route, therapeutic class, applicable specialties, compound-flag, and effective date. The query auto-detects four input shapes: (1) **NHI drug code** 9碼 (e.g. 'AC4537911', 'A04403412' — 1-2 letter prefix + 6-9 digits) → direct match; (2) **ATC code** prefix (e.g. 'J01CR02' or 'J01' for the antibacterials class) → class match; (3) **Generic name** EN or 中文 → ILIKE; (4) **Brand name / alias** → secondary fallback. **Use when** an agent has any drug identifier and needs the canonical record for billing / SOAP / appeal context. **Typical follow-up**: call `get_drug_rules({drug_category_query})` for NHI payment rules / prior-authorization on this drug, `lookup_icd10_cm` for the diagnosis side, or `count_appeal_precedents_for_rejection_code` if a rejection code is involved. **Out of scope**: drug-drug interactions, severity scoring, indication-specific dosing. **Reference only** — TFDA license / 健保 給付規定 are authoritative. Curated by OPDSTAR (https://opdstar.com).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search term: generic name (EN or 中文), brand name, alias, NHI 9碼, or ATC code. Minimum 2 chars (unless atc_prefix is provided)."
+          },
+          "atc_prefix": {
+            "type": "string",
+            "description": "Optional ATC code prefix to filter / browse by therapeutic class (e.g. 'J01' = systemic antibacterials, 'C09' = renin-angiotensin agents). Can be used alone to enumerate a class."
+          },
+          "form": {
+            "type": "string",
+            "description": "Optional dosage_form filter (e.g. 'tablet', 'capsule', 'cream', 'ointment', 'inj', 'syrup'). Partial match."
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Max results (1..30). Default 15.",
+            "minimum": 1,
+            "maximum": 30,
+            "default": 15
+          }
+        }
+      }
+    },
+    {
+      "name": "lookup_icd10_cm",
+      "description": "Look up ICD-10-CM diagnosis codes with English / Traditional Chinese descriptions, category, and the OPDSTAR specialties each code is keyed against. **Use when** the agent encounters an ICD-10 code in a note, claim, or rejection notice and needs the canonical name, or wants to free-text search by EN / 中文 keyword to find candidate codes. **Typical follow-up**: chain into `get_procedures_for_icd({icd10, specialty})` to find the procedures commonly paired with the code, or `check_icd_for_major_illness_eligibility({icd10})` to check 重大傷病 coverage. **Scope note**: Currently backed by OPDSTAR's specialty-keyed Taiwan-relevant subset (the diagnoses doctors actually code on outpatient claims); the full CMS public-domain ICD-10-CM 2025 set will be merged in a later release. **Out of scope**: SNOMED CT cross-mapping, international procedure codes (ICD-10-PCS), drug interactions. **Reference only** — clinical coding decisions require physician judgment. Curated by OPDSTAR (https://opdstar.com).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "ICD-10-CM code, with or without dot. Examples: 'L20.9', 'L209', 'l20.9'. Auto-normalized (uppercased; tries dotted + undotted forms)."
+          },
+          "keyword": {
+            "type": "string",
+            "description": "Free-text search across English description, Chinese description, and code prefix. Examples: 'eczema', '皮膚炎', 'L20'."
+          },
+          "lang": {
+            "type": "string",
+            "enum": [
+              "en",
+              "zh",
+              "both"
+            ],
+            "description": "Which description language(s) to include in the result. Default 'both'.",
+            "default": "both"
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Max results (1..50). Default 10.",
+            "minimum": 1,
+            "maximum": 50,
+            "default": 10
+          }
+        }
+      }
+    },
+    {
+      "name": "lookup_preventive_service",
+      "description": "Browse Taiwan NHI preventive-care and screening services — adult health checks, the major cancer screenings (breast, cervical, colorectal, oral, lung LDCT), prenatal care, child preventive health, and child dental fluoride / pit-and-fissure sealant programs. Returns each service's target population, age / sex eligibility, subsidy frequency, and screening tool. **Use when** an agent needs to know who is eligible for a preventive service and how often it is subsidised (e.g. 'who can get a mammogram and how often', 'child fluoride coverage'). **Reference only** — eligibility and subsidy follow the official 衛生福利部 announcements; the screening provider confirms eligibility at the point of service. Curated by OPDSTAR (https://opdstar.com).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "description": "Optional service category: 'adult_health_check', 'cancer_screening', 'prenatal_care', 'child_preventive', 'dental_preventive', or 'integrated_screening'. If omitted, returns all services."
+          },
+          "keyword": {
+            "type": "string",
+            "description": "Optional Chinese keyword (e.g. '乳房', '子宮頸', '塗氟', '產檢') to filter by service name, screening tool, or target population."
+          }
+        }
+      }
+    },
+    {
+      "name": "lookup_chronic_prescription_rule",
+      "description": "Look up Taiwan NHI chronic-disease continuous-prescription (慢性病連續處方箋) rules. Given an ICD-10 code or a disease name, returns whether the condition falls within the official chronic-disease scope and its dispensing limits — maximum days per dispense, maximum total medication days, and prescription validity. **Use when** an agent needs to know if a diagnosis qualifies for a continuous prescription and the applicable day limits. **Reference only** — the issuing physician must confirm the patient's condition is stable and that the same long-term medication applies, per the official 全民健康保險醫療辦法 慢性病範圍. Curated by OPDSTAR (https://opdstar.com).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "icd_code": {
+            "type": "string",
+            "description": "Optional ICD-10 code (e.g. 'I10', 'E11.9'). Prefix-matched against each chronic disease's ICD-10 range."
+          },
+          "disease": {
+            "type": "string",
+            "description": "Optional Chinese disease name keyword (e.g. '高血壓', '糖尿病', '氣喘')."
+          },
+          "category": {
+            "type": "string",
+            "description": "Optional disease category (e.g. 'cardiovascular', 'endocrine_metabolic', 'respiratory', 'psychiatric')."
+          }
+        }
+      }
+    },
+    {
+      "name": "lookup_point_value",
+      "description": "Look up Taiwan NHI floating point values (浮動點值) — the settled per-point payment amount by region and total-budget sector. Taiwan NHI reimburses on a points system under a global budget, so one claimed point is usually worth less than NT$1; this tool returns the actual settled rate. With no year, returns the latest settled value for each region × sector; with a year (and optional quarter), returns the quarterly time series. **Use when** an agent needs to estimate actual reimbursement — claimed points × point value ≈ amount paid. **Reference only** — official figures are published quarterly by 衛生福利部中央健康保險署. Curated by OPDSTAR (https://opdstar.com).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "region": {
+            "type": "string",
+            "description": "Optional NHI region: 'taipei', 'northern', 'central', 'southern', 'kaoping', 'eastern', or 'national'."
+          },
+          "sector": {
+            "type": "string",
+            "description": "Optional budget sector: 'hospital', 'primary_clinic', 'dental', 'tcm', or 'dialysis'."
+          },
+          "year": {
+            "type": "integer",
+            "description": "Optional Gregorian year (e.g. 2025). If omitted, returns the latest settled value per region × sector."
+          },
+          "quarter": {
+            "type": "integer",
+            "description": "Optional quarter 1-4 (only used together with year).",
+            "minimum": 1,
+            "maximum": 4
+          },
+          "metric": {
+            "type": "string",
+            "description": "Optional metric: 'floating' (一般服務浮動點值, default) or 'average' (平均點值, weighted across payment types)."
+          }
+        }
+      }
+    },
+    {
+      "name": "lookup_sampling_audit_rules",
+      "description": "Look up Taiwan NHI clinic-level 專業審查抽審指標 (per-region sampling-audit screening rules that decide WHICH CLINICS get selected for professional claim review) — returns mandatory-audit triggers (new-contract clinics, annual rotation, violations), weighted scoring indicators, growth-rate exemption-exclusion thresholds, and audit-exemption conditions, each with the official definition text and structured thresholds. **Region matters**: each NHI regional division sets its own thresholds — always pass `region`; a region not yet covered returns empty results, not 'no rules'. **Use when** a clinic asks why it might be sampled for audit, how new-clinic mandatory review works, or what growth/volume patterns remove audit exemption. **Don't use** for per-claim percentage-cap denial rules — those live in `lookup_audit_indicator`. **Reference only** — thresholds are revised quarterly by regional joint-management meetings. Curated by OPDSTAR (https://opdstar.com).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "region": {
+            "type": "string",
+            "enum": [
+              "taipei",
+              "northern",
+              "central",
+              "southern",
+              "kaoping",
+              "eastern"
+            ],
+            "description": "NHI regional division (業務組). Thresholds are region-specific and NOT interchangeable. 'kaoping' = 高屏, 'southern' = 南區."
+          },
+          "rule_group": {
+            "type": "string",
+            "enum": [
+              "framework",
+              "mandatory_management",
+              "mandatory_specialty",
+              "key_management",
+              "weighted_utilization",
+              "weighted_specialty",
+              "weighted_reward",
+              "weighted_composite",
+              "exemption",
+              "exemption_exclusion",
+              "sampling_note"
+            ],
+            "description": "Optional filter: 'mandatory_management' = 必審-管理類 (new-contract, violations, annual rotation), 'exemption_exclusion' = high-growth thresholds that remove audit exemption, 'exemption' = conditions for reduced audit frequency, 'weighted_*' = scoring indicators, 'framework' = how selection works, 'sampling_note' = sampling-ratio notes."
+          },
+          "specialty": {
+            "type": "string",
+            "description": "Optional specialty filter (e.g. 'ent', 'psychiatry', 'rehabilitation', 'obstetrics_gynecology'). Only returns rules scoped to that specialty; omit to include clinic-wide rules."
+          }
+        }
+      }
+    },
+    {
+      "name": "lookup_special_material",
+      "description": "Look up Taiwan NHI 特殊材料給付規定 (special-material payment rules) — returns the official rule text verbatim, quantity limits, whether prior authorisation applies, the procedure codes the material is claimed alongside, and the effective-date window. **Use when** a claim involves an implant, catheter, stapler, lens, stent or similar device and the agent needs the conditions under which it is reimbursed, or needs to check which materials pair with a given procedure code. **Version matters**: a material code can carry several historical rule versions and a superseded rule reads exactly like a live one — the default `current: true` returns only the rule in force; pass `current: false` deliberately when tracing history. **Don't use** for the procedure's own payment conditions — that is `lookup_fee_code`. **Reference only** — claiming decisions require physician judgement. Curated by OPDSTAR (https://opdstar.com).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string",
+            "description": "給付規定分類碼 (format [A-Z]\\d{2,3}-\\d+, e.g. 'A101-1', 'I203-12'), or a name fragment in 中文 or English (e.g. '縫合釘', 'Hem-o-lok', 'stapler')."
+          },
+          "procedure": {
+            "type": "string",
+            "description": "Optional NHI procedure code (e.g. '62015B'). Returns materials whose rule text names that procedure as a claiming context."
+          },
+          "current": {
+            "type": "boolean",
+            "description": "Return only the rule version currently in force. Default true. Set false to include superseded versions when tracing how a rule changed."
+          }
+        }
+      }
+    },
+    {
+      "name": "lookup_p4p_program",
+      "description": "Look up Taiwan NHI 論質計酬 / 照護品質提升方案 (pay-for-performance and care-management programmes) — returns enrolment criteria, exclusion and closure criteria, required follow-up cadence, required lab tests and care team, the fee codes each programme is claimed with, and per-visit payment. **Use when** a patient's diagnosis might make them eligible for a care programme, when an agent needs to know what enrolling commits the clinic to, or which fee codes a programme unlocks. Call with NO arguments to list every programme first. **ICD matching is bidirectional**: stored targets mix three-character prefixes with full codes, so 'E11' and 'E11.9' both match the diabetes programme. **Scope note**: criteria are summarised from the programme documents, not quoted verbatim — treat them as a guide to eligibility and follow `source_url` for the contractual wording. **Don't use** for ordinary per-claim payment rules — that is `lookup_fee_code`. **Reference only** — enrolment decisions require physician judgement. Curated by OPDSTAR (https://opdstar.com).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "icd": {
+            "type": "string",
+            "description": "Optional ICD-10 code or three-character prefix (e.g. 'E11', 'E11.9', 'J45'). Matches in both directions against each programme's target codes."
+          },
+          "specialty": {
+            "type": "string",
+            "description": "Optional specialty slug (e.g. 'nephrology', 'psychiatry', 'family_medicine'). Returns programmes open to that specialty."
+          },
+          "q": {
+            "type": "string",
+            "description": "Optional free-text over programme name and target disease (e.g. '氣喘', '肝炎', 'COPD')."
+          }
+        }
+      }
+    }
+  ],
+  "stderrTail": "[opdstar-nhi-mcp v0.10.0] Ready. Powered by OPDSTAR (https://opdstar.com)\n",
+  "durationMs": 16425,
+  "transport": "stdio"
+}

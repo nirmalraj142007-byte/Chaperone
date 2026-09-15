@@ -1,0 +1,8 @@
+{
+  "serverId": "ertad-family__liquid__ertad-family-liquid",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "error: Failed to parse: `'liquid-api[mcp]'`\n  Caused by: Expected package name starting with an alphanumeric character, found `'`\n    'liquid-api[mcp]'\n    ^\n",
+  "durationMs": 667,
+  "transport": "stdio"
+}

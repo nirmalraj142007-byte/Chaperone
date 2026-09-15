@@ -1,0 +1,8 @@
+{
+  "serverId": "forgemeshlabs__imagegen-mcp__forgemeshlabs-imagegen-mcp",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "[forgemesh-imagegen] WALLET_PRIVATE_KEY required — set a Base wallet private key funded with USDC.\n  generate_image = $0.25 | generate_clean = $0.35 | generate_hd = $0.50 | generate_pro = $0.75\nnpm notice\nnpm notice New major version of npm available! 10.9.8 -> 12.0.2\nnpm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2\nnpm notice To update run: npm install -g npm@12.0.2\nnpm notice\n",
+  "durationMs": 29461,
+  "transport": "stdio"
+}

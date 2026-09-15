@@ -1,0 +1,8 @@
+{
+  "serverId": "software-as-content__software-as-content-sdk__ai-dynsoft-sac",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "sh: 1: exec: sac-sdk: not found\n",
+  "durationMs": 51944,
+  "transport": "stdio"
+}

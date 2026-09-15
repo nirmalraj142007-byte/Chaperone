@@ -1,0 +1,8 @@
+{
+  "serverId": "ankimcp__anki-mcp-server__ai-ankimcp-anki-mcp-server",
+  "status": "FAILED_TIMEOUT",
+  "tools": [],
+  "stderrTail": "",
+  "durationMs": 120056,
+  "transport": "stdio"
+}

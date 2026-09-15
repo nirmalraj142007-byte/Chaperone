@@ -1,0 +1,405 @@
+{
+  "serverId": "ergoveritas1-alt__certscore.ai__ai-certscore-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "certscore_scan_site",
+      "description": "Creates a public-website privacy scan or reuses an eligible recent completed scan. Coverage includes pre-consent storage, trackers, consent and CMP signals, privacy-policy disclosures, transport security, and GDPR/ePrivacy or CCPA/CPRA review signals. The response contains a stable scanId, lifecycle status, retry timing, and sometimes a bounded preliminary preConsentPreview; preliminary data contains no final findings or score. Results are automated public-web observations, not legal advice, certification, or a compliance determination. Tool and workflow documentation: https://certscore.ai/developers/mcp.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "taskContext": {
+            "type": "object",
+            "properties": {
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "prelaunch_review",
+                  "vendor_review",
+                  "tracking_check",
+                  "consent_gpc_check",
+                  "policy_review",
+                  "recheck",
+                  "other",
+                  "unknown"
+                ]
+              },
+              "questionSummary": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 300
+              },
+              "questionSource": {
+                "type": "string",
+                "enum": [
+                  "user_wording",
+                  "agent_paraphrase"
+                ]
+              },
+              "shareForImprovement": {
+                "type": "boolean"
+              },
+              "integrationId": {
+                "type": "string",
+                "maxLength": 80,
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*$"
+              },
+              "integrationVersion": {
+                "$ref": "#/properties/taskContext/properties/integrationId"
+              },
+              "skillVersion": {
+                "$ref": "#/properties/taskContext/properties/integrationId"
+              }
+            },
+            "additionalProperties": false,
+            "description": "Optional caller-declared purpose and integration ID/version for usage research. Only include questionSummary when the user knowingly agrees to share a brief non-sensitive question for product improvement; label user_wording or agent_paraphrase. Never include chat history, personal/account details, secrets or URLs. Omission does not affect scanning."
+          },
+          "url": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Public URL or domain to scan."
+          },
+          "freshness": {
+            "type": "string",
+            "enum": [
+              "latest",
+              "refresh"
+            ],
+            "description": "Scan freshness policy. latest allows eligible recent completed-result reuse when available; refresh requests a new scan. Defaults to latest."
+          },
+          "scanFrom": {
+            "type": "string",
+            "enum": [
+              "eu_de",
+              "eu_ie",
+              "california"
+            ],
+            "description": "Optional execution region for a newly queued scan: eu_de, eu_ie, california, or the service default when omitted."
+          },
+          "waitForCompletion": {
+            "type": "boolean",
+            "description": "Deprecated compatibility field; accepted but ignored. certscore_scan_site never waits for a new scan to finish, though MCP Light may briefly wait within a bounded preview window for preliminary pre-consent observations."
+          },
+          "maxWaitSeconds": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 45,
+            "description": "Deprecated compatibility field; accepted but ignored. The bounded preliminary-preview wait is controlled by CertScore and never waits for scan completion."
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "certscore_get_scan",
+      "description": "Retrieve the API v2 public-safe scan resource, including completed-limited no-go disposition, reason-specific guidance, and timing when available.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "scanId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Stable CertScore scan ID."
+          }
+        },
+        "required": [
+          "scanId"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "certscore_get_scan_status",
+      "description": "Returns lifecycle status for a stable CertScore scanId. Active responses include phase, heartbeat, estimated progress, retryAfterSeconds, and sometimes a bounded preliminary preConsentPreview. Terminal responses include completion status, CertScore score and risk metadata when available, coverage, persisted execution region and timestamps, report URL, and a next-action field. Preliminary observations are distinct from completed findings.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "scanId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Stable CertScore scan ID returned by certscore_scan_site."
+          }
+        },
+        "required": [
+          "scanId"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "certscore_get_report",
+      "description": "Focused follow-up: retrieve a bounded Pulse report with high-signal TextContent and typed structuredContent, including customer-safe no-go messaging. For broad privacy questions, use certscore_get_scan_bundle first because it combines canonical findings, limitations, and pre-consent rows without redundant calls.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "scanId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Stable CertScore scan ID."
+          },
+          "detail": {
+            "type": "string",
+            "enum": [
+              "tiny",
+              "quick",
+              "standard",
+              "full",
+              "summary",
+              "evidence"
+            ],
+            "description": "Pulse detail level. Defaults to summary for agent-friendly JSON."
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ],
+            "description": "Use json for structured agent work or markdown for conversational summaries."
+          }
+        },
+        "required": [
+          "scanId"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "certscore_get_evidence",
+      "description": "Focused follow-up: retrieve a bounded public-safe evidence packet with a concise TextContent digest and typed structuredContent. For broad privacy questions, use certscore_get_scan_bundle first. Excludes raw cookie values, raw bodies, sensitive payloads, full DOM, and unredacted query values.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "scanId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Stable CertScore scan ID."
+          }
+        },
+        "required": [
+          "scanId"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "certscore_get_scan_bundle",
+      "description": "Returns the completed or completed-limited CertScore evidence bundle for a stable scanId as concise TextContent and matching structuredContent. Available sections include the canonical report overview, bounded projected findings, pre-consent cookie and tracker evidence, coverage limitations, persisted execution provenance, and retrieval URLs. Detail tiers and byte budgets control the bounded response, with explicit returned, total, truncated, and omitted-section metadata. Accept and Reject results distinguish registered decisions from retained after-click facts. Optional afterAction summaries remain useful when registration is unconfirmed; absent or failed capture remains explicitly limited. Consume canonical findings for any scoring effect. Results are automated public-web observations, not legal advice, certification, or a compliance determination.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "scanId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Stable CertScore scan ID."
+          },
+          "detail": {
+            "type": "string",
+            "enum": [
+              "summary",
+              "findings",
+              "evidence",
+              "full"
+            ],
+            "description": "Response detail. Defaults to summary; evidence and full opt into heavier retained context."
+          },
+          "maxBytes": {
+            "type": "integer",
+            "minimum": 5000,
+            "maximum": 200000,
+            "description": "Requested serialized structured response budget in bytes. The full profile defaults to 50000. MCP Light defaults to and applies a transport-safe 25000-byte ceiling; larger Light requests are clamped and reported in response metadata."
+          },
+          "maxFindings": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "description": "Maximum compact findings to return. Defaults to 5 for summary and 20 otherwise."
+          },
+          "maxPreConsentRows": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "description": "Maximum compact pre-consent inventory rows to return. Defaults to 20."
+          }
+        },
+        "required": [
+          "scanId"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "certscore_export_findings",
+      "description": "Return structured findings plus completed-limited no-go disposition and guidance for downstream review or ticketing workflows.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "scanId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Stable CertScore scan ID."
+          }
+        },
+        "required": [
+          "scanId"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "certscore_list_findings",
+      "description": "Focused follow-up: list bounded API v2 public-safe findings already projected by the canonical pipeline, with matching high-signal TextContent and typed structuredContent. For broad privacy questions, use certscore_get_scan_bundle first.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "scanId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Stable CertScore scan ID."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200,
+            "description": "Maximum findings to return. Defaults to 50; maximum 200."
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Zero-based finding offset. Defaults to 0."
+          }
+        },
+        "required": [
+          "scanId"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "certscore_get_pre_consent_cookies_trackers",
+      "description": "Focused follow-up: retrieve bounded row-level public-safe pre-consent cookie/tracker evidence with matching TextContent and typed structuredContent. For a new broad request such as checking a site for pre-consent tracking, use certscore_scan_site then certscore_get_scan_bundle first.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "scanId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Stable CertScore scan ID."
+          },
+          "maxRows": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200,
+            "description": "Maximum inventory rows to return. Defaults to 200."
+          }
+        },
+        "required": [
+          "scanId"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "certscore_explain_finding",
+      "description": "Explain one projected finding with public evidence, caveats, reviewer next steps, and reason-specific no-go context when applicable.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "scanId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Stable CertScore scan ID."
+          },
+          "findingId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Finding ID to explain."
+          }
+        },
+        "required": [
+          "scanId",
+          "findingId"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "certscore_get_latest_domain_scan",
+      "description": "Retrieve the latest eligible API v2 public-safe scan for a domain.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "domain": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Public domain to look up."
+          },
+          "scanFrom": {
+            "type": "string",
+            "enum": [
+              "eu_de",
+              "eu_ie",
+              "california"
+            ],
+            "description": "Optional scan execution context for matching eligible scans."
+          }
+        },
+        "required": [
+          "domain"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "certscore_get_latest_domain_pre_consent_cookies_trackers",
+      "description": "Focused follow-up: retrieve bounded row-level public-safe pre-consent cookie/tracker evidence from the latest eligible scan for a domain, with matching TextContent and typed structuredContent. For a broad current-site review, use certscore_scan_site then certscore_get_scan_bundle first.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "domain": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Public domain to look up."
+          },
+          "scanFrom": {
+            "type": "string",
+            "enum": [
+              "eu_de",
+              "eu_ie",
+              "california"
+            ],
+            "description": "Optional scan execution context for matching eligible scans."
+          },
+          "maxRows": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200,
+            "description": "Maximum inventory rows to return. Defaults to 200."
+          }
+        },
+        "required": [
+          "domain"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 14227,
+  "transport": "stdio"
+}

@@ -1,0 +1,8 @@
+{
+  "serverId": "scotia1973-bot__api-hub__scotia1973-bot-api-hub",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "sh: 1: exec: gadgethumans-api-hub-mcp: not found\n",
+  "durationMs": 52247,
+  "transport": "stdio"
+}

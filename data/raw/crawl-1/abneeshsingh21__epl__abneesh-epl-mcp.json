@@ -1,0 +1,8 @@
+{
+  "serverId": "abneeshsingh21__epl__abneesh-epl-mcp",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "Downloading eplang (1.1MiB)\n Downloaded eplang\nInstalled 13 packages in 8ms\nAn executable named `eplang` is not provided by package `eplang`.\nThe following executables are available:\n- epl\n- epl-mcp\n\nUse `uvx --from eplang <EXECUTABLE-NAME>` instead.\n\n",
+  "durationMs": 10713,
+  "transport": "stdio"
+}

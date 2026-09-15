@@ -1,0 +1,8 @@
+{
+  "serverId": "dxpert-ai__dxpert-mcp__ai-dxpert-mcp",
+  "status": "FAILED_TIMEOUT",
+  "tools": [],
+  "stderrTail": "",
+  "durationMs": 120185,
+  "transport": "stdio"
+}

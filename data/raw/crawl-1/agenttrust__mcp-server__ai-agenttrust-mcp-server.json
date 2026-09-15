@@ -1,0 +1,8 @@
+{
+  "serverId": "agenttrust__mcp-server__ai-agenttrust-mcp-server",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead\nFatal error: Error: Agent identity is not fully configured. Run `agenttrust-mcp init` or set AGENTTRUST_SLUG and AGENTTRUST_AGENT_ID.\n    at makeError (file:///tmp/npm-cache/_npx/fd51f66e34b1b19d/node_modules/@agenttrust/mcp-server/dist/index.js:22:12)\n    at runStdioServer (file:///tmp/npm-cache/_npx/fd51f66e34b1b19d/node_modules/@agenttrust/mcp-server/dist/index.js:1099:15)\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async main (file:///tmp/npm-cache/_npx/fd51f66e34b1b19d/node_modules/@agenttrust/mcp-server/dist/index.js:1129:5)\nnpm notice\nnpm notice New major version of npm available! 10.9.8 -> 12.0.2\nnpm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2\nnpm notice To update run: npm install -g npm@12.0.2\nnpm notice\n",
+  "durationMs": 30227,
+  "transport": "stdio"
+}

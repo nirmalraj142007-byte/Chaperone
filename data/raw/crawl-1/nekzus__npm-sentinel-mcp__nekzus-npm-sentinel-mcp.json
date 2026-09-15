@@ -1,0 +1,516 @@
+{
+  "serverId": "nekzus__npm-sentinel-mcp__nekzus-npm-sentinel-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "npmVersions",
+      "description": "Get all available versions of an NPM package",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "packages": {
+            "minItems": 1,
+            "maxItems": 25,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of package names to get versions for"
+          },
+          "ignoreCache": {
+            "description": "Force a fresh lookup, ignoring the cache",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "packages"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    },
+    {
+      "name": "npmLatest",
+      "description": "Get the latest version and changelog of an NPM package",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "packages": {
+            "minItems": 1,
+            "maxItems": 25,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of package names to get latest versions for"
+          },
+          "ignoreCache": {
+            "description": "Force a fresh lookup, ignoring the cache",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "packages"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    },
+    {
+      "name": "npmDeps",
+      "description": "Analyze dependencies and devDependencies of an NPM package",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "packages": {
+            "minItems": 1,
+            "maxItems": 25,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of package names to analyze dependencies for"
+          },
+          "ignoreCache": {
+            "description": "Force a fresh lookup, ignoring the cache",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "packages"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    },
+    {
+      "name": "npmTypes",
+      "description": "Check TypeScript types availability and version for a package",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "packages": {
+            "minItems": 1,
+            "maxItems": 25,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of package names to check types for"
+          },
+          "ignoreCache": {
+            "description": "Force a fresh lookup, ignoring the cache",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "packages"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    },
+    {
+      "name": "npmSize",
+      "description": "Get package size information including dependencies and bundle size",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "packages": {
+            "minItems": 1,
+            "maxItems": 25,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of package names to get size information for"
+          },
+          "ignoreCache": {
+            "description": "Force a fresh lookup, ignoring the cache",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "packages"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    },
+    {
+      "name": "npmVulnerabilities",
+      "description": "Check for known vulnerabilities in packages",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "packages": {
+            "minItems": 1,
+            "maxItems": 25,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of package names to check for vulnerabilities"
+          },
+          "ignoreCache": {
+            "description": "Force a fresh lookup, ignoring the cache",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "packages"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    },
+    {
+      "name": "npmTrends",
+      "description": "Get download trends and popularity metrics for packages",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "packages": {
+            "minItems": 1,
+            "maxItems": 25,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of package names to get trends for"
+          },
+          "period": {
+            "default": "last-month",
+            "type": "string",
+            "enum": [
+              "last-week",
+              "last-month",
+              "last-year"
+            ],
+            "description": "Time period for trends. Options: \"last-week\", \"last-month\", \"last-year\""
+          },
+          "ignoreCache": {
+            "description": "Force a fresh lookup, ignoring the cache",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "packages"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    },
+    {
+      "name": "npmCompare",
+      "description": "Compare multiple NPM packages based on various metrics",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "packages": {
+            "minItems": 1,
+            "maxItems": 25,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of package names to compare"
+          },
+          "ignoreCache": {
+            "description": "Force a fresh lookup, ignoring the cache",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "packages"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    },
+    {
+      "name": "npmMaintainers",
+      "description": "Get maintainers information for NPM packages",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "packages": {
+            "minItems": 1,
+            "maxItems": 25,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of package names to get maintainers for"
+          },
+          "ignoreCache": {
+            "description": "Force a fresh lookup, ignoring the cache",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "packages"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    },
+    {
+      "name": "npmScore",
+      "description": "Get consolidated package score based on quality, maintenance, and popularity metrics",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "packages": {
+            "minItems": 1,
+            "maxItems": 25,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of package names to get scores for"
+          },
+          "ignoreCache": {
+            "description": "Force a fresh lookup, ignoring the cache",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "packages"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    },
+    {
+      "name": "npmPackageReadme",
+      "description": "Get the README content for NPM packages",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "packages": {
+            "minItems": 1,
+            "maxItems": 25,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of package names to get READMEs for"
+          },
+          "ignoreCache": {
+            "description": "Force a fresh lookup, ignoring the cache",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "packages"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    },
+    {
+      "name": "npmSearch",
+      "description": "Search for NPM packages with optional limit",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Search query for packages"
+          },
+          "limit": {
+            "description": "Maximum number of results to return (default: 10)",
+            "type": "number",
+            "minimum": 1,
+            "maximum": 50
+          },
+          "ignoreCache": {
+            "description": "Force a fresh lookup, ignoring the cache",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    },
+    {
+      "name": "npmLicenseCompatibility",
+      "description": "Check license compatibility between multiple packages",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "packages": {
+            "minItems": 1,
+            "maxItems": 25,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of package names to check for license compatibility"
+          },
+          "ignoreCache": {
+            "description": "Force a fresh lookup, ignoring the cache",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "packages"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    },
+    {
+      "name": "npmRepoStats",
+      "description": "Get repository statistics for NPM packages",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "packages": {
+            "minItems": 1,
+            "maxItems": 25,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of package names to get repository stats for"
+          },
+          "ignoreCache": {
+            "description": "Force a fresh lookup, ignoring the cache",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "packages"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    },
+    {
+      "name": "npmDeprecated",
+      "description": "Check if packages are deprecated",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "packages": {
+            "minItems": 1,
+            "maxItems": 25,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of package names to check for deprecation"
+          },
+          "ignoreCache": {
+            "description": "Force a fresh lookup, ignoring the cache",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "packages"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    },
+    {
+      "name": "npmChangelogAnalysis",
+      "description": "Analyze changelog and release history of packages",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "packages": {
+            "minItems": 1,
+            "maxItems": 25,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of package names to analyze changelogs for"
+          },
+          "ignoreCache": {
+            "description": "Force a fresh lookup, ignoring the cache",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "packages"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    },
+    {
+      "name": "npmAlternatives",
+      "description": "Find alternative packages with similar functionality",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "packages": {
+            "minItems": 1,
+            "maxItems": 25,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of package names to find alternatives for"
+          },
+          "ignoreCache": {
+            "description": "Force a fresh lookup, ignoring the cache",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "packages"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    },
+    {
+      "name": "npmQuality",
+      "description": "Analyze package quality metrics",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "packages": {
+            "minItems": 1,
+            "maxItems": 25,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of package names to analyze"
+          },
+          "ignoreCache": {
+            "description": "Force a fresh lookup, ignoring the cache",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "packages"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    },
+    {
+      "name": "npmMaintenance",
+      "description": "Analyze package maintenance metrics",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "packages": {
+            "minItems": 1,
+            "maxItems": 25,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of package names to analyze"
+          },
+          "ignoreCache": {
+            "description": "Force a fresh lookup, ignoring the cache",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "packages"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    }
+  ],
+  "stderrTail": "npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead\n",
+  "durationMs": 28981,
+  "transport": "stdio"
+}

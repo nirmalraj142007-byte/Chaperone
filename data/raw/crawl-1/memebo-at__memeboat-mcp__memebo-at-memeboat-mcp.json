@@ -1,0 +1,131 @@
+{
+  "serverId": "memebo-at__memeboat-mcp__memebo-at-memeboat-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "search_meme_templates",
+      "description": "Search memebo.at's catalog of 25,000+ meme templates by name or topic (e.g. \"drake\", \"distracted boyfriend\", \"cat\"). Returns matching templates with their slug (use it with create_meme), image URL and a suggested caption count.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Search terms, e.g. \"surprised pikachu\""
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "description": "Max results (default 10)"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_meme_template",
+      "description": "Fetch one meme template by its slug (from search_meme_templates or a memebo.at/templates/<slug> URL): dimensions, image URL and suggested caption count.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Template slug, e.g. \"x-x-everywhere\""
+          }
+        },
+        "required": [
+          "slug"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "create_meme",
+      "description": "Create a real, shareable meme on memebo.at by captioning a template. texts are placed top-to-bottom: 1 caption = bottom text, 2 captions = classic top/bottom, N captions fill the template's boxes in order (match suggestedCaptionCount when possible). Captions can be plain strings or objects with per-caption color/outline/font; optional global font and layout (\"top\" = captions in a white bar above the image). Returns the meme page URL and a direct image URL. Rate-limited per IP — space out repeated calls.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "template": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Template slug, e.g. \"x-x-everywhere\""
+          },
+          "texts": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "text": {
+                      "type": "string",
+                      "maxLength": 200
+                    },
+                    "color": {
+                      "type": "string",
+                      "description": "Fill color: hex (#rgb/#rrggbb) or white/black/red/yellow/blue/green"
+                    },
+                    "outline": {
+                      "type": "string",
+                      "description": "Outline color; omit for an auto-picked readable outline"
+                    },
+                    "font": {
+                      "type": "string",
+                      "description": "Font for this caption, one of: impact, arial, helvetica, times, courier, titillium, thick, kalam, comic, notosans, notosanshebrew"
+                    }
+                  },
+                  "required": [
+                    "text"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 10,
+            "description": "Captions, top-to-bottom. Each is a string or { text, color?, outline?, font? }. At least one must be non-empty."
+          },
+          "font": {
+            "type": "string",
+            "description": "Default font for all captions, one of: impact, arial, helvetica, times, courier, titillium, thick, kalam, comic, notosans, notosanshebrew"
+          },
+          "layout": {
+            "type": "string",
+            "enum": [
+              "default",
+              "top"
+            ],
+            "description": "layout:\"top\" puts captions in a white bar above the image; \"default\" overlays them on the image"
+          },
+          "style": {
+            "type": "string",
+            "description": "Alternate background style name from get_meme_template's availableStyles, e.g. \"maga\""
+          }
+        },
+        "required": [
+          "template",
+          "texts"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "memeboat-mcp ready (API: https://memebo.at)\n",
+  "durationMs": 21401,
+  "transport": "stdio"
+}

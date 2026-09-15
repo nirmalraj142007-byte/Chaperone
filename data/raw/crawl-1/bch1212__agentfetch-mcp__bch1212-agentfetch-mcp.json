@@ -1,0 +1,8 @@
+{
+  "serverId": "bch1212__agentfetch-mcp__bch1212-agentfetch-mcp",
+  "status": "REFUSED_NO_CREDS",
+  "tools": [],
+  "stderrTail": "Downloading pygments (1.2MiB)\nDownloading pydantic-core (2.0MiB)\nDownloading tiktoken (1.1MiB)\nDownloading lxml (5.0MiB)\nDownloading babel (9.7MiB)\nDownloading cryptography (4.5MiB)\n",
+  "durationMs": 120056,
+  "transport": "stdio"
+}

@@ -1,0 +1,65 @@
+{
+  "serverId": "registry__agency-kesey-pretrip",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "scan_content",
+      "description": "Screen marketing copy for regulated-health advertising compliance (addiction treatment, ketamine, psilocybin, cannabis, and related verticals) against Pre-Trip's curated, source-cited rulesets. Use this whenever the user is drafting or about to publish a health-marketing email, landing page, blog post, or social post, or asks to check copy for compliance. Returns a pass, or a fix list where each flag quotes the exact line, names the rule, and cites the statute. This is a screen, not legal advice. Call get_coverage first if unsure which vertical or state values are valid.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "The marketing copy to check. Plain text or HTML."
+          },
+          "asset_type": {
+            "type": "string",
+            "enum": [
+              "email",
+              "landing_page",
+              "blog",
+              "social"
+            ],
+            "description": "The kind of asset being scanned."
+          },
+          "state": {
+            "type": "string",
+            "description": "Two-letter US state code you are marketing into, e.g. CA."
+          },
+          "vertical": {
+            "type": "string",
+            "description": "The regulated vertical, e.g. addiction_treatment, ketamine, cannabis. Use get_coverage for the exact list."
+          },
+          "covered_entity": {
+            "type": "boolean",
+            "description": "True if the advertiser is a HIPAA covered entity (most clinics that bill insurance or hold patient records)."
+          },
+          "subject": {
+            "type": "string",
+            "description": "Email subject and preview text. Email only."
+          }
+        },
+        "required": [
+          "content",
+          "asset_type",
+          "state",
+          "vertical"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_coverage",
+      "description": "Return the verticals, asset types, and states Pre-Trip covers, so scan_content can be called with valid values. Call this when unsure which vertical or state to pass.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 12963,
+  "transport": "stdio"
+}

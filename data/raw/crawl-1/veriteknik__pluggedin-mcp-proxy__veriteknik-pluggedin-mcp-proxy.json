@@ -1,0 +1,1148 @@
+{
+  "serverId": "veriteknik__pluggedin-mcp-proxy__veriteknik-pluggedin-mcp-proxy",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "pluggedin_setup",
+      "description": "Get started with Plugged.in MCP - shows setup instructions and API key configuration (no API key required)",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "topic": {
+            "type": "string",
+            "enum": [
+              "getting_started",
+              "api_key",
+              "configuration",
+              "troubleshooting"
+            ],
+            "description": "Specific setup topic to learn about. Options: getting_started (default), api_key, configuration, troubleshooting",
+            "default": "getting_started"
+          }
+        }
+      }
+    },
+    {
+      "name": "pluggedin_discover_tools",
+      "description": "Triggers discovery of tools (and resources/templates) for configured MCP servers in the Pluggedin App.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "server_uuid": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Optional UUID of a specific server to discover. If omitted, attempts to discover all."
+          },
+          "force_refresh": {
+            "type": "boolean",
+            "default": false,
+            "description": "Set to true to bypass cache and force a fresh discovery. Defaults to false."
+          }
+        },
+        "additionalProperties": false,
+        "description": "Triggers tool discovery for configured MCP servers in the Pluggedin App.",
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "pluggedin_ask_knowledge_base",
+      "description": "Ask questions and get AI-generated answers from your knowledge base. Returns structured JSON with answer, document sources, and metadata.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "description": "Your question or query to get AI-generated answers from the knowledge base."
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "additionalProperties": false,
+        "description": "Ask questions and get AI-generated answers from your knowledge base. Returns JSON with answer, sources, and metadata.",
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "pluggedin_create_document",
+      "description": "Create and save AI-generated documents to the user's library in Plugged.in (requires API key)",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255,
+            "description": "Document title"
+          },
+          "content": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Document content"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "md",
+              "txt",
+              "json",
+              "html"
+            ],
+            "default": "md",
+            "description": "Format: md (Markdown), txt (plain text), json, or html"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "description": "Tags for categorization"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "report",
+              "analysis",
+              "documentation",
+              "guide",
+              "research",
+              "code",
+              "other"
+            ],
+            "default": "other",
+            "description": "Document category"
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "model": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "AI model name"
+                  },
+                  "provider": {
+                    "type": "string",
+                    "description": "Model provider"
+                  },
+                  "version": {
+                    "type": "string",
+                    "description": "Model version"
+                  }
+                },
+                "required": [
+                  "name",
+                  "provider"
+                ],
+                "additionalProperties": false,
+                "description": "AI model info for attribution",
+                "examples": [
+                  {
+                    "name": "claude-3-opus",
+                    "provider": "anthropic",
+                    "version": "20240229"
+                  }
+                ]
+              },
+              "context": {
+                "type": "string",
+                "description": "Creation context"
+              },
+              "visibility": {
+                "type": "string",
+                "enum": [
+                  "private",
+                  "workspace",
+                  "public"
+                ],
+                "default": "private",
+                "description": "Visibility: private (only you), workspace (team), public (everyone)"
+              },
+              "prompt": {
+                "type": "string",
+                "description": "User prompt that triggered creation"
+              },
+              "conversationContext": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Previous conversation messages for context"
+              },
+              "sourceDocuments": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "UUIDs of referenced documents"
+              },
+              "generationParams": {
+                "type": "object",
+                "properties": {
+                  "temperature": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 2,
+                    "description": "Temperature (0-2)"
+                  },
+                  "maxTokens": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "description": "Max tokens"
+                  },
+                  "topP": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1,
+                    "description": "Top-p (0-1)"
+                  }
+                },
+                "additionalProperties": false,
+                "description": "Generation parameters"
+              }
+            },
+            "required": [
+              "model"
+            ],
+            "additionalProperties": false,
+            "description": "Metadata for attribution and tracking"
+          }
+        },
+        "required": [
+          "title",
+          "content",
+          "metadata"
+        ],
+        "additionalProperties": false,
+        "description": "Create and save an AI-generated document to the user's library with full metadata tracking",
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "pluggedin_list_documents",
+      "description": "List documents with filtering options from the user's library (requires API key)",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "filters": {
+            "type": "object",
+            "properties": {
+              "source": {
+                "type": "string",
+                "enum": [
+                  "all",
+                  "upload",
+                  "ai_generated",
+                  "api"
+                ],
+                "default": "all",
+                "description": "Filter by document source: all, upload, ai_generated, or api"
+              },
+              "modelName": {
+                "type": "string",
+                "description": "Filter by AI model name (optional)"
+              },
+              "modelProvider": {
+                "type": "string",
+                "description": "Filter by model provider, e.g., 'anthropic', 'openai' (optional)"
+              },
+              "dateFrom": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Filter documents created after this date (ISO 8601 format)"
+              },
+              "dateTo": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Filter documents created before this date (ISO 8601 format)"
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Filter by document tags (optional)"
+              },
+              "category": {
+                "type": "string",
+                "enum": [
+                  "report",
+                  "analysis",
+                  "documentation",
+                  "guide",
+                  "research",
+                  "code",
+                  "other"
+                ],
+                "description": "Filter by document category (optional)"
+              },
+              "searchQuery": {
+                "type": "string",
+                "description": "Text search query to filter documents (optional)"
+              }
+            },
+            "additionalProperties": false,
+            "description": "Optional filters to apply when listing documents"
+          },
+          "sort": {
+            "type": "string",
+            "enum": [
+              "date_desc",
+              "date_asc",
+              "title",
+              "size"
+            ],
+            "default": "date_desc",
+            "description": "Sort order: date_desc (newest first), date_asc (oldest first), title (alphabetical), or size"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 20,
+            "description": "Maximum number of documents to return (1-100, default: 20)"
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0,
+            "description": "Number of documents to skip for pagination (default: 0)"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "pluggedin_search_documents",
+      "description": "Search for specific documents in your library. Returns document metadata (ID, title, snippet). To retrieve full content, use pluggedin_get_document with the returned document ID.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500,
+            "description": "Search query text to find documents (1-500 characters)"
+          },
+          "filters": {
+            "type": "object",
+            "properties": {
+              "modelName": {
+                "type": "string",
+                "description": "Filter by AI model name (optional)"
+              },
+              "modelProvider": {
+                "type": "string",
+                "description": "Filter by model provider, e.g., 'anthropic', 'openai' (optional)"
+              },
+              "dateFrom": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Filter documents created after this date (ISO 8601 format)"
+              },
+              "dateTo": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Filter documents created before this date (ISO 8601 format)"
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Filter by document tags (optional)"
+              },
+              "source": {
+                "type": "string",
+                "enum": [
+                  "all",
+                  "upload",
+                  "ai_generated",
+                  "api"
+                ],
+                "default": "all",
+                "description": "Filter by document source: all, upload, ai_generated, or api"
+              }
+            },
+            "additionalProperties": false,
+            "description": "Optional filters to refine search results"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "default": 10,
+            "description": "Maximum number of search results to return (1-50, default: 10)"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "examples": [
+          {
+            "query": "API documentation",
+            "limit": 10
+          },
+          {
+            "query": "authentication guide",
+            "filters": {
+              "tags": [
+                "tutorial",
+                "security"
+              ],
+              "source": "ai_generated"
+            },
+            "limit": 5
+          }
+        ]
+      }
+    },
+    {
+      "name": "pluggedin_get_document",
+      "description": "Retrieve a specific document's full content by ID. Use this after pluggedin_search_documents to get the complete content of documents you found. Set includeContent=true to get the full text.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "documentId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique document identifier (UUID format)"
+          },
+          "includeContent": {
+            "type": "boolean",
+            "default": false,
+            "description": "Include full document content in response (default: false)"
+          },
+          "includeVersions": {
+            "type": "boolean",
+            "default": false,
+            "description": "Include document version history (default: false)"
+          }
+        },
+        "required": [
+          "documentId"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "examples": [
+          {
+            "documentId": "550e8400-e29b-41d4-a716-446655440000",
+            "includeContent": true
+          },
+          {
+            "documentId": "123e4567-e89b-12d3-a456-426614174000",
+            "includeContent": true,
+            "includeVersions": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "pluggedin_update_document",
+      "description": "Update or append to an existing AI-generated document (requires API key)",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "documentId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Document UUID"
+          },
+          "operation": {
+            "type": "string",
+            "enum": [
+              "replace",
+              "append",
+              "prepend"
+            ],
+            "description": "Operation: replace (overwrite), append (add to end), prepend (add to start)"
+          },
+          "content": {
+            "type": "string",
+            "minLength": 1,
+            "description": "New content"
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Updated tags"
+              },
+              "changeSummary": {
+                "type": "string",
+                "description": "Change summary"
+              },
+              "updateReason": {
+                "type": "string",
+                "description": "Update reason"
+              },
+              "changesFromPrompt": {
+                "type": "string",
+                "description": "User prompt that triggered update"
+              },
+              "model": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "AI model name"
+                  },
+                  "provider": {
+                    "type": "string",
+                    "description": "Model provider"
+                  },
+                  "version": {
+                    "type": "string",
+                    "description": "Model version"
+                  }
+                },
+                "required": [
+                  "name",
+                  "provider"
+                ],
+                "additionalProperties": false,
+                "description": "AI model info for attribution",
+                "examples": [
+                  {
+                    "name": "claude-3-opus",
+                    "provider": "anthropic",
+                    "version": "20240229"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "model"
+            ],
+            "additionalProperties": false,
+            "description": "Update metadata"
+          }
+        },
+        "required": [
+          "documentId",
+          "operation",
+          "content"
+        ],
+        "additionalProperties": false,
+        "description": "Update or append to an existing AI-generated document with version tracking",
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "pluggedin_send_notification",
+      "description": "Send custom notifications through the Plugged.in system with optional email delivery. You can provide a custom title or let the system use a localized default.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Optional notification title. If not provided, a localized default will be used. Consider generating a descriptive title based on the message content."
+          },
+          "message": {
+            "type": "string",
+            "description": "The notification message content"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "INFO",
+              "SUCCESS",
+              "WARNING",
+              "ALERT"
+            ],
+            "description": "The severity level of the notification (defaults to INFO)",
+            "default": "INFO"
+          },
+          "sendEmail": {
+            "type": "boolean",
+            "description": "Whether to also send the notification via email",
+            "default": false
+          }
+        },
+        "required": [
+          "message"
+        ]
+      }
+    },
+    {
+      "name": "pluggedin_list_notifications",
+      "description": "List notifications from the Plugged.in system with optional filters for unread only and result limit",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "onlyUnread": {
+            "type": "boolean",
+            "description": "Filter to show only unread notifications",
+            "default": false
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Limit the number of notifications returned (1-100)",
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
+      }
+    },
+    {
+      "name": "pluggedin_mark_notification_done",
+      "description": "Mark a notification as done in the Plugged.in system",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "notificationId": {
+            "type": "string",
+            "description": "The ID of the notification to mark as read"
+          }
+        },
+        "required": [
+          "notificationId"
+        ]
+      }
+    },
+    {
+      "name": "pluggedin_delete_notification",
+      "description": "Delete a notification from the Plugged.in system",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "notificationId": {
+            "type": "string",
+            "description": "The ID of the notification to delete"
+          }
+        },
+        "required": [
+          "notificationId"
+        ]
+      }
+    },
+    {
+      "name": "pluggedin_clipboard_set",
+      "description": "Set a clipboard entry by name (semantic key) or index (array-like). Named entries are upserted; indexed entries fail if index exists. Max 2MB per entry.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "description": "Named key for semantic access (e.g., 'customer_context')"
+          },
+          "idx": {
+            "type": "integer",
+            "description": "Numeric index for array-like access (e.g., 0, 1, 2)"
+          },
+          "value": {
+            "type": "string",
+            "description": "The content to store"
+          },
+          "contentType": {
+            "type": "string",
+            "pattern": "^[\\w.-]+\\/[\\w.+-]+$",
+            "maxLength": 256,
+            "default": "text/plain",
+            "description": "MIME type (e.g., 'text/plain', 'application/json', 'image/png')"
+          },
+          "encoding": {
+            "type": "string",
+            "enum": [
+              "utf-8",
+              "base64",
+              "hex"
+            ],
+            "default": "utf-8",
+            "description": "Content encoding: utf-8 (default), base64 (for binary), or hex"
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "private",
+              "workspace",
+              "public"
+            ],
+            "default": "private",
+            "description": "Visibility scope: private (default), workspace, or public"
+          },
+          "createdByTool": {
+            "type": "string",
+            "maxLength": 255,
+            "description": "Name of the tool that created this entry"
+          },
+          "createdByModel": {
+            "type": "string",
+            "maxLength": 255,
+            "description": "Name of the AI model that created this entry"
+          },
+          "ttlSeconds": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 31536000,
+            "description": "Time-to-live in seconds (max: 1 year, default: 24 hours)"
+          }
+        },
+        "required": [
+          "value"
+        ],
+        "additionalProperties": false,
+        "description": "Set a clipboard entry. Named entries are upserted; indexed entries fail if index exists.",
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "examples": [
+          {
+            "name": "customer_context",
+            "value": "{\"name\": \"John Doe\", \"account_id\": \"12345\"}",
+            "contentType": "application/json"
+          },
+          {
+            "idx": 0,
+            "value": "First pipeline step result",
+            "createdByTool": "data_processor"
+          }
+        ]
+      }
+    },
+    {
+      "name": "pluggedin_clipboard_get",
+      "description": "Get clipboard entries. Specify name or idx for a single entry, or omit both to list all entries with pagination.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Get entry by name"
+          },
+          "idx": {
+            "type": "integer",
+            "description": "Get entry by index"
+          },
+          "contentType": {
+            "type": "string",
+            "description": "Filter by content type"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 50,
+            "description": "Maximum entries to return (1-100, default: 50)"
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0,
+            "description": "Pagination offset (default: 0)"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Get clipboard entries. Without name/idx, lists all entries with pagination.",
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "examples": [
+          {
+            "name": "customer_context"
+          },
+          {
+            "idx": 0
+          },
+          {
+            "limit": 10,
+            "offset": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "pluggedin_clipboard_delete",
+      "description": "Delete clipboard entries by name, index, or clear all entries.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Delete entry by name"
+          },
+          "idx": {
+            "type": "integer",
+            "description": "Delete entry by index"
+          },
+          "clearAll": {
+            "type": "boolean",
+            "default": false,
+            "description": "Delete all clipboard entries (default: false)"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Delete clipboard entries by name, index, or clear all.",
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "examples": [
+          {
+            "name": "customer_context"
+          },
+          {
+            "idx": 0
+          },
+          {
+            "clearAll": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "pluggedin_clipboard_list",
+      "description": "List all clipboard entries with metadata. Image values are truncated to first 1000 chars for preview.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "contentType": {
+            "type": "string",
+            "description": "Filter by content type"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 50,
+            "description": "Maximum entries to return (1-100, default: 50)"
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0,
+            "description": "Pagination offset (default: 0)"
+          }
+        },
+        "additionalProperties": false,
+        "description": "List all clipboard entries with metadata (value truncated for images).",
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "pluggedin_clipboard_push",
+      "description": "Push a value to the indexed clipboard with auto-incrementing index. Useful for building ordered pipelines or stack-like operations.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "description": "The content to push"
+          },
+          "contentType": {
+            "type": "string",
+            "pattern": "^[\\w.-]+\\/[\\w.+-]+$",
+            "maxLength": 256,
+            "default": "text/plain",
+            "description": "MIME type (e.g., 'text/plain', 'application/json', 'image/png')"
+          },
+          "encoding": {
+            "type": "string",
+            "enum": [
+              "utf-8",
+              "base64",
+              "hex"
+            ],
+            "default": "utf-8",
+            "description": "Content encoding: utf-8 (default), base64 (for binary), or hex"
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "private",
+              "workspace",
+              "public"
+            ],
+            "default": "private",
+            "description": "Visibility scope: private (default), workspace, or public"
+          },
+          "createdByTool": {
+            "type": "string",
+            "maxLength": 255,
+            "description": "Name of the tool that created this entry"
+          },
+          "createdByModel": {
+            "type": "string",
+            "maxLength": 255,
+            "description": "Name of the AI model that created this entry"
+          },
+          "ttlSeconds": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 31536000,
+            "description": "Time-to-live in seconds (max: 1 year, default: 24 hours)"
+          }
+        },
+        "required": [
+          "value"
+        ],
+        "additionalProperties": false,
+        "description": "Push a value to the indexed clipboard with auto-incrementing index.",
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "examples": [
+          {
+            "value": "Pipeline step 1 result",
+            "createdByTool": "data_processor"
+          },
+          {
+            "value": "iVBORw0KGgoAAAANS...",
+            "contentType": "image/png",
+            "encoding": "base64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "pluggedin_clipboard_pop",
+      "description": "Pop the highest-indexed entry from the clipboard (LIFO behavior). Returns the entry value and removes it.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false,
+        "description": "Pop the highest-indexed entry from the clipboard (LIFO behavior).",
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "pluggedin_memory_session_start",
+      "description": "Start a new memory session to begin capturing observations. Returns a session UUID and memory_session_id for subsequent operations.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "content_session_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "External session ID (e.g., chat thread ID) to associate memory with"
+          },
+          "agent_uuid": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Optional agent UUID if this session is agent-specific"
+          }
+        },
+        "required": [
+          "content_session_id"
+        ],
+        "additionalProperties": false,
+        "description": "Start a new memory session to begin capturing observations.",
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "examples": [
+          {
+            "content_session_id": "chat-thread-abc123"
+          },
+          {
+            "content_session_id": "agent-session-xyz",
+            "agent_uuid": "550e8400-e29b-41d4-a716-446655440000"
+          }
+        ]
+      }
+    },
+    {
+      "name": "pluggedin_memory_session_end",
+      "description": "End a memory session and trigger Z-report generation (AI-compressed session summary).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "memory_session_id": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-zA-Z0-9_-]+$",
+            "description": "The memory session ID returned from session start"
+          }
+        },
+        "required": [
+          "memory_session_id"
+        ],
+        "additionalProperties": false,
+        "description": "End a memory session and trigger Z-report generation.",
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "examples": [
+          {
+            "memory_session_id": "ms_abc123def456"
+          }
+        ]
+      }
+    },
+    {
+      "name": "pluggedin_memory_observe",
+      "description": "Record an observation during a memory session. Observations are classified by the Analytics Agent into memory ring types (procedures, practice, longterm, shocks).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_uuid": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID of the active memory session"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "tool_call",
+              "tool_result",
+              "user_preference",
+              "error_pattern",
+              "decision",
+              "success_pattern",
+              "failure_pattern",
+              "workflow_step",
+              "insight",
+              "context_switch"
+            ],
+            "description": "Type of observation being recorded"
+          },
+          "content": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50000,
+            "description": "The observation content to store in memory (max 50000 chars)"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "success",
+              "failure",
+              "neutral"
+            ],
+            "description": "Outcome of the observation for success-gated memory promotion"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Additional metadata (tool_name, mcp_server, error_code, etc.)"
+          }
+        },
+        "required": [
+          "session_uuid",
+          "type",
+          "content"
+        ],
+        "additionalProperties": false,
+        "description": "Record an observation during a memory session.",
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "examples": [
+          {
+            "session_uuid": "550e8400-e29b-41d4-a716-446655440000",
+            "type": "tool_call",
+            "content": "Called search API with query 'user authentication best practices'",
+            "outcome": "success",
+            "metadata": {
+              "tool_name": "web_search",
+              "mcp_server": "brave-search"
+            }
+          },
+          {
+            "session_uuid": "550e8400-e29b-41d4-a716-446655440000",
+            "type": "insight",
+            "content": "JWT tokens should be stored in httpOnly cookies for XSS protection",
+            "outcome": "success"
+          }
+        ]
+      }
+    },
+    {
+      "name": "pluggedin_memory_search",
+      "description": "Search memories using semantic similarity. Returns lightweight results (50-150 tokens each) for token-efficient progressive disclosure. Use pluggedin_memory_details for full content.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "description": "Natural language query to search memories semantically"
+          },
+          "ring_types": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "procedures",
+                "practice",
+                "longterm",
+                "shocks"
+              ]
+            },
+            "description": "Filter by memory ring types"
+          },
+          "agent_uuid": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Filter by specific agent"
+          },
+          "top_k": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "default": 10,
+            "description": "Maximum number of results to return"
+          },
+          "include_gut": {
+            "type": "boolean",
+            "default": false,
+            "description": "Include collective wisdom (gut patterns) in results"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "additionalProperties": false,
+        "description": "Search memories using semantic similarity (progressive disclosure Layer 1).",
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "examples": [
+          {
+            "query": "how to deploy to kubernetes"
+          },
+          {
+            "query": "authentication patterns",
+            "ring_types": [
+              "procedures",
+              "longterm"
+            ],
+            "top_k": 5,
+            "include_gut": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "pluggedin_memory_details",
+      "description": "Get full details for selected memories (progressive disclosure Layer 3). Use after pluggedin_memory_search to retrieve complete content for specific memories.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "memory_uuids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "minItems": 1,
+            "maxItems": 20,
+            "description": "UUIDs of memories to retrieve full details for"
+          }
+        },
+        "required": [
+          "memory_uuids"
+        ],
+        "additionalProperties": false,
+        "description": "Get full details for selected memories (progressive disclosure Layer 3).",
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "examples": [
+          {
+            "memory_uuids": [
+              "550e8400-e29b-41d4-a716-446655440000"
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 33510,
+  "transport": "stdio"
+}

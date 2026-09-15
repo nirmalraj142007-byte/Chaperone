@@ -1,0 +1,31 @@
+{
+  "serverId": "kimtaeyoon83__mcp-server-youtube-transcript__kimtaeyoon83-mcp-server-youtube-",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "get_transcript",
+      "description": "Extract transcript from a YouTube video URL or ID",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "YouTube video URL or ID"
+          },
+          "lang": {
+            "type": "string",
+            "description": "Language code for transcript (e.g., 'ko', 'en')",
+            "default": "en"
+          }
+        },
+        "required": [
+          "url",
+          "lang"
+        ]
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 15007,
+  "transport": "stdio"
+}

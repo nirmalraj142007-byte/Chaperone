@@ -1,0 +1,92 @@
+{
+  "serverId": "fatenava__fatenava-mcp__fatenava-fatenava-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "cast_chart",
+      "description": "Cast up to three deterministic destiny charts from one birth: BaZi (Four Pillars, with True Solar Time correction), Zi Wei Dou Shu (Purple Star Astrology), and a Western natal chart (tropical zodiac, Placidus houses). Free and anonymous — no account, nothing stored. Input is either a one-line `text` birth description, or structured fields (year/month/day/hour/minute + gender + longitude/latitude + timeZoneId). Returns structured JSON per system: field names in English; traditional terms (stems & branches, palace and star names) in their native Chinese characters — translate them for the user as needed. The chart data is computed, not AI-generated; interpretation is up to you. Full reading tools at https://fatenava.com?utm_source=fatenava-mcp&utm_medium=agent",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 4,
+            "maxLength": 200,
+            "description": "One-line birth description: date, time (or omit if unknown), birthplace, gender. Example: \"1995-08-10 12:00 Taipei female\". City names in English, Chinese, Japanese or Korean are accepted. Use EITHER this field OR the structured fields below."
+          },
+          "year": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9999,
+            "description": "Birth year (structured input)"
+          },
+          "month": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12
+          },
+          "day": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 31
+          },
+          "hour": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 23,
+            "description": "Birth hour 0-23; pass with birthTimeKnown=false if unknown"
+          },
+          "minute": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 59
+          },
+          "birthTimeKnown": {
+            "type": "boolean",
+            "description": "Set false when the exact birth time is unknown — BaZi still returns three pillars; hour-dependent parts are omitted honestly"
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "male",
+              "female"
+            ],
+            "description": "Required with structured input"
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180,
+            "description": "Birthplace longitude (structured input); used for True Solar Time correction"
+          },
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "timeZoneId": {
+            "type": "string",
+            "description": "IANA timezone of the birthplace, e.g. \"Asia/Taipei\" (structured input)"
+          },
+          "systems": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "bazi",
+                "ziwei",
+                "astro"
+              ]
+            },
+            "description": "Which chart systems to return: \"bazi\", \"ziwei\", \"astro\". Default: all three."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 18781,
+  "transport": "stdio"
+}

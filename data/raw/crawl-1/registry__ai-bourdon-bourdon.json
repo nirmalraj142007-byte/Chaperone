@@ -1,0 +1,8 @@
+{
+  "serverId": "registry__ai-bourdon-bourdon",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "sh: 1: exec: bourdon: not found\n",
+  "durationMs": 4227,
+  "transport": "stdio"
+}

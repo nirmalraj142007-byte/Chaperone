@@ -1,0 +1,8 @@
+{
+  "serverId": "isdaniel__mcp_weather_server__isdaniel-mcp-weather-server",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "Downloading pygments (1.2MiB)\nDownloading pydantic-core (2.0MiB)\nDownloading cryptography (4.5MiB)\n Downloaded pygments\n Downloaded pydantic-core\n Downloaded cryptography\nInstalled 43 packages in 10ms\nTraceback (most recent call last):\n  File \"/tmp/uv-cache/archive-v0/jM4OfSy5h5YRsRW2/bin/mcp_weather_server\", line 6, in <module>\n    from mcp_weather_server import main\n  File \"/tmp/uv-cache/archive-v0/jM4OfSy5h5YRsRW2/lib/python3.12/site-packages/mcp_weather_server/__init__.py\", line 1, in <module>\n    from .server import main as async_main\n  File \"/tmp/uv-cache/archive-v0/jM4OfSy5h5YRsRW2/lib/python3.12/site-packages/mcp_weather_server/server.py\", line 26, in <module>\n    from .tools.toolhandler import ToolHandler\n  File \"/tmp/uv-cache/archive-v0/jM4OfSy5h5YRsRW2/lib/python3.12/site-packages/mcp_weather_server/tools/__init__.py\", line 4, in <module>\n    from .tools_time import *\n  File \"/tmp/uv-cache/archive-v0/jM4OfSy5h5YRsRW2/lib/python3.12/site-packages/mcp_weather_server/tools/tools_time.py\", line 12, in <module>\n    from .. import utils\n  File \"/tmp/uv-cache/archive-v0/jM4OfSy5h5YRsRW2/lib/python3.12/site-packages/mcp_weather_server/utils.py\", line 7, in <module>\n    from mcp import McpError\nImportError: cannot import name 'McpError' from 'mcp' (/tmp/uv-cache/archive-v0/jM4OfSy5h5YRsRW2/lib/python3.12/site-packages/mcp/__init__.py). Did you mean: 'MCPError'?\n",
+  "durationMs": 51414,
+  "transport": "stdio"
+}

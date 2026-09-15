@@ -1,0 +1,8 @@
+{
+  "serverId": "data-everything__mcp-server-templates__data-everything-mcp-server-templ",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "Downloading pygments (1.2MiB)\nDownloading kubernetes (4.4MiB)\nDownloading aiohttp (1.7MiB)\n Downloaded pygments\n Downloaded aiohttp\n Downloaded kubernetes\nInstalled 38 packages in 21ms\nAn executable named `mcp-templates` is not provided by package `mcp-templates`.\nThe following executables are available:\n- mcp-template\n- mcpt\n\nUse `uvx --from mcp-templates <EXECUTABLE-NAME>` instead.\n\n",
+  "durationMs": 20796,
+  "transport": "stdio"
+}

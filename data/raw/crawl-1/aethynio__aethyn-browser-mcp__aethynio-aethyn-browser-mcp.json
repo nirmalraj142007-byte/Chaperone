@@ -1,0 +1,243 @@
+{
+  "serverId": "aethynio__aethyn-browser-mcp__aethynio-aethyn-browser-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "aethyn_launch_browser",
+      "description": "Launch a local Chromium routed through a residential proxy exit in a chosen country (and city/state on the Elite tier). Returns a session_id the other aethyn_* tools use. Each session is one sticky identity — a pinned exit IP for the whole task.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "country": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 2,
+            "description": "ISO-3166-1 alpha-2 country code, e.g. 'jp', 'de', 'us'."
+          },
+          "city": {
+            "type": "string",
+            "description": "City for Elite-tier targeting, e.g. 'tokyo'. Requires tier:'elite'."
+          },
+          "state": {
+            "type": "string",
+            "description": "State/region for Elite-tier targeting. Requires tier:'elite'."
+          },
+          "tier": {
+            "type": "string",
+            "enum": [
+              "premium",
+              "elite"
+            ],
+            "description": "Proxy tier. Elite unlocks city/state targeting. Default 'premium'."
+          },
+          "session": {
+            "type": "string",
+            "description": "Your task id. Reuse the same value to pin the same exit IP. Letters/digits/underscore only. Omit to auto-generate."
+          },
+          "lifetime_min": {
+            "type": "integer",
+            "description": "Sticky lifetime in minutes (1–1440, default 10)."
+          },
+          "headless": {
+            "type": "boolean",
+            "description": "Run headless. Default true."
+          }
+        },
+        "required": [
+          "country"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "aethyn_navigate",
+      "description": "Navigate the session's browser to a URL and wait for load. Returns the HTTP status, final URL, and page title — read the page with aethyn_get_content to judge the response yourself. Public data only — respect robots.txt, rate limits, and each site's terms.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "required": [
+          "session_id",
+          "url"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "aethyn_get_content",
+      "description": "Return the current page's content cleaned for reading (markdown by default). Use after navigating to extract data.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "text",
+              "html",
+              "markdown"
+            ]
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "aethyn_snapshot",
+      "description": "Return a structured accessibility snapshot (roles, names, and [ref=..] handles) of the page. Pass those refs to aethyn_click / aethyn_type. No screenshots needed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "aethyn_click",
+      "description": "Click an element. Prefer a 'ref' from aethyn_snapshot (e.g. 'e12'); or pass a 'selector' (CSS, or Playwright role=/text= engine).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string"
+          },
+          "ref": {
+            "type": "string",
+            "description": "Element ref from aethyn_snapshot, e.g. 'e12'."
+          },
+          "selector": {
+            "type": "string",
+            "description": "Fallback selector (CSS, role=..., or text=...)."
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "aethyn_type",
+      "description": "Type text into an input. Prefer a 'ref' from aethyn_snapshot; or a 'selector'. Set submit:true to press Enter after.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "ref": {
+            "type": "string"
+          },
+          "selector": {
+            "type": "string"
+          },
+          "submit": {
+            "type": "boolean",
+            "description": "Press Enter after typing."
+          }
+        },
+        "required": [
+          "session_id",
+          "text"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "aethyn_check_exit_ip",
+      "description": "Fetch IP info THROUGH the session's proxy so you can verify the exit country/city actually landed before trusting the page. Returns ip, country, city, org/ASN, and a best-effort is_residential flag.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "aethyn_new_identity",
+      "description": "Rotate the session to a fresh residential exit (new IP, same country) and clear cookies. Use between independent tasks or after a soft-block.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "aethyn_close",
+      "description": "Close the session's browser context and free memory. Call this when a task is done.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "aethyn_list_countries",
+      "description": "List available exit countries (and Elite-tier cities where known). Discover geo options at runtime before launching.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "with_cities": {
+            "type": "boolean",
+            "description": "Only return countries that have known cities."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "[aethyn-browser-mcp] ready · provider=aethyn host=proxy.aethyn.io\n",
+  "durationMs": 26950,
+  "transport": "stdio"
+}

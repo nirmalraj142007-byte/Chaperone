@@ -1,0 +1,287 @@
+{
+  "serverId": "forcedreamai__forcedream-mcp__forcedreamai-forcedream-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "forcedream_verify_proof",
+      "description": "Independently verify that a ForceDream agent proof is authentic and untampered, using public-key cryptography. Provide a task_id (proof is fetched from the public endpoint) or a full proof object. Verification runs locally — ForceDream is never asked whether the proof is valid; the Ed25519 math decides. No account or key needed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "description": "The ForceDream task ID whose proof to verify (e.g. wtask_...)."
+          },
+          "proof": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Optional: a full proof object to verify directly (skips the fetch)."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "forcedream_search_agents",
+      "description": "Discover ForceDream agents and their honest, system-derived metrics (proof_count, success_rate). Optionally filter by capability (e.g. \"research:citation\") or free-text query. No key needed. Every agent listed has real cryptographic proofs you can verify with forcedream_verify_proof.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "capability": {
+            "type": "string",
+            "description": "Optional capability filter (e.g. \"research:citation\"). Omit to return all."
+          },
+          "query": {
+            "type": "string",
+            "description": "Optional free-text match against agent slug/name/capability."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "forcedream_invoke_agent",
+      "description": "Invoke a ForceDream agent to do real work. SPENDS your balance — requires FD_API_KEY in the server env. Returns the output, what you were charged, and a proof_id you can verify with forcedream_verify_proof. Handles honest declines (charged 0) and insufficient balance gracefully. Invokes once; never double-charges. Use this for any agent WITHOUT a dedicated tool. For security-scan-v1, data-extract-v1, or lead-score-v1 specifically, prefer forcedream_security_scan, forcedream_extract_data, or forcedream_score_lead instead -- same underlying agents, simpler input shape.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "agent_slug": {
+            "type": "string",
+            "description": "The agent to invoke, e.g. \"atlas-research-v1\". Use forcedream_search_agents to discover."
+          },
+          "task": {
+            "type": "string",
+            "description": "The task/query for the agent (Atlas: a research question)."
+          },
+          "max_wait_seconds": {
+            "type": "number",
+            "description": "Max seconds to poll (default 60). On timeout, returns task_id to poll later."
+          }
+        },
+        "required": [
+          "agent_slug",
+          "task"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "forcedream_security_scan",
+      "description": "Real security review for code: OWASP Top 10, injection, secrets, and dependency risks. Cross-references imported dependencies against OSV.dev for real CVEs, and scans for hardcoded secrets via GitGuardian's real-time detection (400+ types). SPENDS your balance — requires FD_API_KEY. Returns severity-graded findings, a risk score, what you were charged, and a proof_id.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "The code to scan for security vulnerabilities (OWASP Top 10, injection, secrets, dependency risks)."
+          },
+          "max_wait_seconds": {
+            "type": "number",
+            "description": "Max seconds to poll (default 60, agent typically takes ~45s). On timeout, returns task_id to poll later."
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "forcedream_extract_data",
+      "description": "Structured JSON extraction from unstructured text -- grounded in real, live verification, not just pattern-matching. Pulls requested fields, nulls anything missing, never guesses. Cross-references detected proper-noun entities (companies, people, places) against Wikidata to confirm which extracted values are independently verified vs. unconfirmed. SPENDS your balance — requires FD_API_KEY. Returns the extracted rows, what you were charged, and a proof_id.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The field names to extract, e.g. [\"company_name\", \"ceo_name\"]."
+          },
+          "document": {
+            "type": "string",
+            "description": "The unstructured document text to extract from."
+          },
+          "max_wait_seconds": {
+            "type": "number",
+            "description": "Max seconds to poll (default 60, agent typically takes ~30s). On timeout, returns task_id to poll later."
+          }
+        },
+        "required": [
+          "fields",
+          "document"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "forcedream_score_lead",
+      "description": "Score sales leads hot/warm/cold with weighted signals and a recommended next action — grounded in real, live verification. Cross-references detected companies, domains, and locations against 8 real sources: Wikidata, UK Companies House, EU VIES VAT validation, postcodes.io, Google PageSpeed Insights, OpenStreetMap Nominatim, DNS/MX records, and live HTTP checks. Global by design — 5 sources work for any lead worldwide; 3 regional ones (UK/EU) apply only when genuinely detected. SPENDS your balance — requires FD_API_KEY.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "lead_description": {
+            "type": "string",
+            "description": "Free-text description of the lead: company, contact, context, any details you have."
+          },
+          "max_wait_seconds": {
+            "type": "number",
+            "description": "Max seconds to poll (default 60, agent typically takes up to 45s given multi-source enrichment). On timeout, returns task_id to poll later."
+          }
+        },
+        "required": [
+          "lead_description"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "forcedream_generate_code",
+      "description": "Generates real, working code with real, live verification — not just an LLM's opinion. Every response is checked with 6 independent modules: syntax validation, dependency health, security scanning (OSV.dev + GitGuardian), complexity analysis, documentation coverage, and test detection. Returns a deterministic quality score, honest risk assessment, and deployment readiness. SPENDS your balance — requires FD_API_KEY.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "task_description": {
+            "type": "string",
+            "description": "What code to generate, e.g. \"Write a Python function to validate an email address, with tests.\""
+          },
+          "max_wait_seconds": {
+            "type": "number",
+            "description": "Max seconds to poll (default 60, agent typically takes up to 55s given generation plus 6-module verification). On timeout, returns task_id to poll later."
+          }
+        },
+        "required": [
+          "task_description"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "forcedream_generate_sentiment",
+      "description": "Real, 14-source sentiment analysis — not just an LLM's opinion. Combines lexicon-based sentiment (VADER, AFINN), a transformer model (HuggingFace DistilBERT), toxicity (Google Perspective), entity/location verification (Wikidata, OpenStreetMap), news and community alignment (GDELT, Hacker News), grammar, readability, and language detection into one deterministic overall sentiment, urgency, and business impact score. SPENDS your balance — requires FD_API_KEY.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "The customer feedback, review, or message to analyze."
+          },
+          "max_wait_seconds": {
+            "type": "number",
+            "description": "Max seconds to poll (default 60, agent typically takes up to 40s given 14-source verification plus LLM analysis). On timeout, returns task_id to poll later."
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "forcedream_check_fraud",
+      "description": "Real fraud risk assessment using AbuseIPDB IP reputation data. SPENDS your balance — requires FD_API_KEY. Returns risk_score, signals, and an allow/review/block verdict, WORM-sealed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ip": {
+            "type": "string",
+            "description": "Optional IP address to check against AbuseIPDB reputation data."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "forcedream_generate_embedding",
+      "description": "Real 1024-dim vector embedding via Voyage voyage-3.5, retrieval-optimised. SPENDS your balance (per-token charge) — requires FD_API_KEY. Returns the vector, dimensions, token count, WORM-sealed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "Text to embed (max ~32000 chars)."
+          },
+          "input_type": {
+            "type": "string",
+            "description": "Optional: \"query\" or \"document\"."
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "forcedream_market_quote",
+      "description": "Real, live market quote for a stock symbol via Alpha Vantage: price, change %, volume, day high/low, liquidity score. SPENDS your balance — requires FD_API_KEY. Hard-cached, WORM-sealed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "symbol": {
+            "type": "string",
+            "description": "Ticker symbol, e.g. \"AAPL\", \"IBM\"."
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "forcedream_search_reliability",
+      "description": "Real, system-measured reliability per agent: success_rate, avg_latency_ms, sample_size. No key needed. Same real data as forcedream_search_agents' health field, exposed standalone for reliability-focused queries.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "agent_slug": {
+            "type": "string",
+            "description": "Optional: filter to one agent slug. Omit to return all."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "forcedream_search_costs",
+      "description": "Real price_per_call_pence for every registered agent. No key needed. Useful for budget-aware agent selection before invoking.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "max_price_pence": {
+            "type": "number",
+            "description": "Optional: only return agents at or under this price."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "forcedream_search_providers",
+      "description": "Real, live inference-provider health: health_score, breaker_state, uptime_ratio, recent successes/failures. The same real intelligence the platform's own adaptive routing uses internally. No key needed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 17635,
+  "transport": "stdio"
+}

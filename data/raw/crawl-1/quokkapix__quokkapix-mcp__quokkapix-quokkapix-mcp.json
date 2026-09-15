@@ -1,0 +1,1678 @@
+{
+  "serverId": "quokkapix__quokkapix-mcp__quokkapix-quokkapix-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "list_recipes",
+      "description": "List official QuokkaPix local/browser image workflow recipes. Use this first when an agent needs a supported workflow for Shopify, Amazon, Google Merchant, WebP compression, metadata cleanup, social packs, watermarking, favicon generation or similar repeatable image tasks. Returns ids that can be passed to get_recipe or process_images.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_recipe",
+      "description": "Return one official QuokkaPix recipe by id. Use this before process_images when the agent needs exact applySettings, max file limits, payment expectations and expected result QA checks. This tool does not process images.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Recipe id from list_recipes, for example shopify_product_pack, amazon_product_batch or metadata_clean_batch."
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "validate_recipe",
+      "description": "Validate a custom QuokkaPix recipe before using process_images. Use this when an agent generated its own recipe JSON and needs to confirm that id, applySettings.mode, applySettings.tool, optional structured steps and requires.maxFiles are valid. This is a preflight check only and does not open a browser or process files.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "recipe": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Stable recipe id, for example shopify_product_pack."
+              },
+              "title": {
+                "description": "Human-readable recipe title.",
+                "type": "string"
+              },
+              "description": {
+                "description": "Short explanation of what the recipe prepares.",
+                "type": "string"
+              },
+              "applySettings": {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "description": "Use single for one image or batch for multiple images.",
+                    "type": "string",
+                    "enum": [
+                      "single",
+                      "batch"
+                    ]
+                  },
+                  "tool": {
+                    "description": "QuokkaPix editor tool id, such as resize, crop, rotate, convert, compress, metadata, background, watermark, effects, rename, pdf, favicon or constructor.",
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "steps": {
+                    "description": "Optional ordered scenario steps. Prefer [{ tool, settings }] for custom multi-step workflows.",
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "minLength": 1,
+                          "description": "Simple QuokkaPix tool id step, for example resize, background, compress or watermark."
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "tool": {
+                              "type": "string",
+                              "minLength": 1,
+                              "description": "QuokkaPix tool id for this scenario step, for example resize, background, compress or watermark."
+                            },
+                            "settings": {
+                              "description": "Settings for this step using the same keys accepted by window.QuokkaPixAgent.applySettings.",
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {}
+                            }
+                          },
+                          "required": [
+                            "tool"
+                          ],
+                          "description": "Structured scenario step with a tool id and per-step settings."
+                        }
+                      ],
+                      "description": "One step in a QuokkaPix scenario workflow."
+                    }
+                  }
+                },
+                "additionalProperties": {},
+                "description": "QuokkaPix settings applied before processing starts."
+              },
+              "requires": {
+                "description": "Recipe requirements such as maxFiles and payment policy.",
+                "type": "object",
+                "properties": {
+                  "maxFiles": {
+                    "description": "Maximum files allowed by this recipe.",
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 50
+                  },
+                  "payment": {
+                    "description": "Whether the recipe normally needs a paid batch/scenario unlock.",
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": {}
+              },
+              "expectedResult": {
+                "description": "Expected output and QA contract.",
+                "type": "object",
+                "properties": {
+                  "output": {
+                    "description": "Expected output type, for example zip, image, pdf or json.",
+                    "type": "string"
+                  },
+                  "qa": {
+                    "description": "Machine-readable QA checks for the result manifest.",
+                    "type": "object",
+                    "properties": {
+                      "expectedOutputKind": {
+                        "description": "Expected high-level output kind for QA checks.",
+                        "type": "string",
+                        "enum": [
+                          "single",
+                          "batch",
+                          "zip",
+                          "pdf",
+                          "metadata-report",
+                          "icon-pack"
+                        ]
+                      },
+                      "expectedFormat": {
+                        "description": "Required output format, for example webp, jpg, png, pdf or zip.",
+                        "type": "string"
+                      },
+                      "allowedFormats": {
+                        "description": "Allowed output formats for every manifest output entry.",
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "expectedMinOutputs": {
+                        "description": "Minimum number of output entries expected.",
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 9007199254740991
+                      },
+                      "expectedWidth": {
+                        "description": "Exact expected output width in pixels.",
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "expectedHeight": {
+                        "description": "Exact expected output height in pixels.",
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "maxWidth": {
+                        "description": "Maximum allowed output width in pixels.",
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "maxHeight": {
+                        "description": "Maximum allowed output height in pixels.",
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "minWidth": {
+                        "description": "Minimum recommended output width in pixels.",
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "minHeight": {
+                        "description": "Minimum recommended output height in pixels.",
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "requireSquare": {
+                        "description": "Require square output dimensions when true.",
+                        "type": "boolean"
+                      },
+                      "maxOutputKB": {
+                        "description": "Recommended maximum output size per non-archive file.",
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "marketplace": {
+                        "description": "Marketplace profile name used for human-readable QA context.",
+                        "type": "string",
+                        "enum": [
+                          "shopify",
+                          "amazon",
+                          "google-merchant"
+                        ]
+                      },
+                      "visualChecks": {
+                        "description": "Visual checks requested by a recipe. Current validator reports these as metadata-only limitations.",
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "additionalProperties": {}
+                  }
+                },
+                "additionalProperties": {}
+              }
+            },
+            "required": [
+              "id",
+              "applySettings"
+            ],
+            "additionalProperties": {},
+            "description": "Custom QuokkaPix recipe object. Use validate_recipe before process_images when generating this dynamically."
+          }
+        },
+        "required": [
+          "recipe"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "list_rule_profiles",
+      "description": "List sourced image requirement profiles for marketplaces and social placements. Use this before marketplace QA when an agent needs facts for Amazon, Shopify, Google Merchant, Etsy, eBay, Walmart, TikTok Shop, Mercado Libre, Temu, Shopee, Instagram, YouTube, LinkedIn, X, Pinterest, Facebook or TikTok. Secondary sources are marked explicitly.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_rule_profile",
+      "description": "Return one sourced platform image rule profile by id, including requirements, recommendations, source URL, source type and confidence. This tool does not process files and does not invent missing marketplace rules.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Rule profile id from list_rule_profiles, for example amazon.product.image or instagram.feed.photo."
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "validate_result_manifest",
+      "description": "Validate an existing quokkapix-result.json manifest against an official recipe or custom QA contract. Use this after process_images/process_with_settings or when inspecting a previous run. It checks status, file counts, formats, dimensions, size limits, ZIP entry metadata and marketplace QA metadata; it does not read image pixels or upload files.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "recipeId": {
+            "description": "Optional official recipe id whose expectedResult.qa contract should be used.",
+            "type": "string",
+            "minLength": 1
+          },
+          "recipe": {
+            "description": "Optional custom recipe with expectedResult.qa. Used instead of recipeId when provided.",
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Stable recipe id, for example shopify_product_pack."
+              },
+              "title": {
+                "description": "Human-readable recipe title.",
+                "type": "string"
+              },
+              "description": {
+                "description": "Short explanation of what the recipe prepares.",
+                "type": "string"
+              },
+              "applySettings": {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "description": "Use single for one image or batch for multiple images.",
+                    "type": "string",
+                    "enum": [
+                      "single",
+                      "batch"
+                    ]
+                  },
+                  "tool": {
+                    "description": "QuokkaPix editor tool id, such as resize, crop, rotate, convert, compress, metadata, background, watermark, effects, rename, pdf, favicon or constructor.",
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "steps": {
+                    "description": "Optional ordered scenario steps. Prefer [{ tool, settings }] for custom multi-step workflows.",
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "minLength": 1,
+                          "description": "Simple QuokkaPix tool id step, for example resize, background, compress or watermark."
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "tool": {
+                              "type": "string",
+                              "minLength": 1,
+                              "description": "QuokkaPix tool id for this scenario step, for example resize, background, compress or watermark."
+                            },
+                            "settings": {
+                              "description": "Settings for this step using the same keys accepted by window.QuokkaPixAgent.applySettings.",
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {}
+                            }
+                          },
+                          "required": [
+                            "tool"
+                          ],
+                          "description": "Structured scenario step with a tool id and per-step settings."
+                        }
+                      ],
+                      "description": "One step in a QuokkaPix scenario workflow."
+                    }
+                  }
+                },
+                "additionalProperties": {},
+                "description": "QuokkaPix settings applied before processing starts."
+              },
+              "requires": {
+                "description": "Recipe requirements such as maxFiles and payment policy.",
+                "type": "object",
+                "properties": {
+                  "maxFiles": {
+                    "description": "Maximum files allowed by this recipe.",
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 50
+                  },
+                  "payment": {
+                    "description": "Whether the recipe normally needs a paid batch/scenario unlock.",
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": {}
+              },
+              "expectedResult": {
+                "description": "Expected output and QA contract.",
+                "type": "object",
+                "properties": {
+                  "output": {
+                    "description": "Expected output type, for example zip, image, pdf or json.",
+                    "type": "string"
+                  },
+                  "qa": {
+                    "description": "Machine-readable QA checks for the result manifest.",
+                    "type": "object",
+                    "properties": {
+                      "expectedOutputKind": {
+                        "description": "Expected high-level output kind for QA checks.",
+                        "type": "string",
+                        "enum": [
+                          "single",
+                          "batch",
+                          "zip",
+                          "pdf",
+                          "metadata-report",
+                          "icon-pack"
+                        ]
+                      },
+                      "expectedFormat": {
+                        "description": "Required output format, for example webp, jpg, png, pdf or zip.",
+                        "type": "string"
+                      },
+                      "allowedFormats": {
+                        "description": "Allowed output formats for every manifest output entry.",
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "expectedMinOutputs": {
+                        "description": "Minimum number of output entries expected.",
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 9007199254740991
+                      },
+                      "expectedWidth": {
+                        "description": "Exact expected output width in pixels.",
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "expectedHeight": {
+                        "description": "Exact expected output height in pixels.",
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "maxWidth": {
+                        "description": "Maximum allowed output width in pixels.",
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "maxHeight": {
+                        "description": "Maximum allowed output height in pixels.",
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "minWidth": {
+                        "description": "Minimum recommended output width in pixels.",
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "minHeight": {
+                        "description": "Minimum recommended output height in pixels.",
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "requireSquare": {
+                        "description": "Require square output dimensions when true.",
+                        "type": "boolean"
+                      },
+                      "maxOutputKB": {
+                        "description": "Recommended maximum output size per non-archive file.",
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "marketplace": {
+                        "description": "Marketplace profile name used for human-readable QA context.",
+                        "type": "string",
+                        "enum": [
+                          "shopify",
+                          "amazon",
+                          "google-merchant"
+                        ]
+                      },
+                      "visualChecks": {
+                        "description": "Visual checks requested by a recipe. Current validator reports these as metadata-only limitations.",
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "additionalProperties": {}
+                  }
+                },
+                "additionalProperties": {}
+              }
+            },
+            "required": [
+              "id",
+              "applySettings"
+            ],
+            "additionalProperties": {}
+          },
+          "ruleProfileId": {
+            "description": "Optional sourced platform rule profile id. The profile is returned beside the QA report for agent audit trails.",
+            "type": "string",
+            "minLength": 1
+          },
+          "manifest": {
+            "type": "object",
+            "properties": {
+              "tool": {
+                "description": "QuokkaPix tool/workflow that produced the output.",
+                "type": "string"
+              },
+              "mode": {
+                "description": "Run mode reported by QuokkaPix.",
+                "type": "string",
+                "enum": [
+                  "single",
+                  "batch"
+                ]
+              },
+              "status": {
+                "description": "Terminal status, expected to be done for a successful run.",
+                "type": "string"
+              },
+              "success": {
+                "description": "Whether QuokkaPix considered the run successful.",
+                "type": "boolean"
+              },
+              "source": {
+                "description": "Source file summary.",
+                "type": "object",
+                "properties": {
+                  "count": {
+                    "description": "Number of source files.",
+                    "type": "number"
+                  },
+                  "totalBytes": {
+                    "description": "Total input bytes when available.",
+                    "type": "number"
+                  }
+                },
+                "additionalProperties": {}
+              },
+              "outputs": {
+                "description": "Detailed output entries.",
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "sourceName": {
+                      "description": "Original input file name when available.",
+                      "type": "string"
+                    },
+                    "outputName": {
+                      "description": "Output file or ZIP entry name.",
+                      "type": "string"
+                    },
+                    "sourceWidth": {
+                      "description": "Original image width in pixels.",
+                      "type": "number"
+                    },
+                    "sourceHeight": {
+                      "description": "Original image height in pixels.",
+                      "type": "number"
+                    },
+                    "outputWidth": {
+                      "description": "Output image width in pixels.",
+                      "type": "number"
+                    },
+                    "outputHeight": {
+                      "description": "Output image height in pixels.",
+                      "type": "number"
+                    },
+                    "format": {
+                      "description": "Output format such as webp, jpg, png, pdf or zip.",
+                      "type": "string"
+                    },
+                    "sizeBytes": {
+                      "description": "Output byte size when available.",
+                      "type": "number"
+                    },
+                    "warnings": {
+                      "description": "Warnings for this output entry.",
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "additionalProperties": {},
+                  "description": "One output file or ZIP entry from quokkapix-result.json."
+                }
+              },
+              "processingMs": {
+                "description": "Processing time in milliseconds when available.",
+                "type": "number"
+              },
+              "warnings": {
+                "description": "Run-level warnings.",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "errorCode": {
+                "description": "Stable error code when the run failed or was cancelled.",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "additionalProperties": {},
+            "description": "QuokkaPix result manifest returned by getResultManifest() or saved as quokkapix-result.json."
+          }
+        },
+        "required": [
+          "manifest"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "process_images",
+      "description": "Process local image files through the QuokkaPix browser app using an official recipeId or a full custom recipe. Source files stay local. Without unlockToken, the browser returns an exact quote after ZIP expansion/PDF inspection and before paid processing. Retry the unchanged call with the quoted product token.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "recipeId": {
+            "description": "Official recipe id from list_recipes. Provide either recipeId or recipe.",
+            "type": "string",
+            "minLength": 1
+          },
+          "recipe": {
+            "description": "Custom recipe object. Provide either recipeId or recipe.",
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Stable recipe id, for example shopify_product_pack."
+              },
+              "title": {
+                "description": "Human-readable recipe title.",
+                "type": "string"
+              },
+              "description": {
+                "description": "Short explanation of what the recipe prepares.",
+                "type": "string"
+              },
+              "applySettings": {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "description": "Use single for one image or batch for multiple images.",
+                    "type": "string",
+                    "enum": [
+                      "single",
+                      "batch"
+                    ]
+                  },
+                  "tool": {
+                    "description": "QuokkaPix editor tool id, such as resize, crop, rotate, convert, compress, metadata, background, watermark, effects, rename, pdf, favicon or constructor.",
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "steps": {
+                    "description": "Optional ordered scenario steps. Prefer [{ tool, settings }] for custom multi-step workflows.",
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "minLength": 1,
+                          "description": "Simple QuokkaPix tool id step, for example resize, background, compress or watermark."
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "tool": {
+                              "type": "string",
+                              "minLength": 1,
+                              "description": "QuokkaPix tool id for this scenario step, for example resize, background, compress or watermark."
+                            },
+                            "settings": {
+                              "description": "Settings for this step using the same keys accepted by window.QuokkaPixAgent.applySettings.",
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {}
+                            }
+                          },
+                          "required": [
+                            "tool"
+                          ],
+                          "description": "Structured scenario step with a tool id and per-step settings."
+                        }
+                      ],
+                      "description": "One step in a QuokkaPix scenario workflow."
+                    }
+                  }
+                },
+                "additionalProperties": {},
+                "description": "QuokkaPix settings applied before processing starts."
+              },
+              "requires": {
+                "description": "Recipe requirements such as maxFiles and payment policy.",
+                "type": "object",
+                "properties": {
+                  "maxFiles": {
+                    "description": "Maximum files allowed by this recipe.",
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 50
+                  },
+                  "payment": {
+                    "description": "Whether the recipe normally needs a paid batch/scenario unlock.",
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": {}
+              },
+              "expectedResult": {
+                "description": "Expected output and QA contract.",
+                "type": "object",
+                "properties": {
+                  "output": {
+                    "description": "Expected output type, for example zip, image, pdf or json.",
+                    "type": "string"
+                  },
+                  "qa": {
+                    "description": "Machine-readable QA checks for the result manifest.",
+                    "type": "object",
+                    "properties": {
+                      "expectedOutputKind": {
+                        "description": "Expected high-level output kind for QA checks.",
+                        "type": "string",
+                        "enum": [
+                          "single",
+                          "batch",
+                          "zip",
+                          "pdf",
+                          "metadata-report",
+                          "icon-pack"
+                        ]
+                      },
+                      "expectedFormat": {
+                        "description": "Required output format, for example webp, jpg, png, pdf or zip.",
+                        "type": "string"
+                      },
+                      "allowedFormats": {
+                        "description": "Allowed output formats for every manifest output entry.",
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "expectedMinOutputs": {
+                        "description": "Minimum number of output entries expected.",
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 9007199254740991
+                      },
+                      "expectedWidth": {
+                        "description": "Exact expected output width in pixels.",
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "expectedHeight": {
+                        "description": "Exact expected output height in pixels.",
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "maxWidth": {
+                        "description": "Maximum allowed output width in pixels.",
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "maxHeight": {
+                        "description": "Maximum allowed output height in pixels.",
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "minWidth": {
+                        "description": "Minimum recommended output width in pixels.",
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "minHeight": {
+                        "description": "Minimum recommended output height in pixels.",
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "requireSquare": {
+                        "description": "Require square output dimensions when true.",
+                        "type": "boolean"
+                      },
+                      "maxOutputKB": {
+                        "description": "Recommended maximum output size per non-archive file.",
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "marketplace": {
+                        "description": "Marketplace profile name used for human-readable QA context.",
+                        "type": "string",
+                        "enum": [
+                          "shopify",
+                          "amazon",
+                          "google-merchant"
+                        ]
+                      },
+                      "visualChecks": {
+                        "description": "Visual checks requested by a recipe. Current validator reports these as metadata-only limitations.",
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "additionalProperties": {}
+                  }
+                },
+                "additionalProperties": {}
+              }
+            },
+            "required": [
+              "id",
+              "applySettings"
+            ],
+            "additionalProperties": {}
+          },
+          "inputFiles": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Absolute or client-relative local file path readable by the MCP process. Do not pass remote URLs here."
+            },
+            "description": "Local Image, supported ZIP or PDF paths uploaded through the browser file input. Actual expanded files/pages determine the quote."
+          },
+          "watermarkLogoFile": {
+            "description": "Optional local logo/image file for QuokkaPix logo watermark workflows.",
+            "type": "string",
+            "minLength": 1
+          },
+          "backgroundImageFile": {
+            "description": "Optional local image file for QuokkaPix background replacement workflows.",
+            "type": "string",
+            "minLength": 1
+          },
+          "outputDir": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Local directory where the adapter writes the downloaded output and quokkapix-result.json."
+          },
+          "appUrl": {
+            "description": "Optional QuokkaPix app URL. Defaults to https://quokkapix.com/#agent=1. For safety, only quokkapix.com, localhost and 127.0.0.1 are accepted unless QUOKKAPIX_ALLOW_CUSTOM_APP_URL=1 is set.",
+            "type": "string",
+            "format": "uri"
+          },
+          "unlockToken": {
+            "description": "Optional product-specific x402 unlock token. Omit it to receive the browser-authoritative quote before paid processing.",
+            "type": "string"
+          },
+          "headless": {
+            "description": "Run Chromium headless. Defaults to true unless debugging.",
+            "type": "boolean"
+          },
+          "timeoutMs": {
+            "description": "Maximum processing timeout in milliseconds. Use a larger value for background AI or large batches.",
+            "type": "integer",
+            "minimum": 10000,
+            "maximum": 600000
+          }
+        },
+        "required": [
+          "inputFiles",
+          "outputDir"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "process_with_settings",
+      "description": "Process local image files with a direct window.QuokkaPixAgent.applySettings payload instead of an official recipe. Use this for custom resize/crop/convert/compress/background/watermark/effects/rename/PDF/favicon/scenario workflows. For multi-step scenarios, prefer settings.steps as [{ tool, settings }]. The adapter downloads the output, writes quokkapix-result.json and returns QA results.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "settings": {
+            "type": "object",
+            "properties": {
+              "mode": {
+                "description": "Use single for one image or batch for multiple images.",
+                "type": "string",
+                "enum": [
+                  "single",
+                  "batch"
+                ]
+              },
+              "tool": {
+                "description": "QuokkaPix editor tool id, such as resize, crop, rotate, convert, compress, metadata, background, watermark, effects, rename, pdf, favicon or constructor.",
+                "type": "string",
+                "minLength": 1
+              },
+              "steps": {
+                "description": "Optional ordered scenario steps. Prefer [{ tool, settings }] for custom multi-step workflows.",
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Simple QuokkaPix tool id step, for example resize, background, compress or watermark."
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "tool": {
+                          "type": "string",
+                          "minLength": 1,
+                          "description": "QuokkaPix tool id for this scenario step, for example resize, background, compress or watermark."
+                        },
+                        "settings": {
+                          "description": "Settings for this step using the same keys accepted by window.QuokkaPixAgent.applySettings.",
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "tool"
+                      ],
+                      "description": "Structured scenario step with a tool id and per-step settings."
+                    }
+                  ],
+                  "description": "One step in a QuokkaPix scenario workflow."
+                }
+              }
+            },
+            "additionalProperties": {},
+            "description": "Payload accepted by window.QuokkaPixAgent.applySettings. Extra editor-specific keys are allowed."
+          },
+          "settingsId": {
+            "description": "Optional id/name for this generated settings workflow, used in returned metadata and QA profile.",
+            "type": "string",
+            "minLength": 1
+          },
+          "expectedResultQa": {
+            "type": "object",
+            "properties": {
+              "expectedOutputKind": {
+                "description": "Expected high-level output kind for QA checks.",
+                "type": "string",
+                "enum": [
+                  "single",
+                  "batch",
+                  "zip",
+                  "pdf",
+                  "metadata-report",
+                  "icon-pack"
+                ]
+              },
+              "expectedFormat": {
+                "description": "Required output format, for example webp, jpg, png, pdf or zip.",
+                "type": "string"
+              },
+              "allowedFormats": {
+                "description": "Allowed output formats for every manifest output entry.",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "expectedMinOutputs": {
+                "description": "Minimum number of output entries expected.",
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              },
+              "expectedWidth": {
+                "description": "Exact expected output width in pixels.",
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "expectedHeight": {
+                "description": "Exact expected output height in pixels.",
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "maxWidth": {
+                "description": "Maximum allowed output width in pixels.",
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "maxHeight": {
+                "description": "Maximum allowed output height in pixels.",
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "minWidth": {
+                "description": "Minimum recommended output width in pixels.",
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "minHeight": {
+                "description": "Minimum recommended output height in pixels.",
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "requireSquare": {
+                "description": "Require square output dimensions when true.",
+                "type": "boolean"
+              },
+              "maxOutputKB": {
+                "description": "Recommended maximum output size per non-archive file.",
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "marketplace": {
+                "description": "Marketplace profile name used for human-readable QA context.",
+                "type": "string",
+                "enum": [
+                  "shopify",
+                  "amazon",
+                  "google-merchant"
+                ]
+              },
+              "visualChecks": {
+                "description": "Visual checks requested by a recipe. Current validator reports these as metadata-only limitations.",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "additionalProperties": {},
+            "description": "Optional QA contract used to validate quokkapix-result.json after processing."
+          },
+          "maxFiles": {
+            "description": "Maximum allowed input files for this direct settings run. Defaults to the selected files count.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          },
+          "inputFiles": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Absolute or client-relative local file path readable by the MCP process. Do not pass remote URLs here."
+            },
+            "description": "Local source image files to upload through the browser file input."
+          },
+          "watermarkLogoFile": {
+            "description": "Optional local logo/image file for logo watermark settings.",
+            "type": "string",
+            "minLength": 1
+          },
+          "backgroundImageFile": {
+            "description": "Optional local image file for background replacement settings.",
+            "type": "string",
+            "minLength": 1
+          },
+          "outputDir": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Local directory where the adapter writes the downloaded output and quokkapix-result.json."
+          },
+          "appUrl": {
+            "description": "Optional QuokkaPix app URL. Defaults to https://quokkapix.com/#agent=1. For safety, only quokkapix.com, localhost and 127.0.0.1 are accepted unless QUOKKAPIX_ALLOW_CUSTOM_APP_URL=1 is set.",
+            "type": "string",
+            "format": "uri"
+          },
+          "unlockToken": {
+            "description": "Optional product-specific x402 unlock token. Omit it to receive the exact local quote first.",
+            "type": "string"
+          },
+          "headless": {
+            "description": "Run Chromium headless. Defaults to true unless debugging.",
+            "type": "boolean"
+          },
+          "timeoutMs": {
+            "description": "Maximum processing timeout in milliseconds.",
+            "type": "integer",
+            "minimum": 10000,
+            "maximum": 600000
+          }
+        },
+        "required": [
+          "settings",
+          "inputFiles",
+          "outputDir"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "list_video_recipes",
+      "description": "List official browser-local recipes for cutting, crop/resize, conversion, compression, audio, transcription and subtitles.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_video_recipe",
+      "description": "Return one official Video recipe, its browser settings and expected-result QA.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Video recipe id from list_video_recipes."
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "validate_video_recipe",
+      "description": "Validate a custom Video recipe without opening a browser or processing media.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "recipe": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "settings": {
+                "type": "object",
+                "properties": {
+                  "tool": {
+                    "type": "string",
+                    "enum": [
+                      "cut",
+                      "crop",
+                      "convert",
+                      "compress",
+                      "audio",
+                      "transcribe"
+                    ]
+                  }
+                },
+                "required": [
+                  "tool"
+                ],
+                "additionalProperties": {},
+                "description": "Payload accepted by window.QuokkaPixVideoAgent.applySettings."
+              },
+              "expectedResult": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string"
+                  },
+                  "localOnly": {
+                    "type": "boolean"
+                  },
+                  "ruleProfile": {
+                    "type": "string"
+                  },
+                  "qa": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {}
+                  }
+                },
+                "additionalProperties": {}
+              }
+            },
+            "required": [
+              "id",
+              "settings"
+            ],
+            "additionalProperties": {},
+            "description": "QuokkaPix Video recipe with settings and optional expected-result QA."
+          }
+        },
+        "required": [
+          "recipe"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "list_video_rule_profiles",
+      "description": "List official-source profiles for YouTube, TikTok Ads and Meta Reels video workflows.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_video_rule_profile",
+      "description": "Return one Video profile with separate requirements, recommendations and source URL.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Video rule profile id from list_video_rule_profiles."
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "validate_video_result_manifest",
+      "description": "Validate quokkapix-video-result.json against its browser QA and an optional Video recipe.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "manifest": {
+            "type": "object",
+            "properties": {
+              "tool": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "success": {
+                "type": "boolean"
+              },
+              "localOnly": {
+                "type": "boolean"
+              },
+              "source": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "sizeBytes": {
+                        "type": "number"
+                      },
+                      "duration": {
+                        "type": "number"
+                      },
+                      "width": {
+                        "type": "number"
+                      },
+                      "height": {
+                        "type": "number"
+                      }
+                    },
+                    "additionalProperties": {}
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "outputs": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "format": {
+                      "type": "string"
+                    },
+                    "mimeType": {
+                      "type": "string"
+                    },
+                    "sizeBytes": {
+                      "type": "number"
+                    },
+                    "width": {
+                      "type": "number"
+                    },
+                    "height": {
+                      "type": "number"
+                    },
+                    "duration": {
+                      "type": "number"
+                    }
+                  },
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "required": [
+              "status"
+            ],
+            "additionalProperties": {},
+            "description": "Video result returned by QuokkaPixVideoAgent or saved as quokkapix-video-result.json."
+          },
+          "recipeId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "recipe": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "settings": {
+                "type": "object",
+                "properties": {
+                  "tool": {
+                    "type": "string",
+                    "enum": [
+                      "cut",
+                      "crop",
+                      "convert",
+                      "compress",
+                      "audio",
+                      "transcribe"
+                    ]
+                  }
+                },
+                "required": [
+                  "tool"
+                ],
+                "additionalProperties": {},
+                "description": "Payload accepted by window.QuokkaPixVideoAgent.applySettings."
+              },
+              "expectedResult": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string"
+                  },
+                  "localOnly": {
+                    "type": "boolean"
+                  },
+                  "ruleProfile": {
+                    "type": "string"
+                  },
+                  "qa": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {}
+                  }
+                },
+                "additionalProperties": {}
+              }
+            },
+            "required": [
+              "id",
+              "settings"
+            ],
+            "additionalProperties": {},
+            "description": "QuokkaPix Video recipe with settings and optional expected-result QA."
+          }
+        },
+        "required": [
+          "manifest"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "process_video",
+      "description": "Open Video in local Chromium and keep media local. Without unlockToken, return an exact duration/transcription quote before paid work; retry the same call with the product-specific token.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "recipeId": {
+            "description": "Official id from list_video_recipes. Provide recipeId or recipe.",
+            "type": "string",
+            "minLength": 1
+          },
+          "recipe": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "settings": {
+                "type": "object",
+                "properties": {
+                  "tool": {
+                    "type": "string",
+                    "enum": [
+                      "cut",
+                      "crop",
+                      "convert",
+                      "compress",
+                      "audio",
+                      "transcribe"
+                    ]
+                  }
+                },
+                "required": [
+                  "tool"
+                ],
+                "additionalProperties": {},
+                "description": "Payload accepted by window.QuokkaPixVideoAgent.applySettings."
+              },
+              "expectedResult": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string"
+                  },
+                  "localOnly": {
+                    "type": "boolean"
+                  },
+                  "ruleProfile": {
+                    "type": "string"
+                  },
+                  "qa": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {}
+                  }
+                },
+                "additionalProperties": {}
+              }
+            },
+            "required": [
+              "id",
+              "settings"
+            ],
+            "additionalProperties": {},
+            "description": "QuokkaPix Video recipe with settings and optional expected-result QA."
+          },
+          "inputFile": {
+            "type": "string",
+            "minLength": 1,
+            "description": "One local video path uploaded through the browser file input."
+          },
+          "musicFile": {
+            "description": "Optional local audio/media path for mix or replace-audio recipes.",
+            "type": "string",
+            "minLength": 1
+          },
+          "outputDir": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Local directory where the adapter writes the downloaded output and quokkapix-result.json."
+          },
+          "appUrl": {
+            "description": "Optional Video app URL. Defaults to https://video.quokkapix.com/#agent=1.",
+            "type": "string",
+            "format": "uri"
+          },
+          "headless": {
+            "type": "boolean"
+          },
+          "timeoutMs": {
+            "type": "integer",
+            "minimum": 10000,
+            "maximum": 3600000
+          },
+          "unlockToken": {
+            "description": "Product-specific x402 unlock token. Omit it to receive a local duration-based quote before processing.",
+            "type": "string",
+            "minLength": 16
+          }
+        },
+        "required": [
+          "inputFile",
+          "outputDir"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "process_video_with_settings",
+      "description": "Run one local video through window.QuokkaPixVideoAgent.applySettings-compatible settings, save the media or transcript output and write quokkapix-video-result.json.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "settings": {
+            "type": "object",
+            "properties": {
+              "tool": {
+                "type": "string",
+                "enum": [
+                  "cut",
+                  "crop",
+                  "convert",
+                  "compress",
+                  "audio",
+                  "transcribe"
+                ]
+              }
+            },
+            "required": [
+              "tool"
+            ],
+            "additionalProperties": {},
+            "description": "Payload accepted by window.QuokkaPixVideoAgent.applySettings."
+          },
+          "settingsId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "inputFile": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Absolute or client-relative local file path readable by the MCP process. Do not pass remote URLs here."
+          },
+          "musicFile": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Absolute or client-relative local file path readable by the MCP process. Do not pass remote URLs here."
+          },
+          "outputDir": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Local directory where the adapter writes the downloaded output and quokkapix-result.json."
+          },
+          "appUrl": {
+            "description": "Optional Video app URL. Defaults to https://video.quokkapix.com/#agent=1.",
+            "type": "string",
+            "format": "uri"
+          },
+          "headless": {
+            "type": "boolean"
+          },
+          "timeoutMs": {
+            "type": "integer",
+            "minimum": 10000,
+            "maximum": 3600000
+          },
+          "unlockToken": {
+            "description": "Product-specific x402 unlock token. Omit it to receive a local duration-based quote before processing.",
+            "type": "string",
+            "minLength": 16
+          }
+        },
+        "required": [
+          "settings",
+          "inputFile",
+          "outputDir"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_payment_options",
+      "description": "Fetch live QuokkaPix Image and Video payment tiers, free limits and product-specific x402 endpoints. This tool does not sign, submit or consume a payment.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "baseUrl": {
+            "description": "Optional QuokkaPix site base URL. Defaults to https://quokkapix.com.",
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "explain_payment_flow",
+      "description": "Explain the unified Image/PDF/Video x402 workflow: inspect locally, quote exactly, pay the product endpoint, optionally verify, then retry unchanged with unlockToken. This adapter can use a token but cannot sign x402 payments itself.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "baseUrl": {
+            "description": "Optional QuokkaPix site base URL. Defaults to https://quokkapix.com.",
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "verify_unlock_token",
+      "description": "Safely preflight a QuokkaPix paid agent unlock token without consuming it. The browser consumes the one-time unlock only when the paid batch actually starts. If scope, price or currency are omitted, the tool reads live payment options first.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "minLength": 16,
+            "description": "Unlock token returned by the paid x402 unlock endpoint."
+          },
+          "baseUrl": {
+            "description": "Optional QuokkaPix site base URL. Defaults to https://quokkapix.com.",
+            "type": "string",
+            "format": "uri"
+          },
+          "scope": {
+            "description": "Expected QuokkaPix scope. Defaults to live payment options.",
+            "type": "string"
+          },
+          "price": {
+            "description": "Expected price string. Defaults to live payment options.",
+            "type": "string"
+          },
+          "currency": {
+            "description": "Expected currency. Defaults to live payment options.",
+            "type": "string"
+          },
+          "mode": {
+            "description": "Run mode to verify against the unlock token.",
+            "type": "string",
+            "enum": [
+              "single",
+              "batch",
+              "scenario"
+            ]
+          },
+          "files": {
+            "description": "Number of files intended for the paid run.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          },
+          "productId": {
+            "type": "string"
+          },
+          "surface": {
+            "type": "string",
+            "enum": [
+              "image",
+              "video"
+            ]
+          },
+          "pdfPages": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 300
+          },
+          "durationSeconds": {
+            "type": "number",
+            "minimum": 0
+          },
+          "scenario": {
+            "type": "boolean"
+          },
+          "transcribe": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 33975,
+  "transport": "stdio"
+}

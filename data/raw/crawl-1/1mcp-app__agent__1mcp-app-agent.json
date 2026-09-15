@@ -1,0 +1,8 @@
+{
+  "serverId": "1mcp-app__agent__1mcp-app-agent",
+  "status": "FAILED_TIMEOUT",
+  "tools": [],
+  "stderrTail": "npm warn deprecated @modelcontextprotocol/server-legacy@2.0.0: This package is a frozen copy of v1's SSE transport and OAuth Authorization Server helpers for migration purposes only. Use StreamableHTTP from @modelcontextprotocol/server and a dedicated OAuth server in production. Will not receive new features.\n",
+  "durationMs": 120226,
+  "transport": "stdio"
+}

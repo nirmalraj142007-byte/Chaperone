@@ -1,0 +1,5187 @@
+{
+  "serverId": "mathiaspaulenko__wavexis-mcp__mathiaspaulenko-wavexis-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "wavexis_session_open",
+      "description": "Launch a persistent browser session for multi-step workflows.\n\n        Call once at the start of a task and reuse the returned session_id for\n        all subsequent calls; use wavexis_navigate with session_id omitted for\n        one-off page fetches instead.\n\n        Side effects: Launches a browser process (or connects to an existing\n        one) and allocates server-side session state; may open network\n        connections to remote/cloud browsers.\n        Returns: JSON string with keys: 'status' ('ok'/'error'),\n        'session_id' (str), 'backend' (str).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/SessionOpenInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "SessionOpenInput": {
+            "description": "Input for opening a new browser session.",
+            "properties": {
+              "backend": {
+                "default": "cdp",
+                "description": "Backend: 'cdp', 'bidi', or 'auto'",
+                "enum": [
+                  "cdp",
+                  "bidi",
+                  "auto"
+                ],
+                "title": "Backend",
+                "type": "string"
+              },
+              "headless": {
+                "default": true,
+                "description": "Run browser in headless mode",
+                "title": "Headless",
+                "type": "boolean"
+              },
+              "width": {
+                "default": 1280,
+                "description": "Viewport width in pixels",
+                "maximum": 3840,
+                "minimum": 320,
+                "title": "Width",
+                "type": "integer"
+              },
+              "height": {
+                "default": 800,
+                "description": "Viewport height in pixels",
+                "maximum": 2160,
+                "minimum": 240,
+                "title": "Height",
+                "type": "integer"
+              },
+              "user_agent": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Custom User-Agent string",
+                "title": "User Agent"
+              },
+              "extra_headers": {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "description": "Extra HTTP headers to send",
+                "title": "Extra Headers",
+                "type": "object"
+              },
+              "proxy": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Proxy server URL (e.g. http://host:port)",
+                "title": "Proxy"
+              },
+              "timeout": {
+                "default": 30000,
+                "description": "Operation timeout in ms",
+                "maximum": 300000,
+                "minimum": 1000,
+                "title": "Timeout",
+                "type": "integer"
+              },
+              "user_data_dir": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Persistent Chrome user data directory",
+                "title": "User Data Dir"
+              },
+              "browser_url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "WebSocket URL of an existing browser (e.g. ws://localhost:9222)",
+                "title": "Browser Url"
+              },
+              "remote_url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Cloud browser WebSocket URL",
+                "title": "Remote Url"
+              },
+              "stealth": {
+                "default": false,
+                "description": "Enable anti-bot stealth mode",
+                "title": "Stealth",
+                "type": "boolean"
+              },
+              "browser": {
+                "default": "chrome",
+                "description": "Browser engine for BiDi backend: 'chrome' (chromedriver) or 'firefox' (geckodriver). Only used when backend='bidi'.",
+                "enum": [
+                  "chrome",
+                  "firefox"
+                ],
+                "title": "Browser",
+                "type": "string"
+              },
+              "connect_existing": {
+                "default": false,
+                "description": "Launch Chrome with --remote-debugging-port and connect to it. Useful for reusing an existing browser profile with logged-in sessions. The browser is launched headed (headless is ignored).",
+                "title": "Connect Existing",
+                "type": "boolean"
+              }
+            },
+            "title": "SessionOpenInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_session_openArguments"
+      }
+    },
+    {
+      "name": "wavexis_session_close",
+      "description": "Close a browser session and release all associated resources.\n\n        Call when the session is no longer needed to free memory and browser\n        processes; use wavexis_close_tab to close individual tabs instead.\n\n        Side effects: Terminates the browser process (or disconnects from a\n        remote one) and frees session state. Destructive — all unsaved page\n        state is lost.\n        Returns: JSON string with keys: 'status' ('ok'/'error'),\n        'session_id' (str).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/SessionCloseInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "SessionCloseInput": {
+            "description": "Input for closing an existing browser session.",
+            "properties": {
+              "session_id": {
+                "description": "Session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "session_id"
+            ],
+            "title": "SessionCloseInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_session_closeArguments"
+      }
+    },
+    {
+      "name": "wavexis_session_info",
+      "description": "Query metadata and current URL of an active browser session.\n\n        Use to inspect session health or retrieve the current page URL; use\n        wavexis_list_tabs for tab-level details instead.\n\n        Side effects: None — read-only; queries in-memory session state and\n        the browser's current URL.\n        Returns: JSON string with keys: 'status' ('ok'/'error'),\n        'session_id' (str), 'backend' (str), 'created_at' (str),\n        'current_url' (str).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/SessionInfoInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "SessionInfoInput": {
+            "description": "Input for querying session metadata.",
+            "properties": {
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "session_id"
+            ],
+            "title": "SessionInfoInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_session_infoArguments"
+      }
+    },
+    {
+      "name": "wavexis_navigate",
+      "description": "Navigate the browser to a URL with a configurable wait strategy.\n\n        Use for direct URL navigation; use wavexis_back/wavexis_forward for\n        history navigation, or wavexis_act for natural-language interaction\n        instead.\n\n        Side effects: Issues a network request to the target URL and replaces\n        the current page content; may auto-create a stateless session if\n        session_id is omitted.\n        Returns: JSON string with keys: 'status' ('ok'/'error'), 'url' (str).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/NavigateInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "NavigateInput": {
+            "description": "Input for navigating to a URL.",
+            "properties": {
+              "url": {
+                "description": "URL to navigate to",
+                "title": "Url",
+                "type": "string"
+              },
+              "session_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Active session ID. If omitted, a stateless session is created for this call.",
+                "title": "Session Id"
+              },
+              "wait_strategy": {
+                "default": "load",
+                "description": "Wait strategy: load, domcontentloaded, networkidle, selector, url, none",
+                "enum": [
+                  "load",
+                  "domcontentloaded",
+                  "networkidle",
+                  "selector",
+                  "url",
+                  "none"
+                ],
+                "title": "Wait Strategy",
+                "type": "string"
+              },
+              "wait_selector": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "CSS selector to wait for (used when wait_strategy='selector')",
+                "title": "Wait Selector"
+              },
+              "wait_url_pattern": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "URL pattern to wait for (used when wait_strategy='url')",
+                "title": "Wait Url Pattern"
+              },
+              "wait_timeout": {
+                "default": 30000,
+                "description": "Timeout in ms for wait conditions",
+                "maximum": 300000,
+                "minimum": 1000,
+                "title": "Wait Timeout",
+                "type": "integer"
+              },
+              "headless": {
+                "default": true,
+                "description": "Run browser in headless mode",
+                "title": "Headless",
+                "type": "boolean"
+              },
+              "backend": {
+                "default": "cdp",
+                "description": "Backend: 'cdp', 'bidi', or 'auto'",
+                "enum": [
+                  "cdp",
+                  "bidi",
+                  "auto"
+                ],
+                "title": "Backend",
+                "type": "string"
+              }
+            },
+            "required": [
+              "url"
+            ],
+            "title": "NavigateInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_navigateArguments"
+      }
+    },
+    {
+      "name": "wavexis_back",
+      "description": "Navigate backward one step in the browser history.\n\n        Use for history navigation instead of wavexis_navigate when the target\n        is the previous page.\n\n        Side effects: Changes the active page to the previous history entry;\n        may trigger network requests if that page was not cached.\n        Returns: JSON string with keys: 'status' ('ok'/'error').\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/SimpleNavInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "SimpleNavInput": {
+            "description": "Input for session-only navigation actions (back, forward, stop).",
+            "properties": {
+              "session_id": {
+                "description": "Active session ID",
+                "title": "Session Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "session_id"
+            ],
+            "title": "SimpleNavInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_backArguments"
+      }
+    },
+    {
+      "name": "wavexis_forward",
+      "description": "Navigate forward one step in the browser history.\n\n        Use after wavexis_back to restore a page; use wavexis_navigate for\n        direct URL navigation instead.\n\n        Side effects: Changes the active page to the next history entry; may\n        trigger network requests if that page was not cached.\n        Returns: JSON string with keys: 'status' ('ok'/'error').\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/SimpleNavInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "SimpleNavInput": {
+            "description": "Input for session-only navigation actions (back, forward, stop).",
+            "properties": {
+              "session_id": {
+                "description": "Active session ID",
+                "title": "Session Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "session_id"
+            ],
+            "title": "SimpleNavInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_forwardArguments"
+      }
+    },
+    {
+      "name": "wavexis_reload",
+      "description": "Reload the current page, optionally bypassing the cache.\n\n        Use to refresh stale content or retry a failed load; use\n        wavexis_navigate to go to a different URL instead.\n\n        Side effects: Re-issues network requests for the current page and its\n        resources; discards in-memory page state.\n        Returns: JSON string with keys: 'status' ('ok'/'error').\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/ReloadInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "ReloadInput": {
+            "description": "Input for reloading the current page.",
+            "properties": {
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              },
+              "ignore_cache": {
+                "default": false,
+                "description": "Bypass cache on reload",
+                "title": "Ignore Cache",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "session_id"
+            ],
+            "title": "ReloadInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_reloadArguments"
+      }
+    },
+    {
+      "name": "wavexis_stop",
+      "description": "Stop all pending navigations and resource loads in the session.\n\n        Use when a page load is hanging or no longer needed; use wavexis_wait\n        to wait for a load to complete instead.\n\n        Side effects: Aborts in-flight network requests and pending\n        navigations; the page is left in its current partial state.\n        Returns: JSON string with keys: 'status' ('ok'/'error').\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/SimpleNavInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "SimpleNavInput": {
+            "description": "Input for session-only navigation actions (back, forward, stop).",
+            "properties": {
+              "session_id": {
+                "description": "Active session ID",
+                "title": "Session Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "session_id"
+            ],
+            "title": "SimpleNavInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_stopArguments"
+      }
+    },
+    {
+      "name": "wavexis_wait",
+      "description": "Block until a page condition (load, selector, URL, network idle) is met.\n\n        Use after wavexis_navigate when the wait strategy was 'none', or to\n        wait for dynamic content; use wavexis_stop to cancel a load instead.\n\n        Side effects: None — read-only polling with no page mutations; blocks\n        the tool call up to the configured timeout.\n        Returns: JSON string with keys: 'status' ('ok'/'error'),\n        'elapsed_ms' (int).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/WaitInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "WaitInput": {
+            "description": "Input for waiting on a page condition.",
+            "properties": {
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              },
+              "strategy": {
+                "default": "load",
+                "description": "load, domcontentloaded, networkidle, selector, url, none",
+                "enum": [
+                  "load",
+                  "domcontentloaded",
+                  "networkidle",
+                  "selector",
+                  "url",
+                  "none"
+                ],
+                "title": "Strategy",
+                "type": "string"
+              },
+              "selector": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "CSS selector to target an element",
+                "title": "Selector"
+              },
+              "url_pattern": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "URL pattern to wait for (used when strategy='url')",
+                "title": "Url Pattern"
+              },
+              "timeout": {
+                "default": 30000,
+                "description": "Operation timeout in ms",
+                "maximum": 300000,
+                "minimum": 1000,
+                "title": "Timeout",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "session_id"
+            ],
+            "title": "WaitInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_waitArguments"
+      }
+    },
+    {
+      "name": "wavexis_screenshot",
+      "description": "Capture a screenshot of a web page or matched element.\n\n        Use ``wavexis_pdf`` when a print-ready document is needed, or\n        ``wavexis_annotated_screenshot`` when labelled element markers are\n        required.\n\n        Side effects: launches/acquires a browser backend, navigates to ``url``\n        if provided, optionally evaluates ``js``; writes to ``output_path`` when\n        given.\n        Returns: JSON string with keys: 'status' ('ok'/'error'), 'format'\n        (str), 'base64' (str) or 'path' (str), 'size_bytes' (int).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/ScreenshotInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "ScreenshotInput": {
+            "description": "Input for taking a screenshot.",
+            "properties": {
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "URL to navigate to (required without session_id)",
+                "title": "Url"
+              },
+              "session_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Active session ID. If omitted, a stateless session is created for this call.",
+                "title": "Session Id"
+              },
+              "full_page": {
+                "default": true,
+                "description": "Capture full scrollable page",
+                "title": "Full Page",
+                "type": "boolean"
+              },
+              "format": {
+                "default": "png",
+                "description": "Image format: 'png' or 'jpeg'",
+                "enum": [
+                  "png",
+                  "jpeg"
+                ],
+                "title": "Format",
+                "type": "string"
+              },
+              "quality": {
+                "default": 80,
+                "description": "JPEG quality (ignored for PNG)",
+                "maximum": 100,
+                "minimum": 1,
+                "title": "Quality",
+                "type": "integer"
+              },
+              "selector": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "CSS selector — screenshot only this element",
+                "title": "Selector"
+              },
+              "js": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "JavaScript to execute before screenshot",
+                "title": "Js"
+              },
+              "device": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Device preset name (e.g. 'iphone-15')",
+                "title": "Device"
+              },
+              "output_path": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Save to file instead of returning base64",
+                "title": "Output Path"
+              },
+              "wait_strategy": {
+                "default": "load",
+                "description": "Wait strategy: load, domcontentloaded, networkidle, selector, url, none",
+                "enum": [
+                  "load",
+                  "domcontentloaded",
+                  "networkidle",
+                  "selector",
+                  "url",
+                  "none"
+                ],
+                "title": "Wait Strategy",
+                "type": "string"
+              },
+              "wait_selector": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "CSS selector to wait for (used when wait_strategy='selector')",
+                "title": "Wait Selector"
+              },
+              "wait_timeout": {
+                "default": 30000,
+                "description": "Timeout in ms for wait conditions",
+                "maximum": 300000,
+                "minimum": 1000,
+                "title": "Wait Timeout",
+                "type": "integer"
+              },
+              "headless": {
+                "default": true,
+                "description": "Run browser in headless mode",
+                "title": "Headless",
+                "type": "boolean"
+              },
+              "width": {
+                "default": 1280,
+                "description": "Viewport width in pixels",
+                "maximum": 3840,
+                "minimum": 320,
+                "title": "Width",
+                "type": "integer"
+              },
+              "height": {
+                "default": 800,
+                "description": "Viewport height in pixels",
+                "maximum": 2160,
+                "minimum": 240,
+                "title": "Height",
+                "type": "integer"
+              },
+              "backend": {
+                "default": "cdp",
+                "description": "Backend: 'cdp', 'bidi', or 'auto'",
+                "enum": [
+                  "cdp",
+                  "bidi",
+                  "auto"
+                ],
+                "title": "Backend",
+                "type": "string"
+              }
+            },
+            "title": "ScreenshotInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_screenshotArguments"
+      }
+    },
+    {
+      "name": "wavexis_pdf",
+      "description": "Generate a PDF document from a web page.\n\n        Use ``wavexis_screenshot`` for image capture, or ``wavexis_page_pdf``\n        when pixel-level control over paper size and margins is required.\n\n        Side effects: launches/acquires a browser backend, navigates to ``url``\n        if provided, optionally evaluates ``js``; writes to ``output_path`` when\n        given.\n        Returns: JSON string with keys: 'status' ('ok'/'error'), 'base64'\n        (str) or 'path' (str), 'size_bytes' (int).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/PDFInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "PDFInput": {
+            "description": "Input for generating a PDF.",
+            "properties": {
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "URL to navigate to (required without session_id)",
+                "title": "Url"
+              },
+              "session_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Active session ID. If omitted, a stateless session is created for this call.",
+                "title": "Session Id"
+              },
+              "paper": {
+                "default": "letter",
+                "description": "Paper size: a4, letter, legal, a3, a5",
+                "enum": [
+                  "a4",
+                  "letter",
+                  "legal",
+                  "a3",
+                  "a5"
+                ],
+                "title": "Paper",
+                "type": "string"
+              },
+              "landscape": {
+                "default": false,
+                "description": "Use landscape orientation",
+                "title": "Landscape",
+                "type": "boolean"
+              },
+              "margin": {
+                "default": "0.4in",
+                "description": "Page margin (e.g. '0.4in')",
+                "title": "Margin",
+                "type": "string"
+              },
+              "no_header_footer": {
+                "default": false,
+                "description": "Exclude header and footer from PDF",
+                "title": "No Header Footer",
+                "type": "boolean"
+              },
+              "media": {
+                "default": "print",
+                "description": "CSS media: 'print' or 'screen'",
+                "enum": [
+                  "print",
+                  "screen"
+                ],
+                "title": "Media",
+                "type": "string"
+              },
+              "js": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "JavaScript to execute before the action",
+                "title": "Js"
+              },
+              "output_path": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "File path to save the output. If omitted, a default path is used.",
+                "title": "Output Path"
+              },
+              "wait_timeout": {
+                "default": 30000,
+                "description": "Timeout in ms for wait conditions",
+                "maximum": 300000,
+                "minimum": 1000,
+                "title": "Wait Timeout",
+                "type": "integer"
+              },
+              "headless": {
+                "default": true,
+                "description": "Run browser in headless mode",
+                "title": "Headless",
+                "type": "boolean"
+              },
+              "backend": {
+                "default": "cdp",
+                "description": "Backend: 'cdp', 'bidi', or 'auto'",
+                "enum": [
+                  "cdp",
+                  "bidi",
+                  "auto"
+                ],
+                "title": "Backend",
+                "type": "string"
+              }
+            },
+            "title": "PDFInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_pdfArguments"
+      }
+    },
+    {
+      "name": "wavexis_scrape",
+      "description": "Scrape data from multiple URLs by evaluating a JS expression on each.\n\n        Use ``wavexis_eval`` for single-page evaluation, or ``wavexis_scrape``\n        when the same expression must run across many pages with pagination.\n\n        Side effects: launches/acquires a browser backend, navigates to each\n        URL in ``urls`` sequentially, evaluates ``expression`` in every page\n        context.\n        Returns: JSON string with keys: 'status' ('ok'/'error'), 'results'\n        (list[dict[str, Any]]), 'format' (str), 'count' (int), 'total' (int).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/ScrapeInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "ScrapeInput": {
+            "description": "Input for scraping multiple URLs.",
+            "properties": {
+              "urls": {
+                "description": "URLs to scrape",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "minItems": 1,
+                "title": "Urls",
+                "type": "array"
+              },
+              "session_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Active session ID. If omitted, a stateless session is created for this call.",
+                "title": "Session Id"
+              },
+              "expression": {
+                "default": "document.title",
+                "description": "JS expression to evaluate on each page",
+                "title": "Expression",
+                "type": "string"
+              },
+              "output_format": {
+                "default": "json",
+                "description": "Output format: 'json' or 'csv'",
+                "enum": [
+                  "json",
+                  "csv"
+                ],
+                "title": "Output Format",
+                "type": "string"
+              },
+              "selector": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "CSS selector to wait for",
+                "title": "Selector"
+              },
+              "wait_timeout": {
+                "default": 30000,
+                "description": "Timeout in ms for wait conditions",
+                "maximum": 300000,
+                "minimum": 1000,
+                "title": "Wait Timeout",
+                "type": "integer"
+              },
+              "headless": {
+                "default": true,
+                "description": "Run browser in headless mode",
+                "title": "Headless",
+                "type": "boolean"
+              },
+              "backend": {
+                "default": "cdp",
+                "description": "Backend: 'cdp', 'bidi', or 'auto'",
+                "enum": [
+                  "cdp",
+                  "bidi",
+                  "auto"
+                ],
+                "title": "Backend",
+                "type": "string"
+              },
+              "limit": {
+                "default": 50,
+                "description": "Max results to return",
+                "maximum": 500,
+                "minimum": 1,
+                "title": "Limit",
+                "type": "integer"
+              },
+              "offset": {
+                "default": 0,
+                "description": "Skip first N results for pagination",
+                "minimum": 0,
+                "title": "Offset",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "urls"
+            ],
+            "title": "ScrapeInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_scrapeArguments"
+      }
+    },
+    {
+      "name": "wavexis_screencast",
+      "description": "Capture a frame-by-frame screenshot sequence over a duration.\n\n        Use ``wavexis_screenshot`` for a single still image, or\n        ``wavexis_screencast`` when animation or time-series capture is needed.\n\n        Side effects: launches/acquires a browser backend, navigates to ``url``\n        if provided, captures frames for ``duration``; writes frame files to\n        ``output_dir`` when given.\n        Returns: JSON string with keys: 'status' ('ok'/'error'), 'frames'\n        (list[str]) or 'dir' (str), 'count' (int).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/ScreencastInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "ScreencastInput": {
+            "description": "Input for capturing a frame sequence.",
+            "properties": {
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "URL to navigate to (required without session_id)",
+                "title": "Url"
+              },
+              "session_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Active session ID. If omitted, a stateless session is created for this call.",
+                "title": "Session Id"
+              },
+              "format": {
+                "default": "png",
+                "description": "Image format: 'png' or 'jpeg'",
+                "enum": [
+                  "png",
+                  "jpeg"
+                ],
+                "title": "Format",
+                "type": "string"
+              },
+              "quality": {
+                "default": 80,
+                "description": "JPEG quality 1-100 (ignored for PNG)",
+                "maximum": 100,
+                "minimum": 1,
+                "title": "Quality",
+                "type": "integer"
+              },
+              "max_width": {
+                "default": 1280,
+                "description": "Maximum screenshot width in pixels",
+                "maximum": 3840,
+                "minimum": 320,
+                "title": "Max Width",
+                "type": "integer"
+              },
+              "max_height": {
+                "default": 800,
+                "description": "Maximum screenshot height in pixels",
+                "maximum": 2160,
+                "minimum": 240,
+                "title": "Max Height",
+                "type": "integer"
+              },
+              "duration": {
+                "default": 5,
+                "description": "Capture duration in seconds",
+                "maximum": 60,
+                "minimum": 0.5,
+                "title": "Duration",
+                "type": "number"
+              },
+              "interval": {
+                "default": 1,
+                "description": "Seconds between frames",
+                "maximum": 10,
+                "minimum": 0.1,
+                "title": "Interval",
+                "type": "number"
+              },
+              "output_dir": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Save frames to directory",
+                "title": "Output Dir"
+              },
+              "wait_timeout": {
+                "default": 30000,
+                "description": "Timeout in ms for wait conditions",
+                "maximum": 300000,
+                "minimum": 1000,
+                "title": "Wait Timeout",
+                "type": "integer"
+              },
+              "headless": {
+                "default": true,
+                "description": "Run browser in headless mode",
+                "title": "Headless",
+                "type": "boolean"
+              },
+              "backend": {
+                "default": "cdp",
+                "description": "Backend: 'cdp', 'bidi', or 'auto'",
+                "enum": [
+                  "cdp",
+                  "bidi",
+                  "auto"
+                ],
+                "title": "Backend",
+                "type": "string"
+              }
+            },
+            "title": "ScreencastInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_screencastArguments"
+      }
+    },
+    {
+      "name": "wavexis_annotated_screenshot",
+      "description": "Capture a screenshot with numbered labels overlaid on elements.\n\n        Injects overlay divs with labels @e1, @e2, ... on each element\n        matching the provided selectors, captures a screenshot, removes\n        the overlays, and returns the image plus a label-to-selector map.\n\n        Use ``wavexis_screenshot`` for plain captures, or this tool when\n        visual element identification is needed for follow-up actions.\n\n        Side effects: uses an existing session backend, injects and removes\n        temporary overlay DOM nodes; writes to ``output_path`` when given.\n        Returns: JSON string with keys: 'status' ('ok'/'error'), 'format'\n        (str), 'base64' (str) or 'path' (str), 'size_bytes' (int), 'labels'\n        (dict[str, str]).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/AnnotatedScreenshotInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "AnnotatedScreenshotInput": {
+            "description": "Input for taking a screenshot with numbered labels on elements.",
+            "properties": {
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              },
+              "selectors": {
+                "description": "CSS selectors to annotate with labels",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1,
+                "title": "Selectors",
+                "type": "array"
+              },
+              "format": {
+                "default": "png",
+                "description": "Image format: 'png' or 'jpeg'",
+                "title": "Format",
+                "type": "string"
+              },
+              "output_path": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "File path to save the output. If omitted, a default path is used.",
+                "title": "Output Path"
+              }
+            },
+            "required": [
+              "session_id",
+              "selectors"
+            ],
+            "title": "AnnotatedScreenshotInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_annotated_screenshotArguments"
+      }
+    },
+    {
+      "name": "wavexis_page_pdf",
+      "description": "Generate a PDF via the low-level Page.printToPDF CDP method.\n\n        Offers pixel-level control over paper size, margins, and print\n        options beyond ``wavexis_pdf``. Use ``wavexis_pdf`` for simpler\n        high-level PDF generation.\n\n        Side effects: launches/acquires a browser backend, navigates to ``url``\n        if provided; writes to ``output_path`` when given.\n        Returns: JSON string with keys: 'status' ('ok'/'error'), 'type'\n        ('pdf'), 'base64' (str) or 'path' (str), 'size_bytes' (int).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/PagePDFInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "PagePDFInput": {
+            "description": "Input for generating a PDF via the low-level Page.printToPDF CDP method.",
+            "properties": {
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "URL to navigate to (required without session_id)",
+                "title": "Url"
+              },
+              "session_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Active session ID. If omitted, a stateless session is created for this call.",
+                "title": "Session Id"
+              },
+              "landscape": {
+                "default": false,
+                "description": "Use landscape orientation",
+                "title": "Landscape",
+                "type": "boolean"
+              },
+              "display_header_footer": {
+                "default": false,
+                "description": "Include header and footer in PDF",
+                "title": "Display Header Footer",
+                "type": "boolean"
+              },
+              "print_background": {
+                "default": false,
+                "description": "Print background graphics in PDF",
+                "title": "Print Background",
+                "type": "boolean"
+              },
+              "scale": {
+                "default": 1,
+                "description": "Scale factor for PDF rendering",
+                "maximum": 2,
+                "minimum": 0.1,
+                "title": "Scale",
+                "type": "number"
+              },
+              "paper_width": {
+                "default": 8.5,
+                "description": "Paper width in inches",
+                "maximum": 100,
+                "minimum": 1,
+                "title": "Paper Width",
+                "type": "number"
+              },
+              "paper_height": {
+                "default": 11,
+                "description": "Paper height in inches",
+                "maximum": 100,
+                "minimum": 1,
+                "title": "Paper Height",
+                "type": "number"
+              },
+              "margin_top": {
+                "default": 0.4,
+                "description": "Top margin in inches",
+                "minimum": 0,
+                "title": "Margin Top",
+                "type": "number"
+              },
+              "margin_bottom": {
+                "default": 0.4,
+                "description": "Bottom margin in inches",
+                "minimum": 0,
+                "title": "Margin Bottom",
+                "type": "number"
+              },
+              "margin_left": {
+                "default": 0.4,
+                "description": "Left margin in inches",
+                "minimum": 0,
+                "title": "Margin Left",
+                "type": "number"
+              },
+              "margin_right": {
+                "default": 0.4,
+                "description": "Right margin in inches",
+                "minimum": 0,
+                "title": "Margin Right",
+                "type": "number"
+              },
+              "output_path": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Path to save the decoded PDF bytes",
+                "title": "Output Path"
+              },
+              "wait_timeout": {
+                "default": 30000,
+                "description": "Timeout in ms for wait conditions",
+                "maximum": 300000,
+                "minimum": 1000,
+                "title": "Wait Timeout",
+                "type": "integer"
+              },
+              "headless": {
+                "default": true,
+                "description": "Run browser in headless mode",
+                "title": "Headless",
+                "type": "boolean"
+              },
+              "backend": {
+                "default": "cdp",
+                "description": "Backend: 'cdp', 'bidi', or 'auto'",
+                "enum": [
+                  "cdp",
+                  "bidi",
+                  "auto"
+                ],
+                "title": "Backend",
+                "type": "string"
+              }
+            },
+            "title": "PagePDFInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_page_pdfArguments"
+      }
+    },
+    {
+      "name": "wavexis_page_snapshot",
+      "description": "Capture the page as MHTML or a plain text document.\n\n        Use ``wavexis_scrape`` for structured data extraction, or this tool\n        when a full page archive (MHTML) or text dump is required.\n\n        Side effects: launches/acquires a browser backend, navigates to ``url``\n        if provided; writes to ``output_path`` when given.\n        Returns: JSON string with keys: 'status' ('ok'/'error'), 'format'\n        (str), 'content' (str) or 'path' (str), 'size_bytes' (int).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/PageSnapshotInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "PageSnapshotInput": {
+            "description": "Input for capturing a page snapshot as MHTML or text.",
+            "properties": {
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "URL to navigate to (required without session_id)",
+                "title": "Url"
+              },
+              "session_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Active session ID. If omitted, a stateless session is created for this call.",
+                "title": "Session Id"
+              },
+              "format": {
+                "default": "mhtml",
+                "description": "Output format: 'mhtml' or 'text'",
+                "enum": [
+                  "mhtml",
+                  "text"
+                ],
+                "title": "Format",
+                "type": "string"
+              },
+              "output_path": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "File path to save the output. If omitted, a default path is used.",
+                "title": "Output Path"
+              },
+              "wait_timeout": {
+                "default": 30000,
+                "description": "Timeout in ms for wait conditions",
+                "maximum": 300000,
+                "minimum": 1000,
+                "title": "Wait Timeout",
+                "type": "integer"
+              },
+              "headless": {
+                "default": true,
+                "description": "Run browser in headless mode",
+                "title": "Headless",
+                "type": "boolean"
+              },
+              "backend": {
+                "default": "cdp",
+                "description": "Backend: 'cdp', 'bidi', or 'auto'",
+                "enum": [
+                  "cdp",
+                  "bidi",
+                  "auto"
+                ],
+                "title": "Backend",
+                "type": "string"
+              }
+            },
+            "title": "PageSnapshotInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_page_snapshotArguments"
+      }
+    },
+    {
+      "name": "wavexis_eval",
+      "description": "Evaluate a JavaScript expression in the browser context and return the result.\n\n        Use ``wavexis_scrape`` when the same expression must run across many\n        pages, or ``wavexis_act`` for natural-language interaction instead of\n        raw JS.\n\n        Side effects: launches/acquires a browser backend, navigates to ``url``\n        if provided, executes arbitrary JS in the page (may trigger network\n        requests or DOM mutations).\n        Returns: JSON string with keys: 'status' ('ok'/'error'), 'result'\n        (Any), 'type' (str).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/EvalInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "EvalInput": {
+            "description": "Input for evaluating a JavaScript expression.",
+            "properties": {
+              "expression": {
+                "description": "JavaScript expression to evaluate",
+                "title": "Expression",
+                "type": "string"
+              },
+              "session_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Active session ID. If omitted, a stateless session is created for this call.",
+                "title": "Session Id"
+              },
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "URL to navigate to first (required without session)",
+                "title": "Url"
+              },
+              "await_promise": {
+                "default": false,
+                "description": "Await a returned Promise",
+                "title": "Await Promise",
+                "type": "boolean"
+              },
+              "wait_timeout": {
+                "default": 30000,
+                "description": "Timeout in ms for wait conditions",
+                "maximum": 300000,
+                "minimum": 1000,
+                "title": "Wait Timeout",
+                "type": "integer"
+              },
+              "headless": {
+                "default": true,
+                "description": "Run browser in headless mode",
+                "title": "Headless",
+                "type": "boolean"
+              },
+              "backend": {
+                "default": "cdp",
+                "description": "Backend: 'cdp', 'bidi', or 'auto'",
+                "enum": [
+                  "cdp",
+                  "bidi",
+                  "auto"
+                ],
+                "title": "Backend",
+                "type": "string"
+              }
+            },
+            "required": [
+              "expression"
+            ],
+            "title": "EvalInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_evalArguments"
+      }
+    },
+    {
+      "name": "wavexis_dom_get",
+      "description": "Retrieve the HTML of an element matching a CSS selector.\n\n        Use wavexis_dom_query instead when you need element metadata rather than raw HTML.\n\n        Side effects: None; read-only. May navigate to ``url`` if provided.\n        Returns: JSON string with keys: 'status' ('ok'/'error'), 'html' (str), 'selector' (str).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/DOMGetInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "DOMGetInput": {
+            "description": "Input for getting HTML of an element.",
+            "properties": {
+              "selector": {
+                "description": "CSS selector for the target element",
+                "minLength": 1,
+                "title": "Selector",
+                "type": "string"
+              },
+              "session_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Active session ID. If omitted, a stateless session is created for this call.",
+                "title": "Session Id"
+              },
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "URL to navigate to (required without session_id)",
+                "title": "Url"
+              },
+              "outer": {
+                "default": true,
+                "description": "Return outerHTML (True) or innerHTML (False)",
+                "title": "Outer",
+                "type": "boolean"
+              },
+              "wait_timeout": {
+                "default": 30000,
+                "description": "Timeout in ms for wait conditions",
+                "maximum": 300000,
+                "minimum": 1000,
+                "title": "Wait Timeout",
+                "type": "integer"
+              },
+              "headless": {
+                "default": true,
+                "description": "Run browser in headless mode",
+                "title": "Headless",
+                "type": "boolean"
+              },
+              "backend": {
+                "default": "cdp",
+                "description": "Backend: 'cdp', 'bidi', or 'auto'",
+                "enum": [
+                  "cdp",
+                  "bidi",
+                  "auto"
+                ],
+                "title": "Backend",
+                "type": "string"
+              }
+            },
+            "required": [
+              "selector"
+            ],
+            "title": "DOMGetInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_dom_getArguments"
+      }
+    },
+    {
+      "name": "wavexis_dom_query",
+      "description": "Query elements by CSS selector and return paginated metadata.\n\n        Use wavexis_dom_get instead when you only need the raw HTML of a single element.\n\n        Side effects: None; read-only. May navigate to ``url`` if provided.\n        Returns: JSON string with keys: 'status' ('ok'/'error'), 'elements' (list[dict]),\n            'count' (int), 'total' (int).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/DOMQueryInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "DOMQueryInput": {
+            "description": "Input for querying elements by CSS selector.",
+            "properties": {
+              "selector": {
+                "description": "CSS selector for the target element",
+                "minLength": 1,
+                "title": "Selector",
+                "type": "string"
+              },
+              "session_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Active session ID. If omitted, a stateless session is created for this call.",
+                "title": "Session Id"
+              },
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "URL to navigate to (required without session_id)",
+                "title": "Url"
+              },
+              "all": {
+                "default": false,
+                "description": "Return all matches (True) or first only (False)",
+                "title": "All",
+                "type": "boolean"
+              },
+              "limit": {
+                "default": 50,
+                "description": "Max elements to return when all=True",
+                "maximum": 500,
+                "minimum": 1,
+                "title": "Limit",
+                "type": "integer"
+              },
+              "offset": {
+                "default": 0,
+                "description": "Skip first N elements for pagination",
+                "minimum": 0,
+                "title": "Offset",
+                "type": "integer"
+              },
+              "wait_timeout": {
+                "default": 30000,
+                "description": "Timeout in ms for wait conditions",
+                "maximum": 300000,
+                "minimum": 1000,
+                "title": "Wait Timeout",
+                "type": "integer"
+              },
+              "headless": {
+                "default": true,
+                "description": "Run browser in headless mode",
+                "title": "Headless",
+                "type": "boolean"
+              },
+              "backend": {
+                "default": "cdp",
+                "description": "Backend: 'cdp', 'bidi', or 'auto'",
+                "enum": [
+                  "cdp",
+                  "bidi",
+                  "auto"
+                ],
+                "title": "Backend",
+                "type": "string"
+              }
+            },
+            "required": [
+              "selector"
+            ],
+            "title": "DOMQueryInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_dom_queryArguments"
+      }
+    },
+    {
+      "name": "wavexis_dom_set_attr",
+      "description": "Set an attribute on an element matching a CSS selector.\n\n        Use wavexis_dom_get_attr to read the current value before setting.\n\n        Side effects: Mutates the DOM by writing the attribute on the matched element.\n        Returns: JSON string with keys: 'status' ('ok'/'error').\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/DOMSetAttrInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "DOMSetAttrInput": {
+            "description": "Input for setting an attribute on an element.",
+            "properties": {
+              "selector": {
+                "description": "CSS selector for the target element",
+                "minLength": 1,
+                "title": "Selector",
+                "type": "string"
+              },
+              "name": {
+                "description": "Attribute name",
+                "minLength": 1,
+                "title": "Name",
+                "type": "string"
+              },
+              "value": {
+                "description": "Attribute value",
+                "title": "Value",
+                "type": "string"
+              },
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "selector",
+              "name",
+              "value",
+              "session_id"
+            ],
+            "title": "DOMSetAttrInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_dom_set_attrArguments"
+      }
+    },
+    {
+      "name": "wavexis_dom_get_attr",
+      "description": "Read an attribute value from an element matching a CSS selector.\n\n        Use wavexis_dom_set_attr to write an attribute value.\n\n        Side effects: None; read-only.\n        Returns: JSON string with keys: 'status' ('ok'/'error'), 'value' (str|None),\n            'selector' (str), 'name' (str).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/DOMGetAttrInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "DOMGetAttrInput": {
+            "description": "Input for getting an attribute value from an element.",
+            "properties": {
+              "selector": {
+                "description": "CSS selector for the target element",
+                "minLength": 1,
+                "title": "Selector",
+                "type": "string"
+              },
+              "name": {
+                "description": "Name of the item",
+                "minLength": 1,
+                "title": "Name",
+                "type": "string"
+              },
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "selector",
+              "name",
+              "session_id"
+            ],
+            "title": "DOMGetAttrInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_dom_get_attrArguments"
+      }
+    },
+    {
+      "name": "wavexis_dom_remove_attr",
+      "description": "Remove an attribute from an element matching a CSS selector.\n\n        Use wavexis_dom_set_attr to restore or change an attribute instead of removing it.\n\n        Side effects: Mutates the DOM by deleting the attribute from the matched element.\n        Returns: JSON string with keys: 'status' ('ok'/'error').\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/DOMRemoveAttrInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "DOMRemoveAttrInput": {
+            "description": "Input for removing an attribute from an element.",
+            "properties": {
+              "selector": {
+                "description": "CSS selector for the target element",
+                "minLength": 1,
+                "title": "Selector",
+                "type": "string"
+              },
+              "name": {
+                "description": "Name of the item",
+                "minLength": 1,
+                "title": "Name",
+                "type": "string"
+              },
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "selector",
+              "name",
+              "session_id"
+            ],
+            "title": "DOMRemoveAttrInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_dom_remove_attrArguments"
+      }
+    },
+    {
+      "name": "wavexis_dom_remove",
+      "description": "Remove an element matching a CSS selector from the DOM.\n\n        Use wavexis_dom_set_attr to hide an element (e.g. ``display:none``) instead of deleting it.\n\n        Side effects: Destructive; permanently removes the matched element from the live DOM.\n        Returns: JSON string with keys: 'status' ('ok'/'error').\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/DOMRemoveInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "DOMRemoveInput": {
+            "description": "Input for removing an element from the DOM.",
+            "properties": {
+              "selector": {
+                "description": "CSS selector for the target element",
+                "minLength": 1,
+                "title": "Selector",
+                "type": "string"
+              },
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "selector",
+              "session_id"
+            ],
+            "title": "DOMRemoveInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_dom_removeArguments"
+      }
+    },
+    {
+      "name": "wavexis_dom_focus",
+      "description": "Focus an element matching a CSS selector.\n\n        Use wavexis_dom_click instead when the intent is to activate a control rather than focus it.\n\n        Side effects: Mutates DOM focus state; may trigger focus event handlers on the element.\n        Returns: JSON string with keys: 'status' ('ok'/'error').\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/DOMFocusInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "DOMFocusInput": {
+            "description": "Input for focusing an element.",
+            "properties": {
+              "selector": {
+                "description": "CSS selector for the target element",
+                "minLength": 1,
+                "title": "Selector",
+                "type": "string"
+              },
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "selector",
+              "session_id"
+            ],
+            "title": "DOMFocusInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_dom_focusArguments"
+      }
+    },
+    {
+      "name": "wavexis_dom_scroll",
+      "description": "Scroll to an element or by a pixel offset.\n\n        Use wavexis_dom_get to inspect an element's position before scrolling by offset.\n\n        Side effects: Changes the page scroll position; may trigger scroll event listeners.\n        Returns: JSON string with keys: 'status' ('ok'/'error').\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/DOMScrollInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "DOMScrollInput": {
+            "description": "Input for scrolling to an element or by offset.",
+            "properties": {
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              },
+              "selector": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "CSS selector to scroll to",
+                "title": "Selector"
+              },
+              "x": {
+                "default": 0,
+                "description": "Horizontal scroll offset",
+                "title": "X",
+                "type": "integer"
+              },
+              "y": {
+                "default": 0,
+                "description": "Vertical scroll offset",
+                "title": "Y",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "session_id"
+            ],
+            "title": "DOMScrollInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_dom_scrollArguments"
+      }
+    },
+    {
+      "name": "wavexis_dom_snapshot",
+      "description": "Capture a full DOM snapshot of the page including iframes and shadow roots.\n\n        Use wavexis_dom_query for lightweight element metadata instead of a full snapshot.\n\n        Side effects: None; read-only.\n        Returns: JSON string with keys: 'status' ('ok'/'error'), 'snapshot' (dict),\n            'documents' (int).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/DOMSnapshotInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "DOMSnapshotInput": {
+            "description": "Input for capturing a full DOM snapshot.",
+            "properties": {
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "session_id"
+            ],
+            "title": "DOMSnapshotInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_dom_snapshotArguments"
+      }
+    },
+    {
+      "name": "wavexis_iframe_eval",
+      "description": "Evaluate a JavaScript expression inside an iframe.\n\n        Use wavexis_iframe_click or wavexis_iframe_fill for standard interactions instead of raw JS.\n\n        Side effects: Arbitrary; executes user-supplied JavaScript within the iframe context.\n        Returns: JSON string with keys: 'status' ('ok'/'error'), 'result' (any).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/IframeEvalInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "IframeEvalInput": {
+            "description": "Input for evaluating JS inside an iframe.",
+            "properties": {
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              },
+              "iframe_selector": {
+                "description": "CSS selector for the <iframe> element",
+                "minLength": 1,
+                "title": "Iframe Selector",
+                "type": "string"
+              },
+              "expression": {
+                "description": "JavaScript expression to evaluate",
+                "title": "Expression",
+                "type": "string"
+              },
+              "await_promise": {
+                "default": false,
+                "description": "Whether to await the returned promise",
+                "title": "Await Promise",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "session_id",
+              "iframe_selector",
+              "expression"
+            ],
+            "title": "IframeEvalInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_iframe_evalArguments"
+      }
+    },
+    {
+      "name": "wavexis_iframe_click",
+      "description": "Click an element inside an iframe.\n\n        Use wavexis_iframe_eval only for custom JS that click/fill cannot express.\n\n        Side effects: Triggers click handlers and may navigate or mutate the iframe DOM.\n        Returns: JSON string with keys: 'status' ('ok'/'error').\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/IframeClickInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "IframeClickInput": {
+            "description": "Input for clicking an element inside an iframe.",
+            "properties": {
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              },
+              "iframe_selector": {
+                "description": "CSS selector for the <iframe> element",
+                "minLength": 1,
+                "title": "Iframe Selector",
+                "type": "string"
+              },
+              "selector": {
+                "description": "CSS selector inside the iframe",
+                "minLength": 1,
+                "title": "Selector",
+                "type": "string"
+              }
+            },
+            "required": [
+              "session_id",
+              "iframe_selector",
+              "selector"
+            ],
+            "title": "IframeClickInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_iframe_clickArguments"
+      }
+    },
+    {
+      "name": "wavexis_iframe_fill",
+      "description": "Fill an input element inside an iframe with a value.\n\n        Use wavexis_iframe_click to submit or activate the field after filling.\n\n        Side effects: Mutates the input value within the iframe; may trigger input/change events.\n        Returns: JSON string with keys: 'status' ('ok'/'error').\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/IframeFillInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "IframeFillInput": {
+            "description": "Input for filling an input inside an iframe.",
+            "properties": {
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              },
+              "iframe_selector": {
+                "description": "CSS selector for the <iframe> element",
+                "minLength": 1,
+                "title": "Iframe Selector",
+                "type": "string"
+              },
+              "selector": {
+                "description": "CSS selector inside the iframe",
+                "minLength": 1,
+                "title": "Selector",
+                "type": "string"
+              },
+              "value": {
+                "description": "Value to set in the input field",
+                "title": "Value",
+                "type": "string"
+              }
+            },
+            "required": [
+              "session_id",
+              "iframe_selector",
+              "selector",
+              "value"
+            ],
+            "title": "IframeFillInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_iframe_fillArguments"
+      }
+    },
+    {
+      "name": "wavexis_shadow_eval",
+      "description": "Evaluate a JavaScript expression inside a shadow DOM tree.\n\n        Pierces shadow boundaries using the provided selector chain: ``selectors[0]`` is in the\n        main document, ``selectors[1]`` in ``selectors[0].shadowRoot``, and so on.\n        Use wavexis_shadow_click or wavexis_shadow_fill for standard interactions instead of raw JS.\n\n        Side effects: Arbitrary; executes user-supplied JavaScript within the shadow DOM context.\n        Returns: JSON string with keys: 'status' ('ok'/'error'), 'result' (any).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/ShadowEvalInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "ShadowEvalInput": {
+            "description": "Input for evaluating JS inside a shadow DOM tree.",
+            "properties": {
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              },
+              "selectors": {
+                "description": "CSS selectors piercing shadow boundaries (selectors[0] in document, selectors[1] in selectors[0].shadowRoot, etc.)",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1,
+                "title": "Selectors",
+                "type": "array"
+              },
+              "expression": {
+                "description": "JavaScript expression to evaluate",
+                "title": "Expression",
+                "type": "string"
+              },
+              "await_promise": {
+                "default": false,
+                "description": "Whether to await the returned promise",
+                "title": "Await Promise",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "session_id",
+              "selectors",
+              "expression"
+            ],
+            "title": "ShadowEvalInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_shadow_evalArguments"
+      }
+    },
+    {
+      "name": "wavexis_shadow_click",
+      "description": "Click an element inside a shadow DOM tree.\n\n        Pierces shadow boundaries using the provided selector chain.\n        Use wavexis_shadow_eval only for custom JS that click/fill cannot express.\n\n        Side effects: Triggers click handlers and may navigate or mutate the shadow DOM.\n        Returns: JSON string with keys: 'status' ('ok'/'error').\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/ShadowClickInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "ShadowClickInput": {
+            "description": "Input for clicking an element inside a shadow DOM tree.",
+            "properties": {
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              },
+              "selectors": {
+                "description": "CSS selectors piercing shadow boundaries",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1,
+                "title": "Selectors",
+                "type": "array"
+              }
+            },
+            "required": [
+              "session_id",
+              "selectors"
+            ],
+            "title": "ShadowClickInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_shadow_clickArguments"
+      }
+    },
+    {
+      "name": "wavexis_shadow_fill",
+      "description": "Fill an input element inside a shadow DOM tree with a value.\n\n        Pierces shadow boundaries using the provided selector chain.\n        Use wavexis_shadow_click to submit or activate the field after filling.\n\n        Side effects: Mutates the input value within the shadow DOM; may trigger\n        input/change events.\n        Returns: JSON string with keys: 'status' ('ok'/'error').\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/ShadowFillInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "ShadowFillInput": {
+            "description": "Input for filling an input inside a shadow DOM tree.",
+            "properties": {
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              },
+              "selectors": {
+                "description": "CSS selectors piercing shadow boundaries",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1,
+                "title": "Selectors",
+                "type": "array"
+              },
+              "value": {
+                "description": "Value to set in the input field",
+                "title": "Value",
+                "type": "string"
+              }
+            },
+            "required": [
+              "session_id",
+              "selectors",
+              "value"
+            ],
+            "title": "ShadowFillInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_shadow_fillArguments"
+      }
+    },
+    {
+      "name": "wavexis_click",
+      "description": "Click an element matching a CSS selector.\n\n        Use wavexis_double_click for double clicks, wavexis_right_click for\n        context menus, or wavexis_nl_click when you only have a text description.\n\n        Side effects: Triggers a click event on the target element, which may\n        submit forms, toggle controls, or navigate the page.\n        Returns: JSON string with keys: 'status' ('ok'/'error'). On error also\n        'error', 'tool', 'type', 'message', 'suggestion' (all str).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/ClickInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "ClickInput": {
+            "description": "Input for clicking an element.",
+            "properties": {
+              "selector": {
+                "description": "CSS selector for element to click",
+                "minLength": 1,
+                "title": "Selector",
+                "type": "string"
+              },
+              "session_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Active session ID. If omitted, a stateless session is created for this call.",
+                "title": "Session Id"
+              },
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "URL to navigate to (required without session_id)",
+                "title": "Url"
+              },
+              "button": {
+                "default": "left",
+                "description": "left, right, middle",
+                "enum": [
+                  "left",
+                  "right",
+                  "middle"
+                ],
+                "title": "Button",
+                "type": "string"
+              },
+              "click_count": {
+                "default": 1,
+                "description": "Number of clicks to perform",
+                "maximum": 10,
+                "minimum": 1,
+                "title": "Click Count",
+                "type": "integer"
+              },
+              "wait_timeout": {
+                "default": 30000,
+                "description": "Timeout in ms for wait conditions",
+                "maximum": 300000,
+                "minimum": 1000,
+                "title": "Wait Timeout",
+                "type": "integer"
+              },
+              "headless": {
+                "default": true,
+                "description": "Run browser in headless mode",
+                "title": "Headless",
+                "type": "boolean"
+              },
+              "backend": {
+                "default": "cdp",
+                "description": "Backend: 'cdp', 'bidi', or 'auto'",
+                "enum": [
+                  "cdp",
+                  "bidi",
+                  "auto"
+                ],
+                "title": "Backend",
+                "type": "string"
+              }
+            },
+            "required": [
+              "selector"
+            ],
+            "title": "ClickInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_clickArguments"
+      }
+    },
+    {
+      "name": "wavexis_double_click",
+      "description": "Double-click an element matching a CSS selector.\n\n        Use wavexis_click for single clicks or wavexis_nl_click when you only\n        have a natural language description of the element.\n\n        Side effects: Fires two rapid click events on the element, which may\n        open files, edit cells, or trigger application-specific actions.\n        Returns: JSON string with keys: 'status' ('ok'/'error'). On error also\n        'error', 'tool', 'type', 'message', 'suggestion' (all str).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/DoubleClickInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "DoubleClickInput": {
+            "description": "Input for double-clicking an element.",
+            "properties": {
+              "selector": {
+                "description": "CSS selector for element to double-click",
+                "minLength": 1,
+                "title": "Selector",
+                "type": "string"
+              },
+              "session_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Active session ID. If omitted, a stateless session is created for this call.",
+                "title": "Session Id"
+              },
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "URL to navigate to (required without session_id)",
+                "title": "Url"
+              },
+              "auto_wait": {
+                "default": true,
+                "description": "Wait for the element before clicking",
+                "title": "Auto Wait",
+                "type": "boolean"
+              },
+              "wait_timeout": {
+                "default": 30000,
+                "description": "Timeout in ms for wait conditions",
+                "maximum": 300000,
+                "minimum": 1000,
+                "title": "Wait Timeout",
+                "type": "integer"
+              },
+              "headless": {
+                "default": true,
+                "description": "Run browser in headless mode",
+                "title": "Headless",
+                "type": "boolean"
+              },
+              "backend": {
+                "default": "cdp",
+                "description": "Backend: 'cdp', 'bidi', or 'auto'",
+                "enum": [
+                  "cdp",
+                  "bidi",
+                  "auto"
+                ],
+                "title": "Backend",
+                "type": "string"
+              }
+            },
+            "required": [
+              "selector"
+            ],
+            "title": "DoubleClickInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_double_clickArguments"
+      }
+    },
+    {
+      "name": "wavexis_right_click",
+      "description": "Right-click an element matching a CSS selector.\n\n        Use wavexis_click for standard left clicks or wavexis_double_click for\n        double clicks.\n\n        Side effects: Fires a contextmenu event on the element, typically\n        opening a context menu in the browser.\n        Returns: JSON string with keys: 'status' ('ok'/'error'). On error also\n        'error', 'tool', 'type', 'message', 'suggestion' (all str).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/RightClickInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "RightClickInput": {
+            "description": "Input for right-clicking an element.",
+            "properties": {
+              "selector": {
+                "description": "CSS selector for element to right-click",
+                "minLength": 1,
+                "title": "Selector",
+                "type": "string"
+              },
+              "session_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Active session ID. If omitted, a stateless session is created for this call.",
+                "title": "Session Id"
+              },
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "URL to navigate to (required without session_id)",
+                "title": "Url"
+              },
+              "auto_wait": {
+                "default": true,
+                "description": "Wait for the element before clicking",
+                "title": "Auto Wait",
+                "type": "boolean"
+              },
+              "wait_timeout": {
+                "default": 30000,
+                "description": "Timeout in ms for wait conditions",
+                "maximum": 300000,
+                "minimum": 1000,
+                "title": "Wait Timeout",
+                "type": "integer"
+              },
+              "headless": {
+                "default": true,
+                "description": "Run browser in headless mode",
+                "title": "Headless",
+                "type": "boolean"
+              },
+              "backend": {
+                "default": "cdp",
+                "description": "Backend: 'cdp', 'bidi', or 'auto'",
+                "enum": [
+                  "cdp",
+                  "bidi",
+                  "auto"
+                ],
+                "title": "Backend",
+                "type": "string"
+              }
+            },
+            "required": [
+              "selector"
+            ],
+            "title": "RightClickInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_right_clickArguments"
+      }
+    },
+    {
+      "name": "wavexis_type",
+      "description": "Type text into an element character by character with optional delay.\n\n        Use wavexis_fill instead when you want to set a field's value instantly\n        without per-keystroke delays, or wavexis_fill_form for multiple fields.\n\n        Side effects: Appends characters to the target input/textarea element,\n        firing keydown/keypress/input/keyup events per character.\n        Returns: JSON string with keys: 'status' ('ok'/'error'). On error also\n        'error', 'tool', 'type', 'message', 'suggestion' (all str).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/TypeInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "TypeInput": {
+            "description": "Input for typing text into an element.",
+            "properties": {
+              "selector": {
+                "description": "CSS selector for the target element",
+                "minLength": 1,
+                "title": "Selector",
+                "type": "string"
+              },
+              "text": {
+                "description": "Text to type character by character",
+                "minLength": 1,
+                "title": "Text",
+                "type": "string"
+              },
+              "session_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Active session ID. If omitted, a stateless session is created for this call.",
+                "title": "Session Id"
+              },
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "URL to navigate to (required without session_id)",
+                "title": "Url"
+              },
+              "delay": {
+                "default": 0,
+                "description": "Delay between keystrokes in ms",
+                "maximum": 1000,
+                "minimum": 0,
+                "title": "Delay",
+                "type": "integer"
+              },
+              "wait_timeout": {
+                "default": 30000,
+                "description": "Timeout in ms for wait conditions",
+                "maximum": 300000,
+                "minimum": 1000,
+                "title": "Wait Timeout",
+                "type": "integer"
+              },
+              "headless": {
+                "default": true,
+                "description": "Run browser in headless mode",
+                "title": "Headless",
+                "type": "boolean"
+              },
+              "backend": {
+                "default": "cdp",
+                "description": "Backend: 'cdp', 'bidi', or 'auto'",
+                "enum": [
+                  "cdp",
+                  "bidi",
+                  "auto"
+                ],
+                "title": "Backend",
+                "type": "string"
+              }
+            },
+            "required": [
+              "selector",
+              "text"
+            ],
+            "title": "TypeInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_typeArguments"
+      }
+    },
+    {
+      "name": "wavexis_fill",
+      "description": "Fill an input element with a value, replacing existing content.\n\n        Use wavexis_type for character-by-character typing with key events, or\n        wavexis_fill_form when filling multiple fields in one call.\n\n        Side effects: Clears the target input/textarea and sets its value to\n        the provided string, firing a single input event.\n        Returns: JSON string with keys: 'status' ('ok'/'error'). On error also\n        'error', 'tool', 'type', 'message', 'suggestion' (all str).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/FillInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "FillInput": {
+            "description": "Input for filling an input element.",
+            "properties": {
+              "selector": {
+                "description": "CSS selector for the target element",
+                "minLength": 1,
+                "title": "Selector",
+                "type": "string"
+              },
+              "value": {
+                "description": "Value to fill (replaces existing content)",
+                "title": "Value",
+                "type": "string"
+              },
+              "session_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Active session ID. If omitted, a stateless session is created for this call.",
+                "title": "Session Id"
+              },
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "URL to navigate to (required without session_id)",
+                "title": "Url"
+              },
+              "wait_timeout": {
+                "default": 30000,
+                "description": "Timeout in ms for wait conditions",
+                "maximum": 300000,
+                "minimum": 1000,
+                "title": "Wait Timeout",
+                "type": "integer"
+              },
+              "headless": {
+                "default": true,
+                "description": "Run browser in headless mode",
+                "title": "Headless",
+                "type": "boolean"
+              },
+              "backend": {
+                "default": "cdp",
+                "description": "Backend: 'cdp', 'bidi', or 'auto'",
+                "enum": [
+                  "cdp",
+                  "bidi",
+                  "auto"
+                ],
+                "title": "Backend",
+                "type": "string"
+              }
+            },
+            "required": [
+              "selector",
+              "value"
+            ],
+            "title": "FillInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_fillArguments"
+      }
+    },
+    {
+      "name": "wavexis_fill_form",
+      "description": "Fill multiple form fields in one call (convenience composite tool).\n\n        Use wavexis_fill for a single field or wavexis_type when per-keystroke\n        events are required.\n\n        Side effects: Clears and sets the value of each field in the provided\n        list, firing input events on every targeted element.\n        Returns: JSON string with keys: 'status' ('ok'/'error'), 'fields_filled'\n        (int, number of fields successfully filled). On error also 'error',\n        'tool', 'type', 'message', 'suggestion' (all str).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/FillFormInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "FillFormInput": {
+            "description": "Input for filling multiple form fields in one call.",
+            "properties": {
+              "fields": {
+                "description": "Form fields to fill",
+                "items": {
+                  "$ref": "#/$defs/FormField"
+                },
+                "maxItems": 100,
+                "minItems": 1,
+                "title": "Fields",
+                "type": "array"
+              },
+              "session_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Active session ID. If omitted, a stateless session is created for this call.",
+                "title": "Session Id"
+              },
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "URL to navigate to (required without session_id)",
+                "title": "Url"
+              },
+              "wait_timeout": {
+                "default": 30000,
+                "description": "Timeout in ms for wait conditions",
+                "maximum": 300000,
+                "minimum": 1000,
+                "title": "Wait Timeout",
+                "type": "integer"
+              },
+              "headless": {
+                "default": true,
+                "description": "Run browser in headless mode",
+                "title": "Headless",
+                "type": "boolean"
+              },
+              "backend": {
+                "default": "cdp",
+                "description": "Backend: 'cdp', 'bidi', or 'auto'",
+                "enum": [
+                  "cdp",
+                  "bidi",
+                  "auto"
+                ],
+                "title": "Backend",
+                "type": "string"
+              }
+            },
+            "required": [
+              "fields"
+            ],
+            "title": "FillFormInput",
+            "type": "object"
+          },
+          "FormField": {
+            "description": "A single form field descriptor for ``FillFormInput``.",
+            "properties": {
+              "selector": {
+                "description": "CSS selector for the input element",
+                "minLength": 1,
+                "title": "Selector",
+                "type": "string"
+              },
+              "value": {
+                "description": "Value to fill",
+                "title": "Value",
+                "type": "string"
+              }
+            },
+            "required": [
+              "selector",
+              "value"
+            ],
+            "title": "FormField",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_fill_formArguments"
+      }
+    },
+    {
+      "name": "wavexis_select_option",
+      "description": "Select an option in a ``<select>`` element by value.\n\n        Use wavexis_fill for text inputs or wavexis_click for custom dropdown\n        widgets that are not native ``<select>`` elements.\n\n        Side effects: Changes the selected option of the ``<select>`` element,\n        firing change and input events.\n        Returns: JSON string with keys: 'status' ('ok'/'error'). On error also\n        'error', 'tool', 'type', 'message', 'suggestion' (all str).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/SelectOptionInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "SelectOptionInput": {
+            "description": "Input for selecting an option in a ``<select>`` element.",
+            "properties": {
+              "selector": {
+                "description": "CSS selector for <select> element",
+                "minLength": 1,
+                "title": "Selector",
+                "type": "string"
+              },
+              "value": {
+                "description": "Option value to select",
+                "minLength": 1,
+                "title": "Value",
+                "type": "string"
+              },
+              "session_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Active session ID. If omitted, a stateless session is created for this call.",
+                "title": "Session Id"
+              },
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "URL to navigate to (required without session_id)",
+                "title": "Url"
+              },
+              "wait_timeout": {
+                "default": 30000,
+                "description": "Timeout in ms for wait conditions",
+                "maximum": 300000,
+                "minimum": 1000,
+                "title": "Wait Timeout",
+                "type": "integer"
+              },
+              "headless": {
+                "default": true,
+                "description": "Run browser in headless mode",
+                "title": "Headless",
+                "type": "boolean"
+              },
+              "backend": {
+                "default": "cdp",
+                "description": "Backend: 'cdp', 'bidi', or 'auto'",
+                "enum": [
+                  "cdp",
+                  "bidi",
+                  "auto"
+                ],
+                "title": "Backend",
+                "type": "string"
+              }
+            },
+            "required": [
+              "selector",
+              "value"
+            ],
+            "title": "SelectOptionInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_select_optionArguments"
+      }
+    },
+    {
+      "name": "wavexis_hover",
+      "description": "Hover over an element matching a CSS selector.\n\n        Use wavexis_click to actually activate an element; hover only moves the\n        cursor without clicking.\n\n        Side effects: Moves the mouse cursor over the target element, firing\n        mouseover/mouseenter events that may reveal tooltips or menus.\n        Returns: JSON string with keys: 'status' ('ok'/'error'). On error also\n        'error', 'tool', 'type', 'message', 'suggestion' (all str).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/HoverInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "HoverInput": {
+            "description": "Input for hovering over an element.",
+            "properties": {
+              "selector": {
+                "description": "CSS selector for the target element",
+                "minLength": 1,
+                "title": "Selector",
+                "type": "string"
+              },
+              "session_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Active session ID. If omitted, a stateless session is created for this call.",
+                "title": "Session Id"
+              },
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "URL to navigate to (required without session_id)",
+                "title": "Url"
+              },
+              "wait_timeout": {
+                "default": 30000,
+                "description": "Timeout in ms for wait conditions",
+                "maximum": 300000,
+                "minimum": 1000,
+                "title": "Wait Timeout",
+                "type": "integer"
+              },
+              "headless": {
+                "default": true,
+                "description": "Run browser in headless mode",
+                "title": "Headless",
+                "type": "boolean"
+              },
+              "backend": {
+                "default": "cdp",
+                "description": "Backend: 'cdp', 'bidi', or 'auto'",
+                "enum": [
+                  "cdp",
+                  "bidi",
+                  "auto"
+                ],
+                "title": "Backend",
+                "type": "string"
+              }
+            },
+            "required": [
+              "selector"
+            ],
+            "title": "HoverInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_hoverArguments"
+      }
+    },
+    {
+      "name": "wavexis_key_press",
+      "description": "Press a single keyboard key on the focused element.\n\n        Use wavexis_type for typing full strings or wavexis_fill for setting\n        field values without individual key events.\n\n        Side effects: Dispatches a keydown/keypress/keyup sequence for the\n        given key on whatever element currently has focus.\n        Returns: JSON string with keys: 'status' ('ok'/'error'). On error also\n        'error', 'tool', 'type', 'message', 'suggestion' (all str).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/KeyPressInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "KeyPressInput": {
+            "description": "Input for pressing a keyboard key.",
+            "properties": {
+              "key": {
+                "description": "Key to press (e.g. 'Enter', 'Tab', 'Escape', 'a')",
+                "title": "Key",
+                "type": "string"
+              },
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "key",
+              "session_id"
+            ],
+            "title": "KeyPressInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_key_pressArguments"
+      }
+    },
+    {
+      "name": "wavexis_drag",
+      "description": "Drag an element from a source selector to a target selector.\n\n        Use wavexis_drop when you need to drop arbitrary MIME data or files\n        onto an element rather than dragging an existing DOM element.\n\n        Side effects: Performs a drag-and-drop operation between two elements,\n        firing drag/dragstart/dragend and drop events.\n        Returns: JSON string with keys: 'status' ('ok'/'error'). On error also\n        'error', 'tool', 'type', 'message', 'suggestion' (all str).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/DragInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "DragInput": {
+            "description": "Input for dragging an element from source to target.",
+            "properties": {
+              "source": {
+                "description": "CSS selector for drag source",
+                "title": "Source",
+                "type": "string"
+              },
+              "target": {
+                "description": "CSS selector for drop target",
+                "title": "Target",
+                "type": "string"
+              },
+              "session_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Active session ID. If omitted, a stateless session is created for this call.",
+                "title": "Session Id"
+              },
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "URL to navigate to (required without session_id)",
+                "title": "Url"
+              },
+              "wait_timeout": {
+                "default": 30000,
+                "description": "Timeout in ms for wait conditions",
+                "maximum": 300000,
+                "minimum": 1000,
+                "title": "Wait Timeout",
+                "type": "integer"
+              },
+              "headless": {
+                "default": true,
+                "description": "Run browser in headless mode",
+                "title": "Headless",
+                "type": "boolean"
+              },
+              "backend": {
+                "default": "cdp",
+                "description": "Backend: 'cdp', 'bidi', or 'auto'",
+                "enum": [
+                  "cdp",
+                  "bidi",
+                  "auto"
+                ],
+                "title": "Backend",
+                "type": "string"
+              }
+            },
+            "required": [
+              "source",
+              "target"
+            ],
+            "title": "DragInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_dragArguments"
+      }
+    },
+    {
+      "name": "wavexis_tap",
+      "description": "Tap an element matching a CSS selector (touch-emulated click).\n\n        Use wavexis_click for mouse-based clicking on desktop contexts or\n        wavexis_nl_click when you only have a natural language description.\n\n        Side effects: Dispatches a touch tap on the target element, which may\n        toggle controls or trigger navigation on mobile-optimised pages.\n        Returns: JSON string with keys: 'status' ('ok'/'error'). On error also\n        'error', 'tool', 'type', 'message', 'suggestion' (all str).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/TapInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "TapInput": {
+            "description": "Input for tapping an element (touch emulation).",
+            "properties": {
+              "selector": {
+                "description": "CSS selector for element to tap",
+                "minLength": 1,
+                "title": "Selector",
+                "type": "string"
+              },
+              "session_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Active session ID. If omitted, a stateless session is created for this call.",
+                "title": "Session Id"
+              },
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "URL to navigate to (required without session_id)",
+                "title": "Url"
+              },
+              "wait_timeout": {
+                "default": 30000,
+                "description": "Timeout in ms for wait conditions",
+                "maximum": 300000,
+                "minimum": 1000,
+                "title": "Wait Timeout",
+                "type": "integer"
+              },
+              "headless": {
+                "default": true,
+                "description": "Run browser in headless mode",
+                "title": "Headless",
+                "type": "boolean"
+              },
+              "backend": {
+                "default": "cdp",
+                "description": "Backend: 'cdp', 'bidi', or 'auto'",
+                "enum": [
+                  "cdp",
+                  "bidi",
+                  "auto"
+                ],
+                "title": "Backend",
+                "type": "string"
+              }
+            },
+            "required": [
+              "selector"
+            ],
+            "title": "TapInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_tapArguments"
+      }
+    },
+    {
+      "name": "wavexis_set_files",
+      "description": "Upload files to a file input element (``<input type=\"file\">``).\n\n        Use wavexis_drop when you need to simulate drag-and-drop of files or\n        MIME data onto a non-file-input element.\n\n        Side effects: Sets the selected files on the target file input element,\n        firing change events that typically trigger upload logic.\n        Returns: JSON string with keys: 'status' ('ok'/'error'). On error also\n        'error', 'tool', 'type', 'message', 'suggestion' (all str).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/SetFilesInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "SetFilesInput": {
+            "description": "Input for uploading files to a file input element.",
+            "properties": {
+              "selector": {
+                "description": "CSS selector for <input type='file'> element",
+                "minLength": 1,
+                "title": "Selector",
+                "type": "string"
+              },
+              "files": {
+                "description": "Absolute file paths to upload",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1,
+                "title": "Files",
+                "type": "array"
+              },
+              "session_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Active session ID. If omitted, a stateless session is created for this call.",
+                "title": "Session Id"
+              },
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "URL to navigate to (required without session_id)",
+                "title": "Url"
+              },
+              "wait_timeout": {
+                "default": 30000,
+                "description": "Timeout in ms for wait conditions",
+                "maximum": 300000,
+                "minimum": 1000,
+                "title": "Wait Timeout",
+                "type": "integer"
+              },
+              "headless": {
+                "default": true,
+                "description": "Run browser in headless mode",
+                "title": "Headless",
+                "type": "boolean"
+              },
+              "backend": {
+                "default": "cdp",
+                "description": "Backend: 'cdp', 'bidi', or 'auto'",
+                "enum": [
+                  "cdp",
+                  "bidi",
+                  "auto"
+                ],
+                "title": "Backend",
+                "type": "string"
+              }
+            },
+            "required": [
+              "selector",
+              "files"
+            ],
+            "title": "SetFilesInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_set_filesArguments"
+      }
+    },
+    {
+      "name": "wavexis_drop",
+      "description": "Drop files or MIME-typed data onto an element via drag events.\n\n        Use wavexis_set_files for standard ``<input type=\"file\">`` uploads or\n        wavexis_drag for dragging an existing DOM element to another element.\n\n        Side effects: Dispatches dragEnter, dragOver, and drop events with the\n        supplied data and files onto the target element's coordinates.\n        Returns: JSON string with keys: 'status' ('ok'/'error'), 'selector'\n        (str), 'x' (float), 'y' (float), 'data_types' (list[str]), 'files'\n        (list[str]). On error also 'error', 'tool', 'type', 'message',\n        'suggestion' (all str).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/DropInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "DropInput": {
+            "description": "Input for dropping files or MIME-typed data onto an element.",
+            "properties": {
+              "selector": {
+                "description": "CSS selector for the drop target",
+                "minLength": 1,
+                "title": "Selector",
+                "type": "string"
+              },
+              "data": {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "description": "MIME type to string payload map",
+                "title": "Data",
+                "type": "object"
+              },
+              "paths": {
+                "description": "Absolute file paths to drop",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Paths",
+                "type": "array"
+              },
+              "session_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Active session ID. If omitted, a stateless session is created for this call.",
+                "title": "Session Id"
+              },
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "URL to navigate to (required without session_id)",
+                "title": "Url"
+              },
+              "wait_timeout": {
+                "default": 30000,
+                "description": "Timeout in ms for wait conditions",
+                "maximum": 300000,
+                "minimum": 1000,
+                "title": "Wait Timeout",
+                "type": "integer"
+              },
+              "headless": {
+                "default": true,
+                "description": "Run browser in headless mode",
+                "title": "Headless",
+                "type": "boolean"
+              },
+              "backend": {
+                "default": "cdp",
+                "description": "Backend: 'cdp', 'bidi', or 'auto'",
+                "enum": [
+                  "cdp",
+                  "bidi",
+                  "auto"
+                ],
+                "title": "Backend",
+                "type": "string"
+              }
+            },
+            "required": [
+              "selector"
+            ],
+            "title": "DropInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_dropArguments"
+      }
+    },
+    {
+      "name": "wavexis_check",
+      "description": "Check a checkbox or radio button matching a CSS selector.\n\n        Use wavexis_uncheck to uncheck a checkbox or wavexis_click for generic\n        element activation.\n\n        Side effects: Clicks the target checkbox/radio, toggling its checked\n        state and firing change events.\n        Returns: JSON string with keys: 'status' ('ok'/'error'), 'checked'\n        (bool, the element's checked state after the action). On error also\n        'error', 'tool', 'type', 'message', 'suggestion' (all str).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/CheckInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "CheckInput": {
+            "description": "Input for checking/unchecking a checkbox or radio.",
+            "properties": {
+              "selector": {
+                "description": "CSS selector for checkbox/radio",
+                "minLength": 1,
+                "title": "Selector",
+                "type": "string"
+              },
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "selector",
+              "session_id"
+            ],
+            "title": "CheckInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_checkArguments"
+      }
+    },
+    {
+      "name": "wavexis_uncheck",
+      "description": "Uncheck a checkbox matching a CSS selector by clicking it.\n\n        Use wavexis_check to check a checkbox or wavexis_click for generic\n        element activation.\n\n        Side effects: Clicks the target checkbox to toggle it to unchecked,\n        firing change events.\n        Returns: JSON string with keys: 'status' ('ok'/'error'). On error also\n        'error', 'tool', 'type', 'message', 'suggestion' (all str).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/CheckInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "CheckInput": {
+            "description": "Input for checking/unchecking a checkbox or radio.",
+            "properties": {
+              "selector": {
+                "description": "CSS selector for checkbox/radio",
+                "minLength": 1,
+                "title": "Selector",
+                "type": "string"
+              },
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "selector",
+              "session_id"
+            ],
+            "title": "CheckInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_uncheckArguments"
+      }
+    },
+    {
+      "name": "wavexis_find_by_text",
+      "description": "Find element selector(s) by visible text content without interacting.\n\n        Use this to locate elements before calling wavexis_click or wavexis_fill\n        when you know the visible text but not the CSS selector.\n\n        Side effects: None — this is a read-only lookup that does not modify the\n        page or interact with any element.\n        Returns: JSON string with keys: 'selector' (str, first match) when\n        all=False, or 'selectors' (list[str]) and 'count' (int) when all=True.\n        On error also 'error', 'tool', 'type', 'message', 'suggestion' (all str).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/FindByTextInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "FindByTextInput": {
+            "description": "Input for finding elements by visible text content.",
+            "properties": {
+              "query": {
+                "description": "Text to search for in visible page content",
+                "minLength": 1,
+                "title": "Query",
+                "type": "string"
+              },
+              "all": {
+                "default": false,
+                "description": "Return all matches (True) or first match (False)",
+                "title": "All",
+                "type": "boolean"
+              },
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "query",
+              "session_id"
+            ],
+            "title": "FindByTextInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_find_by_textArguments"
+      }
+    },
+    {
+      "name": "wavexis_nl_click",
+      "description": "Click an element described in natural language.\n\n        Use wavexis_click when you already know the CSS selector, or\n        wavexis_nl_fill to fill a field described in natural language.\n\n        Side effects: Locates the best-matching element via text/semantic\n        matching and triggers a click event on it.\n        Returns: JSON string with keys: 'status' ('ok'/'error'). On error also\n        'error', 'tool', 'type', 'message', 'suggestion' (all str).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/NLClickInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "NLClickInput": {
+            "description": "Input for clicking an element by natural language query.",
+            "properties": {
+              "query": {
+                "description": "Natural language description of the element to click",
+                "minLength": 1,
+                "title": "Query",
+                "type": "string"
+              },
+              "auto_wait": {
+                "default": true,
+                "description": "Wait for element to be ready before clicking",
+                "title": "Auto Wait",
+                "type": "boolean"
+              },
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "query",
+              "session_id"
+            ],
+            "title": "NLClickInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_nl_clickArguments"
+      }
+    },
+    {
+      "name": "wavexis_nl_fill",
+      "description": "Fill an element described in natural language with a value.\n\n        Use wavexis_fill when you already know the CSS selector, or\n        wavexis_nl_click to click an element described in natural language.\n\n        Side effects: Locates the best-matching element via text/semantic\n        matching, clears it, and sets its value to the provided string.\n        Returns: JSON string with keys: 'status' ('ok'/'error'). On error also\n        'error', 'tool', 'type', 'message', 'suggestion' (all str).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/NLFillInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "NLFillInput": {
+            "description": "Input for filling an element by natural language query.",
+            "properties": {
+              "query": {
+                "description": "Natural language description of the element to fill",
+                "minLength": 1,
+                "title": "Query",
+                "type": "string"
+              },
+              "value": {
+                "description": "Value to fill",
+                "minLength": 1,
+                "title": "Value",
+                "type": "string"
+              },
+              "auto_wait": {
+                "default": true,
+                "description": "Wait for element to be ready before filling",
+                "title": "Auto Wait",
+                "type": "boolean"
+              },
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "query",
+              "value",
+              "session_id"
+            ],
+            "title": "NLFillInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_nl_fillArguments"
+      }
+    },
+    {
+      "name": "wavexis_cookies_get",
+      "description": "Retrieve all cookies for the current page context.\n\n        Use ``wavexis_cookies_set`` to add a cookie, or\n        ``wavexis_cookies_clear`` to remove all cookies at once.\n\n        Side effects: launches/acquires a browser backend, navigates to ``url``\n        if provided; read-only with respect to browser state.\n        Returns: JSON string with keys: 'status' ('ok'/'error'), 'cookies'\n        (list[dict]), 'count' (int).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/CookiesGetInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "CookiesGetInput": {
+            "description": "Input for getting cookies.",
+            "properties": {
+              "session_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Active session ID. If omitted, a stateless session is created for this call.",
+                "title": "Session Id"
+              },
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "URL to navigate to (required without session_id)",
+                "title": "Url"
+              },
+              "wait_timeout": {
+                "default": 30000,
+                "description": "Timeout in ms for wait conditions",
+                "maximum": 300000,
+                "minimum": 1000,
+                "title": "Wait Timeout",
+                "type": "integer"
+              },
+              "headless": {
+                "default": true,
+                "description": "Run browser in headless mode",
+                "title": "Headless",
+                "type": "boolean"
+              },
+              "backend": {
+                "default": "cdp",
+                "description": "Backend: 'cdp', 'bidi', or 'auto'",
+                "enum": [
+                  "cdp",
+                  "bidi",
+                  "auto"
+                ],
+                "title": "Backend",
+                "type": "string"
+              }
+            },
+            "title": "CookiesGetInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_cookies_getArguments"
+      }
+    },
+    {
+      "name": "wavexis_cookies_set",
+      "description": "Set a single cookie in the browser for the current page.\n\n        Use ``wavexis_cookies_get`` to read cookies, or\n        ``wavexis_cookies_delete`` to remove a specific cookie.\n\n        Side effects: launches/acquires a browser backend, navigates to ``url``\n        if provided, mutates browser cookie state.\n        Returns: JSON string with keys: 'status' ('ok'/'error').\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/CookiesSetInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "CookiesSetInput": {
+            "description": "Input for setting a cookie.",
+            "properties": {
+              "name": {
+                "description": "Name of the item",
+                "minLength": 1,
+                "title": "Name",
+                "type": "string"
+              },
+              "value": {
+                "description": "Value to set",
+                "minLength": 1,
+                "title": "Value",
+                "type": "string"
+              },
+              "domain": {
+                "description": "Cookie domain",
+                "minLength": 1,
+                "title": "Domain",
+                "type": "string"
+              },
+              "path": {
+                "default": "/",
+                "description": "Cookie path",
+                "minLength": 1,
+                "title": "Path",
+                "type": "string"
+              },
+              "secure": {
+                "default": true,
+                "description": "Whether the cookie is Secure",
+                "title": "Secure",
+                "type": "boolean"
+              },
+              "http_only": {
+                "default": false,
+                "description": "Whether the cookie is HttpOnly",
+                "title": "Http Only",
+                "type": "boolean"
+              },
+              "same_site": {
+                "default": "Lax",
+                "description": "SameSite attribute: Strict, Lax, or None",
+                "enum": [
+                  "Strict",
+                  "Lax",
+                  "None"
+                ],
+                "title": "Same Site",
+                "type": "string"
+              },
+              "session_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Active session ID. If omitted, a stateless session is created for this call.",
+                "title": "Session Id"
+              },
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "URL to navigate to (required without session_id)",
+                "title": "Url"
+              },
+              "wait_timeout": {
+                "default": 30000,
+                "description": "Timeout in ms for wait conditions",
+                "maximum": 300000,
+                "minimum": 1000,
+                "title": "Wait Timeout",
+                "type": "integer"
+              },
+              "headless": {
+                "default": true,
+                "description": "Run browser in headless mode",
+                "title": "Headless",
+                "type": "boolean"
+              },
+              "backend": {
+                "default": "cdp",
+                "description": "Backend: 'cdp', 'bidi', or 'auto'",
+                "enum": [
+                  "cdp",
+                  "bidi",
+                  "auto"
+                ],
+                "title": "Backend",
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "value",
+              "domain"
+            ],
+            "title": "CookiesSetInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_cookies_setArguments"
+      }
+    },
+    {
+      "name": "wavexis_cookies_delete",
+      "description": "Delete cookies matching a name and domain in the browser.\n\n        Use ``wavexis_cookies_clear`` to remove all cookies, or\n        ``wavexis_cookies_set`` to add a new cookie.\n\n        Side effects: launches/acquires a browser backend, navigates to ``url``\n        if provided, destructively removes matching cookies from browser state.\n        Returns: JSON string with keys: 'status' ('ok'/'error').\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/CookiesDeleteInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "CookiesDeleteInput": {
+            "description": "Input for deleting cookies.",
+            "properties": {
+              "name": {
+                "description": "Name of the item",
+                "minLength": 1,
+                "title": "Name",
+                "type": "string"
+              },
+              "domain": {
+                "description": "Cookie domain",
+                "minLength": 1,
+                "title": "Domain",
+                "type": "string"
+              },
+              "session_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Active session ID. If omitted, a stateless session is created for this call.",
+                "title": "Session Id"
+              },
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "URL to navigate to (required without session_id)",
+                "title": "Url"
+              },
+              "wait_timeout": {
+                "default": 30000,
+                "description": "Timeout in ms for wait conditions",
+                "maximum": 300000,
+                "minimum": 1000,
+                "title": "Wait Timeout",
+                "type": "integer"
+              },
+              "headless": {
+                "default": true,
+                "description": "Run browser in headless mode",
+                "title": "Headless",
+                "type": "boolean"
+              },
+              "backend": {
+                "default": "cdp",
+                "description": "Backend: 'cdp', 'bidi', or 'auto'",
+                "enum": [
+                  "cdp",
+                  "bidi",
+                  "auto"
+                ],
+                "title": "Backend",
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "domain"
+            ],
+            "title": "CookiesDeleteInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_cookies_deleteArguments"
+      }
+    },
+    {
+      "name": "wavexis_cookies_clear",
+      "description": "Clear all cookies from the browser session.\n\n        Use ``wavexis_cookies_delete`` to remove a specific cookie, or\n        ``wavexis_cookies_get`` to inspect cookies before clearing.\n\n        Side effects: uses an existing session backend, destructively removes\n        all cookies from the browser.\n        Returns: JSON string with keys: 'status' ('ok'/'error').\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/CookiesClearInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "CookiesClearInput": {
+            "description": "Input for clearing all cookies.",
+            "properties": {
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "session_id"
+            ],
+            "title": "CookiesClearInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_cookies_clearArguments"
+      }
+    },
+    {
+      "name": "wavexis_list_tabs",
+      "description": "List all open browser tabs in the session.\n\n        Use to discover tab IDs before calling wavexis_activate_tab or\n        wavexis_close_tab; use wavexis_session_info for session-level metadata\n        instead.\n\n        Side effects: None — read-only query of the browser's tab list.\n        Returns: JSON string with keys: 'status' ('ok'/'error'),\n        'tabs' (list[dict]), 'count' (int).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/ListTabsInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "ListTabsInput": {
+            "description": "Input for listing browser tabs.",
+            "properties": {
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "session_id"
+            ],
+            "title": "ListTabsInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_list_tabsArguments"
+      }
+    },
+    {
+      "name": "wavexis_new_tab",
+      "description": "Create a new browser tab, optionally navigating to a URL.\n\n        Use to open a parallel page without losing the current tab; use\n        wavexis_navigate to change the current tab's URL instead.\n\n        Side effects: Opens a new browser tab; if a URL is provided, issues a\n        network request to it.\n        Returns: JSON string with keys: 'status' ('ok'/'error'),\n        'tab_id' (str), 'url' (str).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/NewTabInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "NewTabInput": {
+            "description": "Input for creating a new browser tab.",
+            "properties": {
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              },
+              "url": {
+                "default": "about:blank",
+                "description": "URL for the new tab",
+                "title": "Url",
+                "type": "string"
+              }
+            },
+            "required": [
+              "session_id"
+            ],
+            "title": "NewTabInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_new_tabArguments"
+      }
+    },
+    {
+      "name": "wavexis_close_tab",
+      "description": "Close a browser tab by its ID.\n\n        Use to clean up tabs created with wavexis_new_tab; use\n        wavexis_session_close to terminate the entire session instead.\n\n        Side effects: Closes the specified tab and discards its page state.\n        Destructive — unsaved data in that tab is lost.\n        Returns: JSON string with keys: 'status' ('ok'/'error').\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/CloseTabInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "CloseTabInput": {
+            "description": "Input for closing a browser tab.",
+            "properties": {
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              },
+              "tab_id": {
+                "description": "Tab ID to operate on",
+                "title": "Tab Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "session_id",
+              "tab_id"
+            ],
+            "title": "CloseTabInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_close_tabArguments"
+      }
+    },
+    {
+      "name": "wavexis_activate_tab",
+      "description": "Focus (bring to front) a browser tab by its ID.\n\n        Use to switch the active tab before running navigation or interaction\n        tools; use wavexis_list_tabs to obtain tab IDs first.\n\n        Side effects: Changes the browser's active tab; subsequent tool calls\n        operate on the newly focused tab.\n        Returns: JSON string with keys: 'status' ('ok'/'error').\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/ActivateTabInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "ActivateTabInput": {
+            "description": "Input for activating (focusing) a browser tab.",
+            "properties": {
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              },
+              "tab_id": {
+                "description": "Tab ID to operate on",
+                "title": "Tab Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "session_id",
+              "tab_id"
+            ],
+            "title": "ActivateTabInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_activate_tabArguments"
+      }
+    },
+    {
+      "name": "wavexis_browser_version",
+      "description": "Query the active browser's version string via the selected backend.\n\n        Use ``wavexis_backends`` instead when you need a list of all installed\n        backends without launching a browser.\n\n        Side effects: Acquires (and may launch) a browser backend, then releases it.\n        Returns: JSON string with keys: 'status' ('ok'/'error'), 'version' (str), 'backend' (str).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/BrowserVersionInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "BrowserVersionInput": {
+            "description": "Input for getting the browser version.",
+            "properties": {
+              "session_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Active session ID. If omitted, a stateless session is created for this call.",
+                "title": "Session Id"
+              },
+              "backend": {
+                "default": "cdp",
+                "description": "Backend: 'cdp', 'bidi', or 'auto'",
+                "enum": [
+                  "cdp",
+                  "bidi",
+                  "auto"
+                ],
+                "title": "Backend",
+                "type": "string"
+              }
+            },
+            "title": "BrowserVersionInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_browser_versionArguments"
+      }
+    },
+    {
+      "name": "wavexis_backends",
+      "description": "List installed browser backends and their versions without launching a browser.\n\n        Use ``wavexis_browser_version`` instead when you need the version of a\n        specific running session's backend.\n\n        Side effects: None; queries the local filesystem only.\n        Returns: JSON string with keys: 'status' ('ok'/'error'),\n        'backends' (dict), 'available' (list[str]).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "title": "wavexis_backendsArguments"
+      }
+    },
+    {
+      "name": "wavexis_invoke",
+      "description": "Invoke any wavexis backend method by name, the ultimate escape hatch.\n\n        Use a dedicated MCP tool (e.g. ``wavexis_act``, ``wavexis_navigate``)\n        instead when one exists for the desired action; this tool exposes the\n        full ``AbstractBackend`` API (e.g. ``page_print_to_pdf``, ``perf_trace``,\n        ``runtime_evaluate``, ``pwa_install``) for methods without a wrapper.\n\n        Side effects: May launch an ephemeral browser, navigate to a URL, and\n        execute arbitrary backend methods; potentially destructive.\n        Returns: JSON string with keys: 'status' ('ok'/'error'), 'type' (str),\n        and either 'result' (any), 'base64' (str), or 'path' (str) depending on output.\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/InvokeInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "InvokeInput": {
+            "description": "Input for invoking any wavexis backend method by name.\n\nThis is a generic escape hatch that exposes the hundreds of high-level\nmethods available on ``AbstractBackend`` (e.g. ``page_print_to_pdf``,\n``perf_trace``, ``runtime_evaluate``, ``pwa_install``, etc.) without\nrequiring a dedicated MCP tool for each one.",
+            "properties": {
+              "method": {
+                "description": "Backend method name (snake_case), e.g. 'page_print_to_pdf' or 'runtime_evaluate'.",
+                "minLength": 1,
+                "title": "Method",
+                "type": "string"
+              },
+              "params": {
+                "additionalProperties": true,
+                "description": "Keyword arguments for the method. For methods that expect a single dataclass parameter (e.g. 'pdf'), pass the dataclass fields here as a JSON object.",
+                "title": "Params",
+                "type": "object"
+              },
+              "session_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Existing session ID. If omitted, an ephemeral browser is launched and closed automatically.",
+                "title": "Session Id"
+              },
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "URL to navigate to before invoking the method.",
+                "title": "Url"
+              },
+              "output_path": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "If the method returns bytes, save to this path instead of base64.",
+                "title": "Output Path"
+              },
+              "backend": {
+                "default": "cdp",
+                "description": "Backend type for ephemeral sessions: 'cdp', 'bidi', or 'auto'.",
+                "title": "Backend",
+                "type": "string"
+              },
+              "headless": {
+                "default": true,
+                "description": "Run browser in headless mode",
+                "title": "Headless",
+                "type": "boolean"
+              },
+              "width": {
+                "default": 1280,
+                "description": "Viewport width in pixels",
+                "maximum": 3840,
+                "minimum": 320,
+                "title": "Width",
+                "type": "integer"
+              },
+              "height": {
+                "default": 800,
+                "description": "Viewport height in pixels",
+                "maximum": 2160,
+                "minimum": 240,
+                "title": "Height",
+                "type": "integer"
+              },
+              "user_agent": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Custom User-Agent string",
+                "title": "User Agent"
+              },
+              "extra_headers": {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "description": "Extra HTTP headers to send",
+                "title": "Extra Headers",
+                "type": "object"
+              },
+              "proxy": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Proxy server URL (e.g. http://host:port)",
+                "title": "Proxy"
+              },
+              "timeout": {
+                "default": 30000,
+                "description": "Operation timeout in ms",
+                "maximum": 300000,
+                "minimum": 1000,
+                "title": "Timeout",
+                "type": "integer"
+              },
+              "user_data_dir": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Persistent Chrome user data directory",
+                "title": "User Data Dir"
+              },
+              "browser_url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "WebSocket URL of an existing browser (e.g. ws://localhost:9222)",
+                "title": "Browser Url"
+              },
+              "remote_url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Cloud browser WebSocket URL",
+                "title": "Remote Url"
+              },
+              "stealth": {
+                "default": false,
+                "description": "Enable anti-bot stealth mode",
+                "title": "Stealth",
+                "type": "boolean"
+              },
+              "browser": {
+                "default": "chrome",
+                "description": "Browser engine for BiDi backend: 'chrome' or 'firefox'.",
+                "enum": [
+                  "chrome",
+                  "firefox"
+                ],
+                "title": "Browser",
+                "type": "string"
+              },
+              "wait_strategy": {
+                "default": "load",
+                "description": "Wait strategy: load, domcontentloaded, networkidle, selector, url, none",
+                "enum": [
+                  "load",
+                  "domcontentloaded",
+                  "networkidle",
+                  "selector",
+                  "url",
+                  "none"
+                ],
+                "title": "Wait Strategy",
+                "type": "string"
+              },
+              "wait_selector": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "CSS selector to wait for (used when wait_strategy='selector')",
+                "title": "Wait Selector"
+              },
+              "wait_timeout": {
+                "default": 30000,
+                "description": "Timeout in ms for wait conditions",
+                "maximum": 300000,
+                "minimum": 1000,
+                "title": "Wait Timeout",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "method"
+            ],
+            "title": "InvokeInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_invokeArguments"
+      }
+    },
+    {
+      "name": "wavexis_key_down",
+      "description": "Dispatch a raw keyDown event to the active page via CDP.\n\n        This tool mirrors Playwright's API for compatibility; use\n        ``wavexis_press_keys`` for typing text and ``wavexis_act`` for\n        natural-language interaction.\n\n        Side effects: Sends a key-down input event to the browser page.\n        Returns: JSON string with keys: 'status' ('ok'/'error').\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/KeyDownInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "KeyDownInput": {
+            "description": "Input for dispatching a keyDown event.",
+            "properties": {
+              "key": {
+                "description": "Key to press (e.g. 'Enter', 'a', 'ArrowLeft')",
+                "minLength": 1,
+                "title": "Key",
+                "type": "string"
+              },
+              "code": {
+                "default": "",
+                "description": "Optional physical key code",
+                "title": "Code",
+                "type": "string"
+              },
+              "alt": {
+                "default": false,
+                "description": "Whether to hold the Alt key",
+                "title": "Alt",
+                "type": "boolean"
+              },
+              "ctrl": {
+                "default": false,
+                "description": "Whether to hold the Ctrl key",
+                "title": "Ctrl",
+                "type": "boolean"
+              },
+              "meta": {
+                "default": false,
+                "description": "Whether to hold the Meta (Cmd) key",
+                "title": "Meta",
+                "type": "boolean"
+              },
+              "shift": {
+                "default": false,
+                "description": "Whether to hold the Shift key",
+                "title": "Shift",
+                "type": "boolean"
+              },
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "key",
+              "session_id"
+            ],
+            "title": "KeyDownInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_key_downArguments"
+      }
+    },
+    {
+      "name": "wavexis_key_up",
+      "description": "Dispatch a raw keyUp event to the active page via CDP.\n\n        This tool mirrors Playwright's API for compatibility; pair with\n        ``wavexis_key_down`` for low-level key control, or use\n        ``wavexis_press_keys`` for simple text entry.\n\n        Side effects: Sends a key-up input event to the browser page.\n        Returns: JSON string with keys: 'status' ('ok'/'error').\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/KeyUpInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "KeyUpInput": {
+            "description": "Input for dispatching a keyUp event.",
+            "properties": {
+              "key": {
+                "description": "Key to release (e.g. 'Enter', 'a')",
+                "minLength": 1,
+                "title": "Key",
+                "type": "string"
+              },
+              "code": {
+                "default": "",
+                "description": "Optional physical key code",
+                "title": "Code",
+                "type": "string"
+              },
+              "alt": {
+                "default": false,
+                "description": "Whether to hold the Alt key",
+                "title": "Alt",
+                "type": "boolean"
+              },
+              "ctrl": {
+                "default": false,
+                "description": "Whether to hold the Ctrl key",
+                "title": "Ctrl",
+                "type": "boolean"
+              },
+              "meta": {
+                "default": false,
+                "description": "Whether to hold the Meta (Cmd) key",
+                "title": "Meta",
+                "type": "boolean"
+              },
+              "shift": {
+                "default": false,
+                "description": "Whether to hold the Shift key",
+                "title": "Shift",
+                "type": "boolean"
+              },
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "key",
+              "session_id"
+            ],
+            "title": "KeyUpInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_key_upArguments"
+      }
+    },
+    {
+      "name": "wavexis_press_keys",
+      "description": "Type a sequence of characters at the page level without targeting an element.\n\n        Use ``wavexis_key_down``/``wavexis_key_up`` instead for individual\n        modifier-key control, or ``wavexis_act`` for natural-language typing.\n\n        Side effects: Dispatches keyDown/keyUp pairs to the browser page; no\n        network requests.\n        Returns: JSON string with keys: 'status' ('ok'/'error'), 'typed' (str).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/PressKeysInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "PressKeysInput": {
+            "description": "Input for typing a sequence of keys at the page level.",
+            "properties": {
+              "text": {
+                "description": "Text/keys to type character by character",
+                "maxLength": 1000,
+                "minLength": 1,
+                "title": "Text",
+                "type": "string"
+              },
+              "delay": {
+                "default": 0,
+                "description": "Delay between keystrokes in milliseconds",
+                "minimum": 0,
+                "title": "Delay",
+                "type": "integer"
+              },
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "text",
+              "session_id"
+            ],
+            "title": "PressKeysInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_press_keysArguments"
+      }
+    },
+    {
+      "name": "wavexis_mouse_drag_xy",
+      "description": "Drag the mouse from one screen coordinate to another via CDP mouse events.\n\n        This tool mirrors Playwright's API for compatibility; use ``wavexis_act``\n        instead for natural-language drag interactions.\n\n        Side effects: Dispatches mouseMoved, mousePressed, and mouseReleased\n        events to the browser page; may trigger page interactions.\n        Returns: JSON string with keys: 'status' ('ok'/'error').\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/MouseDragXYInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "MouseDragXYInput": {
+            "description": "Input for dragging the mouse from one screen coordinate to another.",
+            "properties": {
+              "start_x": {
+                "description": "Starting X coordinate in CSS pixels",
+                "title": "Start X",
+                "type": "number"
+              },
+              "start_y": {
+                "description": "Starting Y coordinate in CSS pixels",
+                "title": "Start Y",
+                "type": "number"
+              },
+              "end_x": {
+                "description": "Ending X coordinate in CSS pixels",
+                "title": "End X",
+                "type": "number"
+              },
+              "end_y": {
+                "description": "Ending Y coordinate in CSS pixels",
+                "title": "End Y",
+                "type": "number"
+              },
+              "button": {
+                "default": "left",
+                "description": "Mouse button to use",
+                "enum": [
+                  "left",
+                  "right",
+                  "middle"
+                ],
+                "title": "Button",
+                "type": "string"
+              },
+              "steps": {
+                "default": 5,
+                "description": "Number of intermediate steps for smooth dragging",
+                "maximum": 50,
+                "minimum": 1,
+                "title": "Steps",
+                "type": "integer"
+              },
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "start_x",
+              "start_y",
+              "end_x",
+              "end_y",
+              "session_id"
+            ],
+            "title": "MouseDragXYInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_mouse_drag_xyArguments"
+      }
+    },
+    {
+      "name": "wavexis_console_clear",
+      "description": "Clear all buffered console messages for the session.\n\n        This tool mirrors Playwright's API for compatibility; use it before\n        capturing a fresh set of console logs to avoid stale entries.\n\n        Side effects: Resets the session's in-memory console message buffer.\n        Returns: JSON string with keys: 'status' ('ok'/'error').\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/ConsoleClearInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "ConsoleClearInput": {
+            "description": "Input for clearing console messages.",
+            "properties": {
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "session_id"
+            ],
+            "title": "ConsoleClearInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_console_clearArguments"
+      }
+    },
+    {
+      "name": "wavexis_cookie_get",
+      "description": "Retrieve a single cookie by name (and optional domain/path) from the browser.\n\n        Use ``wavexis_cookie_list`` instead when you need multiple cookies or\n        broad filtering.\n\n        Side effects: None; reads cookie state from the browser session.\n        Returns: JSON string with keys: 'status' ('ok'/'error'), 'cookie' (dict|null).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/CookieGetInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "CookieGetInput": {
+            "description": "Input for getting a specific cookie by name (and optional domain/path).",
+            "properties": {
+              "name": {
+                "description": "Cookie name to retrieve",
+                "minLength": 1,
+                "title": "Name",
+                "type": "string"
+              },
+              "domain": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Optional domain filter",
+                "title": "Domain"
+              },
+              "path": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Optional path filter",
+                "title": "Path"
+              },
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "session_id"
+            ],
+            "title": "CookieGetInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_cookie_getArguments"
+      }
+    },
+    {
+      "name": "wavexis_cookie_list",
+      "description": "List browser cookies with optional name, domain, and path filters.\n\n        Use ``wavexis_cookie_get`` instead when you need a single named cookie.\n\n        Side effects: None; reads cookie state from the browser session.\n        Returns: JSON string with keys: 'status' ('ok'/'error'),\n        'cookies' (list[dict]), 'count' (int).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/CookieListInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "CookieListInput": {
+            "description": "Input for listing cookies with optional filters.",
+            "properties": {
+              "name": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Optional cookie name filter",
+                "title": "Name"
+              },
+              "domain": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Optional domain filter",
+                "title": "Domain"
+              },
+              "path": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Optional path filter",
+                "title": "Path"
+              },
+              "limit": {
+                "default": 100,
+                "description": "Maximum number of cookies to return",
+                "maximum": 1000,
+                "minimum": 1,
+                "title": "Limit",
+                "type": "integer"
+              },
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "session_id"
+            ],
+            "title": "CookieListInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_cookie_listArguments"
+      }
+    },
+    {
+      "name": "wavexis_close_page",
+      "description": "Close a browser page/tab by target id, or the current page if omitted.\n\n        This tool mirrors Playwright's API for compatibility; use it to free\n        resources. The session itself remains active for other tabs.\n\n        Side effects: Closes the specified browser target; destructive and\n        irreversible.\n        Returns: JSON string with keys: 'status' ('ok'/'error'), 'closed' (str).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/ClosePageInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "ClosePageInput": {
+            "description": "Input for closing the current page/tab.",
+            "properties": {
+              "tab_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Optional tab/target id; current page is closed if omitted",
+                "title": "Tab Id"
+              },
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "session_id"
+            ],
+            "title": "ClosePageInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_close_pageArguments"
+      }
+    },
+    {
+      "name": "wavexis_find",
+      "description": "Search the accessibility snapshot for nodes matching text or a regex pattern.\n\n        Use ``wavexis_act`` instead for natural-language element interaction;\n        this tool mirrors Playwright's snapshot search for compatibility.\n\n        Side effects: None; fetches and searches the a11y tree read-only.\n        Returns: JSON string with keys: 'status' ('ok'/'error'),\n        'matches' (list[dict]), 'count' (int).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/FindInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "FindInput": {
+            "description": "Input for finding text in the ARIA/accessibility snapshot.",
+            "properties": {
+              "text": {
+                "description": "Text or regex to search in the a11y snapshot",
+                "maxLength": 500,
+                "minLength": 1,
+                "title": "Text",
+                "type": "string"
+              },
+              "limit": {
+                "default": 20,
+                "description": "Maximum number of matches to return",
+                "maximum": 100,
+                "minimum": 1,
+                "title": "Limit",
+                "type": "integer"
+              },
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "text",
+              "session_id"
+            ],
+            "title": "FindInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_findArguments"
+      }
+    },
+    {
+      "name": "wavexis_get_config",
+      "description": "Return wavexis-mcp server configuration and available browser backends.\n\n        Use ``wavexis_backends`` instead when you only need the backend list;\n        this tool additionally exposes the server name for introspection.\n\n        Side effects: None; queries the local filesystem only.\n        Returns: JSON string with keys: 'status' ('ok'/'error'), 'name' (str),\n        'available_backends' (list[str]), 'backend_versions' (dict).\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/GetConfigInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "GetConfigInput": {
+            "description": "Input for querying server configuration.",
+            "properties": {},
+            "title": "GetConfigInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_get_configArguments"
+      }
+    },
+    {
+      "name": "wavexis_act",
+      "description": "Execute a natural language instruction on the current page (M1).\n\n        Takes an a11y snapshot, matches the instruction to an element,\n        and performs the detected action (click, type, fill, hover).\n\n        Args:\n            input: Act parameters (instruction, session_id, max_retries).\n\n        Returns:\n            JSON string with ``action``, ``element``, ``score``, ``status``.\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/ActInput"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "$defs": {
+          "ActInput": {
+            "description": "Input for natural language interaction (M1).",
+            "properties": {
+              "instruction": {
+                "description": "Natural language instruction (e.g. 'click the login button')",
+                "minLength": 1,
+                "title": "Instruction",
+                "type": "string"
+              },
+              "session_id": {
+                "description": "Active session ID from wavexis_session_open",
+                "title": "Session Id",
+                "type": "string"
+              },
+              "max_retries": {
+                "default": 3,
+                "description": "Maximum number of retry attempts",
+                "maximum": 10,
+                "minimum": 1,
+                "title": "Max Retries",
+                "type": "integer"
+              },
+              "value": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Explicit text value for type/fill actions (overrides auto-extraction)",
+                "title": "Value"
+              }
+            },
+            "required": [
+              "instruction",
+              "session_id"
+            ],
+            "title": "ActInput",
+            "type": "object"
+          }
+        },
+        "title": "wavexis_actArguments"
+      }
+    }
+  ],
+  "stderrTail": "Downloading cryptography (4.5MiB)\nDownloading pygments (1.2MiB)\nDownloading pydantic-core (2.0MiB)\n Downloaded pygments\n Downloaded pydantic-core\n Downloaded cryptography\nInstalled 40 packages in 11ms\nWaveXisMCP — enabled tiers: core\n[09/15/26 06:40:10] INFO     Processing request of type            server.py:733\n                             ListToolsRequest                                   \n",
+  "durationMs": 27849,
+  "transport": "stdio"
+}

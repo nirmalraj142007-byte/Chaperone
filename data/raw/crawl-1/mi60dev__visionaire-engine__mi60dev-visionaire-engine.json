@@ -1,0 +1,1665 @@
+{
+  "serverId": "mi60dev__visionaire-engine__mi60dev-visionaire-engine",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "connect",
+      "description": "ALWAYS the first call: start (or restart) the browser session — launch a local Chrome by default, or attach to the user's real, logged-in browser via browserUrl (e.g. http://127.0.0.1:9222, for pages behind auth like wp-admin or a dashboard). Pass url to load a page immediately. Every other tool needs a live session; if a tool reports no session or a wedged browser, call connect again to reset.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "launch",
+              "attach"
+            ],
+            "description": "Default 'launch'; 'attach' joins a running Chrome"
+          },
+          "url": {
+            "type": "string",
+            "description": "Navigate here right after connecting"
+          },
+          "browserUrl": {
+            "type": "string",
+            "description": "DevTools HTTP endpoint for attach mode, e.g. http://127.0.0.1:9222"
+          },
+          "headless": {
+            "type": "boolean",
+            "description": "Launch mode only; default false (visible window)"
+          },
+          "width": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "Viewport width, default 1280"
+          },
+          "height": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "Viewport height, default 800"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "navigate",
+      "description": "Navigate the connected tab to a URL — or, with no url, hard-reload the current page. Pass bypassCache: true when a stale cached stylesheet/script keeps being served (disables the browser cache for the rest of the session). All element uids from earlier snapshots become stale — take a fresh page_snapshot afterwards.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Absolute URL to load; omit to reload the current page"
+          },
+          "bypassCache": {
+            "type": "boolean",
+            "description": "Disable the browser cache for the rest of the session (fresh CSS/JS on every load)"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "set_viewport",
+      "description": "Emulate a viewport size (and optional deviceScaleFactor) on the connected tab, then re-inspect. Use for responsive bugs — 'it breaks on mobile', 'the menu is wrong at tablet width', anything behind a media query — since resizing can change which @media rule wins. Follow with a fresh page_snapshot / explain_styles at the new size.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "width": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "Viewport width in CSS px"
+          },
+          "height": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "Viewport height in CSS px"
+          },
+          "deviceScaleFactor": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "Default 1"
+          }
+        },
+        "required": [
+          "width",
+          "height"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "page_snapshot",
+      "description": "Token-budgeted census of the rendered page — a nested, uid-keyed element tree with geometry and visibility flags. Call this FIRST after connect to orient yourself and to obtain the stable uids every other tool targets. Reach for it whenever you do not yet know the page structure or an element uid. To find one specific element by description use find_elements; to see the page visually use annotated_screenshot.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "budgetTokens": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "Output token budget (default 1500)"
+          },
+          "scope": {
+            "type": "object",
+            "properties": {
+              "uid": {
+                "type": "string",
+                "description": "Element uid from a prior snapshot, e.g. \"e12\""
+              },
+              "selector": {
+                "type": "string",
+                "description": "CSS selector (first match)"
+              },
+              "x": {
+                "type": "number",
+                "description": "Viewport x coordinate"
+              },
+              "y": {
+                "type": "number",
+                "description": "Viewport y coordinate"
+              }
+            },
+            "additionalProperties": false,
+            "description": "Limit the census to one subtree; exactly one of uid | selector | x+y"
+          },
+          "includeInvisible": {
+            "type": "boolean",
+            "description": "Render invisible nodes inline with their reason (default false: counted, not shown)"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "page_origins",
+      "description": "Inventory of every stylesheet (URL, byte size, origin, source-map presence) plus platform detection — WordPress version, theme/child theme, page builder (Elementor/Divi), and CSS optimizer. Use before proposing edits to learn where the CSS actually lives, when a file:line points at a generated/minified bundle and you need the true source, or to answer 'is this WordPress/Elementor?' and 'which stylesheet owns this?'.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "inspect_element",
+      "description": "The 'WHAT' for one element: box model (margins/padding/border), key computed styles as authored → used values, a visibility verdict, and layout context. Use when you need an element's current rendered state — its real size, spacing, or whether it is actually visible/where it sits. These are the values the page ACTUALLY renders, so it catches the common case where the source rule you'd edit is overridden or never applied. For 'WHY it looks like this / which rule wins' use explain_styles; for 'which ancestor constrains its size or position' use inspect_ancestors.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "uid": {
+            "type": "string",
+            "description": "Element uid from a prior page_snapshot (e.g. \"e8\")"
+          },
+          "selector": {
+            "type": "string",
+            "description": "CSS selector — first match is used"
+          },
+          "x": {
+            "type": "number",
+            "description": "Viewport x coordinate (use with y)"
+          },
+          "y": {
+            "type": "number",
+            "description": "Viewport y coordinate (use with x)"
+          },
+          "verbose": {
+            "type": "boolean",
+            "description": "Include all whitelisted computed properties, not just non-default ones"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "explain_styles",
+      "description": "The core 'WHY': a per-property cascade verdict naming the winning CSS declaration and every loser with the exact reason it lost (specificity, !important, source order, inline, layer), each attributed to file:line or a WordPress/Elementor/Customizer origin. Reach for this whenever a style is wrong or 'won't apply' — wrong color/font/size/spacing, 'something is overriding my rule', 'where does this value come from', 'which rule do I edit'. Prefer this over grepping the source for a style bug: source search finds candidate rules, but only the live cascade shows which one actually WINS on a layered stack — so diagnose here before editing CSS you assume is the cause. Each winner also reports its BLAST RADIUS — how many other elements that rule styles (so you change THE button, not all buttons) — plus a scoped selector that targets just this element, with a specificity verdict. Pass an optional property (e.g. 'margin-bottom') to focus.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "uid": {
+            "type": "string",
+            "description": "Element uid from a prior page_snapshot / find_elements"
+          },
+          "selector": {
+            "type": "string",
+            "description": "CSS selector (first match) — alternative to uid"
+          },
+          "x": {
+            "type": "number",
+            "description": "Viewport x coordinate — use together with y"
+          },
+          "y": {
+            "type": "number",
+            "description": "Viewport y coordinate — use together with x"
+          },
+          "property": {
+            "type": "string",
+            "description": "CSS property (longhand or shorthand) to explain; omit for all competing/authored properties"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "inspect_ancestors",
+      "description": "Walk an element's ancestor chain for ONE concern — width, height, position, overflow, or stacking — and flag the ancestor that is the binding constraint. Use when the cause lives ABOVE the element: it's too wide/narrow, clipped or cut off, won't scroll, is mysteriously positioned, or a z-index has no effect (trapped in an ancestor's stacking context). Complements explain_styles, which explains the element's own winning rules.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "uid": {
+            "type": "string",
+            "description": "Element uid from a prior page_snapshot (e.g. \"e8\")"
+          },
+          "selector": {
+            "type": "string",
+            "description": "CSS selector — first match is used"
+          },
+          "x": {
+            "type": "number",
+            "description": "Viewport x coordinate (use with y)"
+          },
+          "y": {
+            "type": "number",
+            "description": "Viewport y coordinate (use with x)"
+          },
+          "concern": {
+            "type": "string",
+            "enum": [
+              "width",
+              "height",
+              "position",
+              "overflow",
+              "stacking"
+            ],
+            "description": "Which constraint chain to report (default: width)"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "find_elements",
+      "description": "Deterministic search by visible text, CSS selector, ARIA role, and/or screen region → compact uid-keyed matches; anchors include their resolved href, so find_elements{role:'link'} lists the page's links WITH destinations (then navigate to browse them). Criteria are AND-combined by default; pass match:'any' for a union (OR) when over-specifying returns nothing, and visibleOnly:false to include display:none/hidden elements. Use to locate the element a user described in words ('the Subscribe button', 'the header nav') before inspecting it. Prefer this (or page_snapshot) over guessing a selector. For a point in a screenshot use node_at_point; to have the human physically click the element use pick_element.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "Case-insensitive substring of the element's own text"
+          },
+          "selector": {
+            "type": "string",
+            "description": "CSS selector, matched via querySelectorAll"
+          },
+          "role": {
+            "type": "string",
+            "description": "ARIA role: explicit [role] attribute or tag-implied (link, button, heading, navigation, …)"
+          },
+          "region": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "width": {
+                "type": "number"
+              },
+              "height": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "width",
+              "height"
+            ],
+            "additionalProperties": false,
+            "description": "Viewport rectangle (CSS px) the element must intersect"
+          },
+          "match": {
+            "type": "string",
+            "enum": [
+              "all",
+              "any"
+            ],
+            "default": "all",
+            "description": "'all' (default): AND — an element must satisfy every criterion. 'any': OR — union of elements matching any single criterion, de-duplicated. Use any when over-specifying returned nothing."
+          },
+          "visibleOnly": {
+            "type": "boolean",
+            "default": true
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 10
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "node_at_point",
+      "description": "Map viewport coordinates (x, y) to the element there: uid, identity, and the full ancestor uid chain. Use to turn a coordinate — e.g. a spot you located in an annotated_screenshot, or pixel coords the user gave — into a concrete element and uid.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "x": {
+            "type": "number",
+            "description": "Viewport x in CSS px"
+          },
+          "y": {
+            "type": "number",
+            "description": "Viewport y in CSS px"
+          }
+        },
+        "required": [
+          "x",
+          "y"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "annotated_screenshot",
+      "description": "Screenshot in two modes: an overview with numbered marks burned in, where mark N equals uid eN (mark 17 = e17); or an element-scoped crop via clipTo (uid|selector|x,y) with optional padding, scale (0.5..4 zoom for tiny elements), and annotate:false for a clean unlabeled crop. Use when text tools are not enough and you need to SEE the page while keeping pixels tied to elements — spatial or visual-layout questions ('things overlap', 'the layout looks off'), to zoom in on one small element, or to confirm which element is which. Then target elements by their uid.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "uids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Uids to mark; default: top ~25 visible interactive/landmark elements"
+          },
+          "region": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "width": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "height": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "width",
+              "height"
+            ],
+            "additionalProperties": false,
+            "description": "Clip to this viewport rectangle (CSS px). Ignored when clipTo is given (clipTo wins)."
+          },
+          "fullPage": {
+            "type": "boolean",
+            "default": false,
+            "description": "Capture the whole page height. Ignored when clipTo or region is given (they win)."
+          },
+          "clipTo": {
+            "type": "object",
+            "properties": {
+              "uid": {
+                "type": "string",
+                "description": "Element uid from a prior page_snapshot (e.g. \"e8\")"
+              },
+              "selector": {
+                "type": "string",
+                "description": "CSS selector — first match is used"
+              },
+              "x": {
+                "type": "number",
+                "description": "Viewport x coordinate (use with y)"
+              },
+              "y": {
+                "type": "number",
+                "description": "Viewport y coordinate (use with x)"
+              }
+            },
+            "additionalProperties": false,
+            "description": "Crop the screenshot to this element's border box instead of the whole viewport (target by uid | selector | x+y). Pairs with padding, scale, and annotate. Takes precedence over region and fullPage — pick ONE capture mode."
+          },
+          "padding": {
+            "type": "number",
+            "minimum": 0,
+            "default": 0,
+            "description": "clipTo only: extra pixels of margin around the cropped element on every side"
+          },
+          "scale": {
+            "type": "number",
+            "default": 1,
+            "description": "clipTo only: zoom factor for the crop, clamped 0.5..4 (2 = double size)"
+          },
+          "annotate": {
+            "type": "boolean",
+            "default": true,
+            "description": "When false, burn in NO marks/labels — a clean crop so labels never cover the target"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "style_diff",
+      "description": "BEFORE/AFTER comparison for one element: record its styles into a named slot, change something, compare — only the properties that changed are reported. Reach for it whenever you ask 'did my fix actually change anything?' or need to prove what an edit / inject_css patch / viewport change / interaction altered. The loop: style_diff{mode:'record'} → apply the change → style_diff{mode:'compare'}. Confirms a fix moved exactly the property you intended, and nothing else.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "uid": {
+            "type": "string",
+            "description": "Element uid from a prior page_snapshot / find_elements"
+          },
+          "selector": {
+            "type": "string",
+            "description": "CSS selector (first match) — alternative to uid"
+          },
+          "x": {
+            "type": "number",
+            "description": "Viewport x coordinate — use together with y"
+          },
+          "y": {
+            "type": "number",
+            "description": "Viewport y coordinate — use together with x"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "record",
+              "compare"
+            ],
+            "description": "record: store baseline. compare: diff against it"
+          },
+          "slot": {
+            "type": "string",
+            "default": "default",
+            "description": "Recording slot name — omit the target on compare to reuse the recorded one"
+          },
+          "capture_pixels": {
+            "type": "boolean",
+            "default": false,
+            "description": "record only: also save a clean viewport screenshot as a pixel baseline under this slot — compare later with visual_diff { reference: { baseline_slot: slot } }"
+          }
+        },
+        "required": [
+          "mode"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "pick_element",
+      "description": "Let the human point at the element: turns on a DevTools-style hover highlight in the connected tab and waits for them to click, returning the clicked element's uid and ancestor chain. Use when the user says \"I'll show you\" / \"let me click it\", or when find_elements/annotated_screenshot could not pin down the element from a description. Needs a visible browser window (connect { headless: false }).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "timeoutSeconds": {
+            "type": "number",
+            "description": "How long to wait for the user's click; default 60, clamped to 5–600"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_listeners",
+      "description": "List the event listeners on an element — and, by default, delegated listeners up the ancestor chain, document, and window: event type, handler file:line (source-mapped, WordPress-origin-labeled), and the bug-prone flags capture/passive/once. Use to answer \"which JS file handles this button?\", or when a click/submit/keypress does nothing, a form won't submit, or preventDefault is ignored (often a passive listener). For what actually happens step-by-step when clicked, use record_interaction.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "uid": {
+            "type": "string",
+            "description": "Element uid from a prior page_snapshot (e.g. \"e8\")"
+          },
+          "selector": {
+            "type": "string",
+            "description": "CSS selector — first match is used"
+          },
+          "x": {
+            "type": "number",
+            "description": "Viewport x coordinate (use with y)"
+          },
+          "y": {
+            "type": "number",
+            "description": "Viewport y coordinate (use with x)"
+          },
+          "eventType": {
+            "type": "string",
+            "description": "Filter to one event type, e.g. \"click\""
+          },
+          "includeAncestors": {
+            "type": "boolean",
+            "description": "Also report listeners up the ancestor chain, document, and window (default true) — delegated handlers live there"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "explain_animations",
+      "description": "Explain the animations and transitions on one element: a census of what is running right now (type, play state, timing, animated properties) plus the declared transition/animation/@keyframes rules attributed to file:line, checked against a closed ruleset of known causes. Use when an animation or transition is not smooth, does not run at all, or jumps/pops instead of animating; pass the optional property (e.g. \"opacity\") to check why THAT property does not animate. For a timeline of a specific click/hover (what fired, what got cancelled), use record_interaction.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "uid": {
+            "type": "string",
+            "description": "Element uid from a prior page_snapshot / find_elements"
+          },
+          "selector": {
+            "type": "string",
+            "description": "CSS selector (first match) — alternative to uid"
+          },
+          "x": {
+            "type": "number",
+            "description": "Viewport x coordinate — use together with y"
+          },
+          "y": {
+            "type": "number",
+            "description": "Viewport y coordinate — use together with x"
+          },
+          "property": {
+            "type": "string",
+            "description": "CSS property you expected to animate — enables the \"changes are instant\" check"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "record_interaction",
+      "description": "Perform one interaction (click or hover, or watch while the human interacts) and return a source-attributed causal TIMELINE — handler file:line, DOM/class mutations, animations started/cancelled, layout shifts, console errors — uid-keyed and time-ordered. Use for cause-and-effect over time: \"the sidebar does not hide smoothly\", \"nothing/the wrong thing happens when I click\", \"the menu closes immediately\", a modal that won't open, focus that jumps. For static listener attribution without triggering it, use get_listeners; for animation rules at rest, use explain_animations.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "uid": {
+            "type": "string",
+            "description": "Element uid from a prior page_snapshot (e.g. \"e5\")"
+          },
+          "selector": {
+            "type": "string",
+            "description": "CSS selector — first match is used"
+          },
+          "x": {
+            "type": "number",
+            "description": "Viewport x coordinate (use with y)"
+          },
+          "y": {
+            "type": "number",
+            "description": "Viewport y coordinate (use with x)"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "click",
+              "hover",
+              "manual"
+            ],
+            "description": "click/hover dispatch real input at the target; manual just records while a human interacts in the (headed) tab"
+          },
+          "waitMs": {
+            "type": "number",
+            "description": "Observation window after the action; default 1500, clamped 200–10000"
+          },
+          "maxEvents": {
+            "type": "number",
+            "description": "Hard cap on timeline lines; default 40"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "interact",
+      "description": "Perform ONE action (click/hover/focus) at a target and LEAVE the resulting state in place — no recording, no teardown. Use this to DRIVE the UI into a state — open a popup/menu/modal, reveal a tab or dropdown — so you can then inspect_element / annotated_screenshot / explain_styles the NEW state: \"open the menu then tell me why it overflows\", \"click the tab and check the panel\". Reports the target's post-action visibility + content box so you learn immediately whether it opened. Target by uid, selector, or x+y. For the causal TIMELINE of an interaction — which handler ran, what mutated, which transitions were cancelled — use record_interaction instead; interact only leaves you in the state, it does not explain the transition.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "uid": {
+            "type": "string",
+            "description": "Element uid from a prior page_snapshot (e.g. \"e5\")"
+          },
+          "selector": {
+            "type": "string",
+            "description": "CSS selector — first match is used"
+          },
+          "x": {
+            "type": "number",
+            "description": "Viewport x coordinate (use with y)"
+          },
+          "y": {
+            "type": "number",
+            "description": "Viewport y coordinate (use with x)"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "click",
+              "hover",
+              "focus"
+            ],
+            "description": "What to do at the target — default \"click\". hover moves the mouse over it; focus focuses it."
+          },
+          "settleMs": {
+            "type": "number",
+            "description": "How long to wait for the UI to react before reporting the target's new state; default 250, clamped 0–5000"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "measure_element",
+      "description": "Deterministic rendered-pixel geometry: an element's content box (WxH @x,y) and the true TEXT INK bounding box of its glyphs (canvas measureText extents, not the advance box), plus a sub-pixel centering verdict — how far the ink sits from the content-box center on each axis, with a padding/line-height fix hint. Reach for this when the caller is fussing over VISUAL alignment that the box model can't see: \"the × in the close button looks a bit high/off-center\", \"the icon is not quite centered\", one-off pixel offsets. Pass referenceUid/referenceSelector to also get the center delta between two elements. explain_styles tells you which rule set the value; measure_element tells you whether the painted glyph actually lands where you want.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "uid": {
+            "type": "string",
+            "description": "Element uid from a prior page_snapshot (e.g. \"e17\")"
+          },
+          "selector": {
+            "type": "string",
+            "description": "CSS selector — first match is used"
+          },
+          "x": {
+            "type": "number",
+            "description": "Viewport x coordinate (use with y)"
+          },
+          "y": {
+            "type": "number",
+            "description": "Viewport y coordinate (use with x)"
+          },
+          "referenceUid": {
+            "type": "string",
+            "description": "Optional reference element uid to measure alignment against (its center)"
+          },
+          "referenceSelector": {
+            "type": "string",
+            "description": "Optional reference element selector to measure alignment against (its center)"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "evaluate",
+      "description": "ESCAPE HATCH — run arbitrary agent-authored JavaScript in the page and get the JSON result. Use ONLY when no purpose-built tool covers the need: a custom measurement, forcing a UI state (dispatch an event / toggle a class), or reading framework/component state. Prefer explain_styles / measure_element / inspect_element / interact where they apply — reach for evaluate when the question is genuinely bespoke and none of them fits. The JS is trusted (you wrote it); its result is returned verbatim and size-capped.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "expression": {
+            "type": "string",
+            "description": "JavaScript evaluated in the page (top-level frame). May be an expression (e.g. \"getComputedStyle(document.body).zoom\"), a bare object literal (e.g. \"{ w: innerWidth, h: innerHeight }\"), or an IIFE for multi-step logic. The value it produces is returned as JSON."
+          },
+          "awaitPromise": {
+            "type": "boolean",
+            "description": "If the expression yields a Promise, await it and return the resolved value (default true)."
+          },
+          "timeoutMs": {
+            "type": "number",
+            "description": "Max run time in ms before aborting (default 5000, clamped 100..30000)."
+          }
+        },
+        "required": [
+          "expression"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "inject_css",
+      "description": "Apply CSS to the LIVE page without touching source files — either declarations trialed on one element (applied !important so the trial always wins; reports which computed properties changed) or a raw page-wide rule block. THE fix-loop tool: explain_styles names the winning rule → inject_css the candidate fix → verify with measure_element/style_diff/annotated_screenshot → write the final declarations into the source once → revert:'all'. This replaces the slow edit-file → cache-bust → reload → re-snapshot cycle. Also the quick way to hide a cookie/consent overlay that occludes what you need (inject 'display:none'). Patches are trial-only: gone on navigation or revert.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "uid": {
+            "type": "string",
+            "description": "Element uid to patch (from page_snapshot / find_elements)"
+          },
+          "selector": {
+            "type": "string",
+            "description": "CSS selector (first match) — alternative to uid"
+          },
+          "declarations": {
+            "type": "string",
+            "description": "Declarations to trial on the target, e.g. \"align-items: center; margin-top: 4px\". Applied with !important so the trial always wins; requires uid or selector."
+          },
+          "css": {
+            "type": "string",
+            "description": "Raw CSS rule block(s) to inject page-wide, e.g. \".onetrust-banner { display: none }\""
+          },
+          "revert": {
+            "type": "string",
+            "description": "Remove a previous patch by id (e.g. 'p2'), or 'all' to remove every patch"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "assert_visual",
+      "description": "THE verification gate — call it after EVERY visual edit instead of claiming success from reading code. State verifiable rendered-geometry claims (equal_height, equal_width, aligned_edges, centered, gap_equals, spacing_equals, visible, not_clipped, not_overlapped, within_viewport, color_equals, color_near, z_above, text_not_truncated, text_not_overflowing, size_equals, positioned) and get a deterministic per-assertion PASS/FAIL with the measured pixels and the offending uids — 'FAIL: e87 412px vs e91 388px' ends the argument. Pass suite_id to register the set as a named regression suite; later call with ONLY {suite_id} to re-run it against the current render, or hand it to responsive_sweep for a per-viewport matrix. Never claim a visual fix works without a PASS from this tool.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "assertions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "maxLength": 80,
+                  "description": "Caller label, echoed back in the result"
+                },
+                "type": {
+                  "type": "string",
+                  "description": "One of: equal_height, equal_width, aligned_edges, centered, gap_equals, spacing_equals, visible, not_clipped, not_overlapped, within_viewport, color_equals, color_near, z_above, text_not_truncated, text_not_overflowing, size_equals, positioned"
+                },
+                "targets": {
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "description": "Element uid from a prior page_snapshot / find_elements"
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "selector": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "selector"
+                        ],
+                        "additionalProperties": false,
+                        "description": "CSS selector — expands to ALL matches (>40 matches is TARGET_AMBIGUOUS; narrow the selector)"
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "role": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "role"
+                        ],
+                        "additionalProperties": false,
+                        "description": "ARIA role (+ exact accessible name)"
+                      }
+                    ]
+                  },
+                  "minItems": 1,
+                  "description": "Target elements; selector/role entries expand to all matches"
+                },
+                "params": {
+                  "type": "object",
+                  "properties": {
+                    "edge": {
+                      "type": "string",
+                      "enum": [
+                        "left",
+                        "right",
+                        "top",
+                        "bottom"
+                      ]
+                    },
+                    "in": {
+                      "type": "string",
+                      "enum": [
+                        "parent",
+                        "viewport"
+                      ]
+                    },
+                    "axis": {
+                      "type": "string",
+                      "enum": [
+                        "x",
+                        "y",
+                        "both"
+                      ]
+                    },
+                    "value": {
+                      "type": [
+                        "number",
+                        "string"
+                      ],
+                      "description": "gap_equals: expected gap in px (number); color_equals/color_near: expected CSS color (string)"
+                    },
+                    "fully": {
+                      "type": "boolean"
+                    },
+                    "property": {
+                      "type": "string",
+                      "enum": [
+                        "text",
+                        "background",
+                        "border"
+                      ]
+                    },
+                    "deltaE": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "by": {
+                      "$ref": "#/properties/assertions/items/properties/targets/items",
+                      "description": "not_overlapped: restrict the occlusion check to these element(s); ignored by other types"
+                    },
+                    "relation": {
+                      "type": "string",
+                      "enum": [
+                        "left_of",
+                        "right_of",
+                        "above",
+                        "below",
+                        "inside",
+                        "contains"
+                      ]
+                    },
+                    "width_px": {
+                      "type": "number"
+                    },
+                    "height_px": {
+                      "type": "number"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "description": "Per-type parameters (see the type list in docs/tools.md)"
+                },
+                "tolerance_px": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "description": "Per-assertion tolerance override"
+                }
+              },
+              "required": [
+                "type",
+                "targets"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1,
+            "maxItems": 100,
+            "description": "Assertions to evaluate; omit to re-run a stored suite_id"
+          },
+          "suite_id": {
+            "type": "string",
+            "description": "Name this assertion set as a re-runnable suite; alone (no assertions) re-runs the stored suite"
+          },
+          "tolerance_px": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "default": 1,
+            "description": "Global edge/size tolerance in CSS px (default 1)"
+          },
+          "detail": {
+            "type": "string",
+            "enum": [
+              "summary",
+              "full"
+            ],
+            "default": "summary",
+            "description": "'full' adds per-assertion explanations"
+          },
+          "stop_on_first_fail": {
+            "type": "boolean",
+            "default": false,
+            "description": "Stop evaluating after the first FAIL/ERROR"
+          },
+          "page": {
+            "type": "object",
+            "properties": {
+              "offset": {
+                "type": "integer",
+                "minimum": 0,
+                "default": 0
+              },
+              "limit": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 200,
+                "default": 50
+              }
+            },
+            "additionalProperties": false,
+            "description": "Paginate the results array of a large suite"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "visual_diff",
+      "description": "Deterministic screenshot diff of the CURRENT render (page or one element) against a reference image — a user-supplied mockup (reference: { image_path }) or a named pixel baseline recorded earlier with style_diff { capture_pixels: true } (reference: { baseline_slot }). Returns MATCH/DIVERGENT with divergence_pct, the worst NxN grid regions mapped back to likely element uids, and an optional diff-heatmap PNG written to disk as a file path (never inline). Reach for it on 'make it match the mockup' or to catch any unintended pixel change after an edit; tune threshold / ignore_antialiasing / mask_dynamic for environment noise. For geometry claims (heights, alignment, spacing) prefer assert_visual — it is OS-stable integer math; pixel diffing is inherently environment-sensitive.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "page",
+                "description": "Compare the whole current viewport"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "uid": {
+                    "type": "string",
+                    "description": "Element uid from a prior page_snapshot / find_elements"
+                  },
+                  "selector": {
+                    "type": "string",
+                    "description": "CSS selector (first match) — alternative to uid"
+                  }
+                },
+                "additionalProperties": false
+              }
+            ],
+            "default": "page",
+            "description": "What to capture: 'page' (viewport, default) or one element { uid | selector } as a clean border-box crop"
+          },
+          "reference": {
+            "type": "object",
+            "properties": {
+              "image_path": {
+                "type": "string",
+                "description": "Path to a PNG file to compare against"
+              },
+              "baseline_slot": {
+                "type": "string",
+                "description": "Pixel baseline recorded via style_diff { mode: 'record', capture_pixels: true }"
+              }
+            },
+            "additionalProperties": false,
+            "description": "What to compare against — exactly ONE of image_path | baseline_slot"
+          },
+          "threshold": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "default": 0.1,
+            "description": "Per-pixel YIQ color-distance threshold 0..1 (pixelmatch semantics; smaller = stricter). Default 0.1"
+          },
+          "accept_pct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "default": 0.1,
+            "description": "The verdict line: MATCH when divergence_pct (percent of compared pixels that differ) <= accept_pct. Default 0.1"
+          },
+          "ignore_antialiasing": {
+            "type": "boolean",
+            "default": true,
+            "description": "Dismiss pixels that look like font/edge anti-aliasing (pixelmatch heuristic). Default true"
+          },
+          "ignore_regions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "number",
+                  "description": "Left, CSS px from the captured area left edge"
+                },
+                "y": {
+                  "type": "number",
+                  "description": "Top, CSS px from the captured area top edge"
+                },
+                "width": {
+                  "type": "number",
+                  "exclusiveMinimum": 0,
+                  "description": "Width in CSS px"
+                },
+                "height": {
+                  "type": "number",
+                  "exclusiveMinimum": 0,
+                  "description": "Height in CSS px"
+                }
+              },
+              "required": [
+                "x",
+                "y",
+                "width",
+                "height"
+              ],
+              "additionalProperties": false
+            },
+            "default": [],
+            "description": "Rectangles to exclude, CSS px relative to the captured area's top-left (viewport for 'page', element box for element targets)"
+          },
+          "mask_dynamic": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "description": "Element uid"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "selector": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "selector"
+                  ],
+                  "additionalProperties": false,
+                  "description": "CSS selector — expands to ALL matches"
+                }
+              ]
+            },
+            "default": [],
+            "description": "Elements whose current border boxes are excluded from the diff — timestamps, ads, carousels"
+          },
+          "emit_heatmap": {
+            "type": "boolean",
+            "default": false,
+            "description": "Write a diff heatmap PNG (dimmed capture, differing pixels in red) and return its path in artifacts"
+          },
+          "region_grid": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 16,
+            "default": 8,
+            "description": "Report divergence per NxN grid over the capture. Default 8"
+          }
+        },
+        "required": [
+          "reference"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "impact_preview",
+      "description": "Blast-radius report to run BEFORE editing a shared selector: every element '.nav-item' currently matches on the open page — true match count, uids, identities, screen regions, grouped by visual role — so you see that the footer shares the class before you warp it. Pass proposed_change: { declarations: {'padding':'20px'} } for a sandboxed dry-run that predicts exactly which matched elements' computed values would change and which are protected by more specific rules. Scope honesty: current page, current viewport only (other routes/viewports/interactive states are invisible here — use responsive_sweep for viewports). Use it whenever a fix edits a class used in more than one place.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "selector": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The shared CSS selector you are about to edit — ALL current matches are counted and grouped"
+          },
+          "group_by": {
+            "type": "string",
+            "enum": [
+              "visual_role",
+              "region",
+              "tag"
+            ],
+            "default": "visual_role",
+            "description": "How to group matches: 'visual_role' = tag + up-to-2 classes + screen region + ARIA role, 'region' = top/middle/bottom of the document, 'tag' = element tag name"
+          },
+          "proposed_change": {
+            "type": "object",
+            "properties": {
+              "declarations": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "description": "CSS property → value pairs to dry-run, e.g. {\"padding\": \"20px\", \"color\": \"red\"}"
+              }
+            },
+            "required": [
+              "declarations"
+            ],
+            "additionalProperties": false,
+            "description": "Dry-run: sandbox-inject `selector { declarations }`, force a recompute, diff computed values per element, then remove the injected style — predicts which matches would ACTUALLY change (specificity/!important losers stay unaffected)"
+          },
+          "detail": {
+            "type": "string",
+            "enum": [
+              "summary",
+              "full"
+            ],
+            "default": "summary",
+            "description": "'full' additionally saves an annotated screenshot of the first matches to the artifacts dir"
+          },
+          "page": {
+            "type": "object",
+            "properties": {
+              "offset": {
+                "type": "integer",
+                "minimum": 0,
+                "default": 0,
+                "description": "Skip this many entries"
+              },
+              "limit": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100,
+                "default": 20,
+                "description": "Max entries returned in this call"
+              }
+            },
+            "additionalProperties": false,
+            "description": "Paginates dry_run.changed when proposed_change is given, otherwise the groups list"
+          }
+        },
+        "required": [
+          "selector"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "diagnose",
+      "description": "One-shot 'why is this broken': give it an element (uid/selector/x,y) and an optional symptom — clipped, overflowing, not_centered, invisible, overlapping, wrong_size, or auto — and get a ranked culprit list in plain language with deterministic measured evidence ('ancestor e2 has overflow:hidden; content exceeds it by 34px on the right'). auto runs the cheap ordered battery and reports what trips. THE tool to call when assert_visual returns FAIL and you need the cause, or when the user says 'it looks broken' without saying why. Fix the named culprit, then re-run assert_visual.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "uid": {
+            "type": "string",
+            "description": "Element uid from a prior page_snapshot / find_elements"
+          },
+          "selector": {
+            "type": "string",
+            "description": "CSS selector (first match) — alternative to uid"
+          },
+          "x": {
+            "type": "number",
+            "description": "Viewport x coordinate — use together with y"
+          },
+          "y": {
+            "type": "number",
+            "description": "Viewport y coordinate — use together with x"
+          },
+          "symptom": {
+            "type": "string",
+            "enum": [
+              "clipped",
+              "overflowing",
+              "not_centered",
+              "invisible",
+              "overlapping",
+              "wrong_size",
+              "auto"
+            ],
+            "default": "auto",
+            "description": "What looks broken; 'auto' runs the ordered battery invisible → clipped → overflowing → overlapping → not_centered"
+          },
+          "expected": {
+            "type": "object",
+            "properties": {
+              "width_px": {
+                "type": "number",
+                "description": "Expected content-box width in CSS px (wrong_size)"
+              },
+              "height_px": {
+                "type": "number",
+                "description": "Expected content-box height in CSS px (wrong_size)"
+              },
+              "centered_in": {
+                "type": "string",
+                "enum": [
+                  "parent",
+                  "viewport"
+                ],
+                "description": "Centering container for not_centered (default 'parent')"
+              }
+            },
+            "additionalProperties": false,
+            "description": "What the element SHOULD look like — required for wrong_size"
+          },
+          "max_culprits": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10,
+            "default": 5,
+            "description": "Cap on ranked culprits returned (default 5)"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "responsive_sweep",
+      "description": "Re-run a verification across viewports in ONE call and get a per-viewport verdict matrix — the cure for 'looks right at 1280, broken on mobile'. run: { suite_id } re-runs a registered assert_visual suite (selectors re-resolve at each width), run: { assertions: [...] } runs inline claims, run: { diagnose: {...} } probes a symptom per viewport. Defaults to 375/768/1280/1920; passing cells collapse to PASS, failing cells carry the failed assertions with measured values; the original viewport is restored afterwards. Run it before claiming any responsive work is done.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "viewports": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "width": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 10000,
+                  "description": "Viewport width in CSS px"
+                },
+                "height": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 10000,
+                  "description": "Viewport height in CSS px"
+                },
+                "deviceScaleFactor": {
+                  "type": "number",
+                  "minimum": 0.25,
+                  "maximum": 5,
+                  "description": "Device pixel ratio (default 1)"
+                }
+              },
+              "required": [
+                "width",
+                "height"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1,
+            "default": [
+              {
+                "width": 375,
+                "height": 812
+              },
+              {
+                "width": 768,
+                "height": 1024
+              },
+              {
+                "width": 1280,
+                "height": 800
+              },
+              {
+                "width": 1920,
+                "height": 1080
+              }
+            ],
+            "description": "Viewports to sweep, max 8 per call (default: 375x812, 768x1024, 1280x800, 1920x1080)"
+          },
+          "run": {
+            "type": "object",
+            "properties": {
+              "suite_id": {
+                "type": "string",
+                "description": "Re-run this stored assertion suite at each viewport (selectors re-resolve per viewport)"
+              },
+              "assertions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "maxLength": 80,
+                      "description": "Caller label, echoed back in the result"
+                    },
+                    "type": {
+                      "type": "string",
+                      "description": "One of: equal_height, equal_width, aligned_edges, centered, gap_equals, spacing_equals, visible, not_clipped, not_overlapped, within_viewport, color_equals, color_near, z_above, text_not_truncated, text_not_overflowing, size_equals, positioned"
+                    },
+                    "targets": {
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "description": "Element uid from a prior page_snapshot / find_elements"
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "selector": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "selector"
+                            ],
+                            "additionalProperties": false,
+                            "description": "CSS selector — expands to ALL matches (>40 matches is TARGET_AMBIGUOUS; narrow the selector)"
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "role": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "role"
+                            ],
+                            "additionalProperties": false,
+                            "description": "ARIA role (+ exact accessible name)"
+                          }
+                        ]
+                      },
+                      "minItems": 1,
+                      "description": "Target elements; selector/role entries expand to all matches"
+                    },
+                    "params": {
+                      "type": "object",
+                      "properties": {
+                        "edge": {
+                          "type": "string",
+                          "enum": [
+                            "left",
+                            "right",
+                            "top",
+                            "bottom"
+                          ]
+                        },
+                        "in": {
+                          "type": "string",
+                          "enum": [
+                            "parent",
+                            "viewport"
+                          ]
+                        },
+                        "axis": {
+                          "type": "string",
+                          "enum": [
+                            "x",
+                            "y",
+                            "both"
+                          ]
+                        },
+                        "value": {
+                          "type": [
+                            "number",
+                            "string"
+                          ],
+                          "description": "gap_equals: expected gap in px (number); color_equals/color_near: expected CSS color (string)"
+                        },
+                        "fully": {
+                          "type": "boolean"
+                        },
+                        "property": {
+                          "type": "string",
+                          "enum": [
+                            "text",
+                            "background",
+                            "border"
+                          ]
+                        },
+                        "deltaE": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "by": {
+                          "$ref": "#/properties/run/properties/assertions/items/properties/targets/items",
+                          "description": "not_overlapped: restrict the occlusion check to these element(s); ignored by other types"
+                        },
+                        "relation": {
+                          "type": "string",
+                          "enum": [
+                            "left_of",
+                            "right_of",
+                            "above",
+                            "below",
+                            "inside",
+                            "contains"
+                          ]
+                        },
+                        "width_px": {
+                          "type": "number"
+                        },
+                        "height_px": {
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "description": "Per-type parameters (see the type list in docs/tools.md)"
+                    },
+                    "tolerance_px": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100,
+                      "description": "Per-assertion tolerance override"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "targets"
+                  ],
+                  "additionalProperties": false
+                },
+                "minItems": 1,
+                "maxItems": 100,
+                "description": "Inline assertions to evaluate at each viewport"
+              },
+              "diagnose": {
+                "type": "object",
+                "properties": {
+                  "target": {
+                    "type": "object",
+                    "properties": {
+                      "uid": {
+                        "type": "string",
+                        "description": "Element uid from a prior page_snapshot (e.g. \"e8\")"
+                      },
+                      "selector": {
+                        "type": "string",
+                        "description": "CSS selector — first match is used"
+                      },
+                      "x": {
+                        "type": "number",
+                        "description": "Viewport x coordinate (use with y)"
+                      },
+                      "y": {
+                        "type": "number",
+                        "description": "Viewport y coordinate (use with x)"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "description": "Element to diagnose at each viewport (uid | selector | x+y)"
+                  },
+                  "symptom": {
+                    "type": "string",
+                    "enum": [
+                      "clipped",
+                      "overflowing",
+                      "not_centered",
+                      "invisible",
+                      "overlapping",
+                      "wrong_size",
+                      "auto"
+                    ],
+                    "description": "What looks wrong; 'auto' (default) detects the symptom from the rendered facts"
+                  },
+                  "expected": {
+                    "type": "object",
+                    "properties": {
+                      "width_px": {
+                        "type": "number",
+                        "description": "Expected width in CSS px"
+                      },
+                      "height_px": {
+                        "type": "number",
+                        "description": "Expected height in CSS px"
+                      },
+                      "centered_in": {
+                        "type": "string",
+                        "enum": [
+                          "parent",
+                          "viewport"
+                        ],
+                        "description": "Expected centering reference"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "description": "Expected geometry, for wrong_size / not_centered symptoms"
+                  },
+                  "max_culprits": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10,
+                    "description": "Cap on ranked culprits per viewport"
+                  }
+                },
+                "required": [
+                  "target"
+                ],
+                "additionalProperties": false,
+                "description": "Diagnose one element at each viewport instead of asserting"
+              }
+            },
+            "additionalProperties": false,
+            "description": "The payload to execute at every viewport — exactly ONE of suite_id | assertions | diagnose"
+          },
+          "restore_viewport": {
+            "type": "boolean",
+            "default": true,
+            "description": "Restore the pre-sweep viewport when done (default true)"
+          }
+        },
+        "required": [
+          "run"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "capture_proof",
+      "description": "Before/after evidence bundle proving a fix worked: call with phase:'before' ahead of the change and phase:'after' once assert_visual passes — each phase captures an annotated screenshot (marked with your target uids, saved to disk as file paths) and, with suite_id, attaches the suite verdict; the 'after' call returns a verdict_delta (FAIL→PASS per assertion). Use it to close the loop with humans: 'here is the before, the after, and the measured verdicts'. Bundles persist under the artifacts dir keyed by bundle_id.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "phase": {
+            "type": "string",
+            "enum": [
+              "before",
+              "after"
+            ],
+            "description": "Which side of the fix this capture is: 'before' the edit or 'after' it"
+          },
+          "bundle_id": {
+            "type": "string",
+            "description": "Bundle name (1-64 chars: letters, digits, hyphens, underscores) — use the SAME id for before and after"
+          },
+          "targets": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "description": "Element uid from a prior page_snapshot / find_elements"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "selector": {
+                      "type": "string",
+                      "description": "CSS selector"
+                    }
+                  },
+                  "required": [
+                    "selector"
+                  ],
+                  "additionalProperties": false,
+                  "description": "CSS selector — expands to ALL matches"
+                }
+              ]
+            },
+            "default": [],
+            "description": "Elements to mark in the screenshot (deduped, max 25 after selector expansion); empty = auto-mark the top visible interactive/landmark elements"
+          },
+          "suite_id": {
+            "type": "string",
+            "description": "Run this stored assertion suite and store its verdicts with the phase (enables verdict_delta on after)"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Free-form caption for this capture, echoed in the summary"
+          }
+        },
+        "required": [
+          "phase",
+          "bundle_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "check_alignment",
+      "description": "DEPRECATED — use assert_visual (aligned_edges / equal_height / equal_width / spacing_equals assertions), which adds PASS/FAIL verdicts and re-runnable suites. Still functional for one release: pixel-perfect audit for a GROUP of elements (a selector's matches or a uid list): which edges/centers align and which element is off by how many px, gap rhythm with outliers, size consistency, optional N-px grid conformance, and pixel-snap warnings.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "selector": {
+            "type": "string",
+            "description": "CSS selector — audits ALL matches (2–40), e.g. \".nav li\" or \".card\""
+          },
+          "uids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 2,
+            "maxItems": 40,
+            "description": "Explicit uids from a prior snapshot"
+          },
+          "tolerance": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10,
+            "description": "Px within which values count as aligned (default 0.5)"
+          },
+          "gridUnit": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 64,
+            "description": "Also check lefts/tops against an N-px grid (e.g. 8)"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "pick_color",
+      "description": "Sample the ACTUAL painted pixel at a point or element — the composited truth that computed styles cannot give (gradients, background images, opacity stacks, blend modes) — plus the owning element's computed color/background and a WCAG contrast verdict (AA/AAA) of the text against the painted backdrop. Reach for it on 'the color looks off', 'is this the exact brand hex?', 'is this text readable on that background?'. Use at:'top-left' to sample pure background (center may hit a glyph); use explain_styles to find WHICH RULE set a wrong color.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "x": {
+            "type": "number",
+            "description": "Viewport x of the pixel to sample (use with y)"
+          },
+          "y": {
+            "type": "number",
+            "description": "Viewport y of the pixel to sample (use with x)"
+          },
+          "uid": {
+            "type": "string",
+            "description": "Element uid — samples inside it (see at)"
+          },
+          "selector": {
+            "type": "string",
+            "description": "CSS selector — first match"
+          },
+          "at": {
+            "type": "string",
+            "enum": [
+              "center",
+              "top-left"
+            ],
+            "description": "Sample point within the element: 'center' (default; may hit text glyphs) or 'top-left' (2px inside the border — usually pure background)"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "visionaire-engine 0.1.0 ready on stdio\n",
+  "durationMs": 46739,
+  "transport": "stdio"
+}

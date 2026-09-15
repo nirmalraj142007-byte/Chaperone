@@ -1,0 +1,8 @@
+{
+  "serverId": "alepha188838884__context-firewall__alepha188838884-context-firewall",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "[context-firewall] [error] fatal error: Error: ENOENT: no such file or directory, open 'config.json'\n    at readFileSync (node:fs:440:20)\n    at loadConfig (file:///tmp/npm-cache/_npx/0ae0d4529753718a/node_modules/context-firewall/dist/config.js:134:17)\n    at main (file:///tmp/npm-cache/_npx/0ae0d4529753718a/node_modules/context-firewall/dist/cli.js:62:20)\n    at file:///tmp/npm-cache/_npx/0ae0d4529753718a/node_modules/context-firewall/dist/cli.js:145:1\n    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)\n    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)\n    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)\nnpm notice\nnpm notice New major version of npm available! 10.9.8 -> 12.0.2\nnpm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2\nnpm notice To update run: npm install -g npm@12.0.2\nnpm notice\n",
+  "durationMs": 20987,
+  "transport": "stdio"
+}

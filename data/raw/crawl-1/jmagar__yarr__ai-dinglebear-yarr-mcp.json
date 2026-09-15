@@ -1,0 +1,8 @@
+{
+  "serverId": "jmagar__yarr__ai-dinglebear-yarr-mcp",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "npm error code ENOVERSIONS\nnpm error No versions available for yarr-mcp\nnpm error A complete log of this run can be found in: /tmp/npm-cache/_logs/2026-09-15T06_36_46_066Z-debug-0.log\n",
+  "durationMs": 2707,
+  "transport": "stdio"
+}

@@ -22,7 +22,7 @@ The two lines below are reserved for the crawler to fill in automatically —
 by writing `startedAt` into `data/crawl-1-report.json` and
 `data/crawl-2-report.json` — not by hand-editing this file:
 
-- Crawl 1 executed at: _(pending — see `data/crawl-1-report.json` → `.startedAt`)_
+- Crawl 1 executed at: 2026-09-15T06:19:42.282Z (finished 2026-09-15T06:51:29.907Z; corpus/TAXONOMY.md at commit 0c896539006dbb6f8dfacc1f02ebbf179c50eec2)
 - Crawl 2 executed at: _(pending — see `data/crawl-2-report.json` → `.startedAt`)_
 
 Do not fill these in manually. If they are blank, the crawl has not run.

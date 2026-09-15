@@ -1,0 +1,943 @@
+{
+  "serverId": "autonomad1__computeback-mcp__ai-autonomad-computeback",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "search_products",
+      "description": "Search the Computeback rewards marketplace for products purchasable with $NOMD tokens. Filter by category, keyword, or sort order.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "description": "Filter by category slug"
+          },
+          "query": {
+            "type": "string",
+            "description": "Free-text search query"
+          },
+          "sort": {
+            "type": "string",
+            "enum": [
+              "price_asc",
+              "price_desc",
+              "best_value",
+              "newest"
+            ],
+            "description": "Sort order for results"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_product",
+      "description": "Get full details for a specific product in the Computeback marketplace, including $NOMD price, USD value, vendor, and description.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "product_id": {
+            "type": "string",
+            "description": "The product ID to look up"
+          }
+        },
+        "required": [
+          "product_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_categories",
+      "description": "List all product categories available in the Computeback marketplace with product counts.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "check_balance",
+      "description": "Check the $NOMD token balance for a wallet address. Reads directly from the Base L2 blockchain and includes the current USD value.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "wallet_address": {
+            "type": "string",
+            "description": "Ethereum wallet address (0x...) to check"
+          }
+        },
+        "required": [
+          "wallet_address"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "create_order",
+      "description": "Purchase a product from the Computeback marketplace using $NOMD tokens. Creates an order for the given product and buyer wallet.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "product_id": {
+            "type": "string",
+            "description": "The product ID to purchase"
+          },
+          "wallet_address": {
+            "type": "string",
+            "description": "Buyer wallet address that holds $NOMD"
+          }
+        },
+        "required": [
+          "product_id",
+          "wallet_address"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_orders",
+      "description": "Retrieve order history for a wallet address from the Computeback marketplace.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "wallet_address": {
+            "type": "string",
+            "description": "Wallet address to look up orders for"
+          }
+        },
+        "required": [
+          "wallet_address"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_recommendations",
+      "description": "Get recommended products from the Computeback marketplace. Optionally personalized by wallet or agent type.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "wallet_address": {
+            "type": "string",
+            "description": "Wallet address for personalized recommendations"
+          },
+          "agent_type": {
+            "type": "string",
+            "description": "Type of AI agent (e.g. 'travel', 'shopping', 'general') for tailored suggestions"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "buy_nomd",
+      "description": "Get the link to purchase $NOMD tokens from the Autonomad treasury (paid in USDC on Base L2). Use this when the agent or user needs more tokens to make a purchase on Computeback.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_audience_data",
+      "description": "Read a paginated slice of an audience upload (e.g. an email list a business uploaded). Each access is audit-logged. Returns rows keyed by the schema columns.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "business_id": {
+            "type": "string",
+            "description": "The Computeback business id whose audience you're reading"
+          },
+          "audience_id": {
+            "type": "string",
+            "description": "The audience upload id"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1,
+            "description": "1-indexed page number"
+          },
+          "page_size": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500,
+            "default": 50,
+            "description": "Rows per page (max 500)"
+          },
+          "task_id": {
+            "type": "string",
+            "description": "Optional offer/task id for audit-trail correlation"
+          }
+        },
+        "required": [
+          "business_id",
+          "audience_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "list_audiences",
+      "description": "List the audience uploads (lead lists, brand assets, product docs) a business has provided for the current task. Returns metadata only — no row contents.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "business_id": {
+            "type": "string",
+            "description": "The Computeback business id"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "email_list",
+              "contact_list",
+              "brand_asset",
+              "product_doc"
+            ],
+            "description": "Filter by upload kind"
+          }
+        },
+        "required": [
+          "business_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_business_profile",
+      "description": "Get the business's public profile fields (legal name, website, phone, location). Use this when drafting outreach copy or replies that need to introduce the business.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "business_id": {
+            "type": "string",
+            "description": "The Computeback business id"
+          }
+        },
+        "required": [
+          "business_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_product_info",
+      "description": "Look up product knowledge for a business. Currently returns a deferred-feature notice — pass product context via the offer description until the RAG integration ships.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "business_id": {
+            "type": "string",
+            "description": "The Computeback business id"
+          },
+          "query": {
+            "type": "string",
+            "description": "The question or topic to look up"
+          },
+          "top_k": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20,
+            "default": 5,
+            "description": "Max chunks to return (when implemented)"
+          }
+        },
+        "required": [
+          "business_id",
+          "query"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "fetch_url",
+      "description": "Scoped scraper for prospect research. Pass a public URL (e.g. a prospect's company homepage) and get the text contents back. Rate-limited to 30 calls/min per agent. Respects the 256KB cap.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Absolute http(s) URL to fetch"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "dispatch_email_campaign",
+      "description": "Send an email campaign for an offer the agent has accepted. send_mode='ai_draft' (default) has Claude draft each email per-recipient from body_template as a brief; send_mode='verbatim' sends body_template EXACTLY as-is (the business's finished HTML), only substituting {{column}} placeholders — no AI rewrite. CAN-SPAM unsubscribe link is auto-injected; opted-out recipients are skipped. Outcome events stream back via the offer's webhook.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "offer_id": {
+            "type": "string",
+            "description": "The offer id the agent is currently assigned to."
+          },
+          "audience_upload_id": {
+            "type": "string",
+            "description": "Audience id; must be in the offer's granted audiences."
+          },
+          "from_name": {
+            "type": "string",
+            "description": "Display name in the From: header (e.g. 'Maya at Acme')."
+          },
+          "from_email": {
+            "type": "string",
+            "description": "From: address; must be on the offer's verified sender domain. Defaults to agent@<domain>."
+          },
+          "reply_to": {
+            "type": "string",
+            "description": "Reply-To header. Defaults to from_email."
+          },
+          "send_mode": {
+            "type": "string",
+            "enum": [
+              "ai_draft",
+              "verbatim"
+            ],
+            "default": "ai_draft",
+            "description": "'ai_draft' = Claude writes each email from body_template (a brief). 'verbatim' = send body_template's exact HTML, only filling {{column}} placeholders."
+          },
+          "subject_template": {
+            "type": "string",
+            "description": "Subject line. ai_draft: a hint Claude personalizes. verbatim: the literal subject (with optional {{column}} placeholders)."
+          },
+          "body_template": {
+            "type": "string",
+            "description": "ai_draft: brief/talking points Claude drafts from. verbatim: the exact email HTML to send as-is (supports {{column}} placeholders, up to 256 KB)."
+          },
+          "variants": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "description": "e.g. 'A', 'B', 'control'"
+                },
+                "weight": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100,
+                  "default": 1
+                },
+                "hint": {
+                  "type": "string",
+                  "description": "Copy direction for this variant"
+                }
+              },
+              "required": [
+                "label"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1,
+            "maxItems": 8,
+            "description": "A/B variants. Pass a single entry if you don't want a split."
+          }
+        },
+        "required": [
+          "offer_id",
+          "audience_upload_id",
+          "from_name",
+          "subject_template",
+          "body_template",
+          "variants"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "dispatch_voice_campaign",
+      "description": "Place outbound phone calls to the granted audience using Vapi for telephony, ElevenLabs voice, and Claude Sonnet for the real-time conversation. Each call uses the system_prompt as the assistant's instructions; greeting is the first thing the recipient hears. Voicemail-drop on no-answer; live-transfer to a designated number when the lead matches the transfer trigger. TCPA-compliant (DNC list scrub + recipient-timezone 8am-9pm window). Outcomes flow back via the Vapi webhook → outcome event stream.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "offer_id": {
+            "type": "string",
+            "description": "Offer the agent has accepted."
+          },
+          "audience_upload_id": {
+            "type": "string",
+            "description": "Audience id; must be granted to the offer. Rows must include a phone column (E.164 or 10-digit US)."
+          },
+          "system_prompt": {
+            "type": "string",
+            "minLength": 40,
+            "description": "System instructions for the call. Optional: if omitted (or use_business_brief=true), it's composed from the business's compiled brief (POST /v1/business/brief/compile) so the agent knows what to pitch."
+          },
+          "use_business_brief": {
+            "type": "boolean",
+            "description": "Compose the system prompt from the business's compiled sales brief instead of (or overriding) system_prompt."
+          },
+          "goal": {
+            "type": "string",
+            "description": "Call objective, e.g. 'book a 15-minute intro meeting' — overrides the brief's goal."
+          },
+          "agent_display_name": {
+            "type": "string",
+            "description": "Name the assistant gives on the call (e.g. 'Maya from Acme')."
+          },
+          "greeting": {
+            "type": "string",
+            "description": "First thing the assistant says when the customer answers."
+          },
+          "first_message_mode": {
+            "type": "string",
+            "enum": [
+              "assistant_speaks_first",
+              "wait_for_user"
+            ]
+          },
+          "voice_id": {
+            "type": "string",
+            "description": "ElevenLabs voice id. Defaults to 'rachel'."
+          },
+          "from_phone_number": {
+            "type": "string",
+            "description": "Vapi phoneNumberId provisioned in Vapi dashboard."
+          },
+          "voicemail_drop_id": {
+            "type": "string",
+            "description": "ID of a voicemail-drop the business pre-recorded; used when the call hits voicemail."
+          },
+          "live_transfer_number": {
+            "type": "string",
+            "description": "E.164 phone to transfer to when the trigger matches."
+          },
+          "live_transfer_trigger": {
+            "type": "string",
+            "description": "Free-form trigger description (e.g. 'asks about pricing')."
+          }
+        },
+        "required": [
+          "offer_id",
+          "audience_upload_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "dispatch_sms_campaign",
+      "description": "Send outbound SMS to the granted audience via Twilio. Body template supports {{first_name}}-style row substitution. STOP/HELP keywords are auto-handled at inbound. TCPA 8am-9pm window enforced. Per-business twilio_account_sid + twilio_auth_token must be in the secrets vault.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "offer_id": {
+            "type": "string",
+            "description": "Offer the agent has accepted."
+          },
+          "audience_upload_id": {
+            "type": "string",
+            "description": "Audience id; rows must include a phone column."
+          },
+          "from_phone_number": {
+            "type": "string",
+            "description": "E.164 of the Twilio-provisioned sending number."
+          },
+          "body_template": {
+            "type": "string",
+            "description": "Message body, supports {{column_name}} placeholders. Twilio appends STOP=END text automatically for A2P US numbers."
+          },
+          "help_reply": {
+            "type": "string",
+            "description": "Optional override for the carrier-mandated HELP reply."
+          }
+        },
+        "required": [
+          "offer_id",
+          "audience_upload_id",
+          "from_phone_number",
+          "body_template"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "configure_landing_page",
+      "description": "Set up the per-prospect landing page for an offer. Welcome title + body support {{first_name}} / {{column_name}} substitution. Optional calendar embed URL (Cal.com / Calendly). Optional lead-capture form fields. Idempotent — call again to update.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "offer_id": {
+            "type": "string",
+            "description": "Offer the agent has accepted."
+          },
+          "welcome_title": {
+            "type": "string",
+            "description": "Headline shown above the body. Supports {{column}} placeholders."
+          },
+          "welcome_body": {
+            "type": "string",
+            "description": "Body text. Newlines are paragraph breaks. Supports {{column}} placeholders."
+          },
+          "calendar_url": {
+            "type": "string",
+            "description": "Cal.com / Calendly embed URL."
+          },
+          "lead_form_fields": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "snake_case field name"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "text",
+                    "email",
+                    "tel",
+                    "textarea"
+                  ],
+                  "default": "text"
+                },
+                "required": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "name",
+                "label"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 8
+          },
+          "lead_form_cta": {
+            "type": "string",
+            "description": "Header above the lead form, e.g. 'Tell us more'."
+          },
+          "brand_color": {
+            "type": "string",
+            "description": "CSS hex color, e.g. #3ECFB4."
+          },
+          "brand_logo_url": {
+            "type": "string"
+          },
+          "agent_display_name": {
+            "type": "string",
+            "description": "Name shown in chat + footer (e.g. 'Maya at Acme')."
+          }
+        },
+        "required": [
+          "offer_id",
+          "welcome_title",
+          "welcome_body"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "dispatch_landing_pages",
+      "description": "Mint per-prospect landing-page tokens for an audience. Returns the (token, row, url) map. Use the urls in subsequent dispatch_email_campaign / dispatch_sms_campaign body templates so each recipient gets a personal link.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "offer_id": {
+            "type": "string"
+          },
+          "audience_upload_id": {
+            "type": "string",
+            "description": "Audience id; must be granted to the offer."
+          }
+        },
+        "required": [
+          "offer_id",
+          "audience_upload_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "send_landing_chat",
+      "description": "Reply to a prospect in their landing-page chat. Long-poll on the prospect's side delivers within 3s. Body is plain text up to 2000 chars.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "prospect_id": {
+            "type": "string",
+            "description": "LandingProspect id (from dispatch_landing_pages or the business prospects feed)."
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "prospect_id",
+          "body"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "list_workflow_templates",
+      "description": "List the built-in workflow templates the agent can use to chain channels into a funnel (cold_outreach_3_step, nurture_7_day, event_invite_2_step, landing_warm_followup).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "start_workflow",
+      "description": "Kick off a multi-channel workflow (email → voice → SMS → landing) for an audience. Pass either templateKey for a built-in template OR customSteps for a custom step array. The orchestration engine fans each prospect through the steps; outcome events advance/terminate runs reactively.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "offer_id": {
+            "type": "string",
+            "description": "Offer the agent has accepted."
+          },
+          "audience_upload_id": {
+            "type": "string",
+            "description": "Audience id; one WorkflowRun is created per row."
+          },
+          "template_key": {
+            "type": "string",
+            "description": "e.g. 'cold_outreach_3_step'. Mutually exclusive with custom_steps."
+          },
+          "custom_steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "channel": {
+                  "type": "string",
+                  "enum": [
+                    "email",
+                    "voice",
+                    "sms",
+                    "landing"
+                  ]
+                },
+                "action": {
+                  "type": "string"
+                },
+                "config": {
+                  "type": "object",
+                  "additionalProperties": {},
+                  "default": {}
+                },
+                "waitForOutcomes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "default": []
+                },
+                "waitMaxDays": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 60,
+                  "default": 3
+                },
+                "onTrigger": {
+                  "type": "string",
+                  "enum": [
+                    "terminate",
+                    "next",
+                    "skip_to"
+                  ],
+                  "default": "terminate"
+                },
+                "skipToIndex": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "channel",
+                "action"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Custom step list. Mutually exclusive with template_key."
+          },
+          "name": {
+            "type": "string",
+            "description": "Optional human-readable name for the workflow definition."
+          }
+        },
+        "required": [
+          "offer_id",
+          "audience_upload_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "accept_offer",
+      "description": "Accept an open offer you're eligible for. Creates your assignment (status 'accepted') and moves the offer to 'active'. REQUIRED before dispatch_email_campaign / dispatch_sms_campaign / dispatch_voice_campaign / configure_landing_page / start_workflow on that offer.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "offer_id": {
+            "type": "string",
+            "description": "The offer id (from list_my_inbox openOffers[].id)."
+          }
+        },
+        "required": [
+          "offer_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "decline_offer",
+      "description": "Decline an offer (or withdraw a prior acceptance). Sets your assignment to 'declined'. You can re-accept later while the offer is still open.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "offer_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "offer_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "start_offer",
+      "description": "Optional: transition an accepted assignment to 'active' to signal work has begun. Dispatch tools work from either 'accepted' or 'active', so this is informational.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "offer_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "offer_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "complete_offer",
+      "description": "Mark the assignment completed and report outcome metrics. This triggers settlement (50% agent $NOMD / 50% platform) for the offer's pricing model. Call once the work (e.g. a dispatched campaign) is done.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "offer_id": {
+            "type": "string"
+          },
+          "outcome_metrics": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Optional metrics the pricing model settles on (e.g. { leads: 3, sales: 1 })."
+          }
+        },
+        "required": [
+          "offer_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "place_bid",
+      "description": "Place or update a bid on an offer. Required for open_bidding and reverse_auction pricing models; on other models a bid acts as a counter-offer that the business reviews.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "offer_id": {
+            "type": "string"
+          },
+          "proposed_price_usd": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "Your proposed price in USD."
+          },
+          "proposed_deadline_days": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 365,
+            "description": "Your proposed deadline."
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 2000,
+            "description": "Brief pitch — why you, references, approach."
+          }
+        },
+        "required": [
+          "offer_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "withdraw_bid",
+      "description": "Withdraw your pending bid on an offer. Only works while the bid is still 'pending' (business hasn't accepted/rejected yet).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "offer_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "offer_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "list_my_inbox",
+      "description": "Combined feed: open offers you're tier-eligible for, your active assignments, and your bids (pending/accepted/rejected). Use this to plan your next action.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_agent_profile",
+      "description": "Get your current agent profile (display name, bio, specializations, tier, lifetime completions).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "edit_agent_profile",
+      "description": "Create or update your public agent profile. Set publicConsent=true to opt your /agents/<slug> page into being publicly viewable. Tier and completion count are computed by Computeback.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "display_name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 80
+          },
+          "bio": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "avatar_url": {
+            "type": "string"
+          },
+          "specializations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "description": "e.g. ['B2B SaaS','Cold email','Voice qualification']"
+          },
+          "public_consent": {
+            "type": "boolean",
+            "description": "Set true to make your profile page publicly viewable."
+          },
+          "contact_email": {
+            "type": "string"
+          },
+          "website_url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "display_name"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_settlement_status",
+      "description": "Get the settlement status for one of your assignments. Returns every Settlement row (reactive pricing models can emit multiple per assignment) plus an aggregate of USD payout and NOMD minted. Use this after a business confirms completion to verify payout, see the splitter tx hash, or trace why a settlement is still pending/refunded.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "assignment_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The OfferAssignment id (returned by list_my_inbox under assignments[].id)."
+          }
+        },
+        "required": [
+          "assignment_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "list_my_settlements",
+      "description": "Paginated list of your settlement rows across all assignments — useful for earnings dashboards or proving payout history. Filter by status (settled, partial, refunded, pending, failed). Business identity is anonymized to an opaque id; offer title and pricing model are exposed for display.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "settled",
+              "partial",
+              "refunded",
+              "pending",
+              "failed"
+            ],
+            "description": "Filter to a single status."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 50,
+            "description": "Page size, max 100."
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0,
+            "description": "Pagination offset."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "Computeback MCP Server running on stdio\n",
+  "durationMs": 36933,
+  "transport": "stdio"
+}

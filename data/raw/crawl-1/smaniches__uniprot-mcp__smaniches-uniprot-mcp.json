@@ -1,0 +1,1118 @@
+{
+  "serverId": "smaniches__uniprot-mcp__smaniches-uniprot-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "uniprot_get_entry",
+      "description": "Fetch a UniProt protein entry by accession (e.g. P04637 for p53, P38398 for BRCA1).\n    Returns function, gene, organism, disease associations, cross-references.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accession": {
+            "description": "UniProt accession, e.g. 'P04637' (human TP53) or 'P38398' (human BRCA1). Both reviewed (Swiss-Prot) and unreviewed (TrEMBL) accessions are accepted; case-sensitive.",
+            "title": "Accession",
+            "type": "string"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accession"
+        ],
+        "title": "uniprot_get_entryArguments"
+      }
+    },
+    {
+      "name": "uniprot_search",
+      "description": "The general-purpose entry point for finding UniProtKB proteins by any\n    combination of gene, organism, keyword, or free text. Use this first when\n    you don't already have an accession; use ``uniprot_get_entry`` once you\n    do. Examples: '(gene:TP53) AND (organism_id:9606)', 'kinase AND reviewed:true'.\n    ``reviewed_only`` and ``organism`` are convenience shortcuts equivalent to\n    adding the corresponding clause to ``query`` yourself.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "description": "UniProt query-language expression, e.g. '(gene:TP53) AND (organism_id:9606)'. Field syntax follows https://www.uniprot.org/help/query-fields.",
+            "title": "Query",
+            "type": "string"
+          },
+          "size": {
+            "default": 10,
+            "description": "Maximum number of results to return; capped at 500 server-side.",
+            "title": "Size",
+            "type": "integer"
+          },
+          "reviewed_only": {
+            "default": false,
+            "description": "If true, restrict results to reviewed Swiss-Prot entries only.",
+            "title": "Reviewed Only",
+            "type": "boolean"
+          },
+          "organism": {
+            "default": "",
+            "description": "Optional organism filter: a taxonomy ID ('9606') or a scientific name ('Homo sapiens'). Applied as an additional AND clause on top of ``query``; leave empty to search all organisms.",
+            "title": "Organism",
+            "type": "string"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "title": "uniprot_searchArguments"
+      }
+    },
+    {
+      "name": "uniprot_get_sequence",
+      "description": "Fetch the canonical protein sequence in FASTA format. Use this when\n    you need the raw residue string itself (e.g. for local sequence\n    analysis); for pre-computed chemistry derived from this same sequence\n    (molecular weight, pI, hydrophobicity) call ``uniprot_compute_properties``\n    instead, which fetches the FASTA internally so you don't have to parse\n    it yourself. Always returns markdown/plain-text FASTA — there is no\n    ``response_format`` parameter because FASTA is already the interchange\n    format.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accession": {
+            "description": "UniProt accession, e.g. 'P04637' (human TP53) or 'P38398' (human BRCA1). Both reviewed (Swiss-Prot) and unreviewed (TrEMBL) accessions are accepted; case-sensitive.",
+            "title": "Accession",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accession"
+        ],
+        "title": "uniprot_get_sequenceArguments"
+      }
+    },
+    {
+      "name": "uniprot_get_features",
+      "description": "Return the full, unfiltered feature array for an entry: domains,\n    binding sites, PTMs, signal peptides, and every other annotated region,\n    optionally narrowed by ``feature_types``. For a residue-specific view\n    ('what's at position 175?') use ``uniprot_features_at_position``\n    instead; for the curated subsets (active/binding sites, processing,\n    PTMs alone) the dedicated ``uniprot_get_active_sites`` /\n    ``uniprot_get_processing_features`` / ``uniprot_get_ptms`` tools apply\n    the same filter server-side.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accession": {
+            "description": "UniProt accession, e.g. 'P04637' (human TP53) or 'P38398' (human BRCA1). Both reviewed (Swiss-Prot) and unreviewed (TrEMBL) accessions are accepted; case-sensitive.",
+            "title": "Accession",
+            "type": "string"
+          },
+          "feature_types": {
+            "default": "",
+            "description": "Optional comma-separated allow-list of UniProt feature type names, e.g. 'Domain,Active site,Binding site,Modified residue'. Leave empty to return every feature on the entry.",
+            "title": "Feature Types",
+            "type": "string"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accession"
+        ],
+        "title": "uniprot_get_featuresArguments"
+      }
+    },
+    {
+      "name": "uniprot_get_go_terms",
+      "description": "Get GO annotations grouped by aspect.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accession": {
+            "description": "UniProt accession, e.g. 'P04637' (human TP53) or 'P38398' (human BRCA1). Both reviewed (Swiss-Prot) and unreviewed (TrEMBL) accessions are accepted; case-sensitive.",
+            "title": "Accession",
+            "type": "string"
+          },
+          "aspect": {
+            "default": "",
+            "description": "Optional Gene Ontology aspect filter: 'F' (molecular function), 'P' (biological process), 'C' (cellular component), or empty for all three.",
+            "title": "Aspect",
+            "type": "string"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accession"
+        ],
+        "title": "uniprot_get_go_termsArguments"
+      }
+    },
+    {
+      "name": "uniprot_get_cross_refs",
+      "description": "List every external-database cross-reference UniProt has curated for\n    an entry (PDB, Pfam, Ensembl, Reactome, KEGG, STRING, and dozens more),\n    optionally narrowed to one ``database``. For the common single-database\n    cases there are dedicated, richer tools that resolve structured details\n    beyond a bare ID: ``uniprot_resolve_pdb`` (structures with\n    method/resolution), ``uniprot_resolve_alphafold``, ``uniprot_resolve_interpro``,\n    and ``uniprot_resolve_chembl``. Use this tool for any other database or\n    to see the full cross-reference set at once.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accession": {
+            "description": "UniProt accession, e.g. 'P04637' (human TP53) or 'P38398' (human BRCA1). Both reviewed (Swiss-Prot) and unreviewed (TrEMBL) accessions are accepted; case-sensitive.",
+            "title": "Accession",
+            "type": "string"
+          },
+          "database": {
+            "default": "",
+            "description": "Optional exact database name to filter to, e.g. 'PDB', 'Pfam', 'Ensembl', 'Reactome', 'KEGG', 'STRING'. Leave empty to return cross-references to every linked database.",
+            "title": "Database",
+            "type": "string"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accession"
+        ],
+        "title": "uniprot_get_cross_refsArguments"
+      }
+    },
+    {
+      "name": "uniprot_get_variants",
+      "description": "List every literature-described natural variant UniProt has curated\n    for an entry, including disease-associated mutations. Use this to see\n    the full variant catalogue for a protein; to check one specific\n    HGVS-shorthand change (e.g. 'R175H') use ``uniprot_lookup_variant``\n    instead, which does the position/residue matching for you. UniProt's\n    natural-variant annotations only cover literature-described variants —\n    for population-scale clinical significance data use\n    ``uniprot_resolve_clinvar``.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accession": {
+            "description": "UniProt accession, e.g. 'P04637' (human TP53) or 'P38398' (human BRCA1). Both reviewed (Swiss-Prot) and unreviewed (TrEMBL) accessions are accepted; case-sensitive.",
+            "title": "Accession",
+            "type": "string"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accession"
+        ],
+        "title": "uniprot_get_variantsArguments"
+      }
+    },
+    {
+      "name": "uniprot_id_mapping",
+      "description": "Map identifiers between UniProt and external databases (or between\n    two external databases) via UniProt's ID mapping service. Submits an\n    async job and polls it to completion server-side, so the call may take\n    a few seconds for large batches.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "description": "Comma-separated identifiers to map, up to 100 per call.",
+            "title": "Ids",
+            "type": "string"
+          },
+          "from_db": {
+            "description": "Source database code, e.g. 'UniProtKB_AC-ID', 'PDB', 'Ensembl', 'GeneID' (Entrez), or 'Gene_Name'.",
+            "title": "From Db",
+            "type": "string"
+          },
+          "to_db": {
+            "description": "Target database code, same code set as ``from_db``.",
+            "title": "To Db",
+            "type": "string"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ids",
+          "from_db",
+          "to_db"
+        ],
+        "title": "uniprot_id_mappingArguments"
+      }
+    },
+    {
+      "name": "uniprot_batch_entries",
+      "description": "Fetch multiple entries in a single call. Use this instead of repeated\n    ``uniprot_get_entry`` calls when you already have a list of accessions —\n    one network round-trip instead of N, with invalid accessions reported\n    rather than aborting the batch.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accessions": {
+            "description": "Comma-separated UniProt accessions, e.g. 'P04637,P38398'. Invalid accessions are skipped rather than failing the whole call; only the first 100 valid accessions are fetched.",
+            "title": "Accessions",
+            "type": "string"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accessions"
+        ],
+        "title": "uniprot_batch_entriesArguments"
+      }
+    },
+    {
+      "name": "uniprot_taxonomy_search",
+      "description": "Resolve an organism name to its NCBI taxonomy ID(s) — the numeric ID\n    other UniProt tools expect (e.g. the ``organism`` parameter of\n    ``uniprot_search``, or ``organism_id:`` in a query string). Returns\n    each match's taxonomy ID, scientific name, common name, and rank\n    (species / genus / etc.); a name can resolve to multiple IDs when\n    it's ambiguous (e.g. a genus with several species), so inspect the\n    rank and full scientific name before picking one. Use this before\n    filtering any other search by organism if you only know the name,\n    not the numeric ID.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "description": "Organism name or partial name to search for, e.g. 'Homo sapiens' or 'coli'. Matches against scientific and common names.",
+            "title": "Query",
+            "type": "string"
+          },
+          "size": {
+            "default": 5,
+            "description": "Maximum number of results to return; capped at 500 server-side.",
+            "title": "Size",
+            "type": "integer"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "title": "uniprot_taxonomy_searchArguments"
+      }
+    },
+    {
+      "name": "uniprot_get_keyword",
+      "description": "Fetch a UniProt keyword by ID (e.g. KW-0007 for Acetylation, KW-0539 for Nucleus).\n    Returns name, definition, category, synonyms, GO cross-refs, and parent/child hierarchy.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "keyword_id": {
+            "description": "UniProt keyword ID, e.g. 'KW-0007' (Acetylation). Always starts with 'KW-'.",
+            "title": "Keyword Id",
+            "type": "string"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "keyword_id"
+        ],
+        "title": "uniprot_get_keywordArguments"
+      }
+    },
+    {
+      "name": "uniprot_search_keywords",
+      "description": "Search UniProt's controlled keyword vocabulary (the ``KW-####`` terms)\n    by name or definition. Use this to discover a keyword ID from a concept;\n    once you have the ``KW-####`` ID, call ``uniprot_get_keyword`` for its full\n    record (definition, category, hierarchy, GO cross-references). Returns up\n    to ``size`` matches, or an empty list if nothing matches.\n    Examples: 'acetylation', 'nucleus', 'kinase activity'.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "description": "Free-text to match against UniProt keyword names, synonyms, and definitions, e.g. 'acetylation', 'nucleus', 'kinase activity'. Plain words, not a UniProtKB field query.",
+            "title": "Query",
+            "type": "string"
+          },
+          "size": {
+            "default": 10,
+            "description": "Maximum number of results to return; capped at 500 server-side.",
+            "title": "Size",
+            "type": "integer"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "title": "uniprot_search_keywordsArguments"
+      }
+    },
+    {
+      "name": "uniprot_get_subcellular_location",
+      "description": "Fetch a UniProt subcellular-location term by ID (e.g. SL-0039 Cell membrane, SL-0086 Cytoplasm, SL-0191 Nucleus).\n    Returns name, definition, category, GO cross-refs, and the is-a / part-of hierarchy.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "location_id": {
+            "description": "UniProt subcellular-location ID, e.g. 'SL-0039' (Cell membrane). Always starts with 'SL-'.",
+            "title": "Location Id",
+            "type": "string"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "location_id"
+        ],
+        "title": "uniprot_get_subcellular_locationArguments"
+      }
+    },
+    {
+      "name": "uniprot_search_subcellular_locations",
+      "description": "Search UniProt's controlled subcellular-location vocabulary (the\n    ``SL-####`` terms) by name or definition. Use this to discover a location\n    ID from a concept; once you have the ``SL-####`` ID, call\n    ``uniprot_get_subcellular_location`` for its full record (definition,\n    category, hierarchy, GO cross-references). Returns up to ``size`` matches,\n    or an empty list if nothing matches.\n    Examples: 'membrane', 'mitochondrion', 'cytoplasm'.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "description": "Free-text to match against UniProt subcellular-location names, synonyms, and definitions, e.g. 'membrane', 'mitochondrion', 'cytoplasm'. Plain words, not a UniProtKB field query.",
+            "title": "Query",
+            "type": "string"
+          },
+          "size": {
+            "default": 10,
+            "description": "Maximum number of results to return; capped at 500 server-side.",
+            "title": "Size",
+            "type": "integer"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "title": "uniprot_search_subcellular_locationsArguments"
+      }
+    },
+    {
+      "name": "uniprot_get_uniref",
+      "description": "Fetch a UniRef cluster by ID. Examples:\n    UniRef100_P04637 (100 % identity, only exact-match members),\n    UniRef90_P04637 (90 % identity), UniRef50_P04637 (50 %, broadest grouping).\n    Returns representative member, member list, common taxon, last-updated date.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "uniref_id": {
+            "description": "UniRef cluster ID, e.g. 'UniRef90_P04637'. Prefix is 'UniRef50_'/'UniRef90_'/'UniRef100_' followed by the representative member's accession.",
+            "title": "Uniref Id",
+            "type": "string"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "uniref_id"
+        ],
+        "title": "uniprot_get_unirefArguments"
+      }
+    },
+    {
+      "name": "uniprot_search_uniref",
+      "description": "Search for UniRef clusters by content (not by a known cluster ID —\n    for that, use ``uniprot_get_uniref`` directly). Example: query='kinase'\n    identity_tier='90' returns the 90% clusters matching 'kinase'. Use a\n    looser tier (50) to find broad homology groups, a tighter tier (100)\n    to find near-identical sequence sets.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "description": "UniProt query-language expression, e.g. '(gene:TP53) AND (organism_id:9606)'. Field syntax follows https://www.uniprot.org/help/query-fields.",
+            "title": "Query",
+            "type": "string"
+          },
+          "identity_tier": {
+            "default": "",
+            "description": "Cluster identity threshold: '50' (loosest grouping), '90', '100' (tightest, only exact-match members), or empty for all tiers. Higher values return more, smaller, tighter clusters.",
+            "title": "Identity Tier",
+            "type": "string"
+          },
+          "size": {
+            "default": 10,
+            "description": "Maximum number of results to return; capped at 500 server-side.",
+            "title": "Size",
+            "type": "integer"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "title": "uniprot_search_unirefArguments"
+      }
+    },
+    {
+      "name": "uniprot_resolve_orthology",
+      "description": "Group every orthology cross-reference in a UniProt entry by source\n    database (KEGG / OMA / OrthoDB / eggNOG / HOGENOM / PhylomeDB /\n    InParanoid / TreeFam / GeneTree / PAN-GO / PANTHER / OrthoInspector).\n    Different databases use different inference methods; surfacing them\n    side-by-side lets the agent reason about consensus when comparing\n    orthologs across species. Pure-Python — no extra HTTP call beyond\n    the entry fetch.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accession": {
+            "description": "UniProt accession, e.g. 'P04637' (human TP53) or 'P38398' (human BRCA1). Both reviewed (Swiss-Prot) and unreviewed (TrEMBL) accessions are accepted; case-sensitive.",
+            "title": "Accession",
+            "type": "string"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accession"
+        ],
+        "title": "uniprot_resolve_orthologyArguments"
+      }
+    },
+    {
+      "name": "uniprot_target_dossier",
+      "description": "One-call comprehensive characterisation of a UniProt entry,\n    structured for drug-discovery / clinical workflows. Composes nine\n    views over the same entry plus one FASTA fetch (so two upstream\n    network calls, not nine):\n\n      Identity  ·  Function  ·  Sequence chemistry  ·  Structural\n      evidence (PDB count + best-resolution + AlphaFold model id +\n      InterPro count)  ·  Drug-target context (ChEMBL ids, DrugBank\n      count)  ·  Disease associations (with MIM IDs)  ·  Variants\n      count  ·  Functional annotations (top GO MF, subcellular, ECO\n      diversity)  ·  Cross-references summary\n\n    For per-residue pLDDT confidence call ``uniprot_get_alphafold_confidence``\n    separately. For full disease detail call\n    ``uniprot_get_disease_associations``. The dossier is the entry-\n    level summary that decides which deeper tools are worth calling.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accession": {
+            "description": "UniProt accession, e.g. 'P04637' (human TP53) or 'P38398' (human BRCA1). Both reviewed (Swiss-Prot) and unreviewed (TrEMBL) accessions are accepted; case-sensitive.",
+            "title": "Accession",
+            "type": "string"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accession"
+        ],
+        "title": "uniprot_target_dossierArguments"
+      }
+    },
+    {
+      "name": "uniprot_replay_from_cache",
+      "description": "Read a previously-cached UniProt response without hitting the\n    upstream. The local provenance cache is opt-in via the\n    ``UNIPROT_MCP_CACHE_DIR`` environment variable; when unset, this\n    tool always reports cache-disabled.\n\n    Useful for: reproducing a year-old answer from a sealed cache\n    snapshot; working offline / behind air-gaps; reducing UniProt's\n    load when running benchmarks twice.\n\n    Returns the cached body text wrapped in the recorded Provenance.\n    The annotation ``openWorldHint=False`` reflects that this tool\n    consults the local file system only — no upstream call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "title": "Url",
+            "type": "string"
+          },
+          "response_format": {
+            "default": "markdown",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "uniprot_replay_from_cacheArguments"
+      }
+    },
+    {
+      "name": "uniprot_resolve_clinvar",
+      "description": "Look up ClinVar records for the gene encoded by a UniProt entry.\n    First fetches the entry to extract the canonical gene symbol, then\n    queries NCBI eutils ClinVar by gene (and optional protein-change\n    filter, e.g. ``R175H``). Returns clinical-significance classification,\n    review status, condition list (trait_set), molecular consequence,\n    and the protein-change list per record.\n\n    Critical for clinical workflows — UniProt's natural-variant\n    annotations stop at literature-described variants. ClinVar carries\n    every variant submitted by clinical labs, with curated significance\n    classifications. Combine ``uniprot_lookup_variant`` (UniProt side)\n    with ``uniprot_resolve_clinvar`` (population side) for a full\n    variant-effect picture.\n\n    Calls https://eutils.ncbi.nlm.nih.gov — declared in PRIVACY.md.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accession": {
+            "description": "UniProt accession, e.g. 'P04637' (human TP53) or 'P38398' (human BRCA1). Both reviewed (Swiss-Prot) and unreviewed (TrEMBL) accessions are accepted; case-sensitive.",
+            "title": "Accession",
+            "type": "string"
+          },
+          "change": {
+            "default": "",
+            "description": "Optional HGVS-shorthand protein change to filter to, e.g. 'R175H'. Leave empty to return all ClinVar records for the gene.",
+            "title": "Change",
+            "type": "string"
+          },
+          "size": {
+            "default": 10,
+            "description": "Maximum number of ClinVar records to return; capped at 50.",
+            "title": "Size",
+            "type": "integer"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accession"
+        ],
+        "title": "uniprot_resolve_clinvarArguments"
+      }
+    },
+    {
+      "name": "uniprot_get_alphafold_confidence",
+      "description": "Fetch the per-residue confidence (pLDDT) summary for an entry's\n    AlphaFold model, not just its existence. Returns the global mean pLDDT\n    score plus the four-band distribution (very high ≥ 90 / confident\n    70-90 / low 50-70 / very low < 50) so the agent can decide whether to\n    trust the model: 95% 'very high' is publication-grade, 40% 'very low'\n    is largely disordered and structural inference is unsafe. Call\n    ``uniprot_resolve_alphafold`` first if you only need the model ID and\n    viewer link, not its confidence.\n\n    This tool calls https://alphafold.ebi.ac.uk — declared in PRIVACY.md\n    as a third party. Provenance carries source = AlphaFoldDB.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accession": {
+            "description": "UniProt accession, e.g. 'P04637' (human TP53) or 'P38398' (human BRCA1). Both reviewed (Swiss-Prot) and unreviewed (TrEMBL) accessions are accepted; case-sensitive.",
+            "title": "Accession",
+            "type": "string"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accession"
+        ],
+        "title": "uniprot_get_alphafold_confidenceArguments"
+      }
+    },
+    {
+      "name": "uniprot_get_publications",
+      "description": "List the publications UniProt cites on an entry, with PubMed IDs,\n    DOIs, titles, authors, journal, year, and the 'reference position'\n    annotation (the experimental work each citation supports — e.g.\n    'CRYSTALLIZATION', 'PHOSPHORYLATION AT SER-15', 'INVOLVEMENT IN\n    LI-FRAUMENI SYNDROME'). Pure composition over the entry's\n    ``references`` block — no extra HTTP call beyond the entry fetch.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accession": {
+            "description": "UniProt accession, e.g. 'P04637' (human TP53) or 'P38398' (human BRCA1). Both reviewed (Swiss-Prot) and unreviewed (TrEMBL) accessions are accepted; case-sensitive.",
+            "title": "Accession",
+            "type": "string"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accession"
+        ],
+        "title": "uniprot_get_publicationsArguments"
+      }
+    },
+    {
+      "name": "uniprot_compute_properties",
+      "description": "Derived sequence chemistry for a UniProt entry: molecular weight,\n    theoretical pI, GRAVY hydrophobicity, aromaticity, net charge at pH 7,\n    extinction coefficient at 280 nm, amino-acid composition. Computed\n    from the canonical FASTA via standard methods (Lehninger pK values,\n    Kyte-Doolittle hydropathy, Pace 1995 ε₂₈₀ formula). Pure-Python — no\n    additional external API call beyond the FASTA fetch.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accession": {
+            "description": "UniProt accession, e.g. 'P04637' (human TP53) or 'P38398' (human BRCA1). Both reviewed (Swiss-Prot) and unreviewed (TrEMBL) accessions are accepted; case-sensitive.",
+            "title": "Accession",
+            "type": "string"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accession"
+        ],
+        "title": "uniprot_compute_propertiesArguments"
+      }
+    },
+    {
+      "name": "uniprot_features_at_position",
+      "description": "List every UniProt feature that overlaps a residue position\n    (1-indexed). Answers the question 'what's at residue 175 of TP53?'\n    by intersecting the entry's features with the given position. Useful\n    for variant-effect interpretation — surfaces every domain, binding\n    site, modification, mutagenesis annotation, and natural variant at a\n    single residue in one call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accession": {
+            "description": "UniProt accession, e.g. 'P04637' (human TP53) or 'P38398' (human BRCA1). Both reviewed (Swiss-Prot) and unreviewed (TrEMBL) accessions are accepted; case-sensitive.",
+            "title": "Accession",
+            "type": "string"
+          },
+          "position": {
+            "description": "1-indexed residue position within the protein sequence.",
+            "title": "Position",
+            "type": "integer"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accession",
+          "position"
+        ],
+        "title": "uniprot_features_at_positionArguments"
+      }
+    },
+    {
+      "name": "uniprot_get_active_sites",
+      "description": "Return the active sites, binding sites, metal-binding residues,\n    and DNA-binding regions annotated on a UniProt entry. Filtered view\n    over the entry's feature array — this is the residue-level chemistry\n    of the protein, the input to enzyme drug-design and antibiotic\n    target-validation workflows.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accession": {
+            "description": "UniProt accession, e.g. 'P04637' (human TP53) or 'P38398' (human BRCA1). Both reviewed (Swiss-Prot) and unreviewed (TrEMBL) accessions are accepted; case-sensitive.",
+            "title": "Accession",
+            "type": "string"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accession"
+        ],
+        "title": "uniprot_get_active_sitesArguments"
+      }
+    },
+    {
+      "name": "uniprot_get_processing_features",
+      "description": "Return the maturation and processing features (signal peptide,\n    propeptide, transit peptide, initiator methionine, chain, peptide).\n    These describe how the translated polypeptide is cleaved and\n    targeted into its mature form — essential for therapeutic-protein\n    engineering and pathogen-secretion-system analysis. A pre-filtered\n    view over ``uniprot_get_features``; for post-translational chemical\n    modifications instead of cleavage/targeting, use ``uniprot_get_ptms``.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accession": {
+            "description": "UniProt accession, e.g. 'P04637' (human TP53) or 'P38398' (human BRCA1). Both reviewed (Swiss-Prot) and unreviewed (TrEMBL) accessions are accepted; case-sensitive.",
+            "title": "Accession",
+            "type": "string"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accession"
+        ],
+        "title": "uniprot_get_processing_featuresArguments"
+      }
+    },
+    {
+      "name": "uniprot_get_ptms",
+      "description": "Return the post-translational modification features (modified\n    residues, glycosylation sites, lipidation sites, disulfide bonds,\n    cross-links). PTMs are functionally critical: they switch enzymes\n    on, target proteins for degradation, anchor them to membranes, and\n    fold them via disulfides. A pre-filtered view over\n    ``uniprot_get_features``; for cleavage/targeting features instead of\n    chemical modifications, use ``uniprot_get_processing_features``. The\n    empty case carries an honest pointer to mass-spec databases\n    (PhosphoSitePlus, GlyConnect) for additional evidence.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accession": {
+            "description": "UniProt accession, e.g. 'P04637' (human TP53) or 'P38398' (human BRCA1). Both reviewed (Swiss-Prot) and unreviewed (TrEMBL) accessions are accepted; case-sensitive.",
+            "title": "Accession",
+            "type": "string"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accession"
+        ],
+        "title": "uniprot_get_ptmsArguments"
+      }
+    },
+    {
+      "name": "uniprot_lookup_variant",
+      "description": "Look up an HGVS-shorthand amino-acid change (e.g. ``R175H``,\n    ``V600E``, ``R248*``) in the UniProt entry's natural-variant\n    annotations. Returns the matching variant feature(s) including the\n    UniProt-curated description (often a disease association). A null\n    result here does NOT mean a variant is benign — UniProt only\n    annotates literature-described variants; ClinVar / dbSNP carry\n    population-level data.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accession": {
+            "description": "UniProt accession, e.g. 'P04637' (human TP53) or 'P38398' (human BRCA1). Both reviewed (Swiss-Prot) and unreviewed (TrEMBL) accessions are accepted; case-sensitive.",
+            "title": "Accession",
+            "type": "string"
+          },
+          "change": {
+            "description": "HGVS-shorthand amino-acid change, e.g. 'R175H', 'V600E', 'R248*' (stop). Format: <original residue><1-indexed position><alt residue or '*'>.",
+            "title": "Change",
+            "type": "string"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accession",
+          "change"
+        ],
+        "title": "uniprot_lookup_variantArguments"
+      }
+    },
+    {
+      "name": "uniprot_get_disease_associations",
+      "description": "Structured disease associations for a UniProt entry. Returns the\n    diseases recorded in DISEASE-type comments with name, acronym,\n    UniProt disease ID, OMIM cross-reference, description, and the\n    annotation note. Critical for clinical interpretation — distinguishes\n    a UniProt-curated disease association (literature-anchored) from a\n    raw cross-reference. Empty result does not imply disease-irrelevant;\n    see Open Targets / OMIM / DisGeNET for population-level evidence.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accession": {
+            "description": "UniProt accession, e.g. 'P04637' (human TP53) or 'P38398' (human BRCA1). Both reviewed (Swiss-Prot) and unreviewed (TrEMBL) accessions are accepted; case-sensitive.",
+            "title": "Accession",
+            "type": "string"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accession"
+        ],
+        "title": "uniprot_get_disease_associationsArguments"
+      }
+    },
+    {
+      "name": "uniprot_get_uniparc",
+      "description": "Fetch a UniParc sequence-archive record by its known UPI. Returns\n    sequence, MD5/CRC64 checksums, cross-reference counts, linked\n    UniProtKB accessions, and the common-taxa list. UniParc is the\n    non-redundant sequence archive — every protein sequence ever submitted\n    to a major public database has exactly one UniParc record, making this\n    the tool to use when a UniProtKB accession doesn't exist for a\n    sequence you have. Don't have a UPI yet? Use ``uniprot_search_uniparc``\n    to find one first.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "upi": {
+            "description": "UniParc identifier, e.g. 'UPI000002ED67'. Always starts with 'UPI'.",
+            "title": "Upi",
+            "type": "string"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "upi"
+        ],
+        "title": "uniprot_get_uniparcArguments"
+      }
+    },
+    {
+      "name": "uniprot_search_uniparc",
+      "description": "Search the UniParc non-redundant sequence archive by taxonomy,\n    source database, or other UniParc query fields — the entry point when\n    you don't already have a UPI. Examples: 'taxonomy_id:9606' for human\n    sequences, 'database:Ensembl' for Ensembl-derived entries. Once you\n    have a UPI from the results, use ``uniprot_get_uniparc`` for the full\n    record.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "description": "UniProt query-language expression, e.g. '(gene:TP53) AND (organism_id:9606)'. Field syntax follows https://www.uniprot.org/help/query-fields.",
+            "title": "Query",
+            "type": "string"
+          },
+          "size": {
+            "default": 10,
+            "description": "Maximum number of results to return; capped at 500 server-side.",
+            "title": "Size",
+            "type": "integer"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "title": "uniprot_search_uniparcArguments"
+      }
+    },
+    {
+      "name": "uniprot_get_proteome",
+      "description": "Fetch a UniProt proteome by UP ID (e.g. UP000005640 = human reference).\n    Returns organism, taxonomy lineage, protein count, gene count, BUSCO\n    completeness score, annotation score, and component breakdown\n    (chromosomes / contigs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "proteome_id": {
+            "description": "UniProt proteome ID, e.g. 'UP000005640' (human reference). Always starts with 'UP'.",
+            "title": "Proteome Id",
+            "type": "string"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "proteome_id"
+        ],
+        "title": "uniprot_get_proteomeArguments"
+      }
+    },
+    {
+      "name": "uniprot_search_proteomes",
+      "description": "Search UniProt proteomes (whole-organism protein sets) by organism or\n    proteome field. Use this to find a proteome's ``UP#########`` ID; once you\n    have it, call ``uniprot_get_proteome`` for the full record (protein / gene\n    counts, BUSCO completeness, component breakdown). Returns up to ``size``\n    matches, or an empty list if nothing matches. Examples: 'organism_id:9606'\n    for human, 'proteome_type:1' for reference proteomes only,\n    'taxonomy_name:bacteria' for all bacterial proteomes.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "description": "Proteome query using UniProt proteome fields, e.g. 'organism_id:9606' (human), 'proteome_type:1' (reference proteomes only), or 'taxonomy_name:bacteria'. Plain text also matches organism names.",
+            "title": "Query",
+            "type": "string"
+          },
+          "size": {
+            "default": 10,
+            "description": "Maximum number of results to return; capped at 500 server-side.",
+            "title": "Size",
+            "type": "integer"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "title": "uniprot_search_proteomesArguments"
+      }
+    },
+    {
+      "name": "uniprot_get_citation",
+      "description": "Fetch a UniProt citation record by ID (typically a PubMed ID, e.g. 9840937).\n    Returns title, authors, journal, year, volume, pages, and cross-references.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "citation_id": {
+            "description": "Citation ID, typically a numeric PubMed ID, e.g. '9840937'.",
+            "title": "Citation Id",
+            "type": "string"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "citation_id"
+        ],
+        "title": "uniprot_get_citationArguments"
+      }
+    },
+    {
+      "name": "uniprot_search_citations",
+      "description": "Search the UniProt citations index (the literature UniProt references)\n    by title, author, or year. Use this to find a citation's ID (typically a\n    PubMed ID); once you have it, call ``uniprot_get_citation`` for the full\n    record. For the publications attached to one specific protein entry, use\n    ``uniprot_get_publications`` instead. Returns up to ``size`` matches, or an\n    empty list if nothing matches. Examples: 'p53 AND author:Vogelstein',\n    'BRCA1 AND year:[2020 TO 2024]'.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "description": "Citation query using UniProt citation fields, e.g. 'p53 AND author:Vogelstein' or 'BRCA1 AND year:[2020 TO 2024]'. Supports free text plus 'author:', 'title:', and 'year:' ranges.",
+            "title": "Query",
+            "type": "string"
+          },
+          "size": {
+            "default": 10,
+            "description": "Maximum number of results to return; capped at 500 server-side.",
+            "title": "Size",
+            "type": "integer"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "title": "uniprot_search_citationsArguments"
+      }
+    },
+    {
+      "name": "uniprot_resolve_pdb",
+      "description": "List every PDB structure cross-referenced from a UniProt entry, with\n    method, resolution, and chain coverage. Faster than parsing the raw\n    cross-references blob — returns a structured list typed for downstream\n    analysis.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accession": {
+            "description": "UniProt accession, e.g. 'P04637' (human TP53) or 'P38398' (human BRCA1). Both reviewed (Swiss-Prot) and unreviewed (TrEMBL) accessions are accepted; case-sensitive.",
+            "title": "Accession",
+            "type": "string"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accession"
+        ],
+        "title": "uniprot_resolve_pdbArguments"
+      }
+    },
+    {
+      "name": "uniprot_resolve_alphafold",
+      "description": "Resolve the AlphaFoldDB cross-reference for a UniProt entry — typically\n    one canonical model per accession. Includes a direct EBI viewer link.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accession": {
+            "description": "UniProt accession, e.g. 'P04637' (human TP53) or 'P38398' (human BRCA1). Both reviewed (Swiss-Prot) and unreviewed (TrEMBL) accessions are accepted; case-sensitive.",
+            "title": "Accession",
+            "type": "string"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accession"
+        ],
+        "title": "uniprot_resolve_alphafoldArguments"
+      }
+    },
+    {
+      "name": "uniprot_resolve_interpro",
+      "description": "List InterPro signatures (domain / family classifications) for a\n    UniProt entry, with names extracted from the entry's cross-reference\n    properties.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accession": {
+            "description": "UniProt accession, e.g. 'P04637' (human TP53) or 'P38398' (human BRCA1). Both reviewed (Swiss-Prot) and unreviewed (TrEMBL) accessions are accepted; case-sensitive.",
+            "title": "Accession",
+            "type": "string"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accession"
+        ],
+        "title": "uniprot_resolve_interproArguments"
+      }
+    },
+    {
+      "name": "uniprot_resolve_chembl",
+      "description": "Resolve ChEMBL drug-target cross-references for a UniProt entry.\n    Returns the ChEMBL target IDs with EBI viewer links — empty if the\n    protein has no documented bioactivity data in ChEMBL.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accession": {
+            "description": "UniProt accession, e.g. 'P04637' (human TP53) or 'P38398' (human BRCA1). Both reviewed (Swiss-Prot) and unreviewed (TrEMBL) accessions are accepted; case-sensitive.",
+            "title": "Accession",
+            "type": "string"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accession"
+        ],
+        "title": "uniprot_resolve_chemblArguments"
+      }
+    },
+    {
+      "name": "uniprot_get_evidence_summary",
+      "description": "Summarise and grade the ECO (Evidence and Conclusion Ontology) codes\n    attached to a UniProt entry's annotations. Counts how many features and\n    comments cite each evidence code, then classifies every occurrence as\n    experimental (wet-lab, ECO:0000269), manual (curator-reviewed inference),\n    or automatic (un-reviewed pipeline call) and collapses that into a single\n    0-100 evidence-confidence score with a high / moderate / low / very-low\n    band. A score near 100 means the entry is dominated by direct experimental\n    evidence; a score near 10 means it is almost entirely computationally\n    inferred. Critical for any downstream agent that must distinguish\n    'wet-lab confirmed' annotations from 'inferred by similarity'. JSON output\n    adds an ``evidence_confidence`` block (score, band, per-class breakdown,\n    weights) alongside the raw ``evidence_counts``.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accession": {
+            "description": "UniProt accession, e.g. 'P04637' (human TP53) or 'P38398' (human BRCA1). Both reviewed (Swiss-Prot) and unreviewed (TrEMBL) accessions are accepted; case-sensitive.",
+            "title": "Accession",
+            "type": "string"
+          },
+          "response_format": {
+            "default": "markdown",
+            "description": "'markdown' (default) for a human-readable report with a provenance footer, or 'json' for a machine-parseable structured payload with the same data. Any other value is rejected.",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accession"
+        ],
+        "title": "uniprot_get_evidence_summaryArguments"
+      }
+    },
+    {
+      "name": "uniprot_provenance_verify",
+      "description": "Re-fetch a previously recorded UniProt URL and verify it still\n    returns the same release identifier and the same canonical response\n    body (SHA-256). Pass the values from a prior response's provenance\n    footer (`url`, `release`, `response_sha256`, `accept_header`); empty\n    optional fields skip the corresponding check. Returns a verification\n    report with explicit pass / drift / unreachable verdicts per check.\n\n    ``accept_header`` must match the Accept header used for the original\n    request (default ``application/json``; use ``text/plain;format=fasta``\n    for FASTA-originated provenance). Replaying the wrong header causes a\n    guaranteed hash mismatch because the upstream serves different content\n    depending on content negotiation.\n\n    This is the single tool that converts every prior uniprot-mcp\n    response into an independently auditable artefact — a year from\n    now, a third party can take the recorded provenance footer and\n    confirm the upstream still serves the exact same bytes.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "title": "Url",
+            "type": "string"
+          },
+          "release": {
+            "default": "",
+            "title": "Release",
+            "type": "string"
+          },
+          "response_sha256": {
+            "default": "",
+            "title": "Response Sha256",
+            "type": "string"
+          },
+          "accept_header": {
+            "default": "application/json",
+            "title": "Accept Header",
+            "type": "string"
+          },
+          "response_format": {
+            "default": "markdown",
+            "title": "Response Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "uniprot_provenance_verifyArguments"
+      }
+    }
+  ],
+  "stderrTail": "Downloading cryptography (4.5MiB)\nDownloading pydantic-core (2.0MiB)\n Downloaded pydantic-core\n Downloaded cryptography\nInstalled 30 packages in 11ms\nProcessing request of type ListToolsRequest\n",
+  "durationMs": 21801,
+  "transport": "stdio"
+}

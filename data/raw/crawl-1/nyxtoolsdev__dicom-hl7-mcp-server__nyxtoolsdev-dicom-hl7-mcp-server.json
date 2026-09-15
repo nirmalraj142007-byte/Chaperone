@@ -1,0 +1,8 @@
+{
+  "serverId": "nyxtoolsdev__dicom-hl7-mcp-server__nyxtoolsdev-dicom-hl7-mcp-server",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "sh: 1: exec: dicom-hl7-mcp: not found\n",
+  "durationMs": 74522,
+  "transport": "stdio"
+}

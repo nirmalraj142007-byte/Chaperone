@@ -1,0 +1,212 @@
+{
+  "serverId": "entire-vc__evc-spark-mcp__entire-vc-evc-spark-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "search_assets",
+      "description": "Search the Spark AI assets marketplace. Returns matching agents, skills, prompts, MCP connectors, and bundles. [Trial mode: limited to 5 results. Set SPARK_API_KEY for full access: https://spark.entire.vc/create]",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search query (title, description)"
+          },
+          "job": {
+            "description": "Job/task the agent is trying to accomplish. Enables job-based relevance ranking (e.g. 'review Python code', 'generate marketing copy', 'analyze data'). Recommended for agent use.",
+            "type": "string"
+          },
+          "type": {
+            "description": "Filter by asset type",
+            "type": "string",
+            "enum": [
+              "agent",
+              "skill",
+              "prompt",
+              "prompt_chain",
+              "mcp_connector",
+              "bundle"
+            ]
+          },
+          "domain": {
+            "description": "Filter by domain slug (e.g. 'development', 'marketing')",
+            "type": "string"
+          },
+          "sort": {
+            "default": "combo",
+            "description": "Sort order. 'combo' = combined quality+ratings score (default, recommended).",
+            "type": "string",
+            "enum": [
+              "combo",
+              "popular",
+              "newest",
+              "rating"
+            ]
+          },
+          "limit": {
+            "default": 10,
+            "description": "Number of results (1-50, default 10)",
+            "type": "number",
+            "minimum": 1,
+            "maximum": 50
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_asset",
+      "description": "Get full details of a Spark asset by its slug. Returns description, content, files, ratings, and more.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "description": "Asset slug (e.g. 'vb-seo-expert', 'vb-python-expert')"
+          }
+        },
+        "required": [
+          "slug"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_asset_content",
+      "description": "Get the raw content of a Spark asset (prompt text, skill instructions, agent config). Best for prompts and skills that have inline content.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "description": "Asset slug"
+          }
+        },
+        "required": [
+          "slug"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "list_popular",
+      "description": "List the most popular Spark assets. Defaults to combined quality+ratings score (combo). Great for discovering top-rated AI tools.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "description": "Filter by asset type",
+            "type": "string",
+            "enum": [
+              "agent",
+              "skill",
+              "prompt",
+              "prompt_chain",
+              "mcp_connector",
+              "bundle"
+            ]
+          },
+          "sort": {
+            "default": "combo",
+            "description": "Sort order. 'combo' = combined quality+ratings score (default).",
+            "type": "string",
+            "enum": [
+              "combo",
+              "popular",
+              "newest",
+              "rating"
+            ]
+          },
+          "limit": {
+            "default": 10,
+            "description": "Number of results (1-20, default 10)",
+            "type": "number",
+            "minimum": 1,
+            "maximum": 20
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "list_categories",
+      "description": "List available categories (domains and AI tags) in the Spark marketplace. Useful for filtering searches.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_api_key_info",
+      "description": "Check your Spark API key status and daily usage. Shows how many assets you've served today and your remaining quota.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "submit_review",
+      "description": "Submit a review for a Spark asset after using it. Helps improve ranking for future agent recommendations. session_id should be a stable identifier for your current session/run.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "description": "Asset slug to review (same slug used in get_asset)"
+          },
+          "session_id": {
+            "type": "string",
+            "maxLength": 128,
+            "description": "Your session or run ID (for deduplication — one review per session per asset)"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "success",
+              "failure",
+              "partial"
+            ],
+            "description": "Did the asset accomplish the job? success=fully worked, partial=partially helped, failure=did not help"
+          },
+          "value": {
+            "description": "How valuable was the result? 1=useless, 5=excellent",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "reliability": {
+            "description": "How reliable/reproducible? 1=flaky, 5=always works",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "accuracy": {
+            "description": "How accurate/correct was the output? 1=many errors, 5=perfect",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "notes": {
+            "description": "Optional notes (no PII)",
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "slug",
+          "session_id",
+          "outcome"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "[spark-mcp] Server running on stdio\n[spark-mcp] API: https://spark.entire.vc/api/v1\n[spark-mcp] Mode: trial (no API key)\n",
+  "durationMs": 20677,
+  "transport": "stdio"
+}

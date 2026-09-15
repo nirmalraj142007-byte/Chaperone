@@ -1,0 +1,109 @@
+{
+  "serverId": "continuum-ai-corp__orcarouter-mcp-server__continuum-ai-corp-orcarouter-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "orcarouter_chat",
+      "description": "Send a single-turn chat request to OrcaRouter and return the assistant's response text. Default model is the workspace's auto-router. Use `orcarouter/<name>` for other routers or `<provider>/<model>` for direct calls. For OpenAI reasoning models (gpt-5/o1/o3/...), max_tokens is automatically routed to max_completion_tokens at the wire level. The optional `models` array sets a fallback chain — the primary `model` is tried first, then each entry on failure (5 entries total max, including the primary). Errors are returned as text content with isError:true; common cases include missing API key, rate limits, and upstream provider outages. Requires ORCAROUTER_API_KEY.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "default": "orcarouter/auto",
+            "description": "Model to call. Defaults to `orcarouter/auto` — your workspace's seeded auto-router. Use `orcarouter/<name>` for other workspace routers, or `<provider>/<model>` for direct upstream selection (e.g. `openai/gpt-4o-mini`, `anthropic/claude-haiku-4.5`)."
+          },
+          "prompt": {
+            "type": "string",
+            "description": "User message to send (single-turn)."
+          },
+          "system_prompt": {
+            "type": "string",
+            "description": "Optional system prompt prepended to the conversation."
+          },
+          "max_tokens": {
+            "type": "integer",
+            "default": 10000,
+            "description": "Maximum tokens to generate (default 10000). Automatically translated to max_completion_tokens for OpenAI reasoning models."
+          },
+          "temperature": {
+            "type": "number",
+            "default": 0.7,
+            "description": "Sampling temperature (default 0.7)."
+          },
+          "models": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "maxItems": 5,
+            "description": "Optional fallback chain. Models are tried in order if the primary fails. Max 5 entries including the primary."
+          }
+        },
+        "required": [
+          "prompt"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "orcarouter_models_list",
+      "description": "List LLM models in the OrcaRouter catalog. Each entry includes id, name, description, owned_by, context_length, supported_endpoint_types, and pricing (both per-token and per-million tokens). Filter by `provider`, `capability`, or `min_context` — filters compose (all conditions must match) and are applied server-side. Discover valid provider ids first with orcarouter_providers_list. Returns the full catalog when called without filters. Read-only, no API key required.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "description": "Provider id (lowercase, e.g. 'openai', 'anthropic'). Get the full list via orcarouter_providers_list."
+          },
+          "capability": {
+            "type": "string",
+            "enum": [
+              "chat",
+              "embedding",
+              "image",
+              "audio"
+            ],
+            "description": "Filter to models supporting this capability."
+          },
+          "min_context": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Filter to models with context window at least this large (tokens)."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "orcarouter_model_card",
+      "description": "Get detailed information about a single model — display name, long description, pricing (per-call and per-million tokens), context window, max output, modalities (input/output), supported endpoints, latency percentiles (p50/p95), and release date. Use this when you already know the model id and want full details; for browsing or filtering across many models use orcarouter_models_list instead. Returns isError:true with a clear hint when the id is not found. Read-only, no API key required.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "Model ref in `provider/slug` form (e.g. `openai/gpt-4o-mini`, `anthropic/claude-haiku-4.5`). Use the exact `id` value returned by orcarouter_models_list."
+          }
+        },
+        "required": [
+          "model"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "orcarouter_providers_list",
+      "description": "List all model providers on OrcaRouter with their `provider_id`, human-readable `display_name`, `icon_url`, and `model_count`. Call this first to discover valid provider ids (e.g. 'openai', 'anthropic', 'google', 'qwen', 'deepseek') which you can then pass to orcarouter_models_list as the `provider` filter. Takes no parameters and returns the same list on every call until the deployment's catalog changes. Read-only, no API key required.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 18137,
+  "transport": "stdio"
+}

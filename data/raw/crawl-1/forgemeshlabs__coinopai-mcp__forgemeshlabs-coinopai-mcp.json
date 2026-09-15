@@ -1,0 +1,197 @@
+{
+  "serverId": "forgemeshlabs__coinopai-mcp__forgemeshlabs-coinopai-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "search_agent_automations",
+      "description": "Search 819 agent automation prompts by keyword. Returns matching automations with title, description, complexity and services. Costs $0.01 USDC.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search keyword (e.g. 'slack', 'notion', 'github')"
+          },
+          "limit": {
+            "type": "number",
+            "description": "Max results to return (default 20, max 50)"
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }
+    },
+    {
+      "name": "get_agent_automation",
+      "description": "Get the full agent automation prompt and workflow steps by slug. Costs $0.01 USDC.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "description": "Automation slug (e.g. 'slack-to-notion')"
+          }
+        },
+        "required": [
+          "slug"
+        ]
+      }
+    },
+    {
+      "name": "list_automation_categories",
+      "description": "List all 35 automation categories with counts. Costs $0.005 USDC.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "get_crypto_signals",
+      "description": "Latest Kronos model context for BTC, ETH, SOL, XRP, ADA. Directional values are supporting context, not standalone trade instructions; use them with the calibrated range, risk state, and audit record. Costs $0.05 USDC.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "affiliate_id": {
+            "type": "string",
+            "description": "Optional Pyrimid affiliate ID (af_xxxxx). Affiliate earns a commission from within the listed price — no extra cost to you."
+          }
+        }
+      }
+    },
+    {
+      "name": "get_crypto_risk",
+      "description": "Current market risk state and cooldown context for Kronos decisions. Useful as supporting context, not a standalone trading command. Costs $0.02 USDC.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "get_crypto_signal_history",
+      "description": "Recent Kronos context history for BTC/ETH/SOL/XRP/ADA. Use it to inspect model context and freshness before or after a decision. Costs $0.05 USDC.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "hours": {
+            "type": "number",
+            "description": "Hours of history to fetch (default 24, max 168)"
+          },
+          "affiliate_id": {
+            "type": "string",
+            "description": "Optional Pyrimid affiliate ID (af_xxxxx). Affiliate earns a commission from within the listed price — no extra cost to you."
+          }
+        }
+      }
+    },
+    {
+      "name": "get_crypto_decision",
+      "description": "Create a market-intelligence journal entry from Kronos context. Returns directional_bias, confidence context, compliance metadata, regime, anomaly/calibration context, and a decision_id. Call audit_trade_decision with that ID after the evaluation window to see what happened. Costs $0.15 USDC.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "symbol": {
+            "type": "string",
+            "description": "Symbol to evaluate: BTC, ETH, SOL, XRP, or ADA"
+          },
+          "affiliate_id": {
+            "type": "string",
+            "description": "Optional Pyrimid affiliate ID (af_xxxxx). Affiliate earns a commission from within the listed price — no extra cost to you."
+          }
+        },
+        "required": [
+          "symbol"
+        ]
+      }
+    },
+    {
+      "name": "check_trade_preflight",
+      "description": "Step 1 of the auditable decision loop. Checks market state, cooldown, data freshness, and model context before calling get_crypto_decision. Costs $0.05 USDC.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "symbol": {
+            "type": "string",
+            "description": "Symbol to check: BTC, ETH, SOL, XRP, or ADA"
+          },
+          "affiliate_id": {
+            "type": "string",
+            "description": "Optional Pyrimid affiliate ID (af_xxxxx). Affiliate earns a commission from within the listed price — no extra cost to you."
+          }
+        },
+        "required": [
+          "symbol"
+        ]
+      }
+    },
+    {
+      "name": "audit_trade_decision",
+      "description": "The accountability step. Verify a Kronos decision_id against later market prices. Returns whether direction held, PnL%, and a verdict: GOOD_DECISION, BAD_DIRECTION, NOISE, or NO_ACTION_TAKEN. Costs $0.07 USDC.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "decision_id": {
+            "type": "string",
+            "description": "UUID from a previous get_crypto_decision call"
+          },
+          "window": {
+            "type": "string",
+            "description": "Evaluation window: 1h, 4h, or 24h (default: 4h)"
+          },
+          "affiliate_id": {
+            "type": "string",
+            "description": "Optional Pyrimid affiliate ID (af_xxxxx). Affiliate earns a commission from within the listed price — no extra cost to you."
+          }
+        },
+        "required": [
+          "decision_id"
+        ]
+      }
+    },
+    {
+      "name": "get_crypto_forecast",
+      "description": "Conformally-calibrated price forecast: an honest 80% prediction interval (range_80, ~0.80 empirical coverage) plus point return and upside probability for BTC/ETH/SOL/XRP/ADA. Directional bias is supporting context; the calibrated range is the validated product. Costs $0.05 USDC.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "symbol": {
+            "type": "string",
+            "description": "Symbol: BTC, ETH, SOL, XRP, ADA (default: BTC)"
+          },
+          "affiliate_id": {
+            "type": "string",
+            "description": "Optional Pyrimid affiliate ID (af_xxxxx). Affiliate earns a commission from within the listed price — no extra cost to you."
+          }
+        }
+      }
+    },
+    {
+      "name": "review_signal_anomaly",
+      "description": "Score a market signal feature set for unusual conditions before downstream analysis. Returns anomaly_score, anomaly_level, review_label, drivers, component scores, and market-intelligence disclaimers. Not financial advice and not a market activity instruction. Costs $0.07 USDC.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "symbol": {
+            "type": "string",
+            "description": "Symbol to review, e.g. BTC, ETH, SOL, XRP, ADA, AAPL, SPY"
+          },
+          "window": {
+            "type": "string",
+            "description": "Observation window label, e.g. 24h (default: 24h)"
+          },
+          "features": {
+            "type": "object",
+            "description": "Numeric feature values to score, such as price_change, volume_change, volatility, signal_confidence, risk_score, social_velocity, or onchain_velocity."
+          }
+        },
+        "required": [
+          "symbol",
+          "features"
+        ]
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 27530,
+  "transport": "stdio"
+}

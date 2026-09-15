@@ -1,0 +1,1025 @@
+{
+  "serverId": "mambalabsdev__mcp-gtm-suite__mambalabsdev-mcp-gtm-suite",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "scan_gtm_hiring_signals",
+      "description": "Scan company career pages to detect GTM hiring activity. Returns sales, marketing, and revenue operations job postings across Greenhouse, Lever, and Ashby as a flat, Clay-ready JSON row. Read-only; requires an APIFY_TOKEN and consumes Apify credits per call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "domain": {
+            "type": "string",
+            "description": "Bare company domain, e.g. stripe.com"
+          },
+          "role_filter": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Optional list of GTM role keywords to filter on. Defaults to the built-in list."
+          },
+          "ats_slug": {
+            "type": "string",
+            "description": "Optional ATS board slug override when it differs from the domain."
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "single",
+              "batch",
+              "velocity"
+            ],
+            "description": "Processing mode. \"single\" scores the domain. \"velocity\" compares this run against previous_gtm_role_count and previous_run_date. \"batch\" is an actor-level mode this single-call tool supplies no list for. Default: \"single\"."
+          },
+          "include_role_details": {
+            "type": "boolean",
+            "description": "When true, include the full per-role detail array (title, department, location, url). Default: false."
+          },
+          "previous_gtm_role_count": {
+            "type": "integer",
+            "description": "GTM role count from the previous run for this domain, used in velocity mode to compute the delta."
+          },
+          "previous_run_date": {
+            "type": "string",
+            "description": "ISO date of the previous run for this domain, used in velocity mode to report days between runs."
+          }
+        },
+        "required": [
+          "domain"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "detect_gtm_tech_stack",
+      "description": "Detect which GTM tools a company uses from its public website. Returns CRM, sequencer, and marketing automation signals with per-tool boolean flags as a flat, Clay-ready JSON row. Read-only; requires an APIFY_TOKEN and consumes Apify credits per call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "domain": {
+            "type": "string",
+            "description": "Bare company domain, e.g. stripe.com. Supply this, company_domain or url."
+          },
+          "company_domain": {
+            "type": "string",
+            "description": "Deprecated alias for domain, accepted by the actor for older callers. Prefer domain."
+          },
+          "url": {
+            "type": "string",
+            "description": "Deprecated alias for domain, accepted by the actor as a full company website URL. Prefer domain."
+          },
+          "crawl_additional_pages": {
+            "type": "boolean",
+            "description": "Crawl up to 2 extra pages for better coverage. Defaults to true when omitted."
+          },
+          "skipCache": {
+            "type": "boolean",
+            "description": "By default a clean detection is cached for 7 days and reused. Set true to force a fresh detection."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "aggregate_gtm_signals",
+      "description": "Aggregate a company's GTM signals into one composite score. Runs hiring and tech-stack detection in one call and returns a composite score, recommended action, and optional summary as a flat, Clay-ready JSON row. Read-only; requires an APIFY_TOKEN and consumes Apify credits per call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "company_domain": {
+            "type": "string",
+            "description": "Bare company domain, e.g. stripe.com"
+          },
+          "include_summary": {
+            "type": "boolean",
+            "description": "Include a plain-English gtm_signal_summary."
+          },
+          "explain_mode": {
+            "type": "boolean",
+            "description": "If true, the summary becomes a longer, more detailed explanation."
+          }
+        },
+        "required": [
+          "company_domain"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "scan_job_board_keywords",
+      "description": "Scan a company's job board for roles in chosen categories across Greenhouse, Lever, Ashby, Workday, and Rippling. Returns matched role counts and titles per category as a flat, Clay-ready JSON row. Read-only; requires an APIFY_TOKEN and consumes Apify credits per call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "company_domain": {
+            "type": "string",
+            "description": "Bare company domain, e.g. stripe.com"
+          },
+          "role_categories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "One or more of: GTM, Engineering, Finance, Operations, Executive, Custom."
+          },
+          "custom_keywords": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Keyword strings to match when Custom is included in role_categories."
+          },
+          "enable_fallback": {
+            "type": "boolean",
+            "description": "Fall back to a pre-indexed job database when the live ATS cascade finds nothing."
+          },
+          "previous_roles_detected": {
+            "type": "string",
+            "description": "Comma-separated matched role titles from a previous run, to compute deltas."
+          },
+          "previous_run_date": {
+            "type": "string",
+            "description": "ISO date of the previous run, e.g. 2026-03-15."
+          }
+        },
+        "required": [
+          "company_domain",
+          "role_categories"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "resolve_linkedin_url",
+      "description": "Resolve a company domain or name to its LinkedIn company URL with a confidence score, firmographics, and social links as a flat, Clay-ready JSON row. Provide at least one of company_domain or company_name. Read-only; requires an APIFY_TOKEN and consumes Apify credits per call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "company_domain": {
+            "type": "string",
+            "description": "Bare company domain, e.g. stripe.com. Required if company_name is not provided."
+          },
+          "company_name": {
+            "type": "string",
+            "description": "Company name. Required if company_domain is not provided."
+          },
+          "includeFirmographics": {
+            "type": "string",
+            "enum": [
+              "false",
+              "true"
+            ],
+            "description": "When \"true\", also fetches the public LinkedIn company page to add employee count, industry, HQ, follower count and description. Off by default because it is the most expensive step. Sent as a string for Clay compatibility."
+          },
+          "skipCache": {
+            "type": "string",
+            "enum": [
+              "false",
+              "true"
+            ],
+            "description": "When \"false\", the default, a successful resolution is cached for 7 days and reused. Set \"true\" to force a fresh resolution. Sent as a string for Clay compatibility."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "score_icp_fit",
+      "description": "Score a company against your ideal customer profile (ICP) using weighted signals. Returns a 0 to 100 icp_score, an A to D icp_tier, and a per-signal breakdown as a flat, Clay-ready JSON row. Define your ICP with a template, scoring_config, or plain-English icp_description (which requires llm_api_key). Read-only; requires an APIFY_TOKEN and consumes Apify credits per call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "company_domain": {
+            "type": "string",
+            "description": "The primary domain of the company to score, e.g. clay.com"
+          },
+          "company_name": {
+            "type": "string",
+            "description": "Optional display name of the company."
+          },
+          "template": {
+            "type": "string",
+            "description": "Name of a prebuilt scoring config."
+          },
+          "scoring_config": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "JSON object of scoring weights."
+          },
+          "icp_description": {
+            "type": "string",
+            "description": "Plain-English ICP description. Requires llm_api_key."
+          },
+          "llm_api_key": {
+            "type": "string",
+            "description": "Your OpenAI or Anthropic key, used only with icp_description."
+          },
+          "llm_provider": {
+            "type": "string",
+            "description": "LLM provider for icp_description: openai or anthropic."
+          },
+          "fetch_signals": {
+            "type": "boolean",
+            "description": "If true, the actor fetches hiring and tech-stack signals automatically before scoring."
+          },
+          "include_explanation": {
+            "type": "boolean",
+            "description": "If true, adds a score_explanation string to the output."
+          },
+          "tier_thresholds": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Optional. Minimum score for each tier as { \"tier_a\": number, \"tier_b\": number, \"tier_c\": number }. Scores at or above tier_a are A, tier_b are B, tier_c are C, else D. Defaults to 80 / 60 / 40."
+          },
+          "funded_within_days": {
+            "type": "integer",
+            "description": "Optional. How recent a funding round must be to count for the recently_funded signal, in days. Defaults to 540 (18 months)."
+          },
+          "min_score_to_output": {
+            "type": "integer",
+            "description": "If set, rows scoring below this threshold are skipped from output (not pushed to dataset). Skipped rows are logged only."
+          },
+          "previous_score": {
+            "type": "integer",
+            "description": "Previous ICP score for this company. If provided, output includes score_change and score_trend fields."
+          },
+          "gtm_hiring_signal": {
+            "type": "string",
+            "description": "Whether the company is actively hiring for GTM/sales roles. Accepts a boolean-like string (\"true\"/\"false\"). Sent as a string for Clay compatibility and coerced to boolean at runtime."
+          },
+          "gtm_role_count": {
+            "type": "string",
+            "description": "Number of open GTM/sales roles. Scores via the gtm_role_count_strong signal when at or above min_gtm_roles (default 2). Accepts a numeric string (e.g. \"8\"). Sent as a string for Clay compatibility and coerced to integer at runtime."
+          },
+          "uses_hubspot": {
+            "type": "string",
+            "description": "Whether the company uses HubSpot. Accepts a boolean-like string (\"true\"/\"false\"). Sent as a string for Clay compatibility and coerced to boolean at runtime."
+          },
+          "uses_salesforce": {
+            "type": "string",
+            "description": "Whether the company uses Salesforce. Accepts a boolean-like string (\"true\"/\"false\"). Sent as a string for Clay compatibility and coerced to boolean at runtime."
+          },
+          "uses_clay": {
+            "type": "string",
+            "description": "Whether the company uses Clay. Accepts a boolean-like string (\"true\"/\"false\"). Sent as a string for Clay compatibility and coerced to boolean at runtime."
+          },
+          "crm_detected": {
+            "type": "string",
+            "description": "Whether any CRM was detected. Accepts a boolean-like string (\"true\"/\"false\") or any non-empty CRM name (e.g. \"Salesforce\"). Sent as a string for Clay compatibility and coerced to boolean at runtime. Auto-derived from uses_hubspot/uses_salesforce if not set."
+          },
+          "seq_tool_detected": {
+            "type": "string",
+            "description": "Whether a sales sequencing tool (Outreach, SalesLoft, Apollo, Lemlist) was detected. Accepts a boolean-like string (\"true\"/\"false\") or any non-empty tool name (e.g. \"Outreach\"). Sent as a string for Clay compatibility and coerced to boolean at runtime."
+          },
+          "tech_stack": {
+            "type": "string",
+            "description": "Comma-separated list of technologies. Used to auto-detect CRM/sequencing tools if booleans are not set."
+          },
+          "headcount": {
+            "type": "string",
+            "description": "Current employee headcount. Accepts a numeric string (e.g. \"3000\"). Sent as a string for Clay compatibility and coerced to integer at runtime."
+          },
+          "headcount_min": {
+            "type": "integer",
+            "description": "Minimum headcount for the headcount_in_range signal."
+          },
+          "headcount_max": {
+            "type": "integer",
+            "description": "Maximum headcount for the headcount_in_range signal."
+          },
+          "headcount_in_range": {
+            "type": "boolean",
+            "description": "Override: whether headcount is in your target range."
+          },
+          "employee_band": {
+            "type": "string",
+            "description": "Firmographic employee band from the Company Firmographic Enricher (Actor ID YlUtLWjfPpqykmB8g), e.g. \"201-500\". Scores via employee_band_match when it is in target_employee_bands."
+          },
+          "revenue_estimate": {
+            "type": "string",
+            "description": "Estimated annual revenue in dollars from the Company Firmographic Enricher (Actor ID YlUtLWjfPpqykmB8g). Scores via revenue_in_range. Accepts a numeric string (e.g. \"50000000\"). Coerced to integer at runtime."
+          },
+          "hq_location": {
+            "type": "string",
+            "description": "Headquarters location from the Company Firmographic Enricher (Actor ID YlUtLWjfPpqykmB8g). Carried for reference; not currently scored."
+          },
+          "founded_year": {
+            "type": "string",
+            "description": "Year the company was founded, from the Company Firmographic Enricher (Actor ID YlUtLWjfPpqykmB8g). Carried for reference; not currently scored. Accepts a numeric string (e.g. \"2015\")."
+          },
+          "recently_funded": {
+            "type": "boolean",
+            "description": "Override: whether the company was recently funded (within funded_within_days, default 540)."
+          },
+          "last_funding_date": {
+            "type": "string",
+            "description": "ISO date of last funding round (legacy field; latest_funding_date is preferred). Used to auto-detect recently_funded if the boolean is not set."
+          },
+          "latest_funding_date": {
+            "type": "string",
+            "description": "ISO date of the latest funding round (from C1 Funding & Press Signal Scanner when it ships). Drives recently_funded against funded_within_days."
+          },
+          "latest_funding_amount": {
+            "type": "string",
+            "description": "Dollar amount of the latest funding round (from C1 when it ships). Scores via well_funded when at or above min_funding_amount (default 1000000). Accepts a numeric string (e.g. \"50000000\")."
+          },
+          "funding_stage": {
+            "type": "string",
+            "description": "Funding stage (e.g. seed, series_a, series_b, growth). Used to infer recently_funded."
+          },
+          "industry": {
+            "type": "string",
+            "description": "The company's industry (from the Company Firmographic Enricher, Actor ID YlUtLWjfPpqykmB8g)."
+          },
+          "industry_match": {
+            "type": "boolean",
+            "description": "Override: whether the company's industry matches your target list."
+          },
+          "target_industries": {
+            "type": "string",
+            "description": "Comma-separated list of target industries for the industry_match signal."
+          },
+          "social_platforms_found": {
+            "type": "string",
+            "description": "Number of official social platforms found, from the Company Social Presence Mapper (Actor ID 4k6CCemkgBDz18m2h). Scores via social_presence when at or above min_social_platforms (default 2). Accepts a numeric string."
+          },
+          "total_followers": {
+            "type": "string",
+            "description": "Total social followers across platforms, from the Company Social Presence Mapper (Actor ID 4k6CCemkgBDz18m2h). Scores via strong_social_following when at or above min_total_followers (default 1000). Accepts a numeric string."
+          },
+          "has_linkedin": {
+            "type": "string",
+            "description": "Whether a company LinkedIn page was found, from the Company Social Presence Mapper (Actor ID 4k6CCemkgBDz18m2h) or the Domain to LinkedIn URL Resolver (Actor ID 3HtnSaqPHOg1Qg5gx). Contributes to social_presence. Accepts a boolean-like string."
+          },
+          "has_twitter": {
+            "type": "string",
+            "description": "Whether a company X/Twitter profile was found, from the Company Social Presence Mapper (Actor ID 4k6CCemkgBDz18m2h). Contributes to social_presence. Accepts a boolean-like string."
+          },
+          "job_count": {
+            "type": "string",
+            "description": "Number of open jobs found, from the Job Board Keyword Signal Scanner (Actor ID 4DvqpvhMR74NLcDDY). Scores via active_hiring_volume when at or above min_job_count (default 3). Accepts a numeric string."
+          },
+          "keyword_match_count": {
+            "type": "string",
+            "description": "Number of target-keyword matches found, from the Job Board Keyword Signal Scanner (Actor ID 4DvqpvhMR74NLcDDY). Scores via keyword_signal_match when at or above min_keyword_matches (default 1). Accepts a numeric string."
+          }
+        },
+        "required": [
+          "company_domain"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "resolve_company_identity",
+      "description": "Resolve any combination of company name, domain, or LinkedIn URL into one canonical company identity: the name, primary domain, and LinkedIn company URL, each with a 0-100 confidence score plus an overall score and a match method. Cross-checks the inputs you give it, resolves the ones you do not, and flags conflicts (a domain and a LinkedIn slug that disagree) instead of merging them. Provide at least one of company_name, domain, or linkedin_url. Read-only; requires an APIFY_TOKEN and consumes Apify credits per call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "company_name": {
+            "type": "string",
+            "description": "Company name, e.g. Stripe. Provide at least one of company_name, domain, or linkedin_url."
+          },
+          "domain": {
+            "type": "string",
+            "description": "Bare company domain, e.g. stripe.com. The strongest canonical key when provided."
+          },
+          "linkedin_url": {
+            "type": "string",
+            "description": "LinkedIn company URL (https://www.linkedin.com/company/stripe) or bare slug (stripe)."
+          },
+          "skipCache": {
+            "type": "boolean",
+            "description": "Force a fresh resolution and ignore the 7 day result cache."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "enrich_company_firmographics",
+      "description": "Enrich a company domain into structured firmographics: employee band, industry, HQ, founded year, revenue estimate, logo, and description, with source provenance. Parsed from the company's schema.org/Organization JSON-LD and HTML meta tags and returned as a flat, Clay-ready JSON row with a source_signals array and a data_completeness score. Read-only; requires an APIFY_TOKEN and consumes Apify credits per call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "domain": {
+            "type": "string",
+            "description": "Bare company domain to enrich, e.g. stripe.com. Provide this or domains."
+          },
+          "company_name": {
+            "type": "string",
+            "description": "Optional company name, used as a fallback label when the page does not expose one."
+          },
+          "domains": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of bare domains for batch processing. Takes precedence over domain."
+          },
+          "batchSize": {
+            "type": "number",
+            "description": "Domains enriched concurrently per wave in batch mode. Default 5, maximum 10."
+          },
+          "skipCache": {
+            "type": "boolean",
+            "description": "Force a fresh enrichment and ignore the 7 day result cache."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "map_company_social_presence",
+      "description": "Map a company's social media presence across LinkedIn, X, Instagram, Facebook, and YouTube. Returns profile URLs and follower counts in flat Clay-ready JSON. Profiles are discovered from the company's own homepage links, a web search fallback, and pattern guessing, then validated against the company. Follower counts are extracted where public; X is URL-only (its count needs login) and Instagram and Facebook counts are best-effort. Provide at least one of company_domain or company_name. Read-only; requires an APIFY_TOKEN and consumes Apify credits per call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "company_domain": {
+            "type": "string",
+            "description": "Bare company domain, e.g. stripe.com. Provide this or company_name."
+          },
+          "company_name": {
+            "type": "string",
+            "description": "Optional company name. Improves search accuracy and disambiguation. Provide this or company_domain."
+          },
+          "platforms": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "linkedin",
+                "x",
+                "instagram",
+                "facebook",
+                "youtube"
+              ]
+            },
+            "description": "Which platforms to map. Defaults to all five."
+          },
+          "includeFollowerCounts": {
+            "type": "boolean",
+            "description": "Fetch profile pages to extract follower counts (default true). Set false for URLs only, which is cheaper."
+          },
+          "skipCache": {
+            "type": "boolean",
+            "description": "Force a fresh lookup and ignore the 7 day result cache."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_funding_press_signals",
+      "description": "Scan Google News and PR wires for funding rounds, executive moves, product launches, and acquisitions at any company domain. Returns deduplicated, dated events in flat Clay-ready JSON. Read-only; requires an APIFY_TOKEN and consumes Apify credits per call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "domain": {
+            "type": "string",
+            "description": "Company domain to scan, without https or www, e.g. stripe.com."
+          },
+          "company_name": {
+            "type": "string",
+            "description": "Optional company name hint, used when the domain does not match the brand name, e.g. Deel for deel.com."
+          }
+        },
+        "required": [
+          "domain"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_company_changes",
+      "description": "Monitor a company domain for changes across hiring, tech stack, funding, firmographics, and social since the last run. Returns only what changed as typed change events in flat, Clay-ready JSON. Read-only; requires an APIFY_TOKEN and consumes Apify credits per call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "domain": {
+            "type": "string",
+            "description": "Company domain to monitor, without https or www, e.g. stripe.com."
+          },
+          "company_name": {
+            "type": "string",
+            "description": "Optional company name hint, used when the domain does not match the brand name, e.g. Deel for deel.com."
+          },
+          "previous_snapshot": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Snapshot object returned by a prior run. Supply it and it is the baseline instead of stored state, which is what makes a scheduled run cheap."
+          },
+          "sub_actor_timeout_secs": {
+            "type": "integer",
+            "description": "Per-child run timeout in seconds. Children run in parallel, so total wall time is about the slowest child. Default: 90."
+          }
+        },
+        "required": [
+          "domain"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "detect_ai_tooling",
+      "description": "Given a company domain, determine how far that company has gone with AI. Returns an ai_maturity tier of none, declared (says AI but nothing observable is running), deployed (AI tooling is live on the site), or commercialized (the pricing page charges for AI via credits, tokens, an add-on, an AI-named plan, or a per-outcome price), plus the detected AI vendors, validated llms.txt status, robots.txt AI-crawler policy, and the evidence behind the verdict. A domain behind a bot challenge returns blocked=true at low confidence rather than a false negative. Returns flat, Clay-ready JSON. Read-only; requires an APIFY_TOKEN and consumes Apify credits per domain analyzed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "domain": {
+            "type": "string",
+            "description": "Company domain to analyze, without https or www, e.g. intercom.com."
+          },
+          "domains": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Batch mode: several company domains analyzed in one call. Takes precedence over domain."
+          },
+          "check_pricing": {
+            "type": "boolean",
+            "description": "Fetch and score the pricing page. Default true. Setting this false is faster but caps the result at 'deployed', because 'commercialized' can only be proven on a pricing page."
+          },
+          "skipCache": {
+            "type": "boolean",
+            "description": "Force a fresh analysis and ignore the 7 day result cache."
+          },
+          "request_timeout_ms": {
+            "type": "integer",
+            "description": "Per-request timeout in milliseconds. 3000 to 20000. Default: 9000."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "fingerprint_outbound_infrastructure",
+      "description": "Given a company domain, determine whether that company runs cold email outbound and on what stack. Returns a runs_outbound verdict of program (a deliberate cold outbound setup), light (one weak signal), none, or unknown, with the evidence behind it. The strongest signal is the lookalike sending domains a real program leaves behind: domains like getcompany.com or company-mail.com that carry their own mail and redirect back to the primary site. Also returns the inbox provider (Google Workspace, Microsoft 365 and others) for the primary domain and each sending domain, any detected sending platform (Outreach, Salesloft, Lemlist, Instantly, Smartlead, Apollo and more), registration clusters showing sending domains bought on the same day, cold email infrastructure vendors, and SPF, DKIM and DMARC posture. Sending platform recall is partial by design: sequencers that connect over OAuth to a customer's own mailbox leave no DNS trace, so an empty sending_platforms means little while a populated one is solid. Public DNS and HTTP redirects only. Returns flat, Clay-ready JSON. Read-only; requires an APIFY_TOKEN and consumes Apify credits per domain analyzed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "domain": {
+            "type": "string",
+            "description": "Company domain to analyze, without https or www, e.g. smartlead.ai."
+          },
+          "domains": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Batch mode: several company domains analyzed in one call. Takes precedence over domain."
+          },
+          "scan_sending_domains": {
+            "type": "boolean",
+            "description": "Scan for lookalike sending domains. Default true. The strongest signal and the slowest step; turning it off caps the verdict at what platform and deliverability signals alone can prove."
+          },
+          "sending_domain_depth": {
+            "type": "string",
+            "enum": [
+              "deep",
+              "standard"
+            ],
+            "description": "deep (default) checks .com, .co, .io, .net and .org. standard drops .net and .org."
+          },
+          "check_deliverability": {
+            "type": "boolean",
+            "description": "Add a blacklist check and a 0-100 health score by running the separate Domain Deliverability Checker actor, which bills its own per-domain rate on top of this one. Default false. SPF, DKIM and DMARC are read from DNS either way."
+          },
+          "skipCache": {
+            "type": "boolean",
+            "description": "Force a fresh analysis and ignore the 7 day result cache."
+          },
+          "max_sending_domain_probes": {
+            "type": "integer",
+            "description": "Cap on how many candidate sending domains are probed per company. Lower it to bound run time on companies with many lookalike domains."
+          },
+          "request_timeout_ms": {
+            "type": "integer",
+            "description": "Per-HTTP-request timeout in milliseconds."
+          },
+          "dns_timeout_ms": {
+            "type": "integer",
+            "description": "Per-DNS-lookup timeout in milliseconds."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "track_publication_cadence",
+      "description": "Given a company domain, measure how much long-form work that company publishes and whether the rate is rising or falling. Returns post counts for the last 30 days, 90 days and 12 months, a monthly average, and a cadence_trend of accelerating, steady, declining, dormant or unknown, with the percent change behind it. The trend compares the last 90 days against the prior 275 days, both normalized to posts per month. Also returns the blog URL, the format mix (blog posts, guides, reports, case studies, whitepapers, podcasts, videos, press releases, research), the number of distinct bylines, and how the post list was discovered. This measures EDITORIAL output volume, not product changelogs: a release feed is detected and rejected rather than counted. Publication dates are read from the post pages, because sitemap lastmod was measured to be a modification date running later than publication by a median of 151 to 1653 days. When a site's date field tracks edits rather than publication, date_source_reliable comes back false and every count is nulled rather than reported wrong, so read that field before quoting a number. Counts are a census when the archive fits the page budget and a scaled even sample otherwise, flagged by counts_are_estimate. Public sitemaps, feeds and pages only. Returns flat, Clay-ready JSON. Read-only; requires an APIFY_TOKEN and consumes Apify credits per domain analyzed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "domain": {
+            "type": "string",
+            "description": "Company domain to analyze, without https or www, e.g. zapier.com."
+          },
+          "domains": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Batch mode: several company domains analyzed in one call. Takes precedence over domain."
+          },
+          "max_pages_to_date": {
+            "type": "integer",
+            "minimum": 20,
+            "maximum": 800,
+            "description": "How many post pages to fetch per domain for dating. Default 400. Above this cap the counts are estimated from an even sample and counts_are_estimate is set true."
+          },
+          "domain_time_budget_ms": {
+            "type": "integer",
+            "minimum": 15000,
+            "maximum": 240000,
+            "description": "Hard wall-clock ceiling per domain, default 75000. When nearly spent the crawl stops and the row is returned with partial_result true rather than timing out."
+          },
+          "skipCache": {
+            "type": "boolean",
+            "description": "Force a fresh crawl and ignore the 3 day result cache."
+          },
+          "page_concurrency": {
+            "type": "integer",
+            "description": "How many pages are fetched concurrently within one domain."
+          },
+          "max_sitemap_fetches": {
+            "type": "integer",
+            "description": "Cap on how many sitemap files are fetched per domain. Lower it to bound run time on deeply nested sitemap indexes."
+          },
+          "request_timeout_ms": {
+            "type": "integer",
+            "description": "Per-HTTP-request timeout in milliseconds."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "push_leads_to_sequencer",
+      "description": "Push enriched lead rows into an existing Instantly or Smartlead campaign. Maps common Clay column names onto each sequencer's own field names, optionally drops leads below a minimum ICP score, optionally deduplicates against the leads already in the destination campaign, and sends the rest in batches. Returns one flat summary row: how many leads were received, dropped for having no usable email, dropped by the ICP gate, dropped as duplicates, eligible, actually created by the sequencer, skipped by the sequencer, and failed, plus the vendor's own error message per failed address. The campaign must already exist; this does not create campaigns or write sequence copy. Set dry_run true to get back the exact request payload that would be sent without creating a single lead and without being charged, which is the safe way to check a mapping against a new campaign. Billing is per lead the sequencer confirms it created, so gated, duplicate, skipped, failed and dry-run leads are all free. Instantly uses API v2 and needs a v2 key; Smartlead uses API v1. Requires an APIFY_TOKEN and consumes Apify credits. This WRITES to your sequencer campaign unless dry_run is true.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sequencer": {
+            "type": "string",
+            "enum": [
+              "instantly",
+              "smartlead"
+            ],
+            "description": "Which sequencer to push to. Instantly uses API v2, Smartlead uses API v1."
+          },
+          "api_key": {
+            "type": "string",
+            "description": "Your Instantly v2 API key or your Smartlead API key. An Instantly v1 key will not work: v1 was deprecated on January 19, 2026. Required for any run that calls the sequencer. A dry run with deduplicate false makes no calls and needs no key."
+          },
+          "campaign_id": {
+            "type": "string",
+            "description": "The target campaign in the sequencer. It must already exist. Instantly campaign IDs are UUIDs; Smartlead campaign IDs are numeric."
+          },
+          "leads": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            },
+            "description": "Lead rows to push. Each row needs an email at minimum. Takes precedence over dataset_id when both are set."
+          },
+          "dataset_id": {
+            "type": "string",
+            "description": "An Apify dataset ID from an upstream run, for example the output of score_icp_fit. Used only when leads is empty."
+          },
+          "min_icp_score": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Drop leads whose icp_score is below this number. Default 0, which pushes everything. Rows with no icp_score are always kept."
+          },
+          "deduplicate": {
+            "type": "boolean",
+            "description": "Read the campaign's existing leads first and drop any email already there. Default true. This is a read, so it needs an API key even on a dry run."
+          },
+          "dry_run": {
+            "type": "boolean",
+            "description": "Run every step, return the exact payload that would be sent, and make zero write calls. Creates no leads and charges nothing. Default false."
+          },
+          "field_mapping": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Override the default Clay column to sequencer field map. Keys are your column names, values are the sequencer field names. Set a value to an empty string to drop that column. A target the sequencer does not have is sent as a custom variable rather than rejected."
+          },
+          "custom_variables": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Extra column names to pass through as custom variables under their own name. Columns that are neither mapped nor listed here are dropped."
+          }
+        },
+        "required": [
+          "sequencer",
+          "campaign_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "audit_agent_accessibility",
+      "description": "Give it a domain and it returns whether an AI agent can read that site, and what the site's policy says, as one flat row of 42 fields across five families: the llms.txt family including llms-full.txt and ai.txt, robots.txt AI crawler policy including the newer Content Signal directives, structured data presence and health across JSON-LD, microdata, Open Graph and canonical, render mode, and machine readable endpoint discovery covering sitemap, OpenAPI, well known files and feeds. Every field is a fact read off a fetch. No model is called at any point, so the same domain returns the same row today and next month unless the site actually changed. Twelve requests per domain, typically 2 to 4 seconds. Built for a technical SEO or growth engineer preparing a site for AI crawlers, or an agency selling that work and needing a before and after audit across a client list. Requires an APIFY_TOKEN and consumes Apify credits. Read only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "domain": {
+            "type": "string",
+            "description": "One company domain, for example vercel.com. Protocol and path are stripped."
+          },
+          "check_endpoints": {
+            "type": "boolean",
+            "description": "Probes sitemap, OpenAPI, well known files and feeds. Adds 7 concurrent requests. Default: true."
+          },
+          "check_structured_data": {
+            "type": "boolean",
+            "description": "Parses JSON-LD, microdata, Open Graph and canonical off the homepage. Costs no extra requests. Default: true."
+          },
+          "skipCache": {
+            "type": "string",
+            "enum": [
+              "false",
+              "true"
+            ],
+            "description": "Leave as false to use the 7 day cache. Set to true to re-audit the domain from scratch. Default: \"false\"."
+          }
+        },
+        "required": [
+          "domain"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "classify_contact",
+      "description": "One contact in, one classified row out. Give it a job title and it returns the department, the seniority level, a seniority_rank from 1 to 12 you can filter with a comparison, and classification_rule, the named rule that fired, so every decision is auditable. The classification is a deterministic rule table: it needs no API key, calls no model, and returns the same answer for the same title every time. Only job_title is required. full_name and company_domain are read only when verify_position is on, which checks whether the person is still listed on their employer's own website and adds roughly 3 seconds and 9 requests per contact. The optional LLM fallback for titles the rules cannot place runs on your own key, set as the LLM_API_KEY secret environment variable on your own copy of the actor, and only the title is ever sent, never the person's name. With no key set those titles come back null rather than failing the row. This actor does not discover people: the name and title come from you. Requires an APIFY_TOKEN and consumes Apify credits. Read only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "job_title": {
+            "type": "string",
+            "description": "The contact's job title, exactly as you hold it. Classified by deterministic rules with no API key needed."
+          },
+          "full_name": {
+            "type": "string",
+            "description": "Only needed for position verification. Classification works without it. This name is never sent to any language model."
+          },
+          "company_domain": {
+            "type": "string",
+            "description": "Only needed for position verification. The company's website domain, with or without https."
+          },
+          "verify_position": {
+            "type": "boolean",
+            "description": "Check whether the person is still listed on their employer's own website. Off by default. Adds roughly 3 seconds and 9 requests per contact, and needs both the name and the domain. Default: false."
+          },
+          "use_llm_fallback": {
+            "type": "boolean",
+            "description": "Off by default. When on, titles the rules cannot place are sent to your own model using the LLM_API_KEY secret environment variable you set on your copy of this Actor. Only the title is sent, never the person's name. With no key set the Actor still returns a row, it just leaves those titles null. Default: false."
+          },
+          "llm_provider": {
+            "type": "string",
+            "enum": [
+              "openai",
+              "anthropic",
+              "google"
+            ],
+            "description": "Which provider your LLM_API_KEY belongs to. Only read when the LLM fallback is on. Default: \"openai\"."
+          },
+          "llm_model": {
+            "type": "string",
+            "description": "Model id passed straight through to the provider. Only read when the LLM fallback is on. Default: \"gpt-4o-mini\"."
+          },
+          "skipCache": {
+            "type": "string",
+            "enum": [
+              "false",
+              "true"
+            ],
+            "description": "Set to true to ignore cached results and classify from scratch. Default: \"false\"."
+          }
+        },
+        "required": [
+          "job_title"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "map_company_event_presence",
+      "description": "Give it a company domain. It returns the third party conferences and trade shows that company publicly says it attends, with a year for each where one can be resolved, as one flat row. The search runs against the company's own domain, which is what stops a brand collision returning another company's events. The company's own conference is reported separately and is never mixed into the attendance list. It finds events for roughly 2 companies in 10, and an empty row is an honest empty row rather than a guess: read coverage, fetch_status and queries_failed to tell a company with no published events apart from a search that could not see. Events dated outside the years you ask for are still returned and flagged, so filter on event year rather than assuming the input filtered for you. This is not an events database and not an exhibitor list: it takes a company and reports what that company publishes. Requires an APIFY_TOKEN and consumes Apify credits. Read only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "domain": {
+            "type": "string",
+            "description": "A single company domain, for example 6sense.com. Protocol and path are stripped."
+          },
+          "company_name": {
+            "type": "string",
+            "description": "Improves matching when the brand differs from the domain stem, for example Gong for gong.io. Derived from the domain when left empty."
+          },
+          "years": {
+            "type": "string",
+            "description": "Comma separated, for example 2025,2026. Events dated outside this set are still returned and flagged. Sent as a string so it works from Clay. Default: \"2025,2026\"."
+          },
+          "include_own_events": {
+            "type": "boolean",
+            "description": "Reports whether the company runs its own conference as a separate field. It is never mixed into the attendance list. Default: true."
+          },
+          "max_queries": {
+            "type": "string",
+            "description": "Between 1 and 5. Each query costs roughly 0.8 seconds plus a 1.3 second pause. 2 is the measured sweet spot: search engines refuse a third query from the same container almost every time, and the third query added no events the first two did not already find. Sent as a string so it works from Clay. Default: \"2\"."
+          },
+          "skipCache": {
+            "type": "string",
+            "enum": [
+              "false",
+              "true"
+            ],
+            "description": "false uses the 21 day result cache. true forces a fresh look. Default: \"false\"."
+          }
+        },
+        "required": [
+          "domain"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "resolve_legal_entity",
+      "description": "Give it a company domain and it returns the registered legal entity behind it: legal name, company number, jurisdiction, status, entity type, LEI and VAT number, as one flat row with a full audit trail of what was rejected and why. Three registers are queried: UK Companies House, GLEIF and SEC EDGAR. Register search endpoints are fuzzy and always return something, so by default a record is accepted only when the normalized legal names are identical. That is why roughly 6 domains in 10 resolve rather than 10 in 10, and why a null here is a trustworthy answer rather than a gap. Read match_method, match_confidence and rejected_candidates before acting on a match. Setting match_strictness to fuzzy will hand you a confidently wrong company on most domains and should be treated as a research mode, not a default. This is not a company database and not a credit or risk product. Requires an APIFY_TOKEN and consumes Apify credits. Read only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "domain": {
+            "type": "string",
+            "description": "A single company domain, for example monzo.com. Protocol and path are stripped."
+          },
+          "legal_name_hint": {
+            "type": "string",
+            "description": "Skips the domain lookup and goes straight to the registers with this name. Use it when you already have the legal name and just want the register record."
+          },
+          "jurisdiction_hint": {
+            "type": "string",
+            "description": "ISO-2 country code, for example GB or US. Narrows which registers are queried and cuts latency. Leave empty to query every register."
+          },
+          "match_strictness": {
+            "type": "string",
+            "enum": [
+              "exact",
+              "fuzzy"
+            ],
+            "description": "exact accepts a register record only when the normalized legal names are equal, which is the default and the recommendation. fuzzy returns the best scoring candidate with a confidence below 100 and a warning in rejected_candidates. Register search is fuzzy and always returns something, so fuzzy mode will hand you a confidently wrong company on most domains. Default: \"exact\"."
+          },
+          "validate_vat": {
+            "type": "boolean",
+            "description": "Runs any VAT number found on the company's own pages through the EU VIES service and returns the name VIES holds for it, as a cross-check against the register name. Default: true."
+          },
+          "skipCache": {
+            "type": "string",
+            "enum": [
+              "false",
+              "true"
+            ],
+            "description": "false uses the cache: 90 days for a resolved company, 7 days for a null. true forces a fresh look. Default: \"false\"."
+          }
+        },
+        "required": [
+          "domain"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "monitor_public_awards",
+      "description": "Pick a public award register and a time window and it returns the companies that won public work in it, one flat row per winning company rather than one per award, with award count, total value, largest award, awarding body, award date, a deep link to the source record, and a resolved company domain. Five registers are covered: US federal contracts and US federal grants from USASpending, NIH SBIR and STTR from NIH RePORTER, and UK Contracts Finder and UK Find a Tender. This reports awards that have already been made, so it is not a tender feed and will not tell you what is open to bid on. US federal data lags about two days, so a one day window on a US register returns little or nothing. Winners are sorted by total award value and max_entities is the hard cap on billed rows. Requires an APIFY_TOKEN and consumes Apify credits. Read only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "register": {
+            "type": "string",
+            "enum": [
+              "us_federal_contracts",
+              "us_federal_grants",
+              "us_nih_sbir",
+              "uk_contracts_finder",
+              "uk_find_a_tender"
+            ],
+            "description": "Which award register to read. US federal contracts and grants come from USASpending, NIH SBIR and STTR from NIH RePORTER, and the two UK registers from Contracts Finder and Find a Tender. Default: \"us_federal_contracts\"."
+          },
+          "window_days": {
+            "type": "string",
+            "description": "How many days back from today to read awards for. 1 to 90. US federal data lags about two days, so do not use a one day window on the US registers. Sent as a string so it works from Clay. Default: \"7\"."
+          },
+          "min_award_value": {
+            "type": "string",
+            "description": "Drops awards below this amount in the register's own currency. Set to 0 to keep everything. Sent as a string so it works from Clay. Default: \"100000\"."
+          },
+          "max_entities": {
+            "type": "string",
+            "description": "Hard cap on billed rows. 1 to 1000. Winners are sorted by total award value, and the run log says how many were dropped. Sent as a string so it works from Clay. Default: \"100\"."
+          },
+          "exclude_government_recipients": {
+            "type": "boolean",
+            "description": "Drops winners that are themselves government, universities, or public authorities. Leave this on for the grant registers or you get state departments of education instead of companies. Default: true."
+          },
+          "resolve_domains": {
+            "type": "boolean",
+            "description": "Looks up each winner's website. Turning it off makes the run roughly 20x faster and returns recipient_domain as null with domain_status not_attempted. Default: true."
+          },
+          "domain_confidence_floor": {
+            "type": "string",
+            "enum": [
+              "strict",
+              "standard",
+              "loose"
+            ],
+            "description": "How sure the actor has to be before it gives you a domain. Strict returns fewer domains and almost no wrong ones. Loose returns the most domains and about a third of them are wrong. Default: \"standard\"."
+          }
+        },
+        "required": [
+          "register"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "capture_linkedin_posts_and_commenters",
+      "description": "Point it at LinkedIn person profiles or company pages and it returns their recent posts as flat rows, with the real reaction and comment counts on every one, plus the commenters LinkedIn shows publicly. No cookies, no LinkedIn account, no credentials of any kind. One dataset carries three row types told apart by row_type: post, engager and notice, so filter on row_type before loading a table. post_id is the numeric activity URN and is stable across runs and across both permalink spellings, which makes it safe as a primary key and as a have-I-already-seen-this check. Read the limits before relying on the commenters: LinkedIn renders about ten top-level comments to a logged-out visitor whatever the real total, measured whole-run coverage was 3.7 percent, and roughly 30 percent of comment rows carry no timestamp. Reactor identities are not served to a logged-out visitor at all, so every post row carries the real reaction_count and reactors_status says unavailable_without_login. Every row carries degraded and degradation_reason: filter on degraded before you trust an absence. Requires an APIFY_TOKEN and consumes Apify credits. Read only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "profile_urls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "LinkedIn person profile URLs whose recent posts you want, for example https://www.linkedin.com/in/williamhgates. Country subdomains such as uk.linkedin.com are fine. Supply this, company_urls, or both."
+          },
+          "company_urls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "LinkedIn company page URLs whose recent posts you want, for example https://www.linkedin.com/company/microsoft. Supply this, profile_urls, or both."
+          },
+          "posted_since": {
+            "type": "string",
+            "description": "ISO date or timestamp, for example 2026-08-01. Posts published before this are skipped BEFORE anything is charged, so a scheduled run that finds nothing new costs the actor start and nothing else. Leave empty to take everything the page advertises."
+          },
+          "collect_commenters": {
+            "type": "boolean",
+            "description": "Return one row per person who commented, with name, profile URL, comment text and comment likes. Turn it off to collect posts only, in which case commenters_collected comes back null rather than 0, because the actor did not look. Default: true."
+          },
+          "collect_reactors": {
+            "type": "boolean",
+            "description": "LinkedIn serves no reactor identities to a logged-out visitor, so this returns no reaction rows whatever you set. It exists so the limit is visible rather than silent, and it adds one notice row per run. Set it to false to suppress that row. Default: true."
+          },
+          "max_engagers_per_post": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Caps the engager rows charged per post. LinkedIn shows about ten comments to a logged-out visitor, so ten is the platform ceiling and raising this above ten does nothing. Set it to 0 to pay for posts only. Default: 10."
+          },
+          "use_residential_proxy": {
+            "type": "boolean",
+            "description": "Off by default, which is what the pricing assumes and what was measured. Turn it on only if LinkedIn starts refusing the platform's datacenter addresses. Apify bills residential bandwidth on top of this actor's events. Default: false."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 14127,
+  "transport": "stdio"
+}

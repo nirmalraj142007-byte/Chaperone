@@ -1,0 +1,73 @@
+{
+  "serverId": "austenstone__myinstants-mcp__austenstone-myinstants-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "search_sounds",
+      "description": "Search myinstants.com for sound buttons.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search query"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "browse_category",
+      "description": "Browse sounds by category on myinstants.com.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "description": "Category name: anime & manga, games, memes, movies, music, politics, pranks, reactions, sound effects, sports, television, tiktok trends, viral, whatsapp audios"
+          }
+        },
+        "required": [
+          "category"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "play_sound",
+      "description": "Play a sound from myinstants.com. Returns the sound duration in seconds so you can plan around async playback.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "description": "Sound slug from search results"
+          },
+          "url": {
+            "type": "string",
+            "description": "Direct MP3 URL"
+          },
+          "query": {
+            "type": "string",
+            "description": "Quick search — plays first result"
+          },
+          "wait": {
+            "type": "boolean",
+            "default": false,
+            "description": "Wait for sound to finish before returning (default: false). Set true only for dramatic moments where timing matters."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 18335,
+  "transport": "stdio"
+}

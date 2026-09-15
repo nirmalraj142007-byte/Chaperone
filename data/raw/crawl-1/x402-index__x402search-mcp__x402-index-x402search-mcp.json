@@ -1,0 +1,8 @@
+{
+  "serverId": "x402-index__x402search-mcp__x402-index-x402search-mcp",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "[x402search-mcp] ERROR: EVM_PRIVATE_KEY is not set.\nAdd it to your MCP config env block.\nYour wallet needs USDC on Base mainnet (eip155:8453).\nEach search costs $0.01 USDC.\nnpm notice\nnpm notice New major version of npm available! 10.9.8 -> 12.0.2\nnpm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2\nnpm notice To update run: npm install -g npm@12.0.2\nnpm notice\n",
+  "durationMs": 27780,
+  "transport": "stdio"
+}

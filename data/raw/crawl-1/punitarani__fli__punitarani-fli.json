@@ -1,0 +1,8 @@
+{
+  "serverId": "punitarani__fli__punitarani-fli",
+  "status": "FAILED_START",
+  "tools": [],
+  "stderrTail": "   Building ratelimit==2.2.1\nDownloading babel (9.7MiB)\nDownloading pygments (1.2MiB)\nDownloading pydantic-core (2.0MiB)\nDownloading curl-cffi (12.9MiB)\n      Built ratelimit==2.2.1\n Downloaded pygments\n Downloaded pydantic-core\n Downloaded babel\n Downloaded curl-cffi\nInstalled 27 packages in 11ms\nAn executable named `flights` is not provided by package `flights`.\nThe following executables are available:\n- fli\n- fli-mcp\n- fli-mcp-http\n\nUse `uvx --from flights <EXECUTABLE-NAME>` instead.\n\n",
+  "durationMs": 111566,
+  "transport": "stdio"
+}

@@ -1,0 +1,561 @@
+{
+  "serverId": "elfa-ai__mcp__ai-elfa-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "api_status",
+      "description": "Check the Elfa API key tier, credit usage and remaining requests, and confirm the API is reachable. Free. Call this first when a request fails with an auth or credit error.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "mentions",
+      "description": "Social mentions from X and Telegram. 1 credit per call. Returns engagement metrics and a link per post, not the post text. mode=top ranks one ticker's mentions by engagement. mode=search filters by keywords or by account. mode=news returns the token news feed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "top",
+              "search",
+              "news"
+            ],
+            "description": "top needs ticker. search needs keywords or accountName. news is a feed and needs neither."
+          },
+          "ticker": {
+            "type": "string",
+            "description": "Ticker for mode=top, for example \"BTC\" or \"$SOL\"."
+          },
+          "keywords": {
+            "type": "string",
+            "description": "Up to 5 comma separated keywords for mode=search."
+          },
+          "accountName": {
+            "type": "string",
+            "description": "X username for mode=search, without the @."
+          },
+          "coinIds": {
+            "type": "string",
+            "description": "Comma separated CoinGecko coin ids to filter mode=news."
+          },
+          "searchType": {
+            "type": "string",
+            "enum": [
+              "and",
+              "or"
+            ],
+            "description": "How multiple keywords combine in mode=search."
+          },
+          "timeWindow": {
+            "type": "string",
+            "description": "Relative window such as \"1h\", \"24h\" or \"7d\"."
+          },
+          "from": {
+            "type": "integer",
+            "description": "Start of an absolute range, unix seconds. Use with to. For mode=search the range must span at least 1 day and at most 30."
+          },
+          "to": {
+            "type": "integer",
+            "description": "End of an absolute range, unix seconds. Use with from."
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1,
+            "description": "Page number, starting at 1."
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 10,
+            "description": "Items per page, up to 100. Keep it small and page through rather than asking for everything at once."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 30,
+            "default": 10,
+            "description": "Result count for mode=search."
+          },
+          "cursor": {
+            "type": "string",
+            "description": "Pagination cursor from a previous mode=search response."
+          },
+          "reposts": {
+            "type": "boolean",
+            "description": "Include reposts in the results."
+          },
+          "verbosity": {
+            "type": "string",
+            "enum": [
+              "concise",
+              "detailed"
+            ],
+            "default": "concise",
+            "description": "concise returns the high signal fields only. Use detailed when you need every metric."
+          }
+        },
+        "required": [
+          "mode"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "trending",
+      "description": "What is gaining social attention right now. 1 credit per call. scope=tokens returns tickers ranked by mention volume with the change against the previous window. scope=contracts_twitter and scope=contracts_telegram return trending contract addresses.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "type": "string",
+            "enum": [
+              "tokens",
+              "contracts_twitter",
+              "contracts_telegram"
+            ],
+            "default": "tokens",
+            "description": "Which trending list to return."
+          },
+          "timeWindow": {
+            "type": "string",
+            "description": "Relative window such as \"24h\" or \"7d\". Defaults to 24h unless both from and to are given."
+          },
+          "from": {
+            "type": "integer",
+            "description": "Start of an absolute range, unix seconds. Use with to."
+          },
+          "to": {
+            "type": "integer",
+            "description": "End of an absolute range, unix seconds. Use with from."
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1,
+            "description": "Page number, starting at 1."
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 10,
+            "description": "Items per page, up to 100. Keep it small and page through rather than asking for everything at once."
+          },
+          "minMentions": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 5,
+            "description": "Drop entries below this mention count."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "narratives",
+      "description": "Written narrative analysis with source links, for when counts are not enough. 5 credits per call, so prefer trending or mentions when metrics will do. scope=market extracts the narratives moving the market. scope=keywords summarises events for keywords you supply, and can take over a minute to return.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "type": "string",
+            "enum": [
+              "market",
+              "keywords"
+            ],
+            "default": "market",
+            "description": "market is a broad sweep. keywords needs the keywords argument."
+          },
+          "keywords": {
+            "type": "string",
+            "description": "Up to 5 comma separated keywords for scope=keywords."
+          },
+          "searchType": {
+            "type": "string",
+            "enum": [
+              "and",
+              "or"
+            ],
+            "description": "How multiple keywords combine for scope=keywords."
+          },
+          "timeFrame": {
+            "type": "string",
+            "enum": [
+              "day",
+              "week"
+            ],
+            "description": "Lookback for scope=market."
+          },
+          "maxNarratives": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20,
+            "description": "Cap the narratives returned for scope=market."
+          },
+          "maxTweetsPerNarrative": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20,
+            "description": "Cap the sources per narrative for scope=market."
+          },
+          "timeWindow": {
+            "type": "string",
+            "description": "Relative window such as \"1h\", \"24h\" or \"7d\"."
+          },
+          "from": {
+            "type": "integer",
+            "description": "Start of an absolute range, unix seconds. Use with to."
+          },
+          "to": {
+            "type": "integer",
+            "description": "End of an absolute range, unix seconds. Use with from."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "account_stats",
+      "description": "Smart follower and engagement stats for an X account. 1 credit per call. Use it to judge whether an account's reach is real before weighting what it posts.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "description": "X username, with or without the @."
+          }
+        },
+        "required": [
+          "username"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "market_chat",
+      "description": "Ask Elfa for written market analysis grounded in its social data. Costs credits and varies by speed, so fast is the cheaper option. Pass sessionId from a previous reply to continue the same conversation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "analysisType": {
+            "type": "string",
+            "enum": [
+              "chat",
+              "macro",
+              "summary",
+              "tokenIntro",
+              "tokenAnalysis",
+              "accountAnalysis"
+            ],
+            "default": "chat",
+            "description": "chat needs message. tokenIntro and tokenAnalysis need symbol, or chain plus contractAddress. accountAnalysis needs username. macro and summary need nothing else."
+          },
+          "message": {
+            "type": "string",
+            "description": "The question, required for analysisType=chat."
+          },
+          "sessionId": {
+            "type": "string",
+            "description": "Continue an earlier conversation."
+          },
+          "speed": {
+            "type": "string",
+            "enum": [
+              "fast",
+              "expert",
+              "adaptive"
+            ],
+            "default": "fast",
+            "description": "Defaults to fast, which is cheaper and shallower. Ask for expert when the answer needs deeper reasoning."
+          },
+          "symbol": {
+            "type": "string",
+            "description": "Token symbol, for token analysis."
+          },
+          "chain": {
+            "type": "string",
+            "description": "Chain, paired with contractAddress."
+          },
+          "contractAddress": {
+            "type": "string",
+            "description": "Contract address, paired with chain."
+          },
+          "username": {
+            "type": "string",
+            "description": "X username, for analysisType=accountAnalysis."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "auto_build",
+      "description": "Turn a plain-language monitoring request into an EQL query. Costs 1 credit plus LLM usage. This only drafts the query, nothing starts running until you activate it with auto_query_write. Say what to watch, the threshold, and what should happen when it fires.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "What to monitor, in plain language, for example \"tell me on Telegram when BTC funding on Binance goes negative\"."
+          },
+          "speed": {
+            "type": "string",
+            "enum": [
+              "fast",
+              "expert",
+              "adaptive"
+            ],
+            "default": "fast",
+            "description": "fast is cheaper, expert reasons more deeply about the query."
+          },
+          "sessionId": {
+            "type": "string",
+            "description": "Continue refining a query from an earlier reply."
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "auto_validate",
+      "description": "Check EQL syntax and get a cost estimate before anything is activated. Free. Always run this before auto_query_write, and show the estimated cost to the user. Pass either an inline query or a draftId. method=symbol instead checks that a symbol has market data on a venue, before you build price or ta conditions around it.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "method": {
+            "type": "string",
+            "enum": [
+              "query",
+              "symbol"
+            ],
+            "default": "query",
+            "description": "query validates EQL, symbol checks symbol support."
+          },
+          "query": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "EQL query object with conditions, actions and expiresIn. Build it with auto_build and check it with auto_validate first."
+          },
+          "draftId": {
+            "type": "string",
+            "description": "Validate a stored draft instead of an inline query."
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "Title to validate with the query."
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Description to validate with the query."
+          },
+          "exchange": {
+            "type": "string",
+            "enum": [
+              "hyperliquid",
+              "gmx",
+              "binance",
+              "pacifica"
+            ],
+            "description": "Required for method=symbol."
+          },
+          "symbol": {
+            "type": "string",
+            "description": "Required for method=symbol, for example \"BTC\"."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "auto_query",
+      "description": "Read side of Auto. Free. method=list browses queries, method=get polls one query and returns its latest evaluation, method=executions and method=execution show what fired, method=sessions and method=session return the LLM analysis attached to a query. There is no push channel here, poll with method=get and respect pollAfterSeconds.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "method": {
+            "type": "string",
+            "enum": [
+              "list",
+              "get",
+              "executions",
+              "execution",
+              "sessions",
+              "session"
+            ],
+            "description": "Which read to perform."
+          },
+          "queryId": {
+            "type": "string",
+            "description": "Required for get, sessions and session."
+          },
+          "sessionId": {
+            "type": "string",
+            "description": "Required for method=session."
+          },
+          "executionId": {
+            "type": "string",
+            "description": "Required for method=execution."
+          },
+          "status": {
+            "type": "string",
+            "description": "Filter by status."
+          },
+          "type": {
+            "type": "string",
+            "description": "Filter executions by type."
+          },
+          "search": {
+            "type": "string",
+            "description": "Free text filter for method=list."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "default": 10,
+            "description": "Page size for list style methods."
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0,
+            "description": "Pagination offset."
+          }
+        },
+        "required": [
+          "method"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "auto_query_write",
+      "description": "Activate, cancel or delete an Auto query. Creating costs 5 credits plus LLM usage, cancel and delete are free. An activated query runs unattended and fires its action without asking again, so validate it with auto_validate and confirm the cost and the action with the user before calling this. Queries whose action is not a plain notification also need request signing.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "method": {
+            "type": "string",
+            "enum": [
+              "create",
+              "cancel",
+              "delete"
+            ],
+            "description": "create activates a new query. cancel stops an active one. delete removes one that has already finished."
+          },
+          "query": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "EQL query object with conditions, actions and expiresIn. Build it with auto_build and check it with auto_validate first."
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "Short title shown in the notification when this fires."
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Why this was set up, shown alongside the title."
+          },
+          "queryId": {
+            "type": "string",
+            "description": "Required for cancel and delete."
+          }
+        },
+        "required": [
+          "method"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "auto_draft",
+      "description": "Park an Auto query without activating it. Drafts never evaluate and never fire. Free, except method=convert which activates the draft and costs the same as creating a query. Use drafts when the user is still deciding.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "method": {
+            "type": "string",
+            "enum": [
+              "list",
+              "get",
+              "upsert",
+              "delete",
+              "convert"
+            ],
+            "description": "upsert creates or updates a draft. convert activates it as a live query."
+          },
+          "draftId": {
+            "type": "string",
+            "description": "Required for get, delete and convert. Optional on upsert to update."
+          },
+          "query": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "EQL query object with conditions, actions and expiresIn. Build it with auto_build and check it with auto_validate first."
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "Title carried into the live query."
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Description carried into the live query."
+          },
+          "status": {
+            "type": "string",
+            "description": "Filter for method=list."
+          },
+          "search": {
+            "type": "string",
+            "description": "Free text filter for method=list."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "default": 10,
+            "description": "Page size."
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0,
+            "description": "Pagination offset."
+          }
+        },
+        "required": [
+          "method"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 15748,
+  "transport": "stdio"
+}

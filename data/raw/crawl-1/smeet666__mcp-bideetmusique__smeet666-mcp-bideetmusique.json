@@ -1,0 +1,141 @@
+{
+  "serverId": "smeet666__mcp-bideetmusique__smeet666-mcp-bideetmusique",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "search_songs",
+      "description": "Search the Bide & Musique collection: French songs, mostly forgotten ones, catalogued by hand since 2000 by the association that runs the station. Bide & Musique is a French site, so French terms work best. 'search_type' picks the axis and has to be stated: 'performer' for the artist credited on the record, 'title' for the name of the song, 'writer' for who wrote or composed it, 'lyrics' for the words sung in it, 'label' for the label it came out on, 'year' for the year printed on it. Each asks a different question and they are never merged, so a name that finds nothing as a performer may still be a title. 'year' takes one four-digit year and nothing else: the site drops any other word on that axis instead of filtering on it, and the ranges its own form documents return nothing. To combine a year with words, search the words on their own axis and read each record's year from its page. Use 'lyrics' to find a song from a line someone remembers. It answers with the songs whose words match, without showing what matched; read the words themselves with get_song on the id. Several keywords are combined with AND, each matched inside words, so every extra word narrows the search and never widens it. Quoting a phrase returns nothing, whatever the site's own form says. Results carry the song id, the artist and the page to read, which is where the song's own record lives: year, label, catalogue reference and writers. The count returned counts matching songs across every page, so it is usually larger than the rows of one page; ask for the next page with 'page'. When you show a song to a user, credit Bide & Musique and link the source URL.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "What to search for, in French, for example 'Pierre Bachelet' or 'vacances'."
+          },
+          "search_type": {
+            "type": "string",
+            "enum": [
+              "performer",
+              "title",
+              "writer",
+              "lyrics",
+              "label",
+              "year"
+            ],
+            "description": "Which axis to search: 'performer' for the artist credited on the record, 'title' for the name of the song, 'writer' for who wrote or composed it, 'lyrics' for the words sung in it, 'label' for the label it came out on, 'year' for the year printed on it. The 'year' axis takes one four-digit year and nothing else: the site drops any other word there instead of filtering on it."
+          },
+          "page": {
+            "default": 1,
+            "description": "Which page of results to read. The answer states which page the site served.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200
+          },
+          "limit": {
+            "default": 20,
+            "description": "Maximum songs to return from that page.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          }
+        },
+        "required": [
+          "query",
+          "search_type"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_song",
+      "description": "Read one song's record on Bide & Musique: the year, the writers and composers, the duration, the label and its catalogue reference, the sleeve, when the collection catalogued it, how it ranked in the station's own chart, and how many people kept it as a favourite. Takes the 'song_id' that search_songs returns. Three things are always there: the title, the artist and the duration. Everything else is absent on some records, and comes back null or empty rather than guessed; a counter the record does not print is unknown, not zero. Records whose page carries a transcription come back with the words themselves, as published, along with who typed them. A record whose page carries none says so. When you show a record to a user, credit Bide & Musique and link the page.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "song_id": {
+            "type": "string",
+            "maxLength": 20,
+            "pattern": "^\\d+$",
+            "description": "The song id returned by search_songs, digits only, for example '1734'."
+          },
+          "include_lyrics": {
+            "default": true,
+            "description": "Whether to return the transcription the page carries. A record whose page has one runs to a few thousand characters, so ask for false when the question is about the record: the year, the label or the writers. 'lyrics.available' still says whether the page has one.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "song_id"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_artist",
+      "description": "Read an artist's page on Bide & Musique: the names they recorded under, what the catalogue notes about them, and every song of theirs the collection holds, each with its year. Takes the 'artist_id' that search_songs, get_song and get_random_song return. An artist page is a way into a discography rather than a biography: half of them state nothing beyond the name, and the median artist has one record here. Fields the page does not state come back null or empty, which is the ordinary state of this catalogue rather than a failed read. The date of birth comes back exactly as written, since the catalogue states a full date, a bare year, or a date with a death beside it. Nationality is free text for the same reason. Rows come in the site's order, by year of release, never by importance. When you show an artist to a user, credit Bide & Musique and link the page.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "artist_id": {
+            "type": "string",
+            "maxLength": 20,
+            "pattern": "^\\d+$",
+            "description": "The artist id returned by search_songs, get_song or get_random_song, digits only, for example '290'."
+          },
+          "limit": {
+            "default": 100,
+            "description": "Maximum songs of the discography to return.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200
+          }
+        },
+        "required": [
+          "artist_id"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_random_song",
+      "description": "Read one record drawn at random from the Bide & Musique collection: same answer as get_song, on a record nobody chose. Use it to browse the collection. For a question about a particular song, use get_song. The draw runs over the ids the site serves, from the first to the newest one its feed of new entries names, and an id the collection does not serve is drawn again. Records whose page carries a transcription come back with the words themselves, as published. When you show a record to a user, credit Bide & Musique and link the page.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "include_lyrics": {
+            "default": true,
+            "description": "Whether to return the transcription the drawn record's page carries. Browsing chains many calls, and a record with one runs to a few thousand characters.",
+            "type": "boolean"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "list_new_songs",
+      "description": "Read the records Bide & Musique has just catalogued. The collection is built by hand and grows a few records at a time, so this answers what has been added lately rather than what the station is playing. The feed carries a fixed number of entries and offers no second page, so the count is what it holds and says nothing about how many records the collection has. Entries come in the order the feed publishes them, which runs newest first without being sorted: read 'published_at' rather than the position to date one. Each entry names the song and the artist as one line, which is read apart at the first separator and kept whole under 'listed_as'. Use get_song on the id for the record itself: year, writers, label, duration and the words when the page carries them. When you show a record to a user, credit Bide & Musique and link the page.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "default": 20,
+            "description": "Maximum entries to return, taken from the head of the feed.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 16532,
+  "transport": "stdio"
+}

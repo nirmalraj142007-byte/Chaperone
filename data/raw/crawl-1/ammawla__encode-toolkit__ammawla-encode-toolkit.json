@@ -1,0 +1,8 @@
+{
+  "serverId": "ammawla__encode-toolkit__ammawla-encode-toolkit",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "Downloading pygments (1.2MiB)\nDownloading pydantic-core (2.0MiB)\nDownloading cryptography (4.5MiB)\n Downloaded pygments\n Downloaded pydantic-core\n Downloaded cryptography\nInstalled 47 packages in 14ms\nTraceback (most recent call last):\n  File \"/tmp/uv-cache/archive-v0/kJdDqZ7pOLvJl8Gp/bin/encode-toolkit\", line 6, in <module>\n    from encode_connector.server.main import main\n  File \"/tmp/uv-cache/archive-v0/kJdDqZ7pOLvJl8Gp/lib/python3.12/site-packages/encode_connector/server/main.py\", line 18, in <module>\n    from mcp.server.fastmcp import FastMCP\n  File \"/tmp/uv-cache/archive-v0/kJdDqZ7pOLvJl8Gp/lib/python3.12/site-packages/mcp/server/fastmcp.py\", line 16, in <module>\n    raise ModuleNotFoundError(_MESSAGE, name=__name__)\nModuleNotFoundError: No module named 'mcp.server.fastmcp'. This is mcp 2.x, where FastMCP was renamed to MCPServer (from mcp.server.mcpserver import MCPServer) and other APIs changed; see the migration guide at https://py.sdk.modelcontextprotocol.io/v2/migration/#fastmcp-renamed-to-mcpserver or pin 'mcp<2' to keep running v1 code.\nnpm notice\nnpm notice New major version of npm available! 10.9.8 -> 12.0.2\nnpm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2\nnpm notice To update run: npm install -g npm@12.0.2\nnpm notice\n",
+  "durationMs": 27904,
+  "transport": "stdio"
+}

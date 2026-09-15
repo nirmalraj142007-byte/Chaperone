@@ -1,0 +1,8 @@
+{
+  "serverId": "healthchainai__healthchain__healthchainai-healthchain",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "sh: 1: exec: healthchain[mcp]: not found\n",
+  "durationMs": 71967,
+  "transport": "stdio"
+}

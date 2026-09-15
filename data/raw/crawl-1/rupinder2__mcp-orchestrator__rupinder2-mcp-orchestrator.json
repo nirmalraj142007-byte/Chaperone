@@ -1,0 +1,78 @@
+{
+  "serverId": "rupinder2__mcp-orchestrator__rupinder2-mcp-orchestrator",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "tool_search",
+      "description": "Search for tools using BM25 relevance ranking or regex pattern matching.\n\nSearches across tool names, descriptions, and argument names/descriptions.\nBy default, uses BM25 natural language search. Set use_regex=True to search\nusing Python regex patterns instead.\nReturns tool_reference blocks for discovered tools with deferred loading.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Natural language query (BM25) or regex pattern (if use_regex=True)"
+          },
+          "max_results": {
+            "default": 3,
+            "type": "integer",
+            "description": "Maximum number of results (1-10, default 3)"
+          },
+          "use_regex": {
+            "default": false,
+            "type": "boolean",
+            "description": "If True, treat query as regex pattern; otherwise use BM25 search"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "call_remote_tool",
+      "description": "Call a tool directly on a registered remote MCP server through the orchestrator.\n\nThis tool allows direct invocation of any tool on a downstream MCP server.\nThe tool name should be in the format 'server_name__tool_name' (e.g., 'context7__query-docs').",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tool_name": {
+            "type": "string",
+            "description": "Full tool name in format 'server_name__tool_name'"
+          },
+          "arguments": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Tool arguments as a dictionary (optional)"
+          },
+          "auth_header": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional auth header to use for this call (overrides registered auth)"
+          }
+        },
+        "required": [
+          "tool_name"
+        ],
+        "additionalProperties": false
+      }
+    }
+  ],
+  "stderrTail": "Downloading pydantic-core (2.0MiB)\nDownloading cryptography (4.5MiB)\nDownloading pygments (1.2MiB)\nDownloading beartype (1.3MiB)\n Downloaded pygments\n Downloaded beartype\n Downloaded pydantic-core\n Downloaded cryptography\nInstalled 76 packages in 25ms\n2026-09-15 06:46:51,654 - mcp_orchestrator.main - INFO - Starting MCP Orchestrator...\n2026-09-15 06:46:51,654 - mcp_orchestrator.main - INFO - Storage backend: memory\n2026-09-15 06:46:51,772 - mcp_orchestrator.main - INFO - MCP Orchestrator server initialized\n2026-09-15 06:46:51,772 - mcp_orchestrator.main - INFO - Running with stdio transport\n2026-09-15 06:46:52,105 - httpx2 - INFO - HTTP Request: GET https://pypi.org/pypi/fastmcp/json \"HTTP/1.1 200 OK\"\n\n\n╭──────────────────────────────────────────────────────────────────────────────╮\n│                                                                              │\n│                                                                              │\n│                         ▄▀▀ ▄▀█ █▀▀ ▀█▀ █▀▄▀█ █▀▀ █▀█                        │\n│                         █▀  █▀█ ▄▄█  █  █ ▀ █ █▄▄ █▀▀                        │\n│                                                                              │\n│                                                                              │\n│                                                                              │\n│                                FastMCP 4.0.3                                 │\n│                            https://gofastmcp.com                             │\n│                                                                              │\n│                  🖥  Server:      mcp-orchestrator, 4.0.3                     │\n│                  🚀 Deploy free: https://horizon.prefect.io                  │\n│                                                                              │\n╰──────────────────────────────────────────────────────────────────────────────╯\n\n\n[09/15/26 06:46:52] INFO     Starting MCP server                transport.py:242\n                             'mcp-orchestrator' with transport                  \n                             'stdio'                                            \n",
+  "durationMs": 38092,
+  "transport": "stdio"
+}

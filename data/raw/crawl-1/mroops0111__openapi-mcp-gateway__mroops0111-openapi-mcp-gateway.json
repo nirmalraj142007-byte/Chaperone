@@ -1,0 +1,8 @@
+{
+  "serverId": "mroops0111__openapi-mcp-gateway__mroops0111-openapi-mcp-gateway",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "Downloading cryptography (4.5MiB)\nDownloading pygments (1.2MiB)\nDownloading uvloop (4.2MiB)\nDownloading pydantic-core (2.0MiB)\n Downloaded pygments\n Downloaded pydantic-core\n Downloaded uvloop\n Downloaded cryptography\nInstalled 49 packages in 11ms\nUsage: openapi-mcp-gateway [OPTIONS]\nTry 'openapi-mcp-gateway --help' for help.\n\nError: Either --spec or --config is required.\n",
+  "durationMs": 45979,
+  "transport": "stdio"
+}

@@ -1,0 +1,8 @@
+{
+  "serverId": "sitbon__magg__sitbon-magg",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "Downloading pygments (1.2MiB)\nDownloading beartype (1.3MiB)\nDownloading aiohttp (1.7MiB)\nDownloading cryptography (4.5MiB)\nDownloading pydantic-core (2.0MiB)\n Downloaded pygments\n Downloaded beartype\n Downloaded aiohttp\n Downloaded pydantic-core\n Downloaded cryptography\nInstalled 80 packages in 26ms\n",
+  "durationMs": 46780,
+  "transport": "stdio"
+}

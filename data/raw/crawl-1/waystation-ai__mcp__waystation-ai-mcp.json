@@ -1,0 +1,8 @@
+{
+  "serverId": "waystation-ai__mcp__waystation-ai-mcp",
+  "status": "FAILED_START",
+  "tools": [],
+  "stderrTail": "API_BASE: https://waystation.ai\nWayStation MCP Server running on stdio\n",
+  "durationMs": 16254,
+  "transport": "stdio"
+}

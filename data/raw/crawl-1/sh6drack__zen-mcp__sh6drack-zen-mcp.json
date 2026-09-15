@@ -1,0 +1,358 @@
+{
+  "serverId": "sh6drack__zen-mcp__sh6drack-zen-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "zen_list_pages",
+      "description": "List all open pages/tabs in Zen browser with URLs and titles",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "zen_select_page",
+      "description": "Select a page/tab by index (from zen_list_pages) as the active target",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "type": "number",
+            "description": "Page index"
+          }
+        },
+        "required": [
+          "index"
+        ]
+      }
+    },
+    {
+      "name": "zen_new_tab",
+      "description": "Open a new tab, optionally navigating to a URL",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "URL to open (default: about:blank)"
+          }
+        }
+      }
+    },
+    {
+      "name": "zen_navigate",
+      "description": "Navigate the active page to a URL",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "URL to navigate to"
+          }
+        },
+        "required": [
+          "url"
+        ]
+      }
+    },
+    {
+      "name": "zen_snapshot",
+      "description": "Get a structured snapshot of visible page elements with CSS selectors. Filter: \"all\", \"interactive\", or \"form\".",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "filter": {
+            "type": "string",
+            "enum": [
+              "all",
+              "interactive",
+              "form"
+            ],
+            "description": "Element filter (default: all)"
+          },
+          "selector": {
+            "type": "string",
+            "description": "CSS selector to scope snapshot"
+          }
+        }
+      }
+    },
+    {
+      "name": "zen_screenshot",
+      "description": "Take a screenshot of the current page",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "zen_click",
+      "description": "Click an element by CSS selector",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "selector": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "selector"
+        ]
+      }
+    },
+    {
+      "name": "zen_fill",
+      "description": "Fill a text input or textarea with a value. Clears existing content first. Dispatches input/change events for framework compatibility.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "selector": {
+            "type": "string",
+            "description": "CSS selector of input/textarea"
+          },
+          "value": {
+            "type": "string",
+            "description": "Value to fill"
+          }
+        },
+        "required": [
+          "selector",
+          "value"
+        ]
+      }
+    },
+    {
+      "name": "zen_select_option",
+      "description": "Select an option in a <select> dropdown by value or text",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "selector": {
+            "type": "string",
+            "description": "CSS selector of select element"
+          },
+          "value": {
+            "type": "string",
+            "description": "Option value or visible text"
+          }
+        },
+        "required": [
+          "selector",
+          "value"
+        ]
+      }
+    },
+    {
+      "name": "zen_check",
+      "description": "Check/uncheck a checkbox or select a radio button",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "selector": {
+            "type": "string"
+          },
+          "checked": {
+            "type": "boolean",
+            "description": "true=check, false=uncheck (default: true)"
+          }
+        },
+        "required": [
+          "selector"
+        ]
+      }
+    },
+    {
+      "name": "zen_evaluate",
+      "description": "Execute JavaScript in the page and return the result",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "script": {
+            "type": "string",
+            "description": "JavaScript to evaluate"
+          }
+        },
+        "required": [
+          "script"
+        ]
+      }
+    },
+    {
+      "name": "zen_get_form_fields",
+      "description": "List all form fields on the page with names, types, labels, current values, and CSS selectors",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "zen_fill_form",
+      "description": "Fill multiple form fields at once. Each field specifies selector, value, and action (fill/select/check/uncheck/click).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "selector": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                },
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "fill",
+                    "select",
+                    "check",
+                    "uncheck",
+                    "click"
+                  ]
+                }
+              },
+              "required": [
+                "selector",
+                "value"
+              ]
+            }
+          }
+        },
+        "required": [
+          "fields"
+        ]
+      }
+    },
+    {
+      "name": "zen_scroll",
+      "description": "Scroll the page or scroll an element into view",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "direction": {
+            "type": "string",
+            "enum": [
+              "up",
+              "down",
+              "top",
+              "bottom"
+            ]
+          },
+          "amount": {
+            "type": "number",
+            "description": "Pixels (default: 500)"
+          },
+          "selector": {
+            "type": "string",
+            "description": "Element to scroll into view"
+          }
+        }
+      }
+    },
+    {
+      "name": "zen_wait",
+      "description": "Wait for a specified number of milliseconds",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ms": {
+            "type": "number",
+            "description": "Milliseconds to wait (default: 1000)"
+          }
+        }
+      }
+    },
+    {
+      "name": "zen_get_page_text",
+      "description": "Get the page title, URL, and visible text content. Useful for quickly understanding what is on the page.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "maxLength": {
+            "type": "number",
+            "description": "Max characters of body text to return (default: 8000)"
+          }
+        }
+      }
+    },
+    {
+      "name": "zen_close_tab",
+      "description": "Close a tab by index. Cannot close the last remaining tab.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "type": "number",
+            "description": "Tab index to close (from zen_list_pages)"
+          }
+        },
+        "required": [
+          "index"
+        ]
+      }
+    },
+    {
+      "name": "zen_press_key",
+      "description": "Send keyboard input to the active page using BiDi input.performActions. Supports special keys like Enter, Tab, Escape, Backspace, and key combinations with modifiers.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "Key to press: \"Enter\", \"Tab\", \"Escape\", \"Backspace\", \"ArrowDown\", etc. For text, use zen_fill instead."
+          },
+          "modifiers": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "ctrl",
+                "shift",
+                "alt",
+                "meta"
+              ]
+            },
+            "description": "Modifier keys to hold (e.g. [\"ctrl\", \"shift\"])"
+          }
+        },
+        "required": [
+          "key"
+        ]
+      }
+    },
+    {
+      "name": "zen_reconnect",
+      "description": "Force disconnect and reconnect to Zen Browser. Use when the connection is in a bad state or after restarting Zen.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "zen_wait_for",
+      "description": "Wait for text to appear on the page, or for a CSS selector to match an element. Returns when found or after timeout.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "Text to wait for on the page"
+          },
+          "selector": {
+            "type": "string",
+            "description": "CSS selector to wait for"
+          },
+          "timeout": {
+            "type": "number",
+            "description": "Max wait time in ms (default: 10000)"
+          }
+        }
+      }
+    }
+  ],
+  "stderrTail": "[zen-mcp] Server started, connecting to Zen on ws://127.0.0.1:9222/session\n",
+  "durationMs": 17002,
+  "transport": "stdio"
+}

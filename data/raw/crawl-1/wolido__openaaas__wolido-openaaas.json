@@ -1,0 +1,325 @@
+{
+  "serverId": "wolido__openaaas__wolido-openaaas",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "discover",
+      "description": "发现服务端 API 信息",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "server_url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "server_url"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "set_server_url",
+      "description": "设置服务器地址并保存到配置文件",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "server_url": {
+            "type": "string"
+          },
+          "server": {
+            "default": "",
+            "type": "string"
+          }
+        },
+        "required": [
+          "server_url"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "register",
+      "description": "注册客户端账号，获取 api_key（仅需一次）",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "server": {
+            "default": "",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "update_profile",
+      "description": "修改当前客户端用户名",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "server": {
+            "default": "",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "list_services",
+      "description": "获取可用的 Agent 服务列表（轻量摘要）",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "server": {
+            "default": "",
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_service_usage",
+      "description": "获取指定服务的详细用法说明（能力范围、调用规范、返回格式、限制条件）",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "service_id": {
+            "type": "string"
+          },
+          "server": {
+            "default": "",
+            "type": "string"
+          }
+        },
+        "required": [
+          "service_id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "submit_task",
+      "description": "提交任务到远程 Agent（支持文件上传）\n\ninput_files 为本地文件路径列表，只能上传当前工作目录下的文件，单个文件不超过 100MB。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "service_id": {
+            "type": "string"
+          },
+          "task_prompt": {
+            "type": "string"
+          },
+          "output_prompt": {
+            "default": "",
+            "type": "string"
+          },
+          "input_files": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "session_id": {
+            "default": "",
+            "type": "string"
+          },
+          "server": {
+            "default": "",
+            "type": "string"
+          }
+        },
+        "required": [
+          "service_id",
+          "task_prompt"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_task",
+      "description": "查询任务状态和最终结果（仅在用户明确要求时调用）\n\n⚠️ 不要主动轮询。只有在用户明确要求查询任务状态时，才调用此工具。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "task_id": {
+            "type": "string"
+          },
+          "server": {
+            "default": "",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "poll_task",
+      "description": "轮询任务直到获得最终结果（仅用户明确要求时使用）\n\n每 20 秒查询一次任务状态，直到任务进入 completed / failed / cancelled 状态。\n默认不设置超时；传入 timeout_seconds 可限制最大轮询时长。\n\n⚠️ 重要：Agent 禁止主动调用此工具。ONLY use this tool when the user explicitly\nasks to wait for or poll a task result (e.g. \"帮我等结果\"、\"轮询一下任务\").\n如果用户没有明确表达等待意图，应询问用户而不是直接轮询。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "task_id": {
+            "type": "string"
+          },
+          "timeout_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "server": {
+            "default": "",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "cancel_task",
+      "description": "取消执行中的任务",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "task_id": {
+            "type": "string"
+          },
+          "server": {
+            "default": "",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "list_files",
+      "description": "列出任务的结果文件",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "task_id": {
+            "type": "string"
+          },
+          "server": {
+            "default": "",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "download_result",
+      "description": "下载任务结果文件并返回每个文件的完整路径\n\n- file_id: 指定要下载的文件 ID，不指定则默认下载第一个 zip 文件或第一个文件\n- download_all: 是否下载该任务的所有结果文件\n\n返回结果中会明确列出每个文件的完整路径，读取文件时请直接使用这些路径，不要推测子目录。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "task_id": {
+            "type": "string"
+          },
+          "file_id": {
+            "default": "",
+            "type": "string"
+          },
+          "download_all": {
+            "default": false,
+            "type": "boolean"
+          },
+          "server": {
+            "default": "",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "list_servers",
+      "description": "列出所有已配置的服务器",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "set_default_server",
+      "description": "切换默认服务器",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "server": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "server"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "remove_server",
+      "description": "删除指定服务器的配置（不能删除默认服务器）",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "server": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "server"
+        ],
+        "additionalProperties": false
+      }
+    }
+  ],
+  "stderrTail": "Downloading cryptography (4.5MiB)\nDownloading beartype (1.3MiB)\nDownloading pygments (1.2MiB)\nDownloading pydantic-core (2.0MiB)\n Downloaded pygments\n Downloaded beartype\n Downloaded pydantic-core\n Downloaded cryptography\nInstalled 72 packages in 26ms\n\n\n╭──────────────────────────────────────────────────────────────────────────────╮\n│                                                                              │\n│                                                                              │\n│                         ▄▀▀ ▄▀█ █▀▀ ▀█▀ █▀▄▀█ █▀▀ █▀█                        │\n│                         █▀  █▀█ ▄▄█  █  █ ▀ █ █▄▄ █▀▀                        │\n│                                                                              │\n│                                                                              │\n│                                                                              │\n│                                FastMCP 4.0.3                                 │\n│                            https://gofastmcp.com                             │\n│                                                                              │\n│                 🖥  Server:      openaaas-mcp-adapter, 4.0.3                  │\n│                 🚀 Deploy free: https://horizon.prefect.io                   │\n│                                                                              │\n╰──────────────────────────────────────────────────────────────────────────────╯\n\n\n[09/15/26 06:49:56] INFO     Starting MCP server                transport.py:242\n                             'openaaas-mcp-adapter' with                        \n                             transport 'stdio'                                  \n",
+  "durationMs": 28655,
+  "transport": "stdio"
+}

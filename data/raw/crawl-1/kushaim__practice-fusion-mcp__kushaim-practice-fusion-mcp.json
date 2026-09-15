@@ -1,0 +1,8 @@
+{
+  "serverId": "kushaim__practice-fusion-mcp__kushaim-practice-fusion-mcp",
+  "status": "REFUSED_NO_CREDS",
+  "tools": [],
+  "stderrTail": "practicefusion-mcp: configuration error\n  ✗ PF_FHIR_BASE_URL: Invalid input: expected string, received undefined\n      Must be a URL, e.g. https://fhir.practicefusion.com/r4\n  ✗ PF_TOKEN_URL: Invalid URL\n      Must be a URL, e.g. https://auth.practicefusion.com/token\n  ✗ PF_PRIVATE_KEY: required env var is missing\n      Key must start with -----BEGIN PRIVATE KEY----- and be PKCS8 format\n  ✗ PF_TOKEN_ALG: Invalid option: expected one of \"RS384\"|\"RS256\"|\"ES384\"\n      Must be one of: RS384 (default), RS256, ES384\nnpm notice\nnpm notice New major version of npm available! 10.9.8 -> 12.0.2\nnpm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2\nnpm notice To update run: npm install -g npm@12.0.2\nnpm notice\n",
+  "durationMs": 22340,
+  "transport": "stdio"
+}

@@ -1,0 +1,230 @@
+{
+  "serverId": "bobaba99__motionlint__bobaba99-motionlint",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "review_url",
+      "description": "Capture and analyze a URL for UI/UX issues using vision AI.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "URL to review."
+          },
+          "viewports": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "mobile",
+                "tablet",
+                "desktop"
+              ]
+            },
+            "description": "Viewports to capture (default: mobile + desktop)."
+          },
+          "provider": {
+            "type": "string",
+            "description": "LLM provider override (auto|ollama|anthropic|openai|google|mock)."
+          },
+          "model": {
+            "type": "string",
+            "description": "Model override."
+          },
+          "wait_for": {
+            "type": "string",
+            "description": "CSS selector or 'networkidle' to wait for before capture."
+          },
+          "record": {
+            "type": "boolean",
+            "description": "Record a video of the capture."
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "md",
+              "json",
+              "sarif",
+              "html"
+            ],
+            "description": "Output format (default: md). 'html' is a polished, shareable report."
+          },
+          "max_findings": {
+            "type": "number",
+            "description": "Keep only the top N findings, severity-ordered (agent focus)."
+          },
+          "max_pr_annotations": {
+            "type": "number",
+            "description": "SARIF only: emit at most N results per report, severity-ordered (reviewer fatigue)."
+          },
+          "new_only": {
+            "type": "boolean",
+            "description": "Report only findings not seen in prior runs of the same URL."
+          }
+        },
+        "required": [
+          "url"
+        ]
+      }
+    },
+    {
+      "name": "review_routes",
+      "description": "Review multiple routes of an application.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "base_url": {
+            "type": "string"
+          },
+          "routes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "viewports": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "provider": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "md",
+              "json",
+              "sarif",
+              "html"
+            ]
+          },
+          "max_findings": {
+            "type": "number",
+            "description": "Keep only the top N findings per route, severity-ordered."
+          },
+          "max_pr_annotations": {
+            "type": "number",
+            "description": "SARIF only: emit at most N results per route report, severity-ordered."
+          },
+          "new_only": {
+            "type": "boolean",
+            "description": "Report only findings not seen in prior runs of each route."
+          }
+        },
+        "required": [
+          "base_url",
+          "routes"
+        ]
+      }
+    },
+    {
+      "name": "review_flow",
+      "description": "Run a scripted user-flow review against a URL. Captures frame bursts after every interaction and asks the vision LLM to grade animation quality, missing transitions, loading-state feedback, choreography, smoothness, and flicker. Use this when the user asks about animations, interaction states, or whether a flow feels good — NOT for static design issues (use review_url for those).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Base URL for the flow (joined with each step's `navigate`)."
+          },
+          "name": {
+            "type": "string",
+            "description": "Human label for the flow (used in artifact filenames). Default: 'flow'."
+          },
+          "steps": {
+            "type": "string",
+            "description": "Inline DSL: semicolon-separated steps. Actions: navigate <path>, click <selector>, hover <selector>, type <selector>=<value>, press <key>, scroll <px>, wait <ms>, capture \"<label>\". e.g.: 'navigate /signup; type input#email=ada@example.com; click button[type=submit]; wait 1500; capture \"after submit\"'."
+          },
+          "spec_path": {
+            "type": "string",
+            "description": "Alternative to `steps`: path to a flow spec JSON file."
+          },
+          "preferences_path": {
+            "type": "string",
+            "description": "Optional path to a markdown file with team motion preferences. Embedded into the prompt and the report's CC handoff block."
+          },
+          "provider": {
+            "type": "string",
+            "description": "LLM provider override (auto|ollama|anthropic|openai|google|mock)."
+          },
+          "model": {
+            "type": "string",
+            "description": "Model override."
+          },
+          "consistency": {
+            "type": "number",
+            "description": "Self-consistency samples (1=off, 3=recommended for harder flows). Default 1."
+          },
+          "record": {
+            "type": "boolean",
+            "description": "Record the full Playwright video alongside the contact sheet. Default true."
+          },
+          "burst_fullpage": {
+            "type": "boolean",
+            "description": "Use full-page captures in each burst frame (slower; for in-page scroll animations). Default viewport-only."
+          }
+        },
+        "required": [
+          "url"
+        ]
+      }
+    },
+    {
+      "name": "tune_animations",
+      "description": "Detect every animation on a page (CSS transitions/keyframes plus Motion One / GSAP / anime.js / @formkit/auto-animate / lottie-web), and write an interactive HTML tuner page where the user can adjust duration/delay/easing live and export a Claude-Code-ready prompt with the parameter changes. Returns the file path of the generated tuner. Use when the user wants to fine-tune existing animation parameters, NOT to review for issues.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "URL to capture animations from."
+          },
+          "viewport_width": {
+            "type": "number",
+            "description": "Capture viewport width. Default 1280."
+          },
+          "viewport_height": {
+            "type": "number",
+            "description": "Capture viewport height. Default 800."
+          },
+          "settle_ms": {
+            "type": "number",
+            "description": "Time to wait after load for animations to register. Default 1500."
+          },
+          "output": {
+            "type": "string",
+            "description": "Where to write the tuner HTML. Default .motionlint/tuner/index.html."
+          }
+        },
+        "required": [
+          "url"
+        ]
+      }
+    },
+    {
+      "name": "get_latest_report",
+      "description": "Return the most recent UX review report content.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "format": {
+            "type": "string",
+            "enum": [
+              "md",
+              "json"
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 98108,
+  "transport": "stdio"
+}

@@ -1,0 +1,8 @@
+{
+  "serverId": "metadrama__obscura-mcp__metadrama-obscura-mcp",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "npm warn deprecated obscura-mcp@0.1.4: ⚠️ ARCHIVED — As of Obscura v0.1.4+, upstream ships native MCP via 'obscura mcp'. This npm wrapper is no longer needed. See https://github.com/h4ckf0r0day/obscura for the official MCP server.\nDownloading Obscura headless browser (~80 MB)...\nDownloading...\nFatal error: getaddrinfo EAI_AGAIN github.com\nnpm notice\nnpm notice New major version of npm available! 10.9.8 -> 12.0.2\nnpm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2\nnpm notice To update run: npm install -g npm@12.0.2\nnpm notice\n",
+  "durationMs": 25962,
+  "transport": "stdio"
+}

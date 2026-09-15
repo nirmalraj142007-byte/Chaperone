@@ -1,0 +1,841 @@
+{
+  "serverId": "jau123__meigen-ai-design-mcp__jau123-meigen-ai-design-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "list_skills",
+      "description": "Choose a Skill by use case and required materials; read account setup, top-up instructions, live prices and upload options. Set skill to inspect one workflow. Returned inputSchema is the HTTP API schema; this local MCP also accepts actual file paths and external HTTPS image URLs using its tool schemas.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "skill": {
+            "type": "string",
+            "enum": [
+              "remove-bg",
+              "brand-poster",
+              "product-detail",
+              "white-bg",
+              "upscale"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "upload_skill_image",
+      "description": "Prepare a reference image and return imageUrl. External URLs and local file paths can also be passed directly to the generation skill. Use actual accessible bytes/URLs only; never fabricate base64 or attachment paths. No generation is started.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "reference",
+              "upscale"
+            ],
+            "default": "reference",
+            "description": "Use upscale for enhancement attachments: preserves source dimensions until the backend asks for resizing acceptance."
+          },
+          "sourceUrl": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 4096,
+            "description": "Actual public direct HTTPS image URL to prepare; choose either sourceUrl or imageBase64. Local paths go directly to a generation Skill image field, not this URL field."
+          },
+          "imageBase64": {
+            "type": "string",
+            "maxLength": 4194304,
+            "description": "Actual raw base64 image bytes, max 3 MiB decoded. Exactly one input is required."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "remove_background",
+      "description": "Create one transparent PNG cutout for compositing, catalog assets or logos. Required: one actual source photo containing the subject. No prompt or product facts needed. This removes the background; it does not create a new scene. Requires a MeiGen API key configured for this local npm server (MEIGEN_API_TOKEN or saved local configuration), and purchased credits only. Local files and external public HTTPS URLs are uploaded automatically. Use the dedicated skill directly; skip unrequested prompt enhancement, preference loading and delegation. Preserve caller-supplied inputs. Infer omitted optional settings from the request and defaults; when only a requested count is known, choose suitable modules unless the caller selected them. Ask only for missing required material or unresolved scope. An explicit user request or authorized upstream workflow establishes its count, quality and budget: do not reconfirm that scope or add paid images. The caller persists a requestId for each logical step; never ask an end user for technical IDs. Use live list_skills prices and account for in-flight charges when planning within a budget; a batch is not atomic and an estimate is not a server-enforced spending cap. Recovery actions take precedence over generic retry advice: check an interrupted submission, preserve exact retryParameters and do not create a new ID or replace failed modules automatically. Retry a temporary upload at most once after the suggested wait. Return structured status, handles, errors and completed URLs to the caller; it owns progress, previews, downloads and final presentation. If interacting directly with the user, explain the problem and a concrete next step in their language. Describe image details only after actual inspection.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Generate a new UUID for a new paid request; reuse the SAME requestId and inputs on retry. Use check_skill after interruptions."
+          },
+          "productImage": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Required source containing the subject to cut out; the subject may be a product, person or logo. The output has a transparent background. An accessible absolute local path (Windows drive/UNC, POSIX, ~/, or file://) or public direct HTTPS image URL without credentials, fragments or custom ports. Relative paths are ambiguous and rejected. Files are fully decoded, metadata removed, transparency preserved; GIF uses the first frame. Never invent attachment paths or URLs."
+          }
+        },
+        "required": [
+          "requestId",
+          "productImage"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "generate_marketing_poster",
+      "description": "Design one poster for a brand, shop, event, promotion or topic. Required: only the subject. An image is not required. Exact wording, dates, offers, logo, product photos and style references are optional. Keep supplied copy with autoCopy=false; never invent event details or offers. The service plans the layout and writes the prompt. Requires a MeiGen API key configured for this local npm server (MEIGEN_API_TOKEN or saved local configuration), and purchased credits only. Local files and external public HTTPS URLs are uploaded automatically. Use the dedicated skill directly; skip unrequested prompt enhancement, preference loading and delegation. Preserve caller-supplied inputs. Infer omitted optional settings from the request and defaults; when only a requested count is known, choose suitable modules unless the caller selected them. Ask only for missing required material or unresolved scope. An explicit user request or authorized upstream workflow establishes its count, quality and budget: do not reconfirm that scope or add paid images. The caller persists a requestId for each logical step; never ask an end user for technical IDs. Use live list_skills prices and account for in-flight charges when planning within a budget; a batch is not atomic and an estimate is not a server-enforced spending cap. Recovery actions take precedence over generic retry advice: check an interrupted submission, preserve exact retryParameters and do not create a new ID or replace failed modules automatically. Retry a temporary upload at most once after the suggested wait. Return structured status, handles, errors and completed URLs to the caller; it owns progress, previews, downloads and final presentation. If interacting directly with the user, explain the problem and a concrete next step in their language. Describe image details only after actual inspection.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Generate a new UUID for a new paid request; reuse the SAME requestId and inputs on retry. Use check_skill after interruptions."
+          },
+          "brand": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60,
+            "description": "Poster subject: brand, event, shop, campaign or topic."
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Poster brief when autoCopy=true; exact visible wording when autoCopy=false (the selected language may translate it). Put style, layout and design directions in extraNotes or customStyle, not in verbatim content."
+          },
+          "autoCopy": {
+            "type": "boolean",
+            "description": "Default true: compose copy from the brief. False: use supplied wording faithfully; selected language may translate it."
+          },
+          "extraNotes": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Additional verified facts, explicitly requested display copy, or layout/design constraints, up to 500 characters. Treat design instructions as directions, not text to print verbatim. Preserve supplied details; do not invent dates, prices, offers or claims."
+          },
+          "ratio": {
+            "type": "string",
+            "description": "Supported output ratio from list_skills for this Skill; omit for its default."
+          },
+          "language": {
+            "type": "string",
+            "description": "Copy language, e.g. auto, en, zh; see list_skills for supported values"
+          },
+          "quality": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium"
+            ],
+            "description": "low=Fast (default); medium=Pro. These select rendering quality, not output resolution. Read list_skills for current output specifications and purchased-credit prices; no fixed completion time is guaranteed."
+          },
+          "uiLocale": {
+            "type": "string",
+            "maxLength": 35,
+            "description": "Optional UI locale fallback; language controls the text inside images."
+          },
+          "logo": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Optional exact brand logo to reproduce accurately, not a style reference. An accessible absolute local path (Windows drive/UNC, POSIX, ~/, or file://) or public direct HTTPS image URL without credentials, fragments or custom ports. Relative paths are ambiguous and rejected. Files are fully decoded, metadata removed, transparency preserved; GIF uses the first frame. Never invent attachment paths or URLs."
+          },
+          "productImages": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Product identity reference: preserve its design, color and branding. An accessible absolute local path (Windows drive/UNC, POSIX, ~/, or file://) or public direct HTTPS image URL without credentials, fragments or custom ports. Relative paths are ambiguous and rejected. Files are fully decoded, metadata removed, transparency preserved; GIF uses the first frame. Never invent attachment paths or URLs."
+            },
+            "maxItems": 3,
+            "description": "Optional product/subject photos, up to three; these identify what the poster depicts, not its visual style."
+          },
+          "styleImage": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Optional PRIMARY visual-style reference: palette, lighting, typography and mood. Do not copy its content, products, text or layout; written style is only a compatible supplement. An accessible absolute local path (Windows drive/UNC, POSIX, ~/, or file://) or public direct HTTPS image URL without credentials, fragments or custom ports. Relative paths are ambiguous and rejected. Files are fully decoded, metadata removed, transparency preserved; GIF uses the first frame. Never invent attachment paths or URLs."
+          },
+          "styleId": {
+            "type": "string",
+            "description": "Preset ID, not its display label; choose from list_skills style options. Omit styleId and customStyle for Auto. Nonempty customStyle overrides this preset."
+          },
+          "customStyle": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Optional written visual direction, up to 200 characters. Nonempty text overrides styleId; omit both for Auto. If styleImage is supplied, supplement its visual style without conflicting with it."
+          }
+        },
+        "required": [
+          "requestId",
+          "brand"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "generate_product_detail_images",
+      "description": "Create 1–6 coordinated ecommerce listing images. Required: one actual product photo and a resolved image count. Product name, verified selling points, logo, model photo and extra angles are optional. Each module creates one paid image. If only the count is specified, choose suitable modules; MCP calls must explicitly select modules to match that count. Requires a MeiGen API key configured for this local npm server (MEIGEN_API_TOKEN or saved local configuration), and purchased credits only. Local files and external public HTTPS URLs are uploaded automatically. Use the dedicated skill directly; skip unrequested prompt enhancement, preference loading and delegation. Preserve caller-supplied inputs. Infer omitted optional settings from the request and defaults; when only a requested count is known, choose suitable modules unless the caller selected them. Ask only for missing required material or unresolved scope. An explicit user request or authorized upstream workflow establishes its count, quality and budget: do not reconfirm that scope or add paid images. The caller persists a requestId for each logical step; never ask an end user for technical IDs. Use live list_skills prices and account for in-flight charges when planning within a budget; a batch is not atomic and an estimate is not a server-enforced spending cap. Recovery actions take precedence over generic retry advice: check an interrupted submission, preserve exact retryParameters and do not create a new ID or replace failed modules automatically. Retry a temporary upload at most once after the suggested wait. Return structured status, handles, errors and completed URLs to the caller; it owns progress, previews, downloads and final presentation. If interacting directly with the user, explain the problem and a concrete next step in their language. Describe image details only after actual inspection.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Generate a new UUID for a new paid request; reuse the SAME requestId and inputs on retry. Use check_skill after interruptions."
+          },
+          "productImage": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Required main product photo: preserve the actual shape, color, packaging and readable labels. An accessible absolute local path (Windows drive/UNC, POSIX, ~/, or file://) or public direct HTTPS image URL without credentials, fragments or custom ports. Relative paths are ambiguous and rejected. Files are fully decoded, metadata removed, transparency preserved; GIF uses the first frame. Never invent attachment paths or URLs."
+          },
+          "productName": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Optional supplied product name; do not invent a brand or model."
+          },
+          "sellingPoints": {
+            "type": "string",
+            "maxLength": 2000,
+            "description": "Optional verified benefits or specifications from the caller; do not invent product claims."
+          },
+          "autoCopy": {
+            "type": "boolean",
+            "description": "Default true: draft copy from the supplied product brief. False: preserve supplied wording, subject to the selected-language translation."
+          },
+          "modules": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "hero",
+                "detail",
+                "scene",
+                "material",
+                "usage",
+                "brand"
+              ]
+            },
+            "maxItems": 6,
+            "description": "Required selection; one paid image each: hero=main shot, detail=close-up, scene=lifestyle, material=texture/craft, usage=how to use, brand=brand story. Set [] for custom modules only; otherwise select modules explicitly. Match the requested count."
+          },
+          "customModules": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 40
+                },
+                "description": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500
+                }
+              },
+              "required": [
+                "name",
+                "description"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 6
+          },
+          "platform": {
+            "type": "string",
+            "description": "Marketplace preset from list_skills; default amazon."
+          },
+          "language": {
+            "type": "string",
+            "description": "Copy language, e.g. auto, en, zh; see list_skills for supported values"
+          },
+          "quality": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium"
+            ],
+            "description": "low=Fast (default); medium=Pro. These select rendering quality, not output resolution. Read list_skills for current output specifications and purchased-credit prices; no fixed completion time is guaranteed."
+          },
+          "uiLocale": {
+            "type": "string",
+            "maxLength": 35,
+            "description": "Optional UI locale fallback; language controls the text inside images."
+          },
+          "extraRequirements": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Optional additional copy, layout or product presentation requirements from the caller; preserve factual constraints."
+          },
+          "aspectRatio": {
+            "type": "string",
+            "description": "Supported output ratio from list_skills; default 4:5."
+          },
+          "modelImage": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Optional person/model reference for hero and scene modules: show that person wearing or using the product. Not an image-generation model identifier. An accessible absolute local path (Windows drive/UNC, POSIX, ~/, or file://) or public direct HTTPS image URL without credentials, fragments or custom ports. Relative paths are ambiguous and rejected. Files are fully decoded, metadata removed, transparency preserved; GIF uses the first frame. Never invent attachment paths or URLs."
+          },
+          "logo": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Optional exact brand logo to reproduce accurately. An accessible absolute local path (Windows drive/UNC, POSIX, ~/, or file://) or public direct HTTPS image URL without credentials, fragments or custom ports. Relative paths are ambiguous and rejected. Files are fully decoded, metadata removed, transparency preserved; GIF uses the first frame. Never invent attachment paths or URLs."
+          },
+          "extraProductImages": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Additional view of the same product; preserve its identity and details. An accessible absolute local path (Windows drive/UNC, POSIX, ~/, or file://) or public direct HTTPS image URL without credentials, fragments or custom ports. Relative paths are ambiguous and rejected. Files are fully decoded, metadata removed, transparency preserved; GIF uses the first frame. Never invent attachment paths or URLs."
+            },
+            "maxItems": 2,
+            "description": "Optional extra product angles or detail photos, up to two; these supplement the main productImage."
+          }
+        },
+        "required": [
+          "requestId",
+          "productImage",
+          "modules"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "generate_ai_background",
+      "description": "Create one product photo with a new background. Required: one actual product photo. White mode produces a fixed white background; smart chooses a scene; custom needs a background description, inferred from the request when present (e.g. a beach). Background references are not required. Use remove_background for transparent PNG cutouts. Requires a MeiGen API key configured for this local npm server (MEIGEN_API_TOKEN or saved local configuration), and purchased credits only. Local files and external public HTTPS URLs are uploaded automatically. Use the dedicated skill directly; skip unrequested prompt enhancement, preference loading and delegation. Preserve caller-supplied inputs. Infer omitted optional settings from the request and defaults; when only a requested count is known, choose suitable modules unless the caller selected them. Ask only for missing required material or unresolved scope. An explicit user request or authorized upstream workflow establishes its count, quality and budget: do not reconfirm that scope or add paid images. The caller persists a requestId for each logical step; never ask an end user for technical IDs. Use live list_skills prices and account for in-flight charges when planning within a budget; a batch is not atomic and an estimate is not a server-enforced spending cap. Recovery actions take precedence over generic retry advice: check an interrupted submission, preserve exact retryParameters and do not create a new ID or replace failed modules automatically. Retry a temporary upload at most once after the suggested wait. Return structured status, handles, errors and completed URLs to the caller; it owns progress, previews, downloads and final presentation. If interacting directly with the user, explain the problem and a concrete next step in their language. Describe image details only after actual inspection.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Generate a new UUID for a new paid request; reuse the SAME requestId and inputs on retry. Use check_skill after interruptions."
+          },
+          "productImage": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Required product photo: preserve the product while replacing its surroundings. Do not pre-remove its background. An accessible absolute local path (Windows drive/UNC, POSIX, ~/, or file://) or public direct HTTPS image URL without credentials, fragments or custom ports. Relative paths are ambiguous and rejected. Files are fully decoded, metadata removed, transparency preserved; GIF uses the first frame. Never invent attachment paths or URLs."
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "white",
+              "smart",
+              "custom"
+            ],
+            "description": "white=fixed white-background output; smart=AI chooses a suitable scene (default); custom=customPrompt required."
+          },
+          "customPrompt": {
+            "type": "string",
+            "maxLength": 300,
+            "description": "Required in custom mode: describe the desired background and lighting."
+          },
+          "ratio": {
+            "type": "string",
+            "description": "Supported output ratio from list_skills for this Skill; omit for its default. Smart/custom only; auto matches source proportions. Ignored in white mode."
+          },
+          "quality": {
+            "type": "string",
+            "enum": [
+              "fast",
+              "hd"
+            ],
+            "description": "Smart/custom only: fast=1K default, hd=2K; ignored in white mode."
+          }
+        },
+        "required": [
+          "requestId",
+          "productImage"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "upscale_image",
+      "description": "Enhance one still image. Crisp preserves structure; creative regenerates detail for blurry images. Pass the original public URL directly, including external URLs; avoid generic reference-image resizing. The shared backend prepares the image. Inputs above 4096px or 16 MP require acceptance of resizing; the output may be smaller than the original. Source safety cap: 64 MiB / 64 MP. Video enhancement is not exposed through this API. Requires a MeiGen API key configured for this local npm server (MEIGEN_API_TOKEN or saved local configuration), and purchased credits only. Local files and external public HTTPS URLs are uploaded automatically. Use the dedicated skill directly; skip unrequested prompt enhancement, preference loading and delegation. Preserve caller-supplied inputs. Infer omitted optional settings from the request and defaults; when only a requested count is known, choose suitable modules unless the caller selected them. Ask only for missing required material or unresolved scope. An explicit user request or authorized upstream workflow establishes its count, quality and budget: do not reconfirm that scope or add paid images. The caller persists a requestId for each logical step; never ask an end user for technical IDs. Use live list_skills prices and account for in-flight charges when planning within a budget; a batch is not atomic and an estimate is not a server-enforced spending cap. Recovery actions take precedence over generic retry advice: check an interrupted submission, preserve exact retryParameters and do not create a new ID or replace failed modules automatically. Retry a temporary upload at most once after the suggested wait. Return structured status, handles, errors and completed URLs to the caller; it owns progress, previews, downloads and final presentation. If interacting directly with the user, explain the problem and a concrete next step in their language. Describe image details only after actual inspection.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Generate a new UUID for a new paid request; reuse the SAME requestId and inputs on retry. Use check_skill after interruptions."
+          },
+          "imageUrl": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Original still PNG/JPEG/WebP: absolute local path, ~/, file://, or public direct HTTPS URL. Maximum 64 MiB/64 million pixels. Local uploads remove metadata, preserve alpha and dimensions, and compress below the gateway limit; if that fails, provide a public original URL. The backend asks before any resizing."
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "crisp",
+              "creative"
+            ],
+            "default": "crisp",
+            "description": "crisp=faithful enhancement (default); creative=AI reconstructs details and may change them. Use creative only when the user accepts those changes."
+          },
+          "allowDownscale": {
+            "type": "boolean",
+            "default": false,
+            "description": "True only after the user accepts resizing a large source and potentially receiving a smaller result. On upscale_resize_required, no charge occurred; after acceptance use a new requestId."
+          },
+          "confirmedCredits": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Required on every MCP submission, including the first: current list_skills quote within the user or upstream workflow accepted budget. Reuse explicit acceptance. On price_changed, accept the updated quote before a new requestId. This pre-dispatch check is not an atomic spending cap."
+          }
+        },
+        "required": [
+          "requestId",
+          "imageUrl",
+          "confirmedCredits"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "check_skill",
+      "description": "Read all skill images, partial failures and refund states. No new charges. Follow nextAction: wait afterSeconds before polling (normally 10s); recover only when it says retry_request, with its exact parameters. Payment/auth/input failures and daily limits require the indicated action instead of polling. Show completed resource links.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "skill": {
+            "type": "string",
+            "enum": [
+              "remove-bg",
+              "brand-poster",
+              "product-detail",
+              "white-bg",
+              "upscale"
+            ]
+          },
+          "requestId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "skill",
+          "requestId"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "enhance_prompt",
+      "description": "Transform a simple idea into a professional image generation prompt. Use when the user provides a brief description (e.g., \"a cat in a garden\") and needs a detailed, high-quality prompt. Combine with gallery inspiration for best results. Free, no API key needed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "The simple prompt to enhance (e.g., \"a cat in a garden\")"
+          },
+          "style": {
+            "type": "string",
+            "enum": [
+              "realistic",
+              "anime",
+              "illustration"
+            ],
+            "default": "realistic",
+            "description": "Target visual style: realistic (photorealistic), anime (2D/Japanese), illustration (concept art). Use \"realistic\" for general/photorealistic generation (GPT Image, Nanobanana, Seedream, Midjourney V8.1 in default mode, etc.). Use \"anime\" when the user wants anime/illustration output — V8.1 and most general-purpose models follow the prompt and benefit from explicit anime trigger words; the default \"realistic\" produces prompts poorly suited for stylized output."
+          }
+        },
+        "required": [
+          "prompt"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "search_gallery",
+      "description": "Search AI image prompts with semantic understanding — finds visually and conceptually similar results, not just keyword matches. Results include image URLs — render them as markdown images (![](url)) so users can visually browse and pick styles. Use when users need inspiration, want to explore styles, or say \"generate an image\" without a specific idea.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search keywords (e.g., \"cyberpunk\", \"product photo\", \"portrait\"). Supports semantic search — natural language descriptions work well. Leave empty to browse by category or get random picks."
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "Photography",
+              "Illustration & 3D",
+              "Product & Brand",
+              "Food & Drink",
+              "Poster Design",
+              "UI & Graphic"
+            ],
+            "description": "Filter by category. Available: Photography, Illustration & 3D, Product & Brand, Food & Drink, Poster Design, UI & Graphic"
+          },
+          "limit": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 20,
+            "default": 5,
+            "description": "Number of results (1-20, default 5)"
+          },
+          "offset": {
+            "type": "number",
+            "minimum": 0,
+            "default": 0,
+            "description": "Pagination offset"
+          },
+          "sortBy": {
+            "type": "string",
+            "enum": [
+              "rank",
+              "likes",
+              "views",
+              "date"
+            ],
+            "default": "rank",
+            "description": "Sort order when browsing without search query (default: rank)"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "list_models",
+      "description": "List available AI image generation models and their capabilities. For up-to-date pricing, see https://www.meigen.ai/model-comparison.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "activeOnly": {
+            "type": "boolean",
+            "default": true,
+            "description": "Only show active models (default: true)"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_inspiration",
+      "description": "Get the full prompt and all image URLs for a gallery entry. Show the images to the user as visual examples. The prompt can be used directly with generate_image(), and image URLs can be passed as referenceImages for style transfer.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "imageId": {
+            "type": "string",
+            "description": "Image/prompt ID from search_gallery results"
+          }
+        },
+        "required": [
+          "imageId"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "check_generation",
+      "description": "Read an existing MeiGen job without new charges. Provide generationId OR the caller requestId UUID. requestId lookup works after a lost submit response, process restart or another host. Follow structured status and nextAction; do not turn an uncertain status into a new paid UUID.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "generationId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Accepted generation ID. Provide exactly one of generationId and requestId."
+          },
+          "requestId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Original workflow step UUID supplied to generate_image/video; authenticated lookup across hosts. Provide exactly one identifier."
+          },
+          "requestedMediaType": {
+            "type": "string",
+            "enum": [
+              "image",
+              "video"
+            ],
+            "description": "Original workflow step intent, when known. Preserve it from nextAction.arguments to detect a completed result of the other media type; this does not change or resubmit the job."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "manage_preferences",
+      "description": "Read or update user preferences: default style, aspect ratio, model, style notes, and favorite prompts. Call with action \"get\" at conversation start to load preferences.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "get",
+              "set",
+              "add_favorite",
+              "remove_favorite"
+            ],
+            "description": "Action to perform: \"get\" reads all preferences, \"set\" updates defaults/styleNotes, \"add_favorite\" saves a prompt, \"remove_favorite\" removes by index"
+          },
+          "style": {
+            "type": "string",
+            "description": "set: preferred default style (e.g. \"realistic\", \"anime\", \"illustration\")"
+          },
+          "aspectRatio": {
+            "type": "string",
+            "description": "set: preferred default aspect ratio. Use \"auto\" (recommended) to let MeiGen infer per-prompt, or pin a value like \"16:9\", \"1:1\", \"9:16\"."
+          },
+          "model": {
+            "type": "string",
+            "description": "set: preferred default model name"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "openai",
+              "meigen",
+              "comfyui"
+            ],
+            "description": "set: preferred default provider"
+          },
+          "styleNotes": {
+            "type": "string",
+            "description": "set: free-text style notes (e.g. \"cinematic lighting, shallow DOF, brand colors #1A1A2E\")"
+          },
+          "prompt": {
+            "type": "string",
+            "description": "add_favorite: the prompt text to save"
+          },
+          "index": {
+            "type": "number",
+            "description": "remove_favorite: 0-based index of the favorite to remove"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "comfyui_workflow",
+      "description": "Manage ComfyUI workflow templates: list, view parameters, import from file, modify settings, or delete.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "list",
+              "view",
+              "import",
+              "modify",
+              "delete"
+            ],
+            "description": "Action to perform on ComfyUI workflows"
+          },
+          "name": {
+            "type": "string",
+            "description": "Workflow name. Required for view/modify/delete. For import, used as the save name (defaults to filename)."
+          },
+          "filePath": {
+            "type": "string",
+            "description": "Path to a ComfyUI API-format workflow JSON file (for import action)."
+          },
+          "nodeId": {
+            "type": "string",
+            "description": "Node ID to modify (for modify action). Use \"view\" action first to see available node IDs."
+          },
+          "input": {
+            "type": "string",
+            "description": "Input field name to modify (for modify action). E.g. \"steps\", \"cfg\", \"sampler_name\", \"ckpt_name\"."
+          },
+          "value": {
+            "type": "string",
+            "description": "New value as JSON (for modify action). Examples: \"30\", \"\\\"euler\\\"\", \"7.5\", \"true\"."
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "generate_image",
+      "description": "Generate an image using AI. Supports MeiGen platform, local ComfyUI, or OpenAI-compatible APIs. Tip: get prompts from get_inspiration() or enhance_prompt(), and use gallery image URLs as referenceImages for style guidance. For Midjourney V8.1, an optional style reference can be passed by appending `--sref <code>` at the end of the prompt — only when the user provides a Midjourney style code (numeric or text). Do NOT pass URLs or local paths via --sref; for any image-based reference, use the referenceImages parameter instead.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Persistent UUID for this workflow step. Required when wait=false. Reuse with identical inputs after interruption, including after MCP restart; use a new UUID for a new generation. Omit only for a new interactive generation."
+          },
+          "wait": {
+            "type": "boolean",
+            "default": true,
+            "description": "MeiGen only: false returns the accepted generation ID immediately; poll check_generation separately. Default true waits for completion. Submit-only requires requestId."
+          },
+          "download": {
+            "type": "boolean",
+            "default": true,
+            "description": "Save the completed result locally (default true). Set false for URL-only workflows. Ignored when wait=false. Other providers may return inline image content when local saving is disabled."
+          },
+          "prompt": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The image generation prompt"
+          },
+          "modelId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Alias of model for portable workflow calls. If both are present they must match."
+          },
+          "modelVariant": {
+            "type": "string",
+            "description": "Optional model variant from live list_models, such as a supported GPT Image 2.5 variant. Forwarded unchanged to MeiGen."
+          },
+          "model": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Model name. For OpenAI-compatible providers: any model ID your endpoint supports. For MeiGen: use model IDs from list_models (e.g. \"gpt-image-2\", \"grok-image\" = xAI Grok Imagine Quality, 1K/2K, supports image-to-image, \"nanobanana-2\", \"seedream-4.5\", \"flux2-klein\")."
+          },
+          "size": {
+            "type": "string",
+            "description": "Image size for OpenAI-compatible providers: \"1024x1024\", \"1536x1024\", \"auto\". MeiGen/ComfyUI: use aspectRatio instead."
+          },
+          "aspectRatio": {
+            "type": "string",
+            "description": "Aspect ratio for MeiGen provider. Use \"auto\" (recommended, default when omitted) to let MeiGen infer the best ratio from the prompt content. Explicit values: \"1:1\", \"3:4\", \"4:3\", \"16:9\", \"9:16\", \"21:9\", \"2:3\", \"3:2\", \"4:5\", \"5:4\", etc. (model-dependent). ComfyUI: use comfyui_workflow modify to adjust dimensions before generating."
+          },
+          "resolution": {
+            "type": "string",
+            "description": "Resolution tier. MeiGen: \"1K\" / \"2K\" / \"3K\" / \"4K\" — each model supports a subset (list_models reports resolutions when applicable). OpenAI: not used (use size instead)."
+          },
+          "quality": {
+            "type": "string",
+            "description": "Image quality. MeiGen gpt-image-2: \"low\" / \"medium\" / \"high\". OpenAI-compatible providers also accept \"high\"."
+          },
+          "referenceImages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Image references for style/content guidance. Accepts direct public HTTPS URLs without credentials/fragments or accessible absolute local paths. Relative paths are rejected. Local PNG/JPEG/WebP/GIF references up to 32 MiB and 64 million pixels are fully decoded, stripped of metadata and prepared up to 4096px, preserving transparency. For ComfyUI: local files are passed directly to the workflow (requires LoadImage node). Sources: gallery URLs from search_gallery/get_inspiration, URLs from previous generate_image results, or local file paths."
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "openai",
+              "meigen",
+              "comfyui"
+            ],
+            "description": "Which provider to use. Auto-detected from configuration if not specified."
+          },
+          "workflow": {
+            "type": "string",
+            "description": "ComfyUI workflow name to use (from comfyui_workflow list). Uses default workflow if not specified."
+          },
+          "negativePrompt": {
+            "type": "string",
+            "description": "Negative prompt for OpenAI-compatible providers. ComfyUI: use comfyui_workflow modify to set negative prompt in the workflow before generating."
+          }
+        },
+        "required": [
+          "prompt"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "generate_video",
+      "description": "Generate a MeiGen video using a required live model ID from list_models. Preserve the caller’s resolved prompt, parameters and authorized scope. Set requestId, wait=false and download=false for workflow submission; then query check_generation. At most four submissions run concurrently per MCP process; the backend quota and Retry-After remain authoritative. Video generation consumes purchased credits.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Persistent UUID for this workflow step. Required when wait=false. Reuse with identical inputs after interruption, including after MCP restart; use a new UUID for a new generation. Omit only for a new interactive generation."
+          },
+          "wait": {
+            "type": "boolean",
+            "default": true,
+            "description": "MeiGen only: false returns the accepted generation ID immediately; poll check_generation separately. Default true waits for completion. Submit-only requires requestId."
+          },
+          "download": {
+            "type": "boolean",
+            "default": true,
+            "description": "Save the completed result locally (default true). Set false for URL-only workflows. Ignored when wait=false. Other providers may return inline image content when local saving is disabled."
+          },
+          "prompt": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The video generation prompt. Describe motion, scene, and style — not just the still image."
+          },
+          "modelId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Alias of model. Provide at least one; both must match when supplied."
+          },
+          "model": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Video model ID. REQUIRED; call list_models for the live lineup and capabilities."
+          },
+          "tier": {
+            "type": "string",
+            "description": "Optional model tier. Use list_models for the selected model's live tier values."
+          },
+          "duration": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "Video duration in seconds. Use list_models for the model's enum/range; when omitted the server uses the omitted-request default shown there."
+          },
+          "resolution": {
+            "type": "string",
+            "description": "Output resolution. Use list_models for the selected model/tier's live values."
+          },
+          "aspectRatio": {
+            "type": "string",
+            "description": "Aspect ratio: \"16:9\", \"9:16\", \"1:1\", \"4:3\", \"3:4\", \"21:9\", \"auto\", \"adaptive\" (model-dependent). Defaults to \"auto\" when omitted."
+          },
+          "firstFrame": {
+            "type": "string",
+            "description": "First-frame image when required or supported by the selected model. Accepts a public URL or local file path (auto-uploaded); use list_models and let the server enforce the live model contract."
+          },
+          "lastFrame": {
+            "type": "string",
+            "description": "Optional last-frame image for a model that supports it. Accepts a public URL or local file path; requires firstFrame. Use list_models for the live model contract."
+          },
+          "referenceVideo": {
+            "type": "string",
+            "description": "Optional reference video URL for a model that advertises reference-video support in list_models. Must be a MeiGen video URL on images.meigen.ai (a previous generation result `videoUrl`, or a clip uploaded via meigen.ai) — other domains are rejected because billing metadata must be verifiable; local paths are not supported. IMPORTANT — prompt requirement: to make the new clip semantically continue the reference, the `prompt` MUST explicitly say \"extend\" / \"continue\" (e.g. prefix with \"Extend this video with the following plot:\"). Without that, the model treats the video as visual reference only and the new clip may drift from a true continuation. Output behavior: the output is only the configured `duration` of new content — the reference video is not concatenated into the output. Billing may include the reference clip and model-specific minimums. The server probes authoritative MP4 duration; do not estimate billing from client metadata."
+          },
+          "referenceVideoDuration": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "Deprecated compatibility hint. Ignored because the server probes authoritative MP4 duration."
+          }
+        },
+        "required": [
+          "prompt"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 31037,
+  "transport": "stdio"
+}

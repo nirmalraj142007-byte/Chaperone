@@ -1,0 +1,8 @@
+{
+  "serverId": "samuelgursky__davinci-resolve-mcp__samuelgursky-davinci-resolve-mcp",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "npm warn deprecated prebuild-install@7.1.3: No longer maintained. Please contact the author of the relevant native addon; alternatives are available.\nTraceback (most recent call last):\n  File \"/tmp/.local/share/davinci-resolve-mcp/src/server.py\", line 58, in <module>\n    from src.utils.mcp_stdio import run_fastmcp_stdio\n  File \"/tmp/.local/share/davinci-resolve-mcp/src/utils/mcp_stdio.py\", line 8, in <module>\n    import anyio\nModuleNotFoundError: No module named 'anyio'\nnpm notice\nnpm notice New major version of npm available! 10.9.8 -> 12.0.2\nnpm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2\nnpm notice To update run: npm install -g npm@12.0.2\nnpm notice\n",
+  "durationMs": 44444,
+  "transport": "stdio"
+}

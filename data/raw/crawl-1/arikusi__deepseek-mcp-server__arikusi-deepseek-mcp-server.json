@@ -1,0 +1,346 @@
+{
+  "serverId": "arikusi__deepseek-mcp-server__arikusi-deepseek-mcp-server",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "deepseek_chat",
+      "description": "Chat with DeepSeek V4 models. deepseek-v4-flash (fast, economical) and deepseek-v4-pro (most capable), both 1M context with optional chain-of-thought thinking mode. deepseek-chat and deepseek-reasoner are deprecated aliases, still accepted for backward compatibility (resolve to v4-flash) but slated for removal; prefer the v4 names. Features: multi-turn sessions (session_id), function calling (tools parameter), thinking mode, JSON output mode, multimodal input (when enabled), automatic cost tracking, and model fallback with circuit breaker resilience.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "messages": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "system",
+                    "user",
+                    "assistant",
+                    "tool"
+                  ]
+                },
+                "content": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "minItems": 1,
+                      "type": "array",
+                      "items": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "const": "text"
+                              },
+                              "text": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "text"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "const": "image_url"
+                              },
+                              "image_url": {
+                                "type": "object",
+                                "properties": {
+                                  "url": {
+                                    "type": "string"
+                                  },
+                                  "detail": {
+                                    "type": "string",
+                                    "enum": [
+                                      "auto",
+                                      "low",
+                                      "high"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "url"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "image_url"
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                },
+                "tool_call_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "role",
+                "content"
+              ]
+            },
+            "description": "Array of conversation messages. Each message has role (system/user/assistant/tool) and content (string or array of content parts for multimodal). Tool messages require tool_call_id."
+          },
+          "model": {
+            "default": "deepseek-v4-flash",
+            "description": "Model to use. deepseek-v4-flash (default, fast/economical) or deepseek-v4-pro (most capable), both 1M context, up to 384K output. Non-thinking by default for speed; pass thinking:{type:\"enabled\"} to reason. Deprecated aliases (still accepted, prefer v4 names): deepseek-chat -> v4-flash non-thinking, deepseek-reasoner -> v4-flash thinking.",
+            "type": "string",
+            "enum": [
+              "deepseek-v4-flash",
+              "deepseek-v4-pro",
+              "deepseek-chat",
+              "deepseek-reasoner"
+            ]
+          },
+          "temperature": {
+            "description": "Sampling temperature (0-2). Higher = more random. Default: 1.0. Ignored when thinking mode is enabled.",
+            "type": "number",
+            "minimum": 0,
+            "maximum": 2
+          },
+          "max_tokens": {
+            "description": "Maximum tokens to generate. V4 models support up to 384000 output tokens.",
+            "type": "number",
+            "minimum": 1,
+            "maximum": 384000
+          },
+          "stream": {
+            "default": false,
+            "description": "Enable streaming mode. Returns full response after streaming completes.",
+            "type": "boolean"
+          },
+          "tools": {
+            "description": "Array of tool definitions for function calling. Each tool has type \"function\" and a function object with name, description, and parameters (JSON Schema).",
+            "maxItems": 128,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "function"
+                },
+                "function": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "parameters": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {}
+                    },
+                    "strict": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "name"
+                  ]
+                }
+              },
+              "required": [
+                "type",
+                "function"
+              ]
+            }
+          },
+          "tool_choice": {
+            "description": "Controls which tool the model calls. \"auto\" (default), \"none\", \"required\", or {type:\"function\",function:{name:\"...\"}}",
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "none",
+                  "required"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "function"
+                  },
+                  "function": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [
+                      "name"
+                    ]
+                  }
+                },
+                "required": [
+                  "type",
+                  "function"
+                ]
+              }
+            ]
+          },
+          "thinking": {
+            "description": "Toggle chain-of-thought thinking mode. Use {type: \"enabled\"} to reason, {type: \"disabled\"} for a fast direct answer (the default here). When enabled, temperature/top_p are ignored.",
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "enabled",
+                  "disabled"
+                ]
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "reasoning_effort": {
+            "description": "Reasoning effort while thinking mode is active: \"high\" (default) or \"max\". Only applies when thinking is enabled.",
+            "type": "string",
+            "enum": [
+              "high",
+              "max"
+            ]
+          },
+          "json_mode": {
+            "description": "Enable JSON output mode. The model will output valid JSON. Include the word \"json\" in your prompt for best results. Supported by both models.",
+            "type": "boolean"
+          },
+          "response_schema": {
+            "description": "JSON Schema to validate the model output against. Implies JSON output mode. The server validates the parsed result and, on failure, issues up to RESPONSE_SCHEMA_MAX_RETRIES repair retries (feeding the validation error back). The returned content is the first schema-valid object, or the last attempt with schema.valid=false and schema.error set.",
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          },
+          "session_id": {
+            "description": "Session ID for multi-turn conversations. When provided, previous messages from this session are prepended to the current messages. If the session does not exist, it is created automatically. Omit for stateless single-turn requests.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "messages"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "deepseek_fim",
+      "description": "Fill-in-the-Middle (FIM) completion with DeepSeek V4. Provide a prompt (prefix) and an optional suffix; the model completes the text in between. Ideal for code completion and content infilling. Runs in non-thinking mode on the Beta endpoint; output is capped at 4K tokens. The deprecated aliases deepseek-chat and deepseek-reasoner are still accepted and resolve to deepseek-v4-flash (FIM has no thinking mode). Includes automatic cost tracking and model fallback with circuit breaker resilience.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The prefix text that comes before the content to generate. Required. For code completion, this is the code up to the cursor."
+          },
+          "suffix": {
+            "description": "Optional suffix text that comes after the content to generate. The model fills the gap between prompt and suffix.",
+            "type": "string"
+          },
+          "model": {
+            "default": "deepseek-v4-flash",
+            "description": "Model to use. deepseek-v4-flash (default, fast/economical) or deepseek-v4-pro (most capable). Deprecated aliases deepseek-chat / deepseek-reasoner are still accepted and resolve to v4-flash. FIM is always non-thinking.",
+            "type": "string",
+            "enum": [
+              "deepseek-v4-flash",
+              "deepseek-v4-pro",
+              "deepseek-chat",
+              "deepseek-reasoner"
+            ]
+          },
+          "max_tokens": {
+            "description": "Maximum tokens to generate. FIM completions are capped at 4096 tokens by the API.",
+            "type": "number",
+            "minimum": 1,
+            "maximum": 4096
+          },
+          "temperature": {
+            "description": "Sampling temperature (0-2). Higher = more random. Default: 1.0.",
+            "type": "number",
+            "minimum": 0,
+            "maximum": 2
+          },
+          "stop": {
+            "description": "Optional stop sequence(s). Generation stops when any is produced. A single string or an array of up to 16 strings.",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "maxItems": 16,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ]
+          }
+        },
+        "required": [
+          "prompt"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "deepseek_sessions",
+      "description": "Manage multi-turn conversation sessions. List active sessions, delete a specific session, or clear all sessions. Sessions store conversation history for use with the session_id parameter in deepseek_chat.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "list",
+              "clear",
+              "delete"
+            ],
+            "description": "Action to perform. \"list\": show all active sessions, \"clear\": remove all sessions, \"delete\": remove a specific session (requires session_id)"
+          },
+          "session_id": {
+            "description": "Session ID to delete (required when action is \"delete\")",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "nc DeepSeekClient.createChatCompletion (file:///tmp/npm-cache/_npx/058a5dff12d53a20/node_modules/@arikusi/deepseek-mcp-server/dist/deepseek-client.js:361:28)\n      at async DeepSeekClient.testConnection (file:///tmp/npm-cache/_npx/058a5dff12d53a20/node_modules/@arikusi/deepseek-mcp-server/dist/deepseek-client.js:523:30)\n      at async main (file:///tmp/npm-cache/_npx/058a5dff12d53a20/node_modules/@arikusi/deepseek-mcp-server/dist/index.js:52:29) {\n    [cause]: Error: getaddrinfo EAI_AGAIN api.deepseek.com\n        at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26) {\n      errno: -3001,\n      code: 'EAI_AGAIN',\n      syscall: 'getaddrinfo',\n      hostname: 'api.deepseek.com'\n    }\n  }\n}\nConnection test failed: ApiError: DeepSeek API Error: Connection error.\n    at DeepSeekClient.wrapError (file:///tmp/npm-cache/_npx/058a5dff12d53a20/node_modules/@arikusi/deepseek-mcp-server/dist/deepseek-client.js:233:15)\n    at DeepSeekClient.createChatCompletion (file:///tmp/npm-cache/_npx/058a5dff12d53a20/node_modules/@arikusi/deepseek-mcp-server/dist/deepseek-client.js:398:18)\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async DeepSeekClient.testConnection (file:///tmp/npm-cache/_npx/058a5dff12d53a20/node_modules/@arikusi/deepseek-mcp-server/dist/deepseek-client.js:523:30)\n    at async main (file:///tmp/npm-cache/_npx/058a5dff12d53a20/node_modules/@arikusi/deepseek-mcp-server/dist/index.js:52:29) {\n  statusCode: undefined,\n  retryable: false,\n  [cause]: APIConnectionError: Connection error.\n      at OpenAI.makeRequest (file:///tmp/npm-cache/_npx/058a5dff12d53a20/node_modules/openai/client.mjs:817:19)\n      at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n      at async file:///tmp/npm-cache/_npx/058a5dff12d53a20/node_modules/@arikusi/deepseek-mcp-server/dist/deepseek-client.js:363:37\n      ... 3 lines matching cause stack trace ...\n      at async main (file:///tmp/npm-cache/_npx/058a5dff12d53a20/node_modules/@arikusi/deepseek-mcp-server/dist/index.js:52:29) {\n    status: undefined,\n    headers: undefined,\n    requestID: undefined,\n    error: undefined,\n    code: undefined,\n    param: undefined,\n    type: undefined,\n    cause: TypeError: fetch failed\n        at node:internal/deps/undici/undici:15157:13\n        at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n        at async OpenAI.fetchWithTimeout (file:///tmp/npm-cache/_npx/058a5dff12d53a20/node_modules/openai/client.mjs:982:20)\n        at async OpenAI.fetchWithAuth (file:///tmp/npm-cache/_npx/058a5dff12d53a20/node_modules/openai/client.mjs:957:26)\n        at async OpenAI.makeRequest (file:///tmp/npm-cache/_npx/058a5dff12d53a20/node_modules/openai/client.mjs:757:26)\n        at async file:///tmp/npm-cache/_npx/058a5dff12d53a20/node_modules/@arikusi/deepseek-mcp-server/dist/deepseek-client.js:363:37\n        at async CircuitBreaker.execute (file:///tmp/npm-cache/_npx/058a5dff12d53a20/node_modules/@arikusi/deepseek-mcp-server/dist/circuit-breaker.js:46:28)\n        at async DeepSeekClient.createChatCompletion (file:///tmp/npm-cache/_npx/058a5dff12d53a20/node_modules/@arikusi/deepseek-mcp-server/dist/deepseek-client.js:361:28)\n        at async DeepSeekClient.testConnection (file:///tmp/npm-cache/_npx/058a5dff12d53a20/node_modules/@arikusi/deepseek-mcp-server/dist/deepseek-client.js:523:30)\n        at async main (file:///tmp/npm-cache/_npx/058a5dff12d53a20/node_modules/@arikusi/deepseek-mcp-server/dist/index.js:52:29) {\n      [cause]: [Error]\n    }\n  }\n}\n[DeepSeek MCP] Warning: Failed to connect to DeepSeek API\n[DeepSeek MCP] Please check your API key and internet connection\n[DeepSeek MCP] Server running on stdio\n[DeepSeek MCP] Available tools: deepseek_chat (sessions, fallback), deepseek_fim (fill-in-the-middle), deepseek_sessions\n[DeepSeek MCP] Available prompts: 12 reasoning templates\n[DeepSeek MCP] Available resources: deepseek://models, deepseek://config, deepseek://usage\n",
+  "durationMs": 26482,
+  "transport": "stdio"
+}

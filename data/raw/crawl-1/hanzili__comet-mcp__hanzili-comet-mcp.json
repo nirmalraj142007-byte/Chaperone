@@ -1,0 +1,84 @@
+{
+  "serverId": "hanzili__comet-mcp__hanzili-comet-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "comet_connect",
+      "description": "Connect to Comet browser (auto-starts if needed)",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "comet_ask",
+      "description": "Send a prompt to Comet/Perplexity and wait for the complete response (blocking). Ideal for tasks requiring real browser interaction (login walls, dynamic content, filling forms) or deep research with agentic browsing.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "Question or task for Comet - focus on goals and context"
+          },
+          "newChat": {
+            "type": "boolean",
+            "description": "Start a fresh conversation (default: false)"
+          },
+          "timeout": {
+            "type": "number",
+            "description": "Max wait time in ms (default: 15000 = 15s)"
+          }
+        },
+        "required": [
+          "prompt"
+        ]
+      }
+    },
+    {
+      "name": "comet_poll",
+      "description": "Check agent status and progress. Call repeatedly to monitor agentic tasks.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "comet_stop",
+      "description": "Stop the current agent task if it's going off track",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "comet_screenshot",
+      "description": "Capture a screenshot of current page",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "comet_mode",
+      "description": "Switch Perplexity search mode. Modes: 'search' (basic), 'research' (deep research), 'labs' (analytics/visualization), 'learn' (educational). Call without mode to see current mode.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "search",
+              "research",
+              "labs",
+              "learn"
+            ],
+            "description": "Mode to switch to (optional - omit to see current mode)"
+          }
+        }
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 24972,
+  "transport": "stdio"
+}

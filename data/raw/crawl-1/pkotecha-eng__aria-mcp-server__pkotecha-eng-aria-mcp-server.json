@@ -1,0 +1,99 @@
+{
+  "serverId": "pkotecha-eng__aria-mcp-server__pkotecha-eng-aria-mcp-server",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "search_pubmed",
+      "description": "Search PubMed for peer-reviewed biomedical literature. Read-only operation. No authentication required. Uses NCBI E-utilities public API (rate limit: ~3 requests/sec). Returns up to 10 results per call. No pagination. Returns 'No papers found.' if no results match. Use for: research papers, drug mechanisms, clinical outcomes, disease studies, safety/efficacy data, biomarkers, diagnostics, and any scientific question.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "description": "Search query e.g. 'velarixin pediatric epilepsy phase 2'",
+            "minLength": 1,
+            "type": "string"
+          },
+          "max_results": {
+            "default": 5,
+            "description": "Number of papers to return, between 1 and 10",
+            "maximum": 10,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "search_clinical_trials",
+      "description": "Search ClinicalTrials.gov for clinical studies. Read-only operation. No authentication required. Uses ClinicalTrials.gov v2 public API (no rate limit documented). Returns up to 10 results per call. No pagination. Returns 'No clinical trials found.' if no results match. Use for: active trials, recruiting studies, inclusion/exclusion criteria, phase information, sponsor details, and trial locations.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "condition": {
+            "description": "Disease or condition e.g. 'pediatric epilepsy', 'lung cancer'",
+            "minLength": 1,
+            "type": "string"
+          },
+          "status": {
+            "default": "RECRUITING",
+            "description": "Trial status: RECRUITING, COMPLETED, or ALL",
+            "enum": [
+              "RECRUITING",
+              "COMPLETED",
+              "ALL"
+            ],
+            "type": "string"
+          },
+          "intervention": {
+            "default": "",
+            "description": "Optional drug or intervention name to narrow results",
+            "type": "string"
+          },
+          "max_results": {
+            "default": 5,
+            "description": "Number of trials to return, between 1 and 10",
+            "maximum": 10,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "condition"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "search_isrctn",
+      "description": "Search the ISRCTN registry for UK and European clinical trials. Read-only operation. No authentication required. Complements ClinicalTrials.gov by covering trials at UK academic institutions and European research centers not listed on ClinicalTrials.gov. Returns up to 10 results per call, filtered for relevance. Returns 'No ISRCTN trials found.' if no results match. Use for: UK/European trials, academic institution studies, international coverage beyond ClinicalTrials.gov.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "description": "Condition or search terms e.g. 'pediatric epilepsy', 'type 2 diabetes'",
+            "minLength": 1,
+            "type": "string"
+          },
+          "max_results": {
+            "default": 5,
+            "description": "Number of trials to return, between 1 and 10",
+            "maximum": 10,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "additionalProperties": false
+      }
+    }
+  ],
+  "stderrTail": "Downloading pydantic-core (2.0MiB)\nDownloading pygments (1.2MiB)\nDownloading cryptography (4.5MiB)\nDownloading beartype (1.3MiB)\n Downloaded pygments\n Downloaded beartype\n Downloaded pydantic-core\n Downloaded cryptography\nInstalled 74 packages in 29ms\n\n\n╭──────────────────────────────────────────────────────────────────────────────╮\n│                                                                              │\n│                                                                              │\n│                         ▄▀▀ ▄▀█ █▀▀ ▀█▀ █▀▄▀█ █▀▀ █▀█                        │\n│                         █▀  █▀█ ▄▄█  █  █ ▀ █ █▄▄ █▀▀                        │\n│                                                                              │\n│                                                                              │\n│                                                                              │\n│                                FastMCP 4.0.3                                 │\n│                            https://gofastmcp.com                             │\n│                                                                              │\n│                🖥  Server:      aria-clinical-research, 4.0.3                 │\n│                🚀 Deploy free: https://horizon.prefect.io                    │\n│                                                                              │\n╰──────────────────────────────────────────────────────────────────────────────╯\n\n\n[09/15/26 06:44:19] INFO     Starting MCP server                transport.py:242\n                             'aria-clinical-research' with                      \n                             transport 'stdio'                                  \n",
+  "durationMs": 43518,
+  "transport": "stdio"
+}

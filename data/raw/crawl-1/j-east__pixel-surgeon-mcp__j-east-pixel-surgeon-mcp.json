@@ -1,0 +1,507 @@
+{
+  "serverId": "j-east__pixel-surgeon-mcp__j-east-pixel-surgeon-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "list_images",
+      "description": "List image and video files in the shared pixel-surgeon directory (/tmp/Pictures/pixel-surgeon). Use this to find images available for editing.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "save_image",
+      "description": "Copy an image file into the shared pixel-surgeon directory (/tmp/Pictures/pixel-surgeon) so it can be used with edit_image. Use this when the user wants to edit an image that exists elsewhere on their filesystem.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "source_path": {
+            "type": "string",
+            "description": "Absolute path to the image file to import"
+          }
+        },
+        "required": [
+          "source_path"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "generate_images",
+      "description": "Generate multiple images in parallel. Supports Gemini and OpenAI models — pass the model param to choose. Returns the generated images and any accompanying text. Full-resolution images are viewable in the browser viewer.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "prompts": {
+            "minItems": 1,
+            "maxItems": 8,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Array of text prompts, one per image to generate (1-8 images)"
+          },
+          "aspect_ratio": {
+            "default": "1:1",
+            "description": "Aspect ratio for all generated images",
+            "type": "string",
+            "enum": [
+              "1:1",
+              "16:9",
+              "9:16",
+              "3:4",
+              "4:3",
+              "2:3",
+              "3:2",
+              "4:5",
+              "5:4"
+            ]
+          },
+          "image_size": {
+            "default": "1K",
+            "description": "Image resolution",
+            "type": "string",
+            "enum": [
+              "512",
+              "1K",
+              "2K",
+              "4K"
+            ]
+          },
+          "style": {
+            "description": "Optional style preset to apply. When set, the style's prompt prefix is prepended and its default aspect ratio is used (unless you explicitly set one).\n\nAvailable styles:\n• neo-brutalist — Neo-brutalist minimalist magazine editorial. Bold oversized typography, cream/black/terracotta palette, halftone textures, visible grid lines, asymmetric layout. Think Emigre meets Swiss brutalism.\n• retro-futuristic-arcade — Retro-futurist infographic style. 1960s Space Age optimism meets 1980s arcade aesthetics. Cathode blue, warm amber, salmon red, warm green palette. CRT scanlines, atomic-age geometry, pixel-grid accents. Great for diagrams, system overviews, and technical illustrations.\n• fractal-arcade — Geometric dithered fractal style. All shading via dithering patterns and geometric cross-hatch grids — no smooth gradients. Fractal backgrounds (Sierpinski, hexagonal tessellations, recursive diamonds), low-poly faceted subjects, retro CRT palette.\n• duval-software-infographic — Duval Software's clean technical infographic for architecture diagrams, system flows, and data pipelines. Dark navy background, cyan/electric blue glowing connection lines, geometric nodes, professional and precise.",
+            "type": "string",
+            "enum": [
+              "neo-brutalist",
+              "retro-futuristic-arcade",
+              "fractal-arcade",
+              "duval-software-infographic"
+            ]
+          },
+          "model": {
+            "description": "Model to use. Available: 'gemini-3.1-flash-image' (Gemini 3.1 Flash Image), 'gemini-2.5-flash-image' (Gemini 2.5 Flash Image), 'gpt-image-1' (GPT Image 1 (OpenAI)), 'gpt-image-2' (GPT Image 2 (OpenAI)), 'grok-imagine' (Grok Imagine (xAI)). Default: 'gpt-image-2'. Set DEFAULT_IMAGE_MODEL env var to change the default. Provider tradeoffs: grok-imagine is fastest and cheapest; gemini is mid-quality with the best price/performance ratio (free tier available); gpt-image-2 is highest quality but slower and more expensive. Gemini models fall back to free tier on billing errors. OpenAI requires OPENAI_API_KEY. Grok requires XAI_API_KEY.",
+            "type": "string",
+            "enum": [
+              "gemini-3.1-flash-image",
+              "gemini-2.5-flash-image",
+              "gpt-image-1",
+              "gpt-image-2",
+              "grok-imagine"
+            ]
+          }
+        },
+        "required": [
+          "prompts"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "generate_image",
+      "description": "Generate a single image. Supports Gemini and OpenAI models — pass the model param to choose. Full-resolution image is viewable in the browser viewer.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "Text prompt describing the image to generate"
+          },
+          "aspect_ratio": {
+            "default": "1:1",
+            "description": "Aspect ratio for the image",
+            "type": "string",
+            "enum": [
+              "1:1",
+              "16:9",
+              "9:16",
+              "3:4",
+              "4:3",
+              "2:3",
+              "3:2",
+              "4:5",
+              "5:4"
+            ]
+          },
+          "image_size": {
+            "default": "1K",
+            "description": "Image resolution",
+            "type": "string",
+            "enum": [
+              "512",
+              "1K",
+              "2K",
+              "4K"
+            ]
+          },
+          "style": {
+            "description": "Optional style preset to apply. When set, the style's prompt prefix is prepended and its default aspect ratio is used (unless you explicitly set one).\n\nAvailable styles:\n• neo-brutalist — Neo-brutalist minimalist magazine editorial. Bold oversized typography, cream/black/terracotta palette, halftone textures, visible grid lines, asymmetric layout. Think Emigre meets Swiss brutalism.\n• retro-futuristic-arcade — Retro-futurist infographic style. 1960s Space Age optimism meets 1980s arcade aesthetics. Cathode blue, warm amber, salmon red, warm green palette. CRT scanlines, atomic-age geometry, pixel-grid accents. Great for diagrams, system overviews, and technical illustrations.\n• fractal-arcade — Geometric dithered fractal style. All shading via dithering patterns and geometric cross-hatch grids — no smooth gradients. Fractal backgrounds (Sierpinski, hexagonal tessellations, recursive diamonds), low-poly faceted subjects, retro CRT palette.\n• duval-software-infographic — Duval Software's clean technical infographic for architecture diagrams, system flows, and data pipelines. Dark navy background, cyan/electric blue glowing connection lines, geometric nodes, professional and precise.",
+            "type": "string",
+            "enum": [
+              "neo-brutalist",
+              "retro-futuristic-arcade",
+              "fractal-arcade",
+              "duval-software-infographic"
+            ]
+          },
+          "model": {
+            "description": "Model to use. Available: 'gemini-3.1-flash-image' (Gemini 3.1 Flash Image), 'gemini-2.5-flash-image' (Gemini 2.5 Flash Image), 'gpt-image-1' (GPT Image 1 (OpenAI)), 'gpt-image-2' (GPT Image 2 (OpenAI)), 'grok-imagine' (Grok Imagine (xAI)). Default: 'gpt-image-2'. Set DEFAULT_IMAGE_MODEL env var to change the default. Provider tradeoffs: grok-imagine is fastest and cheapest; gemini is mid-quality with the best price/performance ratio (free tier available); gpt-image-2 is highest quality but slower and more expensive. Gemini models fall back to free tier on billing errors. OpenAI requires OPENAI_API_KEY. Grok requires XAI_API_KEY.",
+            "type": "string",
+            "enum": [
+              "gemini-3.1-flash-image",
+              "gemini-2.5-flash-image",
+              "gpt-image-1",
+              "gpt-image-2",
+              "grok-imagine"
+            ]
+          }
+        },
+        "required": [
+          "prompt"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "generate_video",
+      "description": "Generate a video using Google's Veo 3. Returns an MP4 video file. Video generation takes 1-3 minutes — the tool will poll until complete. Veo 3 generates both video and ambient audio. Videos are saved to the shared directory and viewable in the browser viewer.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "Text prompt describing the video to generate. Be descriptive about motion, camera angles, lighting, and scene details for best results."
+          },
+          "aspect_ratio": {
+            "default": "16:9",
+            "description": "Aspect ratio — 16:9 for landscape, 9:16 for portrait/vertical",
+            "type": "string",
+            "enum": [
+              "16:9",
+              "9:16"
+            ]
+          },
+          "duration": {
+            "default": "8",
+            "description": "Video duration in seconds",
+            "type": "string",
+            "enum": [
+              "5",
+              "8"
+            ]
+          }
+        },
+        "required": [
+          "prompt"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "edit_image",
+      "description": "Edit an existing image. Supports Gemini and OpenAI models — pass the model param to choose. Provide the filename of an image in /tmp/Pictures/pixel-surgeon (use list_images to see available files, or save_image to import one first). The MCP reads the file directly — do NOT pass base64 image data.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "Text prompt describing the edits to make to the image"
+          },
+          "filename": {
+            "type": "string",
+            "description": "Filename of the source image in /tmp/Pictures/pixel-surgeon (e.g. \"2026-03-17T17-47-31-152Z_59f735df.png\")"
+          },
+          "aspect_ratio": {
+            "default": "1:1",
+            "description": "Aspect ratio for the output image",
+            "type": "string",
+            "enum": [
+              "1:1",
+              "16:9",
+              "9:16",
+              "3:4",
+              "4:3",
+              "2:3",
+              "3:2",
+              "4:5",
+              "5:4"
+            ]
+          },
+          "image_size": {
+            "default": "1K",
+            "description": "Output image resolution",
+            "type": "string",
+            "enum": [
+              "512",
+              "1K",
+              "2K",
+              "4K"
+            ]
+          },
+          "style": {
+            "description": "Optional style preset to apply. When set, the style's prompt prefix is prepended and its default aspect ratio is used (unless you explicitly set one).\n\nAvailable styles:\n• neo-brutalist — Neo-brutalist minimalist magazine editorial. Bold oversized typography, cream/black/terracotta palette, halftone textures, visible grid lines, asymmetric layout. Think Emigre meets Swiss brutalism.\n• retro-futuristic-arcade — Retro-futurist infographic style. 1960s Space Age optimism meets 1980s arcade aesthetics. Cathode blue, warm amber, salmon red, warm green palette. CRT scanlines, atomic-age geometry, pixel-grid accents. Great for diagrams, system overviews, and technical illustrations.\n• fractal-arcade — Geometric dithered fractal style. All shading via dithering patterns and geometric cross-hatch grids — no smooth gradients. Fractal backgrounds (Sierpinski, hexagonal tessellations, recursive diamonds), low-poly faceted subjects, retro CRT palette.\n• duval-software-infographic — Duval Software's clean technical infographic for architecture diagrams, system flows, and data pipelines. Dark navy background, cyan/electric blue glowing connection lines, geometric nodes, professional and precise.",
+            "type": "string",
+            "enum": [
+              "neo-brutalist",
+              "retro-futuristic-arcade",
+              "fractal-arcade",
+              "duval-software-infographic"
+            ]
+          },
+          "model": {
+            "description": "Model to use. Available: 'gemini-3.1-flash-image' (Gemini 3.1 Flash Image), 'gemini-2.5-flash-image' (Gemini 2.5 Flash Image), 'gpt-image-1' (GPT Image 1 (OpenAI)), 'gpt-image-2' (GPT Image 2 (OpenAI)), 'grok-imagine' (Grok Imagine (xAI)). Default: 'gpt-image-2'. Set DEFAULT_IMAGE_MODEL env var to change the default. Provider tradeoffs: grok-imagine is fastest and cheapest; gemini is mid-quality with the best price/performance ratio (free tier available); gpt-image-2 is highest quality but slower and more expensive. Gemini models fall back to free tier on billing errors. OpenAI requires OPENAI_API_KEY. Grok requires XAI_API_KEY.",
+            "type": "string",
+            "enum": [
+              "gemini-3.1-flash-image",
+              "gemini-2.5-flash-image",
+              "gpt-image-1",
+              "gpt-image-2",
+              "grok-imagine"
+            ]
+          }
+        },
+        "required": [
+          "prompt",
+          "filename"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "fix_image",
+      "description": "Fix an image that has glitched or garbled text by splitting it into tiles, re-rendering each tile, and stitching them back together. This works because smaller sections have less text for the model to handle at once. Use this when a generated image has text artifacts or overloaded text regions.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "filename": {
+            "type": "string",
+            "description": "Filename of the source image in /tmp/Pictures/pixel-surgeon"
+          },
+          "prompt": {
+            "default": "Clean up and fix any garbled, glitched, or distorted text in this image tile. Preserve the style, colors, and layout exactly but make all text crisp and legible.",
+            "description": "Instructions for fixing each tile",
+            "type": "string"
+          },
+          "grid": {
+            "default": "2x2",
+            "description": "How to split the image: cols x rows",
+            "type": "string",
+            "enum": [
+              "2x2",
+              "3x3",
+              "2x1",
+              "1x2",
+              "3x1",
+              "1x3"
+            ]
+          },
+          "image_size": {
+            "default": "1K",
+            "description": "Resolution for each tile",
+            "type": "string",
+            "enum": [
+              "512",
+              "1K",
+              "2K",
+              "4K"
+            ]
+          },
+          "model": {
+            "description": "Model to use. Available: 'gemini-3.1-flash-image' (Gemini 3.1 Flash Image), 'gemini-2.5-flash-image' (Gemini 2.5 Flash Image), 'gpt-image-1' (GPT Image 1 (OpenAI)), 'gpt-image-2' (GPT Image 2 (OpenAI)), 'grok-imagine' (Grok Imagine (xAI)). Default: 'gpt-image-2'. Set DEFAULT_IMAGE_MODEL env var to change the default. Provider tradeoffs: grok-imagine is fastest and cheapest; gemini is mid-quality with the best price/performance ratio (free tier available); gpt-image-2 is highest quality but slower and more expensive. Gemini models fall back to free tier on billing errors. OpenAI requires OPENAI_API_KEY. Grok requires XAI_API_KEY.",
+            "type": "string",
+            "enum": [
+              "gemini-3.1-flash-image",
+              "gemini-2.5-flash-image",
+              "gpt-image-1",
+              "gpt-image-2",
+              "grok-imagine"
+            ]
+          }
+        },
+        "required": [
+          "filename"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "fix_region",
+      "description": "Fix a specific region of an image by cropping it out, sending it for repair, and reinserting it. The crop is automatically snapped to the nearest supported aspect ratio. Use this when only part of an image has glitched text or artifacts — more precise than fix_image's grid approach.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "filename": {
+            "type": "string",
+            "description": "Filename of the source image in /tmp/Pictures/pixel-surgeon"
+          },
+          "prompt": {
+            "default": "Clean up and fix any garbled, glitched, or distorted text in this image region. Preserve the style, colors, and layout exactly but make all text crisp and legible.",
+            "description": "Instructions for fixing the selected region",
+            "type": "string"
+          },
+          "x": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Left edge of region as percentage of image width (0-100)"
+          },
+          "y": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Top edge of region as percentage of image height (0-100)"
+          },
+          "width": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Width of region as percentage of image width (1-100)"
+          },
+          "height": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Height of region as percentage of image height (1-100)"
+          },
+          "image_size": {
+            "default": "1K",
+            "description": "Resolution for the cropped region",
+            "type": "string",
+            "enum": [
+              "512",
+              "1K",
+              "2K",
+              "4K"
+            ]
+          },
+          "model": {
+            "description": "Model to use. Available: 'gemini-3.1-flash-image' (Gemini 3.1 Flash Image), 'gemini-2.5-flash-image' (Gemini 2.5 Flash Image), 'gpt-image-1' (GPT Image 1 (OpenAI)), 'gpt-image-2' (GPT Image 2 (OpenAI)), 'grok-imagine' (Grok Imagine (xAI)). Default: 'gpt-image-2'. Set DEFAULT_IMAGE_MODEL env var to change the default. Provider tradeoffs: grok-imagine is fastest and cheapest; gemini is mid-quality with the best price/performance ratio (free tier available); gpt-image-2 is highest quality but slower and more expensive. Gemini models fall back to free tier on billing errors. OpenAI requires OPENAI_API_KEY. Grok requires XAI_API_KEY.",
+            "type": "string",
+            "enum": [
+              "gemini-3.1-flash-image",
+              "gemini-2.5-flash-image",
+              "gpt-image-1",
+              "gpt-image-2",
+              "grok-imagine"
+            ]
+          }
+        },
+        "required": [
+          "filename",
+          "x",
+          "y",
+          "width",
+          "height"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "interactive_fix",
+      "description": "Opens an image in a browser-based crop tool where the user can draw a rectangle around the region to fix, add notes/instructions, and submit. The tool waits for the user's selection, then sends the cropped region for repair and composites it back into the original image. Best for precise, user-guided fixes.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "filename": {
+            "type": "string",
+            "description": "Filename of the source image in /tmp/Pictures/pixel-surgeon"
+          },
+          "image_size": {
+            "default": "1K",
+            "description": "Resolution for the cropped region",
+            "type": "string",
+            "enum": [
+              "512",
+              "1K",
+              "2K",
+              "4K"
+            ]
+          },
+          "model": {
+            "description": "Model to use. Available: 'gemini-3.1-flash-image' (Gemini 3.1 Flash Image), 'gemini-2.5-flash-image' (Gemini 2.5 Flash Image), 'gpt-image-1' (GPT Image 1 (OpenAI)), 'gpt-image-2' (GPT Image 2 (OpenAI)), 'grok-imagine' (Grok Imagine (xAI)). Default: 'gpt-image-2'. Set DEFAULT_IMAGE_MODEL env var to change the default. Provider tradeoffs: grok-imagine is fastest and cheapest; gemini is mid-quality with the best price/performance ratio (free tier available); gpt-image-2 is highest quality but slower and more expensive. Gemini models fall back to free tier on billing errors. OpenAI requires OPENAI_API_KEY. Grok requires XAI_API_KEY.",
+            "type": "string",
+            "enum": [
+              "gemini-3.1-flash-image",
+              "gemini-2.5-flash-image",
+              "gpt-image-1",
+              "gpt-image-2",
+              "grok-imagine"
+            ]
+          }
+        },
+        "required": [
+          "filename"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "remove_background",
+      "description": "Remove a background color from an image and make it transparent. Outputs a PNG with alpha channel. The image must already exist in /tmp/Pictures/pixel-surgeon (use save_image to import first).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "filename": {
+            "type": "string",
+            "description": "Filename of the source image in /tmp/Pictures/pixel-surgeon"
+          },
+          "color": {
+            "default": "#FFFFFF",
+            "description": "Target background color as hex (e.g. \"#FFFFFF\" for white, \"#000000\" for black, \"#FF0000\" for red). Default: white.",
+            "type": "string"
+          },
+          "threshold": {
+            "default": 30,
+            "description": "How far from the target color a pixel can be and still count as background (0 = exact match only, 30 = default, higher = more aggressive)",
+            "type": "number",
+            "minimum": 0,
+            "maximum": 255
+          }
+        },
+        "required": [
+          "filename"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "trace_to_svg",
+      "description": "Convert a raster image to SVG using potrace vectorization. Best for line art, diagrams, logos, and high-contrast images. The image must already exist in /tmp/Pictures/pixel-surgeon (use save_image to import first).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "filename": {
+            "type": "string",
+            "description": "Filename of the source image in /tmp/Pictures/pixel-surgeon"
+          },
+          "threshold": {
+            "default": -1,
+            "description": "Brightness threshold for black/white conversion (0-255). Lower = more black. -1 = auto-detect. Default: auto.",
+            "type": "number",
+            "minimum": -1,
+            "maximum": 255
+          },
+          "invert": {
+            "default": false,
+            "description": "Invert the image before tracing (useful for light-on-dark images)",
+            "type": "boolean"
+          },
+          "turdsize": {
+            "default": 2,
+            "description": "Suppress speckles up to this size (in pixels). Default: 2.",
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "filename"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "npm warn deprecated phin@2.9.3: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.\nnpm warn deprecated phin@3.7.1: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.\n[pixel-surgeon 2026-09-15T06:36:50.556Z] Gemini provider available\n[pixel-surgeon 2026-09-15T06:36:50.557Z] OpenAI provider available\n[pixel-surgeon 2026-09-15T06:36:50.557Z] xAI/Grok provider available\n[pixel-surgeon 2026-09-15T06:36:50.557Z] Default model: gpt-image-2\n[pixel-surgeon 2026-09-15T06:36:50.557Z] MCP server running on stdio\n",
+  "durationMs": 64271,
+  "transport": "stdio"
+}

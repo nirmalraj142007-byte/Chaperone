@@ -1,0 +1,34 @@
+{
+  "serverId": "menaker__adtest-mcp__ai-adtest-adtest-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "analyze_advert",
+      "description": "Run an AI-only analysis of an advert and get a detailed scoring report. Provide exactly ONE of: `url` (a public image or video URL), `file_path` (a local image/video file to upload), or `text` (ad copy). Optionally pass `brand_url` to improve brand/logo detection. Video is supported and may take a few minutes. Each successful analysis costs 1 credit from your AdTest wallet.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Public URL of an image or video advert"
+          },
+          "file_path": {
+            "type": "string",
+            "description": "Local path to an image or video file to upload"
+          },
+          "text": {
+            "type": "string",
+            "description": "Ad copy text to analyze"
+          },
+          "brand_url": {
+            "type": "string",
+            "description": "Advertiser brand/website URL (optional)"
+          }
+        }
+      }
+    }
+  ],
+  "stderrTail": "adtest-ai-analysis MCP server running on stdio\n",
+  "durationMs": 17313,
+  "transport": "stdio"
+}

@@ -1,0 +1,8 @@
+{
+  "serverId": "pzfreo__build123d-mcp__pzfreo-build123d-mcp",
+  "status": "FAILED_TIMEOUT",
+  "tools": [],
+  "stderrTail": "Downloading numpy (15.9MiB)\nDownloading matplotlib (9.4MiB)\nDownloading scikit-learn (8.7MiB)\nDownloading cryptography (4.5MiB)\nDownloading ezdxf (5.5MiB)\nDownloading resvg-py (1.3MiB)\nDownloading fonttools (5.2MiB)\nDownloading scipy (33.7MiB)\nDownloading sympy (6.0MiB)\nDownloading pydantic-core (2.0MiB)\nDownloading vtk (133.2MiB)\nDownloading kiwisolver (1.4MiB)\nDownloading pygments (1.2MiB)\nDownloading pillow (6.6MiB)\nDownloading jedi (4.7MiB)\nDownloading cadquery-ocp-novtk (64.3MiB)\nDownloading lib3mf (1.5MiB)\n Downloaded pygments\n Downloaded resvg-py\n",
+  "durationMs": 120057,
+  "transport": "stdio"
+}

@@ -1,0 +1,736 @@
+{
+  "serverId": "auspy__supasidebar-mcp__auspy-supasidebar-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "guide",
+      "description": "Get a complete guide to SupaSidebar's MCP capabilities. Shows all available tools, what they do, common user requests mapped to tool calls, setting categories, and feature presets. Call this first when you're unsure which tool to use.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "list_spaces",
+      "description": "List all spaces in SupaSidebar. Spaces are top-level collections that organize your links.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "list_links",
+      "description": "List links in a specific space or folder. Returns link names, URLs, tags, and notes.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "spaceId": {
+            "type": "string",
+            "description": "The space ID to list links from. Get IDs from list_spaces."
+          },
+          "folderId": {
+            "description": "Optional folder ID to filter links. Get IDs from list_folders.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "spaceId"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "search",
+      "description": "Search across all links in SupaSidebar by name, URL, notes, or tags. Uses fuzzy matching.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search query — matches against link names, URLs, notes, and tags."
+          },
+          "limit": {
+            "description": "Max results to return (default: 20).",
+            "type": "number"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "list_folders",
+      "description": "List folders in a space. Folders organize links hierarchically within a space.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "spaceId": {
+            "type": "string",
+            "description": "The space ID to list folders from."
+          }
+        },
+        "required": [
+          "spaceId"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "list_tags",
+      "description": "List all tags used across your links, sorted by usage count.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_live_tabs",
+      "description": "Get currently open browser tabs. Can filter by browser (Arc, Chrome, Safari, Firefox, Edge, Brave, etc).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "browser": {
+            "description": "Filter tabs by browser name, e.g. 'Arc', 'Chrome', 'Safari'.",
+            "type": "string"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "list_recent",
+      "description": "List recently opened links, ordered by most recent first. If you don't see what the user wants in the first call, do NOT give up — increase `limit` (the default of 50 is small relative to a power user's history), page back with `offset`, or narrow with `day`/`since`/`until`. To find what someone opened on a specific day, prefer `day=\"YYYY-MM-DD\"` (or `\"today\"`/`\"yesterday\"`) over scrolling. Combine `day` with a higher `limit` to see everything from that day.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "description": "Max results to return (default: 50, max: 1000). Increase this before assuming a link isn't there.",
+            "type": "number"
+          },
+          "offset": {
+            "description": "Skip the first N items. Use to paginate when limit is exhausted.",
+            "type": "number"
+          },
+          "day": {
+            "description": "Filter to a single day. Accepts 'today', 'yesterday', or 'YYYY-MM-DD' (e.g. '2026-04-30'). Sets since/until automatically.",
+            "type": "string"
+          },
+          "since": {
+            "description": "Only links opened at or after this time. ISO-8601 datetime ('2026-04-28T00:00:00Z') or bare 'YYYY-MM-DD'. Ignored if `day` is set.",
+            "type": "string"
+          },
+          "until": {
+            "description": "Only links opened before this time. ISO-8601 datetime or bare 'YYYY-MM-DD' (treated as end-of-day). Ignored if `day` is set.",
+            "type": "string"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_visibility",
+      "description": "Check whether the sidebar and command panel are currently visible, without changing their state. Use this instead of toggling just to check.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "toggle_sidebar",
+      "description": "Toggle SupaSidebar visibility (show/hide). Returns the new visibility state.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "launch_sidebar",
+      "description": "Launch the SupaSidebar app if it's not already running. Uses macOS 'open -a' command.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "toggle_command_panel",
+      "description": "Toggle the SupaSidebar command panel (search/command palette). Opens it if closed, closes it if open.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "switch_space",
+      "description": "Switch to a different space. Spaces organize your links into separate workspaces. Get space IDs from list_spaces.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "spaceId": {
+            "type": "string",
+            "description": "The space ID to switch to. Get IDs from list_spaces."
+          }
+        },
+        "required": [
+          "spaceId"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "open_preferences",
+      "description": "Open the SupaSidebar Preferences window, optionally jumping to a specific tab. Useful when the user wants to see or adjust settings visually.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tab": {
+            "description": "Preferences tab to open: general, sidebar, mouseTriggers, shortcuts, spaces, liveTabs, voice, aiTags, importExport, commandPanel, airTrafficControl, refer, about",
+            "type": "string"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_settings",
+      "description": "Get SupaSidebar settings. With no arguments: returns all 40+ settings grouped by category. With 'key': returns a single setting by exact key or natural-language alias (e.g. 'compact mode', 'smart attach', 'atc'). With 'category': filters to one group.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "description": "A specific setting key (e.g. 'isCompactMode') or natural-language alias (e.g. 'compact mode', 'smart attach'). Returns just that one setting with full detail.",
+            "type": "string"
+          },
+          "category": {
+            "description": "Filter by category: sidebar, appearance, spaces, liveTabs, display, search, links, airTrafficControl, analytics",
+            "type": "string"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "update_setting",
+      "description": "Change a SupaSidebar setting. Use get_settings first to see available settings and their current values. Boolean settings use true/false, string settings use the documented options.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "The setting key to update (e.g. 'isCompactMode', 'autoTileWindows'). Use get_settings to see all keys."
+          },
+          "value": {
+            "description": "The new value. Booleans for toggles, strings for mode selections, numbers for numeric settings.",
+            "type": [
+              "boolean",
+              "string",
+              "number"
+            ]
+          }
+        },
+        "required": [
+          "key",
+          "value"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "enable_feature",
+      "description": "Enable a named feature preset that configures multiple settings at once. Presets: 'Smart Attach' (auto-show with browser), 'Independent Mode' (always visible), 'Space Isolation' (separate tabs per space), 'Minimal Sidebar' (compact and clean), 'Full Featured' (everything on). Use get_settings to see all presets.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "feature": {
+            "type": "string",
+            "description": "Feature name or alias, e.g. 'Smart Attach', 'minimal', 'space isolation', 'independent mode', 'full featured'."
+          }
+        },
+        "required": [
+          "feature"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_shortcuts",
+      "description": "List all configurable keyboard shortcuts with their current key bindings. Shows the shortcut name (used for updates), display string, title, and description.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "update_shortcut",
+      "description": "Change a keyboard shortcut binding. Requires at least one modifier key. Use get_shortcuts to see available shortcut names.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The shortcut name (e.g. 'toggleSidebar', 'saveCurrentPage'). Get names from get_shortcuts."
+          },
+          "key": {
+            "type": "string",
+            "description": "The key to bind (e.g. 'space', 's', 'k', 'f1', 'left'). Valid: a-z, 0-9, space, return, tab, escape, delete, left, right, up, down, f1-f12."
+          },
+          "modifiers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Modifier keys (at least one required). Valid: 'command', 'shift', 'option', 'control'. Aliases: 'cmd', 'ctrl', 'opt', 'alt'."
+          }
+        },
+        "required": [
+          "name",
+          "key",
+          "modifiers"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "clear_shortcut",
+      "description": "Remove a keyboard shortcut binding so it no longer has a key combination assigned.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The shortcut name to clear (e.g. 'toggleSidebar'). Get names from get_shortcuts."
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "open_link",
+      "description": "Open a URL in a specific browser, browser profile, or the default browser. IMPORTANT: if the user names a browser ('open in Brave', 'in my Work profile'), you MUST set the `browser` (and `profileId`) parameter - omitting it falls back to the system default browser, which is usually NOT what was asked for. Supported browsers (27 total): Safari, Chrome, Firefox, Edge, Arc, Brave, Vivaldi, Dia, Comet, Orion, Zen, Atlas, Wavebox, Helium, plus Chromium and Thorium, plus dev/beta/canary channels of Chrome (Beta/Canary/Dev), Edge (Beta/Canary/Dev), Brave (Beta/Nightly), Vivaldi (Snapshot), and Firefox (Nightly/Developer Edition). These are RECOGNIZED but not necessarily INSTALLED on this user's machine - if `open_link` returns an 'is not installed' error, call `list_installed_browsers` to see what's actually available and pick from those. For profile-specific opening, call `list_browser_profiles` first to get profile IDs.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "The URL to open (e.g. 'https://github.com')."
+          },
+          "browser": {
+            "description": "Browser to open in (e.g. 'Chrome', 'Arc', 'Safari', 'Brave'). REQUIRED when the user names a browser. Omit only when the user did not specify.",
+            "type": "string"
+          },
+          "profileId": {
+            "description": "Open in a specific browser profile. Get IDs from list_browser_profiles (format: '<bundleId>:<directory>', e.g. 'com.brave.Browser:Default'). If set without `browser`, the browser is inferred from the profile ID.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "web_search",
+      "description": "Search the web using a search engine or custom website shortcut. Built-in engines: Google, Bing, DuckDuckGo, Yahoo, Perplexity, Brave, Kagi. Custom shortcuts let you search specific sites (e.g. YouTube, Reddit, GitHub). Use list_search_shortcuts to see all available.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "The search query."
+          },
+          "engine": {
+            "description": "Search engine or shortcut keyword (e.g. 'google', 'perplexity', 'yo' for YouTube, 'reddit'). Defaults to user's configured default engine.",
+            "type": "string"
+          },
+          "browser": {
+            "description": "Browser to open results in. Omit for default browser.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "list_search_shortcuts",
+      "description": "List all available search engines and custom website search shortcuts. Shows built-in engines (Google, Bing, etc.) and user-created shortcuts (YouTube, Reddit, etc.) with their keywords for use with web_search.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "add_search_shortcut",
+      "description": "Add a custom website search shortcut so you can search a specific site via web_search. The searchURL should be the site's search URL with the query parameter at the end (e.g. 'https://www.youtube.com/results?search_query=').",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "keyword": {
+            "type": "string",
+            "description": "Short keyword to trigger this shortcut (e.g. 'gh' for GitHub, 'so' for Stack Overflow). Used as: web_search engine='gh' query='...'"
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name for the shortcut (e.g. 'GitHub', 'Stack Overflow')."
+          },
+          "searchURL": {
+            "type": "string",
+            "description": "The search URL base. The query will be appended to this. Example: 'https://github.com/search?q=' or 'https://stackoverflow.com/search?q='"
+          }
+        },
+        "required": [
+          "keyword",
+          "name",
+          "searchURL"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "remove_search_shortcut",
+      "description": "Remove a custom website search shortcut by its keyword or ID.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "keyword": {
+            "type": "string",
+            "description": "The shortcut keyword to remove (e.g. 'yo', 'reddit'). Can also be the UUID of the shortcut."
+          }
+        },
+        "required": [
+          "keyword"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "create_space",
+      "description": "Create a new space in SupaSidebar. Spaces are top-level collections that organize your links.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name for the new space (e.g. 'Work', 'Side Projects')."
+          },
+          "color": {
+            "description": "Hex color for the space (e.g. '#3B82F6'). Defaults to blue.",
+            "type": "string"
+          },
+          "icon": {
+            "description": "SF Symbol name for the space icon (e.g. 'briefcase.fill', 'house.fill'). Defaults to 'folder'.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "create_folder",
+      "description": "Create a new folder inside a space. Use list_spaces for space IDs, list_folders for parent folder IDs.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name for the new folder."
+          },
+          "spaceId": {
+            "type": "string",
+            "description": "The space ID to create the folder in. Get IDs from list_spaces."
+          },
+          "parentFolderId": {
+            "description": "ID of the parent folder for nesting. Omit for a root-level folder. Get IDs from list_folders.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "spaceId"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "add_link",
+      "description": "Save a new link to SupaSidebar. If name is omitted, the title is fetched from the page automatically.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "The URL to save (e.g. 'https://github.com')."
+          },
+          "spaceId": {
+            "type": "string",
+            "description": "The space ID to save the link into. Get IDs from list_spaces."
+          },
+          "name": {
+            "description": "Display name for the link. If omitted, SupaSidebar fetches the page title automatically.",
+            "type": "string"
+          },
+          "folderId": {
+            "description": "Folder ID to place the link in. Omit for unfiled. Get IDs from list_folders.",
+            "type": "string"
+          },
+          "notes": {
+            "description": "Optional notes to attach to the link.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "spaceId"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "move_link",
+      "description": "Move an existing link to a different space or folder. Get link IDs from list_links or search. Pass targetFolderId as null to move to root (unfiled).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "linkId": {
+            "type": "string",
+            "description": "The link ID to move. Get IDs from list_links or search."
+          },
+          "targetSpaceId": {
+            "description": "Move the link to this space. Get IDs from list_spaces. Omit to keep in current space.",
+            "type": "string"
+          },
+          "targetFolderId": {
+            "description": "Move into this folder (get IDs from list_folders), or pass null to move to unfiled root. Omit to leave folder unchanged.",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "linkId"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "list_atc_rules",
+      "description": "List all Air Traffic Control (ATC) rules. ATC rules automatically route URLs to specific spaces (save rules) or browsers/profiles (open rules). Rules are evaluated top-to-bottom; first match wins.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "add_atc_rule",
+      "description": "Create a new Air Traffic Control rule. Save rules route saved links to a specific space. Open rules open matching URLs in a specific browser/profile. Use list_browser_profiles to get profile IDs and list_spaces to get space IDs.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "routeType": {
+            "type": "string",
+            "enum": [
+              "save",
+              "open"
+            ],
+            "description": "'save': route saved links to a space. 'open': open matching URLs in a specific browser/profile."
+          },
+          "urlPattern": {
+            "description": "URL pattern to match (e.g. 'x.com', 'github.com'). Omit to match all URLs (only valid with sourceBrowser or sourceSpaceID).",
+            "type": "string"
+          },
+          "matchType": {
+            "description": "How to match. 'contains' (default): URL contains pattern. 'equals': exact match.",
+            "type": "string",
+            "enum": [
+              "contains",
+              "equals"
+            ]
+          },
+          "name": {
+            "description": "Human-readable name for the rule.",
+            "type": "string"
+          },
+          "isEnabled": {
+            "description": "Whether rule is active. Defaults to true.",
+            "type": "boolean"
+          },
+          "targetSpaceID": {
+            "description": "[Save rules] Space ID to route saved links into. Get IDs from list_spaces.",
+            "type": "string"
+          },
+          "sourceBrowser": {
+            "description": "[Save rules] Only trigger when saving from this browser (e.g. 'Arc', 'Chrome').",
+            "type": "string"
+          },
+          "openInBrowser": {
+            "description": "[Open rules] Browser to open URLs in (e.g. 'Chrome', 'Safari', 'Arc').",
+            "type": "string"
+          },
+          "openInProfileID": {
+            "description": "[Open rules] Browser profile ID. Get IDs from list_browser_profiles.",
+            "type": "string"
+          },
+          "sourceSpaceID": {
+            "description": "[Open rules] Only trigger in this space. Get IDs from list_spaces.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "routeType"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "update_atc_rule",
+      "description": "Update an existing ATC rule. Only the fields you provide will be changed. Get rule IDs from list_atc_rules.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The ATC rule ID to update. Get IDs from list_atc_rules."
+          },
+          "name": {
+            "description": "New name for the rule.",
+            "type": "string"
+          },
+          "urlPattern": {
+            "description": "New URL pattern.",
+            "type": "string"
+          },
+          "matchType": {
+            "description": "New match type.",
+            "type": "string",
+            "enum": [
+              "contains",
+              "equals"
+            ]
+          },
+          "isEnabled": {
+            "description": "Enable or disable the rule.",
+            "type": "boolean"
+          },
+          "targetSpaceID": {
+            "description": "[Save rules] New target space ID. Set to null to clear.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sourceBrowser": {
+            "description": "[Save rules] New source browser filter. Set to null to clear.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "openInBrowser": {
+            "description": "[Open rules] New target browser. Set to null to clear.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "openInProfileID": {
+            "description": "[Open rules] New profile ID. Set to null to clear.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sourceSpaceID": {
+            "description": "[Open rules] New source space filter. Set to null to clear.",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "delete_atc_rule",
+      "description": "Delete an ATC rule by ID. Get rule IDs from list_atc_rules.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The ATC rule ID to delete."
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "reorder_atc_rules",
+      "description": "Change ATC rule priority order. Rules are evaluated top-to-bottom, first match wins. Provide all rule IDs in desired order.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "orderedIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "All ATC rule IDs in desired priority order (first = highest priority). Get IDs from list_atc_rules. Omitted rules go to the end."
+          }
+        },
+        "required": [
+          "orderedIds"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "list_browser_profiles",
+      "description": "List browser profiles discovered by SupaSidebar. Use this to get profile IDs for ATC rules that route URLs to a specific browser profile (e.g. 'Safari Work profile').",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "list_installed_browsers",
+      "description": "List browsers actually installed on this machine. Call this BEFORE open_link if you're not sure whether a browser the user named is available - SupaSidebar recognizes 27 browsers (14 main browsers plus dev/beta/canary channels and Chromium variants), but recognized doesn't mean installed. Returns each browser's name (the exact string to pass to open_link's `browser` param), whether it's running, and which is the system default.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 21702,
+  "transport": "stdio"
+}

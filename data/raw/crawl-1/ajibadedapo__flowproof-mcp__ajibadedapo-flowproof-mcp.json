@@ -1,0 +1,8 @@
+{
+  "serverId": "ajibadedapo__flowproof-mcp__ajibadedapo-flowproof-mcp",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "sh: 1: exec: flowproof-mcp: not found\n",
+  "durationMs": 29779,
+  "transport": "stdio"
+}

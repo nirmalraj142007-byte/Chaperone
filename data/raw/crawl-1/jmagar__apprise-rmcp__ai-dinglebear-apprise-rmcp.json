@@ -1,0 +1,8 @@
+{
+  "serverId": "jmagar__apprise-rmcp__ai-dinglebear-apprise-rmcp",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "npm error code ENOVERSIONS\nnpm error No versions available for apprise-rmcp\nnpm error A complete log of this run can be found in: /tmp/npm-cache/_logs/2026-09-15T06_36_36_953Z-debug-0.log\n",
+  "durationMs": 2939,
+  "transport": "stdio"
+}

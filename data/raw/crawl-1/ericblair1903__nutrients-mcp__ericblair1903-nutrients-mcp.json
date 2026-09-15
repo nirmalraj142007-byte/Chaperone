@@ -1,0 +1,41 @@
+{
+  "serverId": "ericblair1903__nutrients-mcp__ericblair1903-nutrients-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "analyze_food_image",
+      "description": "Analyze a food image URL and return detailed nutritional information including calories, macros, vitamins, minerals, allergens, and dietary flags.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "image_url": {
+            "type": "string",
+            "description": "Public URL of a food image to analyze"
+          }
+        },
+        "required": [
+          "image_url"
+        ]
+      }
+    },
+    {
+      "name": "analyze_food",
+      "description": "Get detailed nutritional information for a food item by name or description (no image needed). Returns calories, macros, vitamins, minerals, allergens, and dietary flags.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "food_name": {
+            "type": "string",
+            "description": "Name or description of the food to analyze (e.g. \"grilled chicken breast 200g\", \"large apple\")"
+          }
+        },
+        "required": [
+          "food_name"
+        ]
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 13932,
+  "transport": "stdio"
+}

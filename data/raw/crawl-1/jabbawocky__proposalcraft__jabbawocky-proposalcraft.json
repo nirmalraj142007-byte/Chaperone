@@ -1,0 +1,8 @@
+{
+  "serverId": "jabbawocky__proposalcraft__jabbawocky-proposalcraft",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "npm error code ENOENT\nnpm error syscall spawn git\nnpm error path git\nnpm error errno -2\nnpm error enoent An unknown git error occurred\nnpm error enoent This is related to npm not being able to find a file.\nnpm error enoent\nnpm error A complete log of this run can be found in: /tmp/npm-cache/_logs/2026-09-15T06_36_17_217Z-debug-0.log\n",
+  "durationMs": 1008,
+  "transport": "stdio"
+}

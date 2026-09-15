@@ -1,0 +1,99 @@
+{
+  "serverId": "gernika-labs__clarx-cloud__ai-clarx-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "analyze_manifest",
+      "description": "Score CLAUDE.md / AGENTS.md manifest content with the same rules as the Clarx manifest studio. Returns an overall quality estimate (0-100), per-pillar scores, findings with line numbers, and a section checklist. This is a manifest quality estimate — do not compare it to Clarx repo AI-readiness scores, which use a different rule system.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "Full markdown body of the manifest. Pass this or file_path, not both."
+          },
+          "file_path": {
+            "type": "string",
+            "description": "Path to the manifest file (resolved against the server working directory, typically the workspace root). Preferred — avoids inlining the file into the conversation."
+          },
+          "include_outline": {
+            "type": "boolean",
+            "default": true,
+            "description": "Include the heading outline (section tree with line numbers)."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "analyze_clarx_manifest",
+      "description": "Validate a clarx-manifest.json machine manifest against the Clarx engine schema. Returns recognized keys, errors, and suggestions for keys worth declaring (generated dirs, hubs, verification commands).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "Raw JSON content. Pass this or file_path, not both."
+          },
+          "file_path": {
+            "type": "string",
+            "description": "Path to clarx-manifest.json (resolved against the server working directory)."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_ci_workflow",
+      "description": "Generate a GitHub Actions workflow YAML that gates pull requests on the Clarx AI-readiness score (npx @clarxai/cli). Write the result to .github/workflows/clarx.yml.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "min_score": {
+            "type": "number",
+            "default": 80,
+            "description": "Fail the check when the overall score is below this (0-100)."
+          },
+          "min_pillar_score": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "default": null,
+            "description": "Optional per-pillar floor."
+          },
+          "upload_sarif": {
+            "type": "boolean",
+            "default": false,
+            "description": "Upload findings as SARIF to GitHub code scanning."
+          },
+          "upload_artifact": {
+            "type": "boolean",
+            "default": true,
+            "description": "Attach a markdown report artifact to the run."
+          },
+          "ignore_patterns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [],
+            "description": "Glob patterns to exclude from scoring, e.g. ['vendor/**']."
+          },
+          "cli_version": {
+            "type": "string",
+            "default": "0.1.11",
+            "description": "@clarxai/cli version to pin."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "[clarx-mcp] No CLARX_MCP_TOKEN or ANTHROPIC_API_KEY — AI tools (suggest_manifest_fix, generate_manifest_draft) disabled.\n[clarx-mcp] ready (stdio)\n",
+  "durationMs": 22095,
+  "transport": "stdio"
+}

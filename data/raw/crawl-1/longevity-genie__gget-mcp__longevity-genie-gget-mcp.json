@@ -1,0 +1,8 @@
+{
+  "serverId": "longevity-genie__gget-mcp__longevity-genie-gget-mcp",
+  "status": "FAILED_TIMEOUT",
+  "tools": [],
+  "stderrTail": "Downloading pydantic-core (2.0MiB)\nDownloading beartype (1.3MiB)\nDownloading cryptography (4.5MiB)\nDownloading pygments (1.2MiB)\nDownloading fonttools (5.2MiB)\nDownloading widgetsnbextension (2.1MiB)\nDownloading biopython (3.1MiB)\nDownloading pandas (10.5MiB)\nDownloading pillow (6.6MiB)\nDownloading jedi (4.7MiB)\nDownloading kiwisolver (1.4MiB)\nDownloading matplotlib (9.4MiB)\nDownloading mysql-connector-python (20.7MiB)\nDownloading numpy (15.9MiB)\nDownloading lxml (5.0MiB)\nDownloading gget (76.0MiB)\nDownloading openmm (13.7MiB)\n Downloaded pygments\n Downloaded beartype\n",
+  "durationMs": 120142,
+  "transport": "stdio"
+}

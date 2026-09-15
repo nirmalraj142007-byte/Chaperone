@@ -1,0 +1,1122 @@
+{
+  "serverId": "smaniches__alphafold-sovereign-mcp__smaniches-alphafold-sovereign-mc",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "lookup_disease",
+      "description": "Retrieve a disease record from the MONDO unified disease ontology.\n\nReturns the canonical MONDO entry with:\n- Disease name, definition, synonyms\n- ICD-10 / ICD-11 codes (for clinical coding / EHR integration)\n- OMIM, Orphanet, MeSH, DOID cross-references\n- Immediate parent and child terms in the MONDO hierarchy\n\nExample: ``lookup_disease(mondo_id='MONDO:0004995')``\nreturns the record for coronary artery disease.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "properties": {
+              "mondo_id": {
+                "description": "MONDO disease identifier, e.g. 'MONDO:0004995'.",
+                "maxLength": 20,
+                "minLength": 1,
+                "type": "string"
+              },
+              "include_hierarchy": {
+                "default": true,
+                "description": "Include immediate parent and child MONDO terms.",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "mondo_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "search_diseases",
+      "description": "Search for diseases by name or keyword using the MONDO ontology.\n\nReturns a ranked list of matching diseases with MONDO IDs and\ncross-references.  Useful for resolving a clinical term to a\ncanonical identifier before querying targets or phenotypes.\n\nExample: ``search_diseases(query='breast cancer', limit=5)``",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "properties": {
+              "query": {
+                "description": "Disease name or keyword, e.g. 'breast cancer', 'type 2 diabetes'.",
+                "maxLength": 200,
+                "minLength": 2,
+                "type": "string"
+              },
+              "limit": {
+                "default": 10,
+                "description": "Maximum results.",
+                "maximum": 50,
+                "minimum": 1,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "query"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "lookup_phenotype",
+      "description": "Retrieve an HPO phenotype term with associated disease annotations.\n\nReturns:\n- Phenotype label, definition, synonyms\n- Diseases annotated with this phenotype (from HPO + OMIM + Orphanet)\n- Parent phenotype terms\n\nExample: ``lookup_phenotype(hpo_id='HP:0001250')``\nreturns the Seizure phenotype with ~400 associated diseases.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "properties": {
+              "hpo_id": {
+                "description": "HPO term identifier, e.g. 'HP:0001250' (Seizure).",
+                "maxLength": 15,
+                "minLength": 1,
+                "type": "string"
+              },
+              "include_diseases": {
+                "default": true,
+                "description": "Include diseases annotated with this phenotype.",
+                "type": "boolean"
+              },
+              "disease_limit": {
+                "default": 20,
+                "description": "Maximum associated diseases to return (1–100).",
+                "maximum": 100,
+                "minimum": 1,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "hpo_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_gene_phenotype_profile",
+      "description": "Return all HPO phenotypes associated with a gene, plus gnomAD constraint.\n\nUseful for understanding the clinical consequences of variants in a gene\nbefore requesting structural context.\n\nReturns:\n- HPO phenotypes linked to the gene (from HPO association database)\n- gnomAD LOEUF / pLI constraint scores\n- Interpretation of constraint (haploinsufficient / tolerant / moderate)\n\nExample: ``get_gene_phenotype_profile(gene_symbol='SCN1A')``",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "properties": {
+              "gene_symbol": {
+                "description": "HGNC gene symbol, e.g. 'BRCA1', 'TP53'.",
+                "maxLength": 50,
+                "minLength": 1,
+                "type": "string"
+              },
+              "include_constraint": {
+                "default": true,
+                "description": "Include gnomAD constraint scores for the gene.",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "gene_symbol"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_disease_targets",
+      "description": "Return top protein targets for a disease with Open Targets evidence scores.\n\nEvidence score breakdown (0–1 per data type):\n- ``genetic_association``: GWAS + rare-variant signals\n- ``somatic_mutation``: Cancer somatic variant evidence\n- ``known_drug``: Approved or clinical-stage drugs\n- ``affected_pathway``: Pathway membership (Reactome, SIGNOR)\n- ``literature``: Text-mining evidence (Europe PMC)\n- ``animal_model``: Knockout / model organism phenotypes\n- ``rna_expression``: Differential expression evidence\n\nExample: ``get_disease_targets(disease_id='MONDO:0007254', limit=15)``\nreturns top 15 targets for breast carcinoma.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "properties": {
+              "disease_id": {
+                "description": "MONDO or EFO disease ID, e.g. 'MONDO:0007254' (breast carcinoma). Accepts MONDO, EFO, or Orphanet IDs — Open Targets maps them all.",
+                "maxLength": 30,
+                "minLength": 1,
+                "type": "string"
+              },
+              "limit": {
+                "default": 20,
+                "description": "Maximum top targets to return (1–100).",
+                "maximum": 100,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "min_score": {
+                "default": 0.05,
+                "description": "Minimum overall evidence score (0–1).",
+                "maximum": 1,
+                "minimum": 0,
+                "type": "number"
+              },
+              "include_tractable_only": {
+                "default": false,
+                "description": "If true, return only tractable (druggable) targets.",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "disease_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_target_diseases",
+      "description": "Return all diseases associated with a protein target via Open Targets.\n\nAccepts a UniProt accession and returns the full disease landscape\nfor that target — essential for target-validation and indication-expansion.\n\nExample: ``get_target_diseases(uniprot_id='P04637')``\nreturns all diseases associated with TP53 / p53.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "properties": {
+              "uniprot_id": {
+                "description": "UniProt accession for the protein target, e.g. 'P12345'.",
+                "maxLength": 20,
+                "minLength": 1,
+                "type": "string"
+              },
+              "ensembl_id": {
+                "default": "",
+                "description": "Ensembl gene ID (optional; used to bypass UniProt→Ensembl lookup). e.g. 'ENSG00000012048'.",
+                "maxLength": 20,
+                "type": "string"
+              },
+              "limit": {
+                "default": 20,
+                "description": "Maximum top diseases to return (1–100).",
+                "maximum": 100,
+                "minimum": 1,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "uniprot_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_common_disease_targets",
+      "description": "Profile the top drug targets for a curated set of common diseases in one call.\n\nUse this for a fast landscape scan across a whole disease area: given a\n``category`` (e.g. 'oncology'), it looks up the curated MONDO diseases in that\ncategory and returns each one's top Open Targets evidence-scored targets, in\nparallel. To profile a single disease you already have a MONDO ID for, use\n``get_disease_targets`` instead — this tool is its category-level,\nmulti-disease counterpart and does not accept a raw MONDO ID.\n\nQueries Open Targets live. Returns a JSON string with the ``category``, the\nnumber of diseases profiled, and a ``profile`` object mapping each disease to\nits MONDO ID and top targets (per-disease errors are reported inline, not\nraised). Returns a JSON error object listing the valid values when the category\n— or a ``disease_name`` filter within it — is not recognised.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "properties": {
+              "category": {
+                "description": "Disease category. One of: cardiovascular, oncology, neurodegeneration, metabolic, autoimmune, respiratory, infectious, psychiatric, rare.",
+                "type": "string"
+              },
+              "disease_name": {
+                "default": "",
+                "description": "Specific disease within the category. Leave blank to profile all diseases in the category.",
+                "maxLength": 100,
+                "type": "string"
+              },
+              "target_limit": {
+                "default": 10,
+                "description": "Maximum top targets to return per disease.",
+                "maximum": 50,
+                "minimum": 1,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "category"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "triage_variant_3d",
+      "description": "Comprehensive clinical triage for a missense variant.\n\nFuses the upstream signals this tool currently wires into a single\nprioritised report:\n\n1. **Pathogenicity** — ClinVar interpretation + review status. The\n   ``alphamissense_score`` / ``alphamissense_interpretation`` fields\n   are always ``null`` / \"Not available\" here: AlphaMissense is not\n   wired into this tool. For an AlphaMissense pathogenicity score use\n   ``generate_variant_clinical_report``.\n2. **Population genetics** — gnomAD LOEUF / pLI gene-constraint\n   scores. Per-variant allele frequencies and the per-ancestry\n   breakdown are not wired into this tool.\n3. **Disease associations** — a placeholder note pointing at\n   ``get_target_diseases()``; the Open Targets / MONDO traversal is\n   a roadmap (Wave-3) item.\n4. **Structural context** — a text note pointing at\n   ``analyze_structural_confidence`` (resolve the gene to a UniProt\n   accession first); the AlphaFold pLDDT / PAE join into this report\n   is a roadmap (Wave-3) item.\n\nReturns a ``pathogenicity_tier``: HIGH / MEDIUM / LOW / UNKNOWN\n(derived from ClinVar; the AlphaMissense input is always absent here).\n\nExample: ``triage_variant_3d(hgvs='BRCA1:c.181T>G')``",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "properties": {
+              "hgvs": {
+                "description": "HGVS variant expression. Supports coding DNA notation e.g. 'BRCA1:c.181T>G', 'TP53:c.817C>T', or genomic e.g. 'chr17:g.43094692G>A'.",
+                "maxLength": 200,
+                "minLength": 5,
+                "type": "string"
+              },
+              "include_structure": {
+                "default": true,
+                "description": "Add a pointer note toward structural-confidence analysis. The full AlphaFold pLDDT/PAE join is a Wave-3 roadmap item (not wired into this tool yet).",
+                "type": "boolean"
+              },
+              "include_gnomad": {
+                "default": true,
+                "description": "Fetch gnomAD gene-CONSTRAINT scores (LOEUF / pLI) only. Per-variant allele frequencies are not wired into this tool.",
+                "type": "boolean"
+              },
+              "include_disease_context": {
+                "default": true,
+                "description": "Add a placeholder disease-context note. The MONDO / Open Targets traversal is a Wave-3 roadmap item (stub).",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "hgvs"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "phenotype_to_structures",
+      "description": "Map a clinical phenotype to the protein structures of its disease targets.\n\nPipeline:\n1. Resolve HPO term → associated diseases\n2. For each disease → top protein targets (Open Targets)\n3. For each target → UniProt ID (for AlphaFold retrieval)\n\nUse the returned UniProt IDs with ``analyze_structural_confidence``\nto retrieve AlphaFold structural confidence (pLDDT/PAE).\n\nExample: ``phenotype_to_structures(hpo_id='HP:0002621')``\nmaps Atherosclerosis → disease targets → UniProt IDs.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "properties": {
+              "hpo_id": {
+                "description": "HPO phenotype term ID, e.g. 'HP:0001250' (Seizure).",
+                "maxLength": 15,
+                "minLength": 1,
+                "type": "string"
+              },
+              "disease_limit": {
+                "default": 5,
+                "description": "Maximum diseases to expand from the phenotype (1–20).",
+                "maximum": 20,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "targets_per_disease": {
+                "default": 5,
+                "description": "Maximum targets to return per disease (1–20).",
+                "maximum": 20,
+                "minimum": 1,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "hpo_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_orphan_disease_atlas",
+      "description": "Map an Orphanet rare disease to its MONDO record, HPO phenotypes, and protein targets.\n\nRare / orphan diseases are often under-studied because their small\npatient populations make large trials impractical.  This tool aggregates\nthe available structural and clinical intelligence into one report to\naccelerate research.\n\nReturns:\n- MONDO record with ICD-10 coding\n- HPO phenotype profile of the disease\n- Open Targets protein target evidence scores\n- UniProt IDs for AlphaFold structural retrieval\n\nExample: ``get_orphan_disease_atlas(orphanet_id='79318')``\nreturns the Gaucher disease atlas.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "properties": {
+              "orphanet_id": {
+                "description": "Orphanet disease ID, e.g. '79318' (Gaucher disease).",
+                "maxLength": 15,
+                "minLength": 1,
+                "type": "string"
+              }
+            },
+            "required": [
+              "orphanet_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "compare_disease_target_overlap",
+      "description": "Compare the protein target landscapes of two diseases.\n\nIdentifies shared and unique targets between two diseases —\na key analysis for drug repurposing, identifying shared mechanisms,\nand understanding comorbidity.\n\nReturns:\n- Shared targets (present in both disease target sets)\n- Unique to Disease A / Disease B\n- Jaccard similarity score of target sets\n\nExample: ``compare_disease_target_overlap(\n    mondo_id_a='MONDO:0004975',  # Alzheimer disease\n    mondo_id_b='MONDO:0005180',  # Parkinson disease\n)``",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "properties": {
+              "mondo_id_a": {
+                "description": "First MONDO disease ID, e.g. 'MONDO:0007254'.",
+                "maxLength": 20,
+                "minLength": 1,
+                "type": "string"
+              },
+              "mondo_id_b": {
+                "description": "Second MONDO disease ID to compare against the first.",
+                "maxLength": 20,
+                "minLength": 1,
+                "type": "string"
+              },
+              "target_limit": {
+                "default": 10,
+                "description": "Top targets per disease used to build the two overlap sets (1–50).",
+                "maximum": 50,
+                "minimum": 1,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "mondo_id_a",
+              "mondo_id_b"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "resolve_icd10_to_mondo",
+      "description": "Resolve an ICD-10 clinical code to MONDO disease ontology terms.\n\nEnables integration between clinical / EHR data (which uses ICD-10)\nand the research-grade MONDO ontology used by Open Targets, HPO, and\nthis MCP.\n\nExample: ``resolve_icd10_to_mondo(icd10_code='I21.0')``\nmaps ST-elevation MI (ICD-10) to MONDO coronary disease terms.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "properties": {
+              "icd10_code": {
+                "description": "ICD-10 code, e.g. 'I21.0' (STEMI), 'C50.9' (breast cancer).",
+                "maxLength": 10,
+                "minLength": 2,
+                "type": "string"
+              }
+            },
+            "required": [
+              "icd10_code"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "query_variant_database",
+      "description": "Search the local knowledge graph for stored variants.\n\nReturns variants matching the filter criteria. No upstream API calls are\nmade — all data is served from the local SQLite knowledge graph, which is\npopulated by the curated boot seed and by any explicit writes through the\nknowledge-graph storage API (the analysis tools do not write to it on their\nown).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "properties": {
+              "gene": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Filter by gene symbol (e.g. 'BRCA1')."
+              },
+              "tier": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "HIGH",
+                      "MEDIUM",
+                      "LOW",
+                      "UNKNOWN"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Clinical tier filter."
+              },
+              "clinvar_class": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "ClinVar classification (e.g. 'Pathogenic')."
+              },
+              "min_am_score": {
+                "anyOf": [
+                  {
+                    "maximum": 1,
+                    "minimum": 0,
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Minimum AlphaMissense score (0.564 = likely pathogenic)."
+              },
+              "max_gnomad_af": {
+                "anyOf": [
+                  {
+                    "maximum": 1,
+                    "minimum": 0,
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Maximum gnomAD allele frequency (0.001 = rare)."
+              },
+              "limit": {
+                "default": 50,
+                "description": "Maximum rows to return (1–500).",
+                "maximum": 500,
+                "minimum": 1,
+                "type": "integer"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "query_protein_database",
+      "description": "Recall proteins already stored in the local knowledge graph.\n\nThis is a local-recall query, not a live lookup: it returns only proteins that\nhave previously been written to the local SQLite store (the curated boot seed,\nplus anything added through the knowledge-graph storage API). No upstream API is\ncalled. To assess a protein that may not be stored yet, use\n``assess_target_druggability`` (druggability tier) or\n``analyze_structural_confidence`` (pLDDT), which query live sources.\n\nFilters are combined with AND; omit a filter to leave that dimension\nunconstrained. Returns a JSON record with the applied ``query``, a\n``result_count``, and the matching ``proteins`` rows. The list is empty when\nnothing stored matches — common when only the boot seed is loaded, so a broad\nfilter returning few rows usually means the store is small, not that no such\nprotein exists.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "properties": {
+              "druggability_tier": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "HOT",
+                      "WARM",
+                      "COLD",
+                      "NOT_DRUGGABLE"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Keep only stored proteins with this druggability tier; omit for any tier."
+              },
+              "min_plddt": {
+                "anyOf": [
+                  {
+                    "maximum": 100,
+                    "minimum": 0,
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Minimum stored mean AlphaFold pLDDT (0–100; ≥70 = high confidence)."
+              },
+              "limit": {
+                "default": 50,
+                "description": "Maximum rows to return (1–500).",
+                "maximum": 500,
+                "minimum": 1,
+                "type": "integer"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_knowledge_graph_stats",
+      "description": "Return statistics about the local knowledge graph.\n\nShows entity counts, database size, and last activity — useful for\nunderstanding the current contents and coverage of the local store.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "export_research_dataset",
+      "description": "Export the stored knowledge-graph data for downstream analysis.\n\nReturns all stored entities as JSON-serialisable dicts, suitable for:\n- Loading into pandas DataFrames for ML feature engineering\n- Importing into R or Julia for statistical analysis\n- Feeding into downstream bioinformatics pipelines\n\nExample (Python)::\n\n    import pandas as pd\n    result = await export_research_dataset(ExportInput(tables=[\"variants\"]))\n    df = pd.DataFrame(result[\"data\"][\"variants\"])\n    high_tier = df[df[\"clinical_tier\"] == \"HIGH\"]",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "properties": {
+              "tables": {
+                "description": "Tables to export. Leave empty for all entity tables. Options: proteins, variants, diseases, drugs, protein_disease, protein_drug.",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "limit_per_table": {
+                "default": 5000,
+                "description": "Maximum rows to export per table (1–50000).",
+                "maximum": 50000,
+                "minimum": 1,
+                "type": "integer"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "find_drug_gene_network",
+      "description": "Traverse the local knowledge graph from a seed entity.\n\nGiven a seed (UniProt ID, gene symbol, or MONDO disease ID), expands its\nimmediate neighbourhood in the stored drug-gene-disease graph: a gene\nsymbol resolves to its encoded proteins and reported variants, a UniProt\naccession resolves to its stored protein record, and a MONDO disease\nresolves to drugs with an indication for it. The store is populated by the\ncurated boot seed and by explicit writes through the storage API.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "properties": {
+              "seed": {
+                "description": "Seed entity: UniProt ID (e.g. 'P38398'), gene symbol (e.g. 'BRCA1'), or MONDO ID (e.g. 'MONDO:0007254').",
+                "type": "string"
+              },
+              "max_hops": {
+                "default": 2,
+                "description": "Graph traversal depth.",
+                "maximum": 3,
+                "minimum": 1,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "seed"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "generate_variant_clinical_report",
+      "description": "Generate a multi-source variant interpretation report.\n\nCross-references evidence from up to seven upstream databases for a\nsingle HGVS variant into one structured report. The report is a\n*research aid*: it surfaces the upstream evidence and the\nACMG/AMP criteria that the available evidence supports, but it is\nnot a clinical interpretation and must not be used as a diagnostic\nwithout independent review by a qualified clinical laboratory.\n\n1. **Ensembl VEP** — functional consequence, SIFT/PolyPhen/CADD predictions\n2. **ClinVar** — clinical pathogenicity classifications and review status\n3. **gnomAD v4** — population allele frequencies (gnomAD v4, ~807k individuals)\n4. **AlphaMissense** — deep-learning missense pathogenicity (Cheng et al. 2023)\n5. **Open Targets** — disease-gene evidence scores\n6. **DisGeNET** — curated gene-disease association scores\n7. **ChEMBL** — approved drugs acting on the gene product\n\nThe report includes a draft ACMG/AMP criteria checklist with evidence\nmapping, a structural impact summary, and an actionability statement.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "properties": {
+              "hgvs": {
+                "description": "HGVS expression — gene-relative (preferred): 'BRCA1:c.181T>G'; or RefSeq-based: 'NM_007294.3:c.181T>G'.",
+                "examples": [
+                  "BRCA1:c.181T>G",
+                  "TP53:p.Arg248Trp"
+                ],
+                "minLength": 5,
+                "type": "string"
+              },
+              "include_population_breakdown": {
+                "default": true,
+                "description": "Include per-ancestry allele frequency breakdown from gnomAD v4.",
+                "type": "boolean"
+              },
+              "include_drug_context": {
+                "default": true,
+                "description": "Include approved drugs acting on the variant's gene product.",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "hgvs"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "assess_target_druggability",
+      "description": "Comprehensive druggability assessment for a protein target.\n\nIntegrates four independent druggability signals into a HOT/WARM/COLD/NOT_DRUGGABLE\nclassification:\n\n1. **Drug precedent** — ChEMBL approved drugs + clinical compounds\n2. **Tractability** — Open Targets tractability labels (small-molecule, antibody, PROTAC)\n3. **Structural confidence** — AF2 pLDDT (ordered → analysable binding pockets)\n4. **Population constraint** — gnomAD LOEUF (highly constrained → safety risk on inhibition)\n\nIt assembles existing public-database evidence into one tier; it does\nnot add scientific judgement and is not a validated predictive model.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "properties": {
+              "uniprot_id": {
+                "description": "UniProt accession, e.g. 'P38398' (BRCA1) or 'P04637' (TP53).",
+                "pattern": "^[A-Z][0-9][A-Z0-9]{3}[0-9](?:[A-Z][0-9][A-Z0-9]{3}[0-9])?$",
+                "type": "string"
+              },
+              "include_clinical_stage": {
+                "default": true,
+                "description": "Include Phase I–III compounds in addition to approved drugs.",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "uniprot_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "synthesize_protein_dossier",
+      "description": "Generate a complete protein intelligence dossier from 7 data sources.\n\nIt assembles disease associations, drug precedent, population\nconstraint, ClinVar variants, and cross-species orthologs for one\nprotein into a single structured record. It composes upstream\ndatabases; it does not add scientific judgement.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "properties": {
+              "uniprot_id": {
+                "description": "UniProt accession for the target protein.",
+                "pattern": "^[A-Z][0-9][A-Z0-9]{3}[0-9](?:[A-Z][0-9][A-Z0-9]{3}[0-9])?$",
+                "type": "string"
+              },
+              "gene_symbol": {
+                "description": "HGNC gene symbol (required to cross-reference all sources).",
+                "type": "string"
+              },
+              "depth": {
+                "default": "standard",
+                "description": "Report depth: 'brief' = key metrics only; 'standard' = all key sections; 'comprehensive' = full evidence synthesis with raw data.",
+                "enum": [
+                  "brief",
+                  "standard",
+                  "comprehensive"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "uniprot_id",
+              "gene_symbol"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "map_disease_drug_landscape",
+      "description": "Map the complete therapeutic landscape for a disease.\n\nReturns approved drugs, pipeline agents, top druggable targets,\nand an investability summary for a given MONDO disease.\n\nCombines Open Targets evidence with ChEMBL drug indications and\nMONDO disease hierarchy to produce a comprehensive landscape report\nused in business development, competitive intelligence, and\nR&D portfolio decisions.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "properties": {
+              "disease_mondo_id": {
+                "description": "MONDO disease ID.",
+                "pattern": "^MONDO:\\d{7}$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "disease_mondo_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "classify_variant_acmg",
+      "description": "Generate a draft ACMG/AMP variant classification framework.\n\nPopulates ACMG/AMP 2015 criteria (Richards et al.) automatically from\ncomputational evidence.  Designed to pre-populate variant interpretation\nforms for clinical laboratory review — NOT a substitute for expert review.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "properties": {
+              "hgvs": {
+                "description": "HGVS expression for classification, e.g. 'BRCA1:c.181T>G'.",
+                "minLength": 5,
+                "type": "string"
+              },
+              "inheritance_pattern": {
+                "default": "Unknown",
+                "description": "Expected inheritance pattern: AD=autosomal dominant, AR=autosomal recessive, XL=X-linked, Unknown.",
+                "enum": [
+                  "AD",
+                  "AR",
+                  "XL",
+                  "Unknown"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "hgvs"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "find_drug_repurposing_candidates",
+      "description": "Rank existing clinical-stage drugs as repurposing candidates for a disease.\n\nSurfaces approved or trial-stage drugs whose target carries genetic/association\nevidence for the disease — i.e. drug-repurposing hypotheses. For the full\napproved-plus-pipeline drug picture of a disease (not only repurposing\ncandidates), use ``map_disease_drug_landscape`` instead.\n\nHow it works: take the top ``target_limit`` Open Targets evidence-scored targets\nfor the disease; for each, fetch its ChEMBL drugs at or above ``min_phase``; drop\nduplicate molecules; rank by\n``composite_repurposing_score = OT evidence score × (max ChEMBL phase / 4)``.\nRanking uses clinical and association evidence only — no protein structure.\n\nReturns a JSON record whose ``candidates`` list holds up to 20 drugs (each with\nChEMBL ID, name, max phase, target gene/UniProt, OT evidence score, composite\nscore, and mechanism), plus the candidate count and the methodology string.\nReturns an empty ``candidates`` list with a ``message`` when the disease has no\nOpen Targets associations. The composite score is a prioritisation aid, not an\nefficacy prediction — validate mechanistically before acting on it.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "properties": {
+              "disease_mondo_id": {
+                "description": "MONDO disease ID, e.g. 'MONDO:0007254' (breast carcinoma).",
+                "pattern": "^MONDO:\\d{7}$",
+                "type": "string"
+              },
+              "target_limit": {
+                "default": 10,
+                "description": "Number of top disease-associated targets to analyse.",
+                "maximum": 50,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "min_phase": {
+                "default": 2,
+                "description": "Minimum clinical development phase: 4=Approved, 3=Phase III, 2=Phase II, 1=Phase I.",
+                "maximum": 4,
+                "minimum": 1,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "disease_mondo_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "analyze_structural_confidence",
+      "description": "Analyze AlphaFold structural confidence using pLDDT and PAE.\n\nReturns a structural reliability summary (not a per-residue profile):\n- **pLDDT**: the model's mean confidence (AlphaFold DB ``globalMetricValue``)\n  plus a coarse confidence tier\n- **PAE** (predicted aligned error): mean and max inter-residue uncertainty\n  and PAE-derived domain boundaries\n- **Druggability pre-screen**: an ordered-fraction estimate and a\n  structure-based-drug-design suitability flag",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "properties": {
+              "uniprot_id": {
+                "description": "UniProt accession, e.g. 'P38398' (BRCA1).",
+                "pattern": "^[A-Z][0-9][A-Z0-9]{3}[0-9](?:[A-Z][0-9][A-Z0-9]{3}[0-9])?$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "uniprot_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "compute_topology_fingerprint",
+      "description": "Compute a rotation-invariant topological fingerprint of a protein's fold.\n\nFetches the AlphaFold model for ``uniprot_id`` and runs persistent homology\n(a Vietoris-Rips filtration over the Cα point cloud) to produce a\n64-dimensional fingerprint vector plus Betti numbers β₀, β₁, β₂. Use it as the\nper-protein input to structure-similarity comparisons:\n``compare_proteins_topologically`` and ``find_evolutionary_structural_shifts``\nconsume these fingerprints.\n\nThe Betti numbers summarise fold topology: β₀ counts connected components\n(single- vs multi-domain or fragmented chains), β₁ counts loops/holes\n(β-barrels, large macrocycles), β₂ counts enclosed voids (cavities). Because\nthey are invariant to rotation and translation, two orientations of the same\nfold produce the same fingerprint.\n\nReturns the fingerprint vector, the Betti numbers, the residue count, and which\nmethod ran. Full persistent homology needs the optional ``[tda]`` extra\n(``gudhi``); without it a coarse fallback runs that does NOT compute persistent\nhomology, and the result flags this. Returns a no-structure result when\nAlphaFold DB has no model for the accession. This is a coarse, geometry-only\nsummary — not a substitute for sequence alignment, RMSD, or functional-homology\nassessment.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "properties": {
+              "uniprot_id": {
+                "description": "UniProt accession, e.g. 'P38398' (BRCA1).",
+                "pattern": "^[A-Z][0-9][A-Z0-9]{3}[0-9](?:[A-Z][0-9][A-Z0-9]{3}[0-9])?$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "uniprot_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "compare_proteins_topologically",
+      "description": "Compare multiple proteins using a TDA-fingerprint distance.\n\nComputes a pairwise distance matrix between the TDA fingerprints of\nthe provided proteins.  Distance metric: L2 distance between\nlength-normalised 64-dimensional fingerprint vectors (see\n``_fingerprint_distance``).  Distance = 0 means identical\nfingerprints; larger values mean more divergent fingerprints.  This\nis **not** a Wasserstein distance between persistence diagrams.\n\nApplications:\nPossible uses (all of which require independent validation\nbefore any downstream use):\n\n- Drug-repurposing triage: proteins with low fingerprint distance\n  may share gross topology.\n- Off-target screening: family members with near-zero distance.\n- Cross-species comparison of the same gene's structure.\n\nNone of these are direct functional or sequence-similarity\nmeasures.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "properties": {
+              "uniprot_ids": {
+                "description": "List of UniProt accessions (2–10) for pairwise comparison.",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 10,
+                "minItems": 2,
+                "type": "array"
+              }
+            },
+            "required": [
+              "uniprot_ids"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "find_evolutionary_structural_shifts",
+      "description": "Quantify cross-species structural and sequence divergence for a gene.\n\nFor each ortholog, attempts to fetch the AlphaFold structure and compute\na TDA fingerprint distance against the human structure. When an ortholog\nstructure is available in AlphaFold DB, the ``divergence_method`` is\n``tda_fingerprint`` and the distance is the L2 distance between\nlength-normalised fingerprint vectors. When the ortholog has no\nAlphaFold model, the method falls back to ``sequence_identity``\n(``1 - identity/100``).\n\nAlphaFold DB coverage of non-human proteomes is partial: model organisms\n(mouse, rat, zebrafish) are well-covered; others may not be. The\n``divergence_method`` field on each result tells you which method was\nused.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "properties": {
+              "gene_symbol": {
+                "description": "HGNC gene symbol for cross-species structural divergence analysis.",
+                "type": "string"
+              },
+              "target_species": {
+                "description": "Ensembl species names to include in the analysis.",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 12,
+                "type": "array"
+              }
+            },
+            "required": [
+              "gene_symbol"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "score_binding_pocket_geometry",
+      "description": "Identify and score putative binding pockets from AlphaFold geometry.\n\nDetects pockets with a geometry-only heuristic. Residues in the\ninner 60 percent of the structure by distance from the centroid are\ntaken as the pocket-forming core, then grown greedily into clusters\nwithin an 8 Angstrom radius. A cluster is kept as a putative pocket\nwhen it has at least ``min_pocket_residues`` members and a mean pLDDT\nof at least 50.\n\nEach pocket reports a radius of gyration (compactness of the pocket\nresidues), a centroid offset (distance of the pocket centroid from\nthe structure centroid; larger means more peripheral — a\nsolvent-accessible cleft rather than a dead-central cavity, and NOT a\nmeasure of solvent burial), a mean pLDDT, and a druggability index.\nThe druggability index runs 0 to 100 and is the sum of four equally\nweighted 0 to 25 sub-scores: residue count, radius of gyration, mean\npLDDT, and centroid offset.\n\nThis is a fast, dependency-free pre-screen, not a substitute for a\nvalidated pocket detector such as fpocket or P2Rank. It needs no ML\nmodel, is fully reproducible from AlphaFold coordinates, and runs in\nair-gapped deployments.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "properties": {
+              "uniprot_id": {
+                "description": "UniProt accession for binding-pocket geometry analysis.",
+                "pattern": "^[A-Z][0-9][A-Z0-9]{3}[0-9](?:[A-Z][0-9][A-Z0-9]{3}[0-9])?$",
+                "type": "string"
+              },
+              "min_pocket_residues": {
+                "default": 4,
+                "description": "Minimum number of residues to define a pocket.",
+                "maximum": 20,
+                "minimum": 3,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "uniprot_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "detect_intrinsically_disordered",
+      "description": "Map intrinsically disordered regions (IDRs) using pLDDT as proxy.\n\nIDRs with pLDDT < 50 are predicted to be disordered in isolation by AlphaFold.\nThis pLDDT-as-disorder-proxy approach is consistent with Ruff & Pappu (2021)\nand scales to the full human proteome from precomputed AlphaFold confidence.\n\nIDR functional categories returned:\n- **Linkers**: short (< 20 aa) disordered regions between domains\n- **Tails**: N/C terminal IDRs\n- **Long IDRs**: candidate intrinsically disordered protein (IDP) segments\n\nClinical relevance:\n- IDRs are enriched for disease-causing mutations\n- IDRs host post-translational modification sites (phosphorylation, ubiquitination)\n- Long IDRs are emerging drug targets (targeted covalent inhibitors, phase separation modulators)",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "properties": {
+              "uniprot_id": {
+                "description": "UniProt accession, e.g. 'P38398' (BRCA1).",
+                "pattern": "^[A-Z][0-9][A-Z0-9]{3}[0-9](?:[A-Z][0-9][A-Z0-9]{3}[0-9])?$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "uniprot_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_protein_structure",
+      "description": "Retrieve a protein's AlphaFold model: metadata, download URLs, optional coordinates.\n\nThe single entry point for getting the predicted structure itself. Returns the\nAlphaFold DB entry metadata — entry ID, model version and creation date,\norganism, gene, UniProt description, the amino-acid sequence and its length, and\nthe model's mean pLDDT — plus stable download URLs for the PDB and mmCIF\ncoordinate files, the PAE matrix and image, and the AlphaMissense substitutions\nCSV. Set ``include_coordinates`` to embed the full PDB coordinate text directly.\n\nUse the sibling structure tools for *interpretation* rather than retrieval, so\ntheir scopes don't overlap: ``analyze_structural_confidence`` for a pLDDT/PAE\nconfidence read, ``score_binding_pocket_geometry`` for pockets,\n``compute_topology_fingerprint`` for fold topology, and\n``detect_intrinsically_disordered`` for disorder. This tool hands you the\nstructure and its handles; it does not score or interpret the model.\n\nReturns ``structure_available: false`` with an explanatory note when AlphaFold DB\nhas no model for the accession — an expected coverage gap, not a server fault.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "properties": {
+              "uniprot_id": {
+                "description": "UniProt accession whose AlphaFold model to retrieve, e.g. 'P38398' (BRCA1).",
+                "pattern": "^[A-Z][0-9][A-Z0-9]{3}[0-9](?:[A-Z][0-9][A-Z0-9]{3}[0-9])?$",
+                "type": "string"
+              },
+              "include_coordinates": {
+                "default": false,
+                "description": "If true, embed the full PDB coordinate text in the response (large — hundreds of KB for big proteins). Default false returns the metadata and download URLs only, from which the coordinate files can be fetched.",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "uniprot_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    }
+  ],
+  "stderrTail": "Downloading pygments (1.2MiB)\nDownloading cryptography (4.5MiB)\nDownloading beartype (1.3MiB)\nDownloading numpy (15.9MiB)\nDownloading pydantic-core (2.0MiB)\n Downloaded pygments\n Downloaded beartype\n Downloaded pydantic-core\n Downloaded cryptography\n Downloaded numpy\nInstalled 76 packages in 54ms\n2026-09-15 06:48:21 [info     ] alphafold_sovereign.server.start allow_hosts= offline=False transport=stdio\n2026-09-15 06:48:21 [info     ] kg.connected                   path=/tmp/.local/share/alphafold-sovereign/knowledge_graph.db\n2026-09-15 06:48:21 [info     ] kg.seeded\n2026-09-15 06:48:21 [info     ] kg.closed\n\n\n╭──────────────────────────────────────────────────────────────────────────────╮\n│                                                                              │\n│                                                                              │\n│                         ▄▀▀ ▄▀█ █▀▀ ▀█▀ █▀▄▀█ █▀▀ █▀█                        │\n│                         █▀  █▀█ ▄▄█  █  █ ▀ █ █▄▄ █▀▀                        │\n│                                                                              │\n│                                                                              │\n│                                                                              │\n│                                FastMCP 3.4.7                                 │\n│                            https://gofastmcp.com                             │\n│                                                                              │\n│                  🖥  Server:      alphafold-sovereign, 1.4.9                  │\n│                  🚀 Deploy free: https://horizon.prefect.io                  │\n│                                                                              │\n╰──────────────────────────────────────────────────────────────────────────────╯\n╭──────────────────────────────────────────────────────────────────────────────╮\n│                          🎉 Update available: 4.0.3                          │\n│                      Run: pip install --upgrade fastmcp                      │\n╰──────────────────────────────────────────────────────────────────────────────╯\n\n\n[09/15/26 06:48:24] INFO     Starting MCP server                transport.py:241\n                             'alphafold-sovereign' with                         \n                             transport 'stdio'                                  \n",
+  "durationMs": 65771,
+  "transport": "stdio"
+}

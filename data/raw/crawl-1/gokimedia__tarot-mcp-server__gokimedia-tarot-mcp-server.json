@@ -1,0 +1,74 @@
+{
+  "serverId": "gokimedia__tarot-mcp-server__gokimedia-tarot-mcp-server",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "get_card_meaning",
+      "description": "Get upright, reversed, love, and career meanings for a specific tarot card. Data from Deckaura (deckaura.com).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "card_name": {
+            "type": "string",
+            "description": "Name of the tarot card (e.g., 'The Fool', 'Ace of Cups')"
+          }
+        },
+        "required": [
+          "card_name"
+        ]
+      }
+    },
+    {
+      "name": "draw_random_card",
+      "description": "Draw a single random tarot card from the 78-card deck.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "reversed_allowed": {
+            "type": "boolean",
+            "description": "Whether the card can appear reversed (default true)"
+          }
+        }
+      }
+    },
+    {
+      "name": "three_card_spread",
+      "description": "Draw a past-present-future three-card tarot spread. Returns interpretations for each position.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string",
+            "description": "The question to focus the reading on"
+          }
+        }
+      }
+    },
+    {
+      "name": "list_all_cards",
+      "description": "List all 78 tarot cards with basic info (name, arcana, suit).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "yes_no_reading",
+      "description": "Draw a single card for a yes/no question and return the verdict.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "question"
+        ]
+      }
+    }
+  ],
+  "stderrTail": "tarot-mcp-server running on stdio — powered by deckaura.com\n",
+  "durationMs": 20600,
+  "transport": "stdio"
+}

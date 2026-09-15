@@ -1,0 +1,161 @@
+{
+  "serverId": "8randonpickart5__alderpost-mcp__8randonpickart5-alderpost-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "domain_shield",
+      "description": "Domain security scan with VirusTotal malware detection (70+ antivirus engines). SPF, DKIM, DMARC, SSL, MX, DNSSEC, domain info. 8 checks scored 0-100 with prioritized recommendations. Price: $0.12 USDC on Base.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "domain": {
+            "type": "string",
+            "description": "Domain to scan (e.g. stripe.com)"
+          }
+        },
+        "required": [
+          "domain"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "company_xray",
+      "description": "Company intelligence powered by People Data Labs + Hunter.io. Industry, employee count, revenue estimate, tech stack, verified email contacts, social presence. 9 data sources scored 0-100. Price: $0.15 USDC on Base.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "domain": {
+            "type": "string",
+            "description": "Company domain (e.g. hubspot.com)"
+          }
+        },
+        "required": [
+          "domain"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "threat_pulse",
+      "description": "Threat intelligence with VirusTotal (70+ engines) + AbuseIPDB (30K+ community reporters). Blacklists, reverse DNS, open ports, SSL analysis, email security. 7 sources scored 0-100. Price: $0.10 USDC on Base.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": "string",
+            "description": "IP address or domain (e.g. 8.8.8.8 or example.com)"
+          }
+        },
+        "required": [
+          "target"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "compliance_check",
+      "description": "IT security compliance audit with Qualys SSL Labs grading. Email auth, SSL/TLS, OWASP headers, cookies, privacy, DNSSEC, hosting, data exposure. 8 checks letter graded. Price: $0.15 USDC on Base.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "domain": {
+            "type": "string",
+            "description": "Domain to audit (e.g. stripe.com)"
+          }
+        },
+        "required": [
+          "domain"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "prospect_iq",
+      "description": "Sales intelligence powered by People Data Labs + Hunter.io. Web presence, tech stack, verified contacts, social signals, contact readiness. 7 sources scored 0-100. Price: $0.12 USDC on Base.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "domain": {
+            "type": "string",
+            "description": "Domain to analyze (e.g. example.com)"
+          }
+        },
+        "required": [
+          "domain"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "sports_edge",
+      "description": "Pre-game sports intelligence with ESPN + The Odds API + Claude AI synthesis. Live standings, odds comparison from 15+ bookmakers, AI-generated game analysis. Price: $0.12 USDC on Base.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sport": {
+            "type": "string",
+            "description": "Sport key: nba, nfl, mlb, nhl, mls, epl"
+          },
+          "team": {
+            "type": "string",
+            "description": "Team name filter (e.g. lakers)"
+          }
+        },
+        "required": [
+          "sport"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "property_intel",
+      "description": "Location intelligence with US Census Bureau + OpenWeather data. Geocoding, nearby amenities, schools, elevation, demographics, walkability. 7 sources scored 0-100. Price: $0.10 USDC on Base.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "Full address (e.g. 123 Main St Milwaukee WI)"
+          }
+        },
+        "required": [
+          "address"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "health_signal",
+      "description": "Health intelligence with NIH RxNorm drug interaction checking + FDA data. Drug labels, adverse events, recalls, nutrition, drug-to-drug interactions with severity ratings. 7 sources risk scored 0-100. Price: $0.10 USDC on Base.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Drug name or food item (e.g. ibuprofen)"
+          },
+          "type": {
+            "type": "string",
+            "description": "drug, food, or auto (default: auto)"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 19559,
+  "transport": "stdio"
+}

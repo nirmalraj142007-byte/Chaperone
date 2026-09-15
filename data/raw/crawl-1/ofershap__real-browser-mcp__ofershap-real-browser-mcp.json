@@ -1,0 +1,473 @@
+{
+  "serverId": "ofershap__real-browser-mcp__ofershap-real-browser-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "browser_navigate",
+      "description": "Navigate to a URL in the active browser tab",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "The URL to navigate to"
+          },
+          "waitUntil": {
+            "default": "load",
+            "description": "When to consider navigation complete",
+            "type": "string",
+            "enum": [
+              "load",
+              "domcontentloaded"
+            ]
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "browser_click",
+      "description": "Click an element on the page using a ref from snapshot or a CSS selector",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "description": "Element reference from snapshot (e.g. \"e12\")",
+            "type": "string"
+          },
+          "selector": {
+            "description": "CSS selector for the element",
+            "type": "string"
+          },
+          "button": {
+            "default": "left",
+            "type": "string",
+            "enum": [
+              "left",
+              "right",
+              "middle"
+            ]
+          },
+          "doubleClick": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "browser_type",
+      "description": "Type text into an input element",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "description": "Element reference from snapshot",
+            "type": "string"
+          },
+          "selector": {
+            "description": "CSS selector for the input",
+            "type": "string"
+          },
+          "text": {
+            "type": "string",
+            "description": "Text to type"
+          },
+          "clear": {
+            "default": false,
+            "description": "Clear the field before typing",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "browser_scroll",
+      "description": "Scroll the page or an element. Supports pixel offsets, scrolling to elements, and named positions (top/bottom). Works with virtual scroll containers used by social media sites.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "direction": {
+            "default": "down",
+            "type": "string",
+            "enum": [
+              "up",
+              "down",
+              "left",
+              "right"
+            ]
+          },
+          "amount": {
+            "default": 500,
+            "description": "Pixels to scroll",
+            "type": "number"
+          },
+          "selector": {
+            "description": "CSS selector of scroll container (for virtual scroll)",
+            "type": "string"
+          },
+          "toElement": {
+            "description": "Ref or CSS selector to scroll into view",
+            "type": "string"
+          },
+          "position": {
+            "description": "Scroll to top or bottom of page",
+            "type": "string",
+            "enum": [
+              "top",
+              "bottom"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "browser_press_key",
+      "description": "Press a keyboard key or combination (Enter, Escape, Tab, ArrowDown, etc). Supports modifiers like Ctrl+A, Cmd+C.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "Key name (e.g. \"Enter\", \"Escape\", \"Tab\", \"ArrowDown\", \"a\")"
+          },
+          "modifiers": {
+            "description": "Modifier keys to hold",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "ctrl",
+                "alt",
+                "shift",
+                "meta"
+              ]
+            }
+          },
+          "ref": {
+            "description": "Element ref to focus before pressing",
+            "type": "string"
+          },
+          "selector": {
+            "description": "CSS selector to focus before pressing",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "browser_wait",
+      "description": "Wait for a condition: element to appear, element to disappear, or a fixed delay. Useful for SPAs and dynamic content.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "selector": {
+            "description": "CSS selector to wait for",
+            "type": "string"
+          },
+          "state": {
+            "default": "visible",
+            "description": "Wait until element is visible, hidden, or attached to DOM",
+            "type": "string",
+            "enum": [
+              "visible",
+              "hidden",
+              "attached"
+            ]
+          },
+          "timeout": {
+            "default": 10000,
+            "description": "Max wait time in ms",
+            "type": "number"
+          },
+          "delay": {
+            "description": "Fixed delay in ms (ignores selector)",
+            "type": "number"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "browser_snapshot",
+      "description": "Get an accessibility tree snapshot of the page. Returns element refs you can use with click, type, and other tools. Use compact mode (default) for smaller output - only interactive elements.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "selector": {
+            "description": "CSS selector to scope the snapshot",
+            "type": "string"
+          },
+          "compact": {
+            "default": true,
+            "description": "When true (default), returns only interactive elements with minimal nesting. Set false for full tree.",
+            "type": "boolean"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "browser_screenshot",
+      "description": "Capture a screenshot of the visible page area",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "format": {
+            "default": "png",
+            "type": "string",
+            "enum": [
+              "png",
+              "jpeg"
+            ]
+          },
+          "quality": {
+            "default": 80,
+            "description": "JPEG quality (ignored for PNG)",
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "browser_console",
+      "description": "Read console messages (log, warn, error) from the browser",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "clear": {
+            "default": false,
+            "description": "Clear messages after reading",
+            "type": "boolean"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "browser_network",
+      "description": "Read network requests made by the page. Filter by URL pattern.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "filter": {
+            "description": "URL regex pattern to filter requests",
+            "type": "string"
+          },
+          "clear": {
+            "default": false,
+            "description": "Clear requests after reading",
+            "type": "boolean"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "browser_tabs",
+      "description": "Manage browser tabs: list, create, close, or focus",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "list",
+              "create",
+              "close",
+              "focus"
+            ],
+            "description": "Tab action"
+          },
+          "tabId": {
+            "description": "Tab ID for close/focus",
+            "type": "number"
+          },
+          "url": {
+            "description": "URL for create action",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "browser_find",
+      "description": "Find elements on the page using natural language (e.g. \"login button\", \"search input\"). Returns refs you can use with click/type.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Natural language description of what to find"
+          },
+          "limit": {
+            "default": 10,
+            "description": "Max matches to return",
+            "type": "number"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "browser_text",
+      "description": "Extract raw text content from the page or a specific element",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "selector": {
+            "description": "CSS selector to scope text extraction",
+            "type": "string"
+          },
+          "maxLength": {
+            "default": 50000,
+            "description": "Max text length to return",
+            "type": "number"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "browser_hover",
+      "description": "Hover over an element to trigger tooltips, dropdown menus, or hover states",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "description": "Element reference from snapshot",
+            "type": "string"
+          },
+          "selector": {
+            "description": "CSS selector for the element",
+            "type": "string"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "browser_select",
+      "description": "Select an option from a dropdown/select element",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "description": "Element reference from snapshot",
+            "type": "string"
+          },
+          "selector": {
+            "description": "CSS selector for the select element",
+            "type": "string"
+          },
+          "value": {
+            "description": "Option value to select",
+            "type": "string"
+          },
+          "label": {
+            "description": "Option label text to select",
+            "type": "string"
+          },
+          "index": {
+            "description": "Option index to select (0-based)",
+            "type": "number"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "browser_evaluate",
+      "description": "Execute JavaScript in the page and return the result. Use for DOM queries, reading page state, or any operation not covered by other tools.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "expression": {
+            "type": "string",
+            "description": "JavaScript expression or code to evaluate in the page context"
+          }
+        },
+        "required": [
+          "expression"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "browser_click_text",
+      "description": "Click an element by its visible text content. Works on React dropdowns, portals, and overlays that may not appear in snapshots. CSP-safe (no eval). Prefers deepest matching element.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "Text to match against element content (first line)"
+          },
+          "index": {
+            "description": "Which match to click if multiple (0-based, default 0)",
+            "type": "number"
+          },
+          "exact": {
+            "description": "Require exact match instead of substring (default false)",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "browser_handle_dialog",
+      "description": "Handle JavaScript dialogs (alert, confirm, prompt). Dialogs block page interaction until handled.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "accept",
+              "dismiss"
+            ],
+            "description": "Accept or dismiss the dialog"
+          },
+          "promptText": {
+            "description": "Text to enter for prompt() dialogs",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "[Bridge] Listening on ws://localhost:7225\n[real-browser-mcp] WebSocket listening on ws://localhost:7225\n[real-browser-mcp] Waiting for Chrome extension...\n[real-browser-mcp] MCP server connected\n",
+  "durationMs": 21347,
+  "transport": "stdio"
+}

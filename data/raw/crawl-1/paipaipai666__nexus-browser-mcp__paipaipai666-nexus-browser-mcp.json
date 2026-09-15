@@ -1,0 +1,8 @@
+{
+  "serverId": "paipaipai666__nexus-browser-mcp__paipaipai666-nexus-browser-mcp",
+  "status": "FAILED_TIMEOUT",
+  "tools": [],
+  "stderrTail": "Downloading cryptography (4.5MiB)\nDownloading playwright (45.5MiB)\nDownloading pydantic-core (2.0MiB)\n Downloaded pydantic-core\n Downloaded cryptography\n",
+  "durationMs": 120053,
+  "transport": "stdio"
+}

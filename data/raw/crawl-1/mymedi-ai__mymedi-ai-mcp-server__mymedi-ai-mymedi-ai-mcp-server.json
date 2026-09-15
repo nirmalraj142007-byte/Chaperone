@@ -1,0 +1,840 @@
+{
+  "serverId": "mymedi-ai__mymedi-ai-mcp-server__mymedi-ai-mymedi-ai-mcp-server",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "pa_required_check",
+      "description": "Check whether a HCPCS code is on the CMS Required Prior Authorization List (42 CFR 414.234). Returns paRequired flag, category, nationwide-since date, and list version. Original Medicare FFS scope. Free, no API key required.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "HCPCS Level II code (e.g., \"E0651\")"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "denial_code_info",
+      "description": "Explain a DME claim denial code (CARC). Returns title, meaning, common DME causes, fixes, appealability, and related codes. Free, no API key required.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "CARC denial code (e.g., \"CO-50\", \"PR-1\", \"197\")"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "code_lookup_basic",
+      "description": "Look up basic metadata for a medical code: code, codeType, description, category, isActive. Basic metadata only — the paid code_lookup adds full metadata. Free, no API key required.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Medical code to look up (e.g., \"M79.3\")"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "reimbursement_basic",
+      "description": "Look up Medicare payment for a code. Returns the national PFS facility and non-facility payment (CMS RVU × conversion factor) for professional services, plus DMEPOS fee-schedule ranges (rental/purchase, min–max across state fees) for DME items like E/K/L codes. Free, no API key required.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Medical code (e.g., \"97110\" or \"E1390\")"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "order_readiness_checklist",
+      "description": "Blank pre-delivery checklist for a HCPCS DMEPOS code: the universal standard written order (SWO) elements (42 CFR 410.38(d)), whether the code requires a face-to-face encounter and written order prior to delivery (F2F/WOPD), and whether it is on the Medicare Required Prior Authorization List. Requirement definitions only — PHI-free, never send patient data. Free, no API key required.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "HCPCS Level II code (e.g., \"E0466\")"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "modifier_advisor",
+      "description": "Editorial guidance on DMEPOS billing modifiers: the KX/GA/GY/GZ medical-necessity and liability family, RR/NU/UE rental-vs-purchase, capped-rental month markers (KH/KI/KJ), and RT/LT laterality. Pass a HCPCS code to scope guidance to that item's DMEPOS category, or a category directly; add a scenario phrase (e.g., \"ABN on file\", \"bilateral\") to surface the relevant modifiers. Original editorial content, not payer policy. PHI-free. Free, no API key required.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "HCPCS DMEPOS code to scope guidance to (e.g., \"E0601\")"
+          },
+          "category": {
+            "type": "string",
+            "description": "DMEPOS category instead of a code (e.g., \"oxygen\", \"capped-rental\", \"prosthetics\")"
+          },
+          "scenario": {
+            "type": "string",
+            "description": "Optional situation phrase (e.g., \"ABN on file\", \"bilateral AFO\", \"converting rental to purchase\")"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "code_lookup",
+      "description": "Look up a medical code (ICD-10, CPT, HCPCS). Returns description, category, active status, and related codes. For DMEPOS (HCPCS) codes it also returns a labeled fee schedule: per-modifier (RR/NU/UE) national min–max ranges, or — when a state is given — that state's exact non-rural and rural rates. Source: CMS DMEPOS Fee Schedule (DME26-B).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Medical code to look up (e.g., \"M79.3\", \"99213\", \"E0601\")"
+          },
+          "codeType": {
+            "type": "string",
+            "enum": [
+              "icd10",
+              "cpt",
+              "hcpcs"
+            ],
+            "description": "Code system (auto-detected if omitted)"
+          },
+          "state": {
+            "type": "string",
+            "description": "2-letter US jurisdiction (50 states + DC/PR/VI). For DMEPOS codes, returns that state's exact non-rural/rural fees instead of only the national range."
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "code_lookup_batch",
+      "description": "Look up a list of medical codes (ICD-10, CPT, HCPCS) in one call. Per-item results mirror code_lookup (description, category, active status, related codes, DMEPOS fee schedule with optional state filter). Priced per code — $0.001 × number of codes, max 25 per call; the full charge is refunded automatically when every code misses.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "codes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "maxItems": 25,
+            "description": "Medical codes to look up, e.g. [\"E0601\", \"A7030\", \"M79.3\"] (1-25 per call)"
+          },
+          "codeType": {
+            "type": "string",
+            "enum": [
+              "icd10",
+              "cpt",
+              "hcpcs"
+            ],
+            "description": "Code system applied to every code (auto-detected if omitted)"
+          },
+          "state": {
+            "type": "string",
+            "description": "2-letter US jurisdiction (50 states + DC/PR/VI). For DMEPOS codes, returns that state's exact non-rural/rural fees instead of only the national range."
+          }
+        },
+        "required": [
+          "codes"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "code_suggest",
+      "description": "Suggest ICD-10/CPT/HCPCS codes from a clinical description. Term-based search over the 90K-code CMS database, ranked by matched-term coverage and relevance. Works with natural sentences (\"patient with obstructive sleep apnea prescribed CPAP\"). Automatically refunds the call when nothing matches.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "description": "Clinical description to find codes for (e.g., \"chronic lower back pain\")"
+          },
+          "codeType": {
+            "type": "string",
+            "enum": [
+              "icd10",
+              "cpt",
+              "hcpcs"
+            ],
+            "description": "Limit to specific code system"
+          },
+          "limit": {
+            "type": "number",
+            "description": "Max suggestions to return (default 10, max 50)"
+          }
+        },
+        "required": [
+          "description"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "code_validate",
+      "description": "Validate a medical code for correctness, active status, and context. Returns warnings and errors.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Medical code to validate"
+          },
+          "codeType": {
+            "type": "string",
+            "enum": [
+              "icd10",
+              "cpt",
+              "hcpcs"
+            ]
+          },
+          "context": {
+            "type": "object",
+            "properties": {
+              "dateOfService": {
+                "type": "string",
+                "description": "Date of service (YYYY-MM-DD) for temporal validation"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "code_validate_batch",
+      "description": "Validate a list of medical codes for correctness, active status, and optional date-of-service context in one call. Per-item results mirror code_validate (valid, active, warnings, errors, codeDetails). Priced per code — $0.005 × number of codes, max 25 per call. An invalid code is a billable answer (valid:false), same as the single validate.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "codes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "maxItems": 25,
+            "description": "Medical codes to validate (1-25 per call)"
+          },
+          "codeType": {
+            "type": "string",
+            "enum": [
+              "icd10",
+              "cpt",
+              "hcpcs"
+            ],
+            "description": "Code system applied to every code"
+          },
+          "context": {
+            "type": "object",
+            "properties": {
+              "dateOfService": {
+                "type": "string",
+                "description": "Date of service (YYYY-MM-DD) for temporal validation, applied to every code"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "codes"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "pa_predict",
+      "description": "Prior-authorization outlook for a procedure code. When a historical cohort of decided PAs exists (≥10), returns a data-driven approval rate with cohort size and confidence. When no cohort exists, returns the verifiable facts instead — CMS Required Prior Authorization List status, category, and published review timeframes — and explicitly reports that no probability was computed (the call is refunded on this path). Never fabricates a probability. Original Medicare FFS scope.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "procedureCode": {
+            "type": "string",
+            "description": "CPT/HCPCS procedure code (e.g., \"E0651\", \"K0800\")"
+          },
+          "payerId": {
+            "type": "string",
+            "description": "Insurance payer ID — narrows the approval-rate cohort to that payer when historical data exists"
+          }
+        },
+        "required": [
+          "procedureCode"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "pa_status",
+      "description": "Check the status of a prior authorization request tracked in your MyMedi-AI web workspace (by its MyMedi-AI PA id). Returns current status, dates, and expiration info. It does not query payers, and returns not-found (refunded) if the PA was never entered in the web app — for a code's PA requirement use the free pa_required_check.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "authorizationId": {
+            "type": "string",
+            "description": "Prior authorization ID"
+          },
+          "trackingNumber": {
+            "type": "string",
+            "description": "Tracking number (alternative to authorizationId)"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "pa_exposure_report",
+      "description": "Map a supplier HCPCS catalog against the CMS Required Prior Authorization List (74 items) and the Required Face-to-Face Encounter & Written Order Prior to Delivery List (83 items, effective 2026-04-13). Per code: PA requirement with nationwide-since date, F2F/WOPD requirement, documentation gates (SWO, UTN-before-claim, F2F/WOPD sequencing), and deterministic denial-risk flags — plus a catalog-level exposure summary. Unknown or non-HCPCS codes are flagged and count as billable answers. Priced per code — $0.01 × number of codes, max 100 per call. Returns JSON here; the REST endpoint also renders a branded PDF with {\"format\":\"pdf\"}. Original Medicare FFS scope. PHI-free: codes in, rules out.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "codes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "maxItems": 100,
+            "description": "Supplier catalog HCPCS codes, e.g. [\"E0651\", \"L0651\", \"K0856\"] (1-100 per call)"
+          }
+        },
+        "required": [
+          "codes"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "ner_extract",
+      "description": "Extract medical codes and clinical terms already present in free text: ICD-10, CPT and HCPCS codes, dates, and medication names, each with a span and a pattern-based confidence. Deterministic pattern extraction — it does not infer or suggest codes (use code_suggest for that). PHI-free: send de-identified text only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "Clinical text to extract entities from"
+          },
+          "entityTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Filter to specific entity types"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "claims_validate",
+      "description": "Pre-submission claims validation. Checks for errors, missing fields, code mismatches, and provides fix suggestions before you submit to the payer.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "claim": {
+            "type": "object",
+            "properties": {
+              "patientId": {
+                "type": "string"
+              },
+              "providerId": {
+                "type": "string"
+              },
+              "dateOfService": {
+                "type": "string",
+                "description": "YYYY-MM-DD"
+              },
+              "diagnosisCodes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "procedureCodes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "modifiers": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "placeOfService": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "dateOfService",
+              "diagnosisCodes",
+              "procedureCodes"
+            ],
+            "additionalProperties": false,
+            "description": "Claim data to validate"
+          }
+        },
+        "required": [
+          "claim"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "compliance_audit",
+      "description": "PHI exposure scan for a text payload before it leaves your system: pattern checks for SSN, MRN and date-of-birth formats, with findings by severity, a 0-100 score and remediation notes. Pattern-based, not a full HIPAA audit. Costs 250 credits — run it on a sample, not on every record.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Data to audit for compliance issues"
+          },
+          "auditType": {
+            "type": "string",
+            "enum": [
+              "general",
+              "hipaa"
+            ],
+            "description": "Type of audit (default: general)"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "drug_lookup",
+      "description": "Look up drug information including label data, adverse events, and related diagnosis codes. Source: OpenFDA (public domain).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "drugName": {
+            "type": "string",
+            "description": "Drug name (brand, generic, or substance — min 2 chars)"
+          },
+          "searchField": {
+            "type": "string",
+            "enum": [
+              "brand_name",
+              "generic_name",
+              "product_ndc",
+              "substance_name"
+            ],
+            "description": "Search field (default: brand_name)"
+          }
+        },
+        "required": [
+          "drugName"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "drug_interactions",
+      "description": "Check drug-drug interaction signals from FDA adverse event co-reports. Returns co-reported reactions and signal strength. Source: OpenFDA FAERS (public domain).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "drugs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 2,
+            "maxItems": 5,
+            "description": "Array of 2-5 drug names to check for interactions"
+          }
+        },
+        "required": [
+          "drugs"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "code_reimbursement",
+      "description": "Look up Medicare reimbursement rates for a medical code. Returns RVU values and estimated payment amounts using CMS PFS conversion factor. Source: CMS PFS RVU 2026 (public domain).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Medical code (e.g., \"99213\", \"M79.3\")"
+          },
+          "codeType": {
+            "type": "string",
+            "enum": [
+              "ICD10",
+              "CPT",
+              "HCPCS"
+            ],
+            "description": "Code system (auto-detected if omitted)"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "fee_schedule_lookup",
+      "description": "Look up the CMS DMEPOS fee schedule for a DME/orthotic/prosthetic HCPCS code: rental (RR) vs purchase (NU new / UE used), non-rural vs rural, per state. Give a state for exact rates, or omit for national min–max ranges; filter by modifier to narrow to rental or purchase. Source: CMS DMEPOS Fee Schedule DME26-B (Apr 2026). For professional-service (CPT) payment use code_reimbursement instead.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "DMEPOS HCPCS code (e.g., \"E0601\", \"K0800\", \"E1390\")"
+          },
+          "state": {
+            "type": "string",
+            "description": "2-letter US jurisdiction (50 states + DC/PR/VI) for exact non-rural/rural rates; omit for national ranges"
+          },
+          "modifier": {
+            "type": "string",
+            "enum": [
+              "RR",
+              "NU",
+              "UE"
+            ],
+            "description": "Narrow to rental (RR) or purchase (NU new / UE used)"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "trials_search",
+      "description": "Search active clinical trials by condition, ICD-10 code, or intervention. Returns trial details including NCT ID, phase, enrollment, and eligibility. Source: ClinicalTrials.gov (public domain).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "condition": {
+            "type": "string",
+            "description": "Medical condition to search for"
+          },
+          "code": {
+            "type": "string",
+            "description": "ICD-10 code (auto-mapped to condition)"
+          },
+          "intervention": {
+            "type": "string",
+            "description": "Drug or intervention name"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "RECRUITING",
+              "ACTIVE_NOT_RECRUITING",
+              "COMPLETED",
+              "NOT_YET_RECRUITING"
+            ],
+            "description": "Trial status filter (default: RECRUITING)"
+          },
+          "limit": {
+            "type": "number",
+            "description": "Max results (default 10, max 50)"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "code_crossref",
+      "description": "Cross-reference a medical code across ICD-10, CPT, and HCPCS systems. Returns related codes grouped by system. Source: CodeReference DB (ICD-10/HCPCS: public domain).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Medical code to cross-reference (e.g., \"M79.3\", \"99213\", \"E0601\")"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "drug_rxnorm",
+      "description": "Look up a drug in NIH RxNorm for normalized terminology (RxCUI) and optionally check clinical drug-drug interactions with severity ratings. Source: NIH RxNorm (public domain).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "drugName": {
+            "type": "string",
+            "description": "Drug name to look up (min 2 chars)"
+          },
+          "checkInteractions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Other drug names to check for clinical interactions against the primary drug"
+          }
+        },
+        "required": [
+          "drugName"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "provider_payments",
+      "description": "Look up pharmaceutical and device company payments to a physician (Sunshine Act data). Returns total payments, breakdown by type, and top paying companies. Source: CMS Open Payments (public domain).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "npi": {
+            "type": "string",
+            "description": "10-digit NPI number of the physician"
+          }
+        },
+        "required": [
+          "npi"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "disease_surveillance",
+      "description": "Look up disease surveillance data including case counts and trends by condition and geography. Source: CDC National Notifiable Diseases Surveillance System (public domain).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "condition": {
+            "type": "string",
+            "description": "Disease or condition name (e.g., \"Hepatitis A\", \"Salmonellosis\")"
+          },
+          "code": {
+            "type": "string",
+            "description": "ICD-10 code (auto-mapped to condition name)"
+          },
+          "state": {
+            "type": "string",
+            "description": "2-letter state code to filter by geography"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "provider_search",
+      "description": "Search the NPI provider directory. Find healthcare providers by name, specialty, or location.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "organizationName": {
+            "type": "string"
+          },
+          "taxonomy": {
+            "type": "string",
+            "description": "Provider taxonomy/specialty code"
+          },
+          "city": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string",
+            "description": "2-letter state code"
+          },
+          "limit": {
+            "type": "number",
+            "description": "Max results (default 10, max 50)"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "provider_enrich",
+      "description": "AI-enriched provider intelligence from NPI number. Returns practice details, specialties, affiliations, and market context.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "npi": {
+            "type": "string",
+            "description": "10-digit NPI number"
+          }
+        },
+        "required": [
+          "npi"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "drug_enrich",
+      "description": "Drug information enrichment via OpenFDA. Returns drug details, indications, interactions, and AI analysis.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "drugName": {
+            "type": "string",
+            "description": "Drug name (brand or generic, min 2 chars)"
+          },
+          "searchField": {
+            "type": "string",
+            "enum": [
+              "brand_name",
+              "generic_name"
+            ],
+            "description": "Search by brand or generic name"
+          }
+        },
+        "required": [
+          "drugName"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "market_analysis",
+      "description": "Healthcare specialty market analysis for a specific state. Returns provider density, competition metrics, and market opportunity data.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "description": "2-letter state code (e.g., \"TX\", \"CA\")"
+          },
+          "specialty": {
+            "type": "string",
+            "description": "Medical specialty (e.g., \"cardiology\", \"orthopedics\")"
+          }
+        },
+        "required": [
+          "state",
+          "specialty"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "account_status",
+      "description": "Check your MyMedi-AI account: current credit balance, USD equivalent, transaction count, recent transactions, and last activity. Free — never bills credits. Uses your connector sign-in (or X-API-Key when self-hosted).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "buy_credits",
+      "description": "Top up your MyMedi-AI credits. Creates a Stripe Checkout session and returns a checkoutUrl for you to open and complete payment in the browser — calling this tool charges nothing by itself. Specify amount (USD, min $1 = 1,000 credits) or package (starter $1, basic $5, standard $25, professional $100, enterprise $500). 1 credit = $0.001; credits are added automatically after checkout.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 10000,
+            "description": "USD amount to purchase (min $1 = 1,000 credits)"
+          },
+          "package": {
+            "type": "string",
+            "enum": [
+              "starter",
+              "basic",
+              "standard",
+              "professional",
+              "enterprise"
+            ],
+            "description": "Named package: starter $1/1k, basic $5/5k, standard $25/25k, professional $100/100k, enterprise $500/500k credits (alternative to amount)"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 17881,
+  "transport": "stdio"
+}

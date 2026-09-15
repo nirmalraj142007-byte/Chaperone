@@ -1,0 +1,1621 @@
+{
+  "serverId": "registry__ai-aetherwealth-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "login",
+      "description": "Sign in to Aether Wealth. Opens your browser to authenticate; once you approve, the MCP stores a per-user token and the data tools become available.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logout",
+      "description": "Sign out of Aether Wealth on this device. Clears the stored access token.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_context",
+      "description": "Snapshot the user's live Aether Wealth state in one call — accounts, open trades, recent performance stats, and active alerts — plus the map of dashboard-only actions. Call this first to ground suggestions in what the user is actually doing. Requires sign-in.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "list_trades",
+      "description": "List the authenticated user's trades. Filter by account, status, pair, or date range (ISO 8601). Requires sign-in.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "CLOSED",
+              "CANCELLED",
+              "ALL"
+            ]
+          },
+          "pair": {
+            "type": "string",
+            "description": "e.g. EURUSD, BTCUSD"
+          },
+          "from": {
+            "type": "string",
+            "description": "ISO 8601 datetime (inclusive lower bound)"
+          },
+          "to": {
+            "type": "string",
+            "description": "ISO 8601 datetime (inclusive upper bound)"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Page number (1-indexed)"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200,
+            "description": "Max rows to return"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_trade",
+      "description": "Get a single trade by id. Requires sign-in.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "list_accounts",
+      "description": "List the user's trading accounts (use an account's id when creating a trade). Requires sign-in.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "create_account",
+      "description": "Create a trading account in the journal. Use accountType \"demo\" for paper/demo accounts and \"live\" for live accounts. Requires sign-in.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "broker": {
+            "type": "string"
+          },
+          "accountType": {
+            "type": "string",
+            "description": "default: personal"
+          },
+          "initialBalance": {
+            "type": "number",
+            "description": "default: 0"
+          },
+          "currency": {
+            "type": "string",
+            "description": "3-letter code, default: USD"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "defaultRiskAmount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "trade_stats",
+      "description": "Trading performance statistics (win rate, PnL, etc.). Filter by account, pair, or date range. Requires sign-in.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string"
+          },
+          "pair": {
+            "type": "string"
+          },
+          "from": {
+            "type": "string",
+            "description": "ISO 8601 datetime"
+          },
+          "to": {
+            "type": "string",
+            "description": "ISO 8601 datetime"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "create_trade",
+      "description": "Record a new trade. Requires sign-in. Use list_accounts to find the accountId.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string",
+            "description": "Trading account id (see list_accounts)"
+          },
+          "pair": {
+            "type": "string",
+            "description": "e.g. EURUSD, BTCUSD"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "LONG",
+              "SHORT"
+            ]
+          },
+          "entryPrice": {
+            "type": "number"
+          },
+          "entryTime": {
+            "type": "string",
+            "description": "ISO 8601 datetime"
+          },
+          "stopLoss": {
+            "type": "number"
+          },
+          "takeProfit": {
+            "type": "number"
+          },
+          "lotSize": {
+            "type": "number"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "timeframe": {
+            "type": "string",
+            "description": "e.g. 1h, 4h, 1d"
+          },
+          "riskPercent": {
+            "type": "number"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "accountId",
+          "pair",
+          "direction",
+          "entryPrice",
+          "entryTime"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "update_trade",
+      "description": "Update fields on an existing trade. Requires sign-in.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "pair": {
+            "type": "string"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "LONG",
+              "SHORT"
+            ]
+          },
+          "entryPrice": {
+            "type": "number"
+          },
+          "entryTime": {
+            "type": "string",
+            "description": "ISO 8601 datetime"
+          },
+          "stopLoss": {
+            "type": "number"
+          },
+          "takeProfit": {
+            "type": "number"
+          },
+          "lotSize": {
+            "type": "number"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "timeframe": {
+            "type": "string",
+            "description": "e.g. 1h, 4h, 1d"
+          },
+          "riskPercent": {
+            "type": "number"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "close_trade",
+      "description": "Close an open trade with an exit price + time. Requires sign-in.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "exitPrice": {
+            "type": "number"
+          },
+          "exitTime": {
+            "type": "string",
+            "description": "ISO 8601 datetime"
+          },
+          "fees": {
+            "type": "number"
+          },
+          "swap": {
+            "type": "number"
+          },
+          "notes": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "exitPrice",
+          "exitTime"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "delete_trade",
+      "description": "Permanently delete a single trade by id. Only trades on demo accounts can be deleted. Requires sign-in.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "delete_trades",
+      "description": "Permanently delete trades on a specific demo account. Requires explicit status (OPEN, CLOSED, CANCELLED, or ALL). This cannot be undone. Requires sign-in.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string",
+            "description": "Trading account id to delete from"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "CLOSED",
+              "CANCELLED",
+              "ALL"
+            ]
+          }
+        },
+        "required": [
+          "accountId",
+          "status"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "import_trades",
+      "description": "Import up to 500 trades into one account. Rows with both exitPrice and exitTime are imported as closed trades. Requires sign-in.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string",
+            "description": "Trading account id to import into"
+          },
+          "trades": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 500,
+            "items": {
+              "type": "object",
+              "properties": {
+                "pair": {
+                  "type": "string",
+                  "description": "e.g. EURUSD, BTCUSD"
+                },
+                "direction": {
+                  "type": "string",
+                  "enum": [
+                    "LONG",
+                    "SHORT"
+                  ]
+                },
+                "entryPrice": {
+                  "type": "number"
+                },
+                "exitPrice": {
+                  "type": "number"
+                },
+                "stopLoss": {
+                  "type": "number"
+                },
+                "takeProfit": {
+                  "type": "number"
+                },
+                "lotSize": {
+                  "type": "number"
+                },
+                "entryTime": {
+                  "type": "string",
+                  "description": "ISO 8601 datetime"
+                },
+                "exitTime": {
+                  "type": "string",
+                  "description": "ISO 8601 datetime"
+                },
+                "notes": {
+                  "type": "string"
+                },
+                "timeframe": {
+                  "type": "string",
+                  "description": "e.g. 1h, 4h, 1d"
+                },
+                "emotionalTag": {
+                  "type": "string"
+                },
+                "fees": {
+                  "type": "number"
+                },
+                "swap": {
+                  "type": "number"
+                },
+                "reportedPnl": {
+                  "type": "number",
+                  "description": "Broker-reported P&L to store instead of recalculated P&L"
+                },
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "pair",
+                "direction",
+                "entryPrice",
+                "lotSize",
+                "entryTime"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "accountId",
+          "trades"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_broker_account",
+      "description": "Get the LIVE broker account balance, equity, currency, and connection status for a connected trading account (distinct from list_accounts which lists journal accounts). Requires sign-in.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "accountId"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "list_broker_positions",
+      "description": "List open broker positions with P&L. Requires sign-in.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "accountId"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_broker_quote",
+      "description": "Get the current broker-native bid and ask for a symbol through the connected execution account. For an MT5 executor connection, this reads the live tick from its VPS and rejects stale ticks. Requires sign-in.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string"
+          },
+          "symbol": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 10
+          }
+        },
+        "required": [
+          "accountId",
+          "symbol"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "connect_broker",
+      "description": "Attach a live execution provider to a journal account. For MetaApi, provide its account id and region. For `mt5_executor`, provide the expected MT5 login as `providerAccountRef` and its `baseUrl` under `*.aetherwealth.ai`. `providerToken` is sensitive — never expose or log it.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "metaapi",
+              "mt5_executor"
+            ],
+            "description": "Defaults to 'metaapi' when omitted."
+          },
+          "region": {
+            "type": "string",
+            "enum": [
+              "new-york",
+              "london"
+            ]
+          },
+          "baseUrl": {
+            "type": "string",
+            "description": "Required for `mt5_executor`; the executor's HTTPS origin under `*.aetherwealth.ai`."
+          },
+          "providerAccountRef": {
+            "type": "string",
+            "description": "The MetaApi account id, or the expected numeric MT5 login for `mt5_executor`."
+          },
+          "providerToken": {
+            "type": "string",
+            "description": "The provider token. For `mt5_executor`, use its service bearer token. Sensitive — never expose or log it."
+          },
+          "approvalMode": {
+            "type": "string",
+            "enum": [
+              "app_otp",
+              "email_otp"
+            ],
+            "description": "Confirmation mode. 'auto' is not selectable here; 'push' is also set later via set_broker_approval_mode because it requires an active app push subscription."
+          }
+        },
+        "required": [
+          "accountId",
+          "providerAccountRef",
+          "providerToken"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "broker_connection_status",
+      "description": "Get the current live broker connection status. Requires sign-in.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "accountId"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "disconnect_broker",
+      "description": "Disarm broker trading for a connected account instantly. Cancels pending intents, keeps executed history, and does not require confirmation because it is the kill switch. Reconnect later with connect_broker. Requires sign-in.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "accountId"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "set_broker_approval_mode",
+      "description": "Change how broker trades are confirmed for a connection between `app_otp` (authenticator), `email_otp`, and `push` (tap-to-approve in the Aether Wealth app; requires an active push subscription). The agent cannot enable `auto` here.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string"
+          },
+          "approvalMode": {
+            "type": "string",
+            "enum": [
+              "app_otp",
+              "email_otp",
+              "push"
+            ]
+          }
+        },
+        "required": [
+          "accountId",
+          "approvalMode"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "propose_trade",
+      "description": "Size and propose a broker trade. Supplying idempotencyKey uses the auto-only keyed path; MT5 may place LIVE broker state inline, while MetaApi returns pending execution. Without a key this remains the normal two-step intent flow. Provide exactly one of riskPercent or riskAmount; entryPrice is required for limit/stop. Push-mode intents are sent to the user's device and must not be executed by the agent. Requires sign-in.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string"
+          },
+          "symbol": {
+            "type": "string"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "BUY",
+              "SELL"
+            ]
+          },
+          "orderType": {
+            "type": "string",
+            "enum": [
+              "market",
+              "limit",
+              "stop"
+            ]
+          },
+          "entryPrice": {
+            "type": "number"
+          },
+          "stopLoss": {
+            "type": "number"
+          },
+          "takeProfit": {
+            "type": "number"
+          },
+          "riskPercent": {
+            "type": "number"
+          },
+          "riskAmount": {
+            "type": "number"
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 80,
+            "description": "Stable caller-owned key. Reuse the exact key and inputs only after a transport timeout."
+          }
+        },
+        "required": [
+          "accountId",
+          "symbol",
+          "direction",
+          "stopLoss"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "execute_trade",
+      "description": "Place a previously proposed trade. Email/app modes require the user-provided code; auto mode requires no per-trade code. Push intents cannot be executed by the agent. NEVER guess or fabricate a code.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "intentId": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "intentId"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "trade_intent_status",
+      "description": "Check whether a proposed trade was approved, executed, expired, cancelled, or failed. Especially useful for push-mode intents, which the user approves on their device.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "intentId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "intentId"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "cancel_trade_intent",
+      "description": "Cancel a previously proposed broker trade. Requires sign-in.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "intentId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "intentId"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "close_position",
+      "description": "Propose closing an open broker position fully, or partially by passing `volume`. With idempotencyKey, use the auto-only keyed path; MT5 may close LIVE broker state inline, while MetaApi returns pending execution. Without a key this is the normal two-step intent flow. For email_otp/app_otp ask the user for the code and call execute_trade. For push, do not ask for a code — the user taps Approve in the app.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string"
+          },
+          "positionId": {
+            "type": "string"
+          },
+          "volume": {
+            "type": "number"
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 80,
+            "description": "Stable caller-owned key. Reuse the exact key and inputs only after a transport timeout."
+          }
+        },
+        "required": [
+          "accountId",
+          "positionId"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "modify_position",
+      "description": "Propose adjusting stop-loss / take-profit on an open position. Stop-loss changes that INCREASE risk are rejected (use the app). With idempotencyKey, use the auto-only keyed path; MT5 may modify LIVE broker state inline, while MetaApi returns pending execution. Without a key this is the normal two-step intent flow. Pass null to clear a level. For email_otp/app_otp ask for the code and call execute_trade, while push is approved in the app.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string"
+          },
+          "positionId": {
+            "type": "string"
+          },
+          "stopLoss": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "takeProfit": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 80,
+            "description": "Stable caller-owned key. Reuse the exact key and inputs only after a transport timeout."
+          }
+        },
+        "required": [
+          "accountId",
+          "positionId"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "list_alerts",
+      "description": "List your price + trendline alerts. Optionally include archived or filter by pair. Requires sign-in.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "includeArchived": {
+            "type": "boolean"
+          },
+          "pair": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "create_price_alert",
+      "description": "Create a price-level alert (fires when price is above/below/crosses a level). Requires sign-in.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "pair": {
+            "type": "string",
+            "description": "e.g. EURUSD, BTCUSD"
+          },
+          "timeframe": {
+            "type": "string",
+            "description": "e.g. 1h, 4h, 1d"
+          },
+          "price": {
+            "type": "number"
+          },
+          "condition": {
+            "type": "string",
+            "enum": [
+              "above",
+              "below",
+              "crosses"
+            ]
+          },
+          "triggerType": {
+            "type": "string",
+            "enum": [
+              "close",
+              "wick"
+            ],
+            "description": "default: close"
+          },
+          "isPersistent": {
+            "type": "boolean",
+            "description": "Re-arm after firing. default: false"
+          },
+          "notifyEmail": {
+            "type": "boolean",
+            "description": "default: true"
+          },
+          "notifyPush": {
+            "type": "boolean",
+            "description": "default: true"
+          },
+          "message": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "description": "ISO 8601 datetime"
+          }
+        },
+        "required": [
+          "pair",
+          "timeframe",
+          "price",
+          "condition"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "create_trendline_alert",
+      "description": "Create a trendline alert (fires when price crosses a line defined by two points). Requires sign-in.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "pair": {
+            "type": "string"
+          },
+          "timeframe": {
+            "type": "string"
+          },
+          "price1": {
+            "type": "number"
+          },
+          "time1": {
+            "type": "string",
+            "description": "ISO 8601 datetime of point 1"
+          },
+          "price2": {
+            "type": "number"
+          },
+          "time2": {
+            "type": "string",
+            "description": "ISO 8601 datetime of point 2"
+          },
+          "condition": {
+            "type": "string",
+            "enum": [
+              "above",
+              "below",
+              "crosses"
+            ]
+          },
+          "triggerType": {
+            "type": "string",
+            "enum": [
+              "close",
+              "wick"
+            ],
+            "description": "default: close"
+          },
+          "isPersistent": {
+            "type": "boolean",
+            "description": "Re-arm after firing. default: false"
+          },
+          "notifyEmail": {
+            "type": "boolean",
+            "description": "default: true"
+          },
+          "notifyPush": {
+            "type": "boolean",
+            "description": "default: true"
+          },
+          "message": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "description": "ISO 8601 datetime"
+          }
+        },
+        "required": [
+          "pair",
+          "timeframe",
+          "price1",
+          "time1",
+          "price2",
+          "time2",
+          "condition"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "update_alert",
+      "description": "Update a price/trendline alert (e.g. change level, archive, mute). Requires sign-in.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "price1": {
+            "type": "number"
+          },
+          "price2": {
+            "type": "number"
+          },
+          "time1": {
+            "type": "string"
+          },
+          "time2": {
+            "type": "string"
+          },
+          "condition": {
+            "type": "string",
+            "enum": [
+              "above",
+              "below",
+              "crosses"
+            ]
+          },
+          "timeframe": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "isArchived": {
+            "type": "boolean"
+          },
+          "triggerType": {
+            "type": "string",
+            "enum": [
+              "close",
+              "wick"
+            ],
+            "description": "default: close"
+          },
+          "isPersistent": {
+            "type": "boolean",
+            "description": "Re-arm after firing. default: false"
+          },
+          "notifyEmail": {
+            "type": "boolean",
+            "description": "default: true"
+          },
+          "notifyPush": {
+            "type": "boolean",
+            "description": "default: true"
+          },
+          "message": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "description": "ISO 8601 datetime"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "delete_alert",
+      "description": "Delete a price/trendline alert by id. Requires sign-in.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "list_indicator_alerts",
+      "description": "List your indicator-based alerts. Optionally include archived or filter by pair. Requires sign-in.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "includeArchived": {
+            "type": "boolean"
+          },
+          "pair": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "create_indicator_alert",
+      "description": "Create an indicator alert (fires on an indicator output condition, e.g. RSI crosses 70). `condition` is { op, threshold } or { op, other }. Requires sign-in.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "pair": {
+            "type": "string"
+          },
+          "timeframe": {
+            "type": "string"
+          },
+          "indicatorType": {
+            "type": "string",
+            "description": "e.g. rsi, ema, macd"
+          },
+          "indicatorParams": {
+            "type": "object",
+            "description": "Indicator settings, e.g. { length: 14 }"
+          },
+          "outputSeries": {
+            "type": "string",
+            "description": "Which output series to watch"
+          },
+          "condition": {
+            "type": "object",
+            "description": "{ op: gt|gte|lt|lte|eq|crosses_above|crosses_below, threshold } or { op: *_series, other }"
+          },
+          "dedupMode": {
+            "type": "string",
+            "enum": [
+              "edge",
+              "continuous"
+            ],
+            "description": "default: edge"
+          },
+          "triggerType": {
+            "type": "string",
+            "enum": [
+              "close",
+              "wick"
+            ],
+            "description": "default: close"
+          },
+          "isPersistent": {
+            "type": "boolean",
+            "description": "Re-arm after firing. default: false"
+          },
+          "notifyEmail": {
+            "type": "boolean",
+            "description": "default: true"
+          },
+          "notifyPush": {
+            "type": "boolean",
+            "description": "default: true"
+          },
+          "message": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "description": "ISO 8601 datetime"
+          }
+        },
+        "required": [
+          "pair",
+          "timeframe",
+          "indicatorType",
+          "indicatorParams",
+          "outputSeries",
+          "condition"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "update_indicator_alert",
+      "description": "Update an indicator alert (condition, dedup, archive, mute). Requires sign-in.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "condition": {
+            "type": "object"
+          },
+          "dedupMode": {
+            "type": "string",
+            "enum": [
+              "edge",
+              "continuous"
+            ]
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "isArchived": {
+            "type": "boolean"
+          },
+          "triggerType": {
+            "type": "string",
+            "enum": [
+              "close",
+              "wick"
+            ],
+            "description": "default: close"
+          },
+          "isPersistent": {
+            "type": "boolean",
+            "description": "Re-arm after firing. default: false"
+          },
+          "notifyEmail": {
+            "type": "boolean",
+            "description": "default: true"
+          },
+          "notifyPush": {
+            "type": "boolean",
+            "description": "default: true"
+          },
+          "message": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "description": "ISO 8601 datetime"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "delete_indicator_alert",
+      "description": "Delete an indicator alert by id. Requires sign-in.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_candles",
+      "description": "Get OHLC candles for a pair + timeframe and optional sourceId. Omit sourceId for Twelve Data. Non-default sources return only native timeframes advertised by get_market_config; they are never re-aggregated. Returns up to 200 bars plus nextCursor. Pass nextCursor back as cursor until it is null. The legacy offset remains available for shallow pagination; do not combine offset and cursor.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "pair": {
+            "type": "string",
+            "description": "e.g. EURUSD, BTCUSD (canonical id; case-insensitive)"
+          },
+          "timeframe": {
+            "type": "string",
+            "description": "A base (1m, 5m, 15m, 30m, 1h, 4h, 1d) or an integer multiple of one (e.g. 2h, 3h, 12h, 90m). No fractional (2.5h) or sub-minute values."
+          },
+          "sourceId": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]{0,62}$",
+            "description": "Market-data source from get_market_config, e.g. mt5-primary. Omit for Twelve Data."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200,
+            "description": "Maximum candles to return (1-200). Omit for the newest 200."
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4800,
+            "description": "Legacy shallow pagination: number of recent candles to skip (0–4800). Use cursor instead for complete history; do not combine offset and cursor."
+          },
+          "cursor": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "description": "Opaque nextCursor returned by the previous get_candles page. Omit on the first page; continue until nextCursor is null. Do not combine with offset."
+          }
+        },
+        "required": [
+          "pair",
+          "timeframe"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "list_economic_calendar",
+      "description": "List economic calendar events. Filter by currency, date range, release, or minimum impact (1-5). Currency and indicator/release are validated against the catalog: unknown values return an error listing valid options, so an empty result always means \"no events\" rather than \"bad input\".",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "currency": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "ISO currency codes, e.g. [\"USD\",\"EUR\"]"
+          },
+          "from": {
+            "type": "string",
+            "description": "ISO 8601 date or datetime"
+          },
+          "to": {
+            "type": "string",
+            "description": "ISO 8601 date or datetime"
+          },
+          "indicator": {
+            "type": "string",
+            "description": "release slug, e.g. cpi"
+          },
+          "impactMin": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "view": {
+            "type": "string",
+            "enum": [
+              "minimal",
+              "rich"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_macro_series",
+      "description": "Get a macro indicator time series (e.g. USD cpi). Currency and indicator are validated against the catalog: unknown values return an error listing valid options (case-insensitive).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "currency": {
+            "type": "string",
+            "description": "ISO currency code, e.g. USD"
+          },
+          "indicator": {
+            "type": "string",
+            "description": "release slug, e.g. cpi"
+          },
+          "from": {
+            "type": "string",
+            "description": "ISO 8601 date or datetime"
+          },
+          "to": {
+            "type": "string",
+            "description": "ISO 8601 date or datetime"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          }
+        },
+        "required": [
+          "currency",
+          "indicator"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_macro_indicator",
+      "description": "Get a curated macro indicator series from FXMacroData (live + cached) with unit/frequency metadata and the central-bank target where available — use get_macro_series for raw historical calendar values. Range defaults to 12m; returns a null result when the macro data provider is not configured.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "currency": {
+            "type": "string",
+            "description": "ISO currency code, e.g. USD"
+          },
+          "indicator": {
+            "type": "string",
+            "description": "indicator slug in lowercase snake_case, e.g. cpi"
+          },
+          "range": {
+            "type": "string",
+            "enum": [
+              "3m",
+              "6m",
+              "12m",
+              "24m",
+              "all"
+            ],
+            "description": "Lookback window (default 12m)"
+          }
+        },
+        "required": [
+          "currency",
+          "indicator"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_market_config",
+      "description": "Get supported instruments, timeframes, and per-source candle/live capabilities. Use marketDataSources before selecting a non-default sourceId.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_fx_pair_context",
+      "description": "Macro context for a currency PAIR (e.g. EURUSD) — the per-currency macro state for both legs (recent releases, surprises, derived trend). Use for a pair-level macro read; for one currency use get_fx_currency_context. Distinct from get_macro_series (raw calendar history) and get_macro_indicator (one curated series).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "pair": {
+            "type": "string",
+            "description": "6-letter currency pair, e.g. EURUSD (case-insensitive)"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 250,
+            "description": "Max rows to return (1-250, default 120)."
+          }
+        },
+        "required": [
+          "pair"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_fx_currency_context",
+      "description": "Macro context for a single CURRENCY (e.g. USD) — recent economic releases, surprises, and the derived macro state for that currency.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "currency": {
+            "type": "string",
+            "description": "ISO currency code, e.g. USD (case-insensitive)"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 250,
+            "description": "Max rows to return (1-250, default 120)."
+          }
+        },
+        "required": [
+          "currency"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_fx_predictions",
+      "description": "Model forecasts / predictions for a currency's upcoming macro releases. Optionally filter to one indicator by release slug (e.g. cpi).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "currency": {
+            "type": "string",
+            "description": "ISO currency code, e.g. USD (case-insensitive)"
+          },
+          "indicator": {
+            "type": "string",
+            "description": "Optional release slug filter, e.g. cpi"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 250,
+            "description": "Max rows to return (1-250, default 120)."
+          }
+        },
+        "required": [
+          "currency"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_fx_risk_sentiment",
+      "description": "Cross-market risk-on / risk-off sentiment series (not currency-scoped). Use to gauge broad market risk appetite.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 250,
+            "description": "Max rows to return (1-250, default 120)."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_fx_documents",
+      "description": "Source documents behind the FX macro data for a currency — news items and press releases. Filter by documentType.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "currency": {
+            "type": "string",
+            "description": "ISO currency code, e.g. USD (case-insensitive)"
+          },
+          "documentType": {
+            "type": "string",
+            "enum": [
+              "news",
+              "press_release"
+            ],
+            "description": "Optional filter: news or press_release"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Max rows to return (1-100, default 50)."
+          }
+        },
+        "required": [
+          "currency"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_fx_sync_state",
+      "description": "Ingestion/sync status of the FX macro datasets (per dataset family: status, freshness, last success, next refresh). Diagnostic — check data freshness before relying on the other get_fx_* tools.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_indicators",
+      "description": "Compute Twelve Data technical indicators for a pair + timeframe (requires sign-in). Pass up to 8 indicators by name; params are optional and default sensibly. Names — momentum: rsi, macd, stoch, stochf, stochrsi, cci, cmo, mom, roc, rocr, willr, mfi, ultosc, ppo, apo, bop, aroon, aroonosc; trend: adx, adxr, dx, plus_di, minus_di, plus_dm, minus_dm, sar, supertrend; moving averages: sma, ema, wma, dema, tema, trima, kama, t3ma, mama, vwap, midpoint, midprice; bands: bbands, keltner, percent_b; volatility: atr, natr, trange; volume: obv, ad, adosc; stats: linearreg, linearregslope, linearregangle, linearregintercept, stddev, var, tsf. Bad names/params return an error listing valid options. At most 2 distinct pairs per user at a time.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "pair": {
+            "type": "string",
+            "description": "Canonical id, e.g. EURUSD, XAUUSD, BTCUSD (case-insensitive)"
+          },
+          "interval": {
+            "type": "string",
+            "description": "One of 1m, 5m, 15m, 30m, 45m, 1h, 2h, 4h, 1d"
+          },
+          "indicators": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 8,
+            "description": "Up to 8 indicators to compute on the pair",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Indicator name, e.g. rsi, macd, ema, bbands, atr, adx"
+                },
+                "params": {
+                  "type": "object",
+                  "description": "Optional params, e.g. {\"time_period\": 14} or MACD {\"fast_period\":12,\"slow_period\":26}. Defaults applied when omitted."
+                }
+              },
+              "required": [
+                "name"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "outputsize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500,
+            "description": "Bars to return per indicator (default 30)"
+          }
+        },
+        "required": [
+          "pair",
+          "interval",
+          "indicators"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "render_chart",
+      "description": "Render an annotated candlestick chart image (PNG) for a pair + timeframe and optional market-data sourceId. Fetches recent candles and draws optional shapes (support/resistance lines, zones, trendlines, a long/short position) using the same vocabulary as draw_chart_shape. Returns the chart as an image plus a text summary. PREFER absolute time anchors (time1/time2/entryTime, epoch seconds from get_candles) over barsBack*.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "pair": {
+            "type": "string",
+            "description": "Canonical instrument id, e.g. EURUSD (case-insensitive)"
+          },
+          "timeframe": {
+            "type": "string",
+            "description": "e.g. 1m, 5m, 15m, 30m, 1h, 4h, 1d (or an integer multiple)"
+          },
+          "sourceId": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]{0,62}$",
+            "description": "Market-data source from get_market_config, e.g. mt5-primary. Omit for Twelve Data."
+          },
+          "shapes": {
+            "type": "array",
+            "description": "Optional annotations. Each item is {type, ...}: horizontal_line/horizontal_ray/cross_line need `price`; zone/rectangle need `priceHigh`+`priceLow`; trendline/ray/right_ray/left_ray/extended_line/info_line/trend_angle need `price1`+`price2` (prefer `time1`+`time2` epoch seconds); position needs `direction` (long/short)+`entry`+`stop`+`target`. Optional `label`, `color` (hex), and `affectsScale` (false keeps a distant contextual level labelled without compressing the active setup).",
+            "items": {
+              "type": "object"
+            }
+          },
+          "bars": {
+            "type": "integer",
+            "minimum": 20,
+            "maximum": 200,
+            "description": "Most-recent candles to show (20-200, default 120)"
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4800,
+            "description": "Candle page offset: 0 is the latest page; larger offsets walk backward through history. Pair with bars to frame a historical setup."
+          },
+          "theme": {
+            "type": "string",
+            "enum": [
+              "dark",
+              "light"
+            ],
+            "description": "Color theme (default dark)"
+          },
+          "width": {
+            "type": "integer",
+            "minimum": 320,
+            "maximum": 2560,
+            "description": "Image width in px (320-2560, default 1280)"
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 240,
+            "maximum": 1440,
+            "description": "Image height in px (240-1440, default 720)"
+          }
+        },
+        "required": [
+          "pair",
+          "timeframe"
+        ],
+        "additionalProperties": false
+      }
+    }
+  ],
+  "stderrTail": "aether-wealth-mcp: ready (transport=stdio, base=https://api.aetherwealth.ai)\naether-wealth-mcp initialized\n",
+  "durationMs": 20103,
+  "transport": "stdio"
+}

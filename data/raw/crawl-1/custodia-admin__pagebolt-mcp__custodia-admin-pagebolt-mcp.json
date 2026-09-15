@@ -1,0 +1,2341 @@
+{
+  "serverId": "custodia-admin__pagebolt-mcp__custodia-admin-pagebolt-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "take_screenshot",
+      "description": "Capture a screenshot of a URL, HTML, or Markdown content. Supports device emulation, ad/chat/tracker blocking, metadata extraction, geolocation, timezone, styling (macOS/Windows frames, gradient/glass backgrounds, shadows), and more. Returns an image (PNG, JPEG, or WebP).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to capture (required if no html/markdown)"
+          },
+          "html": {
+            "type": "string",
+            "description": "Raw HTML to render (required if no url/markdown)"
+          },
+          "markdown": {
+            "type": "string",
+            "description": "Render Markdown content as a screenshot"
+          },
+          "width": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3840,
+            "description": "Viewport width in pixels (default: 1280)"
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2160,
+            "description": "Viewport height in pixels (default: 720)"
+          },
+          "viewportDevice": {
+            "type": "string",
+            "description": "Device preset for viewport emulation (e.g. \"iphone_14_pro\", \"macbook_pro_14\"). Use list_devices to see all presets."
+          },
+          "viewportMobile": {
+            "type": "boolean",
+            "description": "Enable mobile meta viewport emulation"
+          },
+          "viewportHasTouch": {
+            "type": "boolean",
+            "description": "Enable touch event emulation"
+          },
+          "viewportLandscape": {
+            "type": "boolean",
+            "description": "Landscape orientation"
+          },
+          "deviceScaleFactor": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 3,
+            "description": "Device pixel ratio, use 2 for retina (default: 1)"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "png",
+              "jpeg",
+              "webp"
+            ],
+            "description": "Image format (default: png)"
+          },
+          "quality": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "JPEG/WebP quality 1-100 (default: 80)"
+          },
+          "omitBackground": {
+            "type": "boolean",
+            "description": "Transparent background (PNG/WebP only)"
+          },
+          "fullPage": {
+            "type": "boolean",
+            "description": "Capture the full scrollable page (default: false)"
+          },
+          "fullPageScroll": {
+            "type": "boolean",
+            "description": "Auto-scroll page before capture to trigger lazy-loaded images"
+          },
+          "fullPageScrollDelay": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2000,
+            "description": "Delay between scroll steps in ms (default: 400)"
+          },
+          "fullPageScrollBy": {
+            "type": "integer",
+            "description": "Pixels to scroll per step (default: viewport height)"
+          },
+          "fullPageMaxHeight": {
+            "type": "integer",
+            "description": "Maximum pixel height cap for full-page captures"
+          },
+          "selector": {
+            "type": "string",
+            "description": "CSS selector to capture a specific element"
+          },
+          "clip": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "width": {
+                "type": "number"
+              },
+              "height": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "width",
+              "height"
+            ],
+            "additionalProperties": false,
+            "description": "Crop region { x, y, width, height } in pixels"
+          },
+          "delay": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 30000,
+            "description": "Milliseconds to wait before capture (default: 0)"
+          },
+          "waitUntil": {
+            "type": "string",
+            "enum": [
+              "load",
+              "domcontentloaded",
+              "networkidle0",
+              "networkidle2"
+            ],
+            "description": "When to consider navigation finished (default: networkidle2)"
+          },
+          "waitForSelector": {
+            "type": "string",
+            "description": "Wait for this CSS selector to appear before capturing"
+          },
+          "navigationTimeout": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 30000,
+            "description": "Navigation timeout in ms (default: 25000)"
+          },
+          "darkMode": {
+            "type": "boolean",
+            "description": "Emulate dark color scheme (default: false)"
+          },
+          "reducedMotion": {
+            "type": "boolean",
+            "description": "Emulate prefers-reduced-motion to disable animations"
+          },
+          "mediaType": {
+            "type": "string",
+            "enum": [
+              "screen",
+              "print"
+            ],
+            "description": "Emulate CSS media type"
+          },
+          "timeZone": {
+            "type": "string",
+            "description": "Override browser timezone (e.g. \"America/New_York\")"
+          },
+          "geolocation": {
+            "type": "object",
+            "properties": {
+              "latitude": {
+                "type": "number"
+              },
+              "longitude": {
+                "type": "number"
+              },
+              "accuracy": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "latitude",
+              "longitude"
+            ],
+            "additionalProperties": false,
+            "description": "Emulate geolocation { latitude, longitude, accuracy? }"
+          },
+          "userAgent": {
+            "type": "string",
+            "description": "Override the browser User-Agent string"
+          },
+          "cookies": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "string"
+                    },
+                    "domain": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "value"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "description": "Cookies to set — array of \"name=value\" strings or { name, value, domain? } objects"
+          },
+          "headers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Extra HTTP headers to send with the request"
+          },
+          "authorization": {
+            "type": "string",
+            "description": "Authorization header value (e.g. \"Bearer <token>\")"
+          },
+          "bypassCSP": {
+            "type": "boolean",
+            "description": "Bypass Content-Security-Policy on the page"
+          },
+          "hideSelectors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Array of CSS selectors to hide before capture"
+          },
+          "click": {
+            "type": "string",
+            "description": "CSS selector to click before capturing the screenshot"
+          },
+          "injectCss": {
+            "type": "string",
+            "description": "Custom CSS to inject before capturing (max 50KB)"
+          },
+          "injectJs": {
+            "type": "string",
+            "description": "Custom JavaScript to execute before capturing (max 50KB)"
+          },
+          "blockBanners": {
+            "type": "boolean",
+            "description": "Hide cookie consent banners (default: false)"
+          },
+          "blockAds": {
+            "type": "boolean",
+            "description": "Block advertisements on the page"
+          },
+          "blockChats": {
+            "type": "boolean",
+            "description": "Block live chat widgets on the page"
+          },
+          "blockTrackers": {
+            "type": "boolean",
+            "description": "Block tracking scripts on the page"
+          },
+          "blockRequests": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "URL patterns to block (array of strings)"
+          },
+          "blockResources": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Resource types to block (e.g. [\"image\", \"font\"])"
+          },
+          "extractMetadata": {
+            "type": "boolean",
+            "description": "Extract page metadata (title, description, OG tags) alongside the screenshot"
+          },
+          "style": {
+            "type": "object",
+            "properties": {
+              "theme": {
+                "type": "string",
+                "enum": [
+                  "notion",
+                  "paper",
+                  "vercel",
+                  "glass",
+                  "ocean",
+                  "sunset",
+                  "linear",
+                  "arc",
+                  "glassDark",
+                  "glassWarm",
+                  "spotlight",
+                  "neonBlue",
+                  "neonPurple",
+                  "neonGreen",
+                  "lavender",
+                  "ember",
+                  "dots",
+                  "grid"
+                ],
+                "description": "One-click theme preset. Applies curated frame + background + shadow + padding. Free themes: notion, paper, vercel, glass, ocean, sunset. Paid (Starter+): linear, arc, glassDark, glassWarm, spotlight, neonBlue, neonPurple, neonGreen, lavender, ember, dots, grid. Individual properties below override the theme defaults."
+              },
+              "frame": {
+                "type": "string",
+                "enum": [
+                  "macos",
+                  "windows",
+                  "minimal",
+                  "none"
+                ],
+                "description": "Window chrome style. macos = traffic lights, windows = min/max/close, minimal = dots only, none = no frame."
+              },
+              "frameTheme": {
+                "type": "string",
+                "enum": [
+                  "light",
+                  "dark",
+                  "auto"
+                ],
+                "description": "Frame color theme (default: auto)"
+              },
+              "background": {
+                "type": "string",
+                "enum": [
+                  "ocean",
+                  "sunset",
+                  "forest",
+                  "midnight",
+                  "aurora",
+                  "lavender",
+                  "peach",
+                  "arctic",
+                  "ember",
+                  "slate",
+                  "neon",
+                  "glass",
+                  "solid",
+                  "spotlight",
+                  "dots",
+                  "grid",
+                  "noise",
+                  "none"
+                ],
+                "description": "Background style. Gradients: ocean, sunset, forest, midnight, aurora, lavender, peach, arctic, ember, slate, neon. Special: glass (frosted glass effect), solid, spotlight, dots, grid, noise. none = transparent."
+              },
+              "bgColor": {
+                "type": "string",
+                "description": "Background color as hex (e.g. \"#1e3a5f\"). Used for solid backgrounds or as base for patterns."
+              },
+              "bgColors": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Array of 2 hex colors for custom gradient (e.g. [\"#1e3a5f\", \"#7c3aed\"])"
+              },
+              "padding": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 120,
+                "description": "Padding around screenshot in pixels (default: 40)"
+              },
+              "borderRadius": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 40,
+                "description": "Corner radius in pixels (default: 12)"
+              },
+              "shadow": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "xs",
+                  "sm",
+                  "md",
+                  "lg",
+                  "xl",
+                  "2xl"
+                ],
+                "description": "Drop shadow size (default: md)"
+              }
+            },
+            "additionalProperties": false,
+            "description": "Screenshot styling options — add a macOS/Windows frame, gradient/glass background, shadow, and rounded corners. Use the \"theme\" shortcut for one-click presets, or customize individual properties."
+          },
+          "session_id": {
+            "type": "string",
+            "description": "Persistent session ID (Starter+ only). Reuse a live browser page created with create_session — browser state (cookies, localStorage, auth) carries over from previous requests in this session."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "generate_pdf",
+      "description": "Generate a PDF from a URL or HTML content. Supports custom margins, headers/footers, page ranges, and scaling. Saves the PDF to disk and returns the file path.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to render as PDF (required if no html)"
+          },
+          "html": {
+            "type": "string",
+            "description": "Raw HTML to render as PDF (required if no url)"
+          },
+          "format": {
+            "type": "string",
+            "description": "Paper format: A4, Letter, Legal, Tabloid, A3, A5 (default: A4)"
+          },
+          "landscape": {
+            "type": "boolean",
+            "description": "Landscape orientation (default: false)"
+          },
+          "printBackground": {
+            "type": "boolean",
+            "description": "Include CSS backgrounds (default: true)"
+          },
+          "margin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "top": {
+                    "type": "string"
+                  },
+                  "right": {
+                    "type": "string"
+                  },
+                  "bottom": {
+                    "type": "string"
+                  },
+                  "left": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            ],
+            "description": "CSS margin — string for all sides (e.g. \"1cm\") or object { top, right, bottom, left }"
+          },
+          "scale": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 2,
+            "description": "Rendering scale 0.1-2 (default: 1)"
+          },
+          "width": {
+            "type": "string",
+            "description": "Page width (overrides format) — CSS value like \"8.5in\""
+          },
+          "pageRanges": {
+            "type": "string",
+            "description": "Page ranges to include, e.g. \"1-5, 8\""
+          },
+          "headerTemplate": {
+            "type": "string",
+            "description": "HTML template for page header (uses Chromium templating)"
+          },
+          "footerTemplate": {
+            "type": "string",
+            "description": "HTML template for page footer"
+          },
+          "displayHeaderFooter": {
+            "type": "boolean",
+            "description": "Show header and footer (default: false)"
+          },
+          "delay": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000,
+            "description": "Milliseconds to wait before rendering (default: 0)"
+          },
+          "saveTo": {
+            "type": "string",
+            "description": "Output file path (default: ./output.pdf)"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "create_og_image",
+      "description": "Generate an Open Graph / social card image. Returns an image using built-in templates or custom HTML.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "template": {
+            "type": "string",
+            "enum": [
+              "default",
+              "minimal",
+              "gradient"
+            ],
+            "description": "Built-in template name (default: \"default\")"
+          },
+          "html": {
+            "type": "string",
+            "description": "Custom HTML template (overrides template parameter, Growth plan+)"
+          },
+          "title": {
+            "type": "string",
+            "description": "Main title text (default: \"Your Title Here\")"
+          },
+          "subtitle": {
+            "type": "string",
+            "description": "Subtitle text"
+          },
+          "logo": {
+            "type": "string",
+            "description": "Logo image URL"
+          },
+          "bgColor": {
+            "type": "string",
+            "description": "Background color as hex, e.g. \"#0f172a\""
+          },
+          "textColor": {
+            "type": "string",
+            "description": "Text color as hex, e.g. \"#f8fafc\""
+          },
+          "accentColor": {
+            "type": "string",
+            "description": "Accent color as hex, e.g. \"#6366f1\""
+          },
+          "bgImage": {
+            "type": "string",
+            "description": "Background image URL"
+          },
+          "width": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2400,
+            "description": "Image width in pixels (default: 1200)"
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1260,
+            "description": "Image height in pixels (default: 630)"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "png",
+              "jpeg",
+              "webp"
+            ],
+            "description": "Image format (default: png)"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "run_sequence",
+      "description": "Execute a multi-step browser automation sequence. Navigate pages, interact with elements (click, fill, select), and capture multiple screenshots/PDFs/diffs in a single browser session. Use the \"diff\" step to compare the current page state against another URL after automation. Each output counts as 1 API request.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "navigate",
+                    "click",
+                    "dblclick",
+                    "fill",
+                    "select",
+                    "hover",
+                    "scroll",
+                    "wait",
+                    "wait_for",
+                    "evaluate",
+                    "press_key",
+                    "screenshot",
+                    "pdf",
+                    "diff"
+                  ],
+                  "description": "The action to perform"
+                },
+                "url": {
+                  "type": "string",
+                  "format": "uri",
+                  "description": "URL to navigate to (for navigate action)"
+                },
+                "selector": {
+                  "type": "string",
+                  "description": "CSS selector for the target element (also used for element screenshots; optional for press_key to focus a field first)"
+                },
+                "value": {
+                  "type": "string",
+                  "description": "Value to type or select"
+                },
+                "key": {
+                  "type": "string",
+                  "enum": [
+                    "Escape",
+                    "Enter",
+                    "Tab",
+                    "Backspace",
+                    "Delete",
+                    "Space",
+                    "ArrowUp",
+                    "ArrowDown",
+                    "ArrowLeft",
+                    "ArrowRight",
+                    "Home",
+                    "End",
+                    "PageUp",
+                    "PageDown"
+                  ],
+                  "description": "Key to press (for press_key action). Use Escape to dismiss a dropdown/popover/modal, Enter to submit, Tab to move focus."
+                },
+                "ms": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10000,
+                  "description": "Milliseconds to wait (for wait action)"
+                },
+                "timeout": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 15000,
+                  "description": "Timeout in ms for wait_for (default: 10000)"
+                },
+                "x": {
+                  "type": "number",
+                  "description": "Horizontal scroll position in pixels (scroll action). Use when scrolling horizontally without a selector."
+                },
+                "y": {
+                  "type": "number",
+                  "description": "Vertical scroll position in pixels (scroll action). REQUIRED when no selector is provided — e.g. {\"action\":\"scroll\",\"y\":800} scrolls 800px down."
+                },
+                "script": {
+                  "type": "string",
+                  "maxLength": 5000,
+                  "description": "JavaScript to execute in page context (for evaluate action)"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Name for the output (for screenshot/pdf/diff actions)"
+                },
+                "format": {
+                  "type": "string",
+                  "description": "Image format: png, jpeg, webp (screenshot) or A4, Letter (pdf)"
+                },
+                "fullPage": {
+                  "type": "boolean",
+                  "description": "Capture full scrollable page (for screenshot/diff actions)"
+                },
+                "fullPageScroll": {
+                  "type": "boolean",
+                  "description": "Auto-scroll for lazy images (for screenshot/diff actions)"
+                },
+                "quality": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100,
+                  "description": "JPEG/WebP quality (for screenshot action)"
+                },
+                "omitBackground": {
+                  "type": "boolean",
+                  "description": "Transparent background (for screenshot action)"
+                },
+                "delay": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10000,
+                  "description": "Pre-capture delay in ms (for screenshot/diff actions)"
+                },
+                "landscape": {
+                  "type": "boolean",
+                  "description": "Landscape orientation (for pdf action)"
+                },
+                "printBackground": {
+                  "type": "boolean",
+                  "description": "Include CSS backgrounds (for pdf action)"
+                },
+                "margin": {
+                  "type": "string",
+                  "description": "CSS margin for all sides (for pdf action)"
+                },
+                "scale": {
+                  "type": "number",
+                  "minimum": 0.1,
+                  "maximum": 2,
+                  "description": "Rendering scale (for pdf action)"
+                },
+                "style": {
+                  "type": "object",
+                  "properties": {
+                    "theme": {
+                      "type": "string",
+                      "enum": [
+                        "notion",
+                        "paper",
+                        "vercel",
+                        "glass",
+                        "ocean",
+                        "sunset",
+                        "linear",
+                        "arc",
+                        "glassDark",
+                        "glassWarm",
+                        "spotlight",
+                        "neonBlue",
+                        "neonPurple",
+                        "neonGreen",
+                        "lavender",
+                        "ember",
+                        "dots",
+                        "grid"
+                      ],
+                      "description": "One-click theme preset. Applies curated frame + background + shadow + padding. Free themes: notion, paper, vercel, glass, ocean, sunset. Paid (Starter+): linear, arc, glassDark, glassWarm, spotlight, neonBlue, neonPurple, neonGreen, lavender, ember, dots, grid. Individual properties below override the theme defaults."
+                    },
+                    "frame": {
+                      "type": "string",
+                      "enum": [
+                        "macos",
+                        "windows",
+                        "minimal",
+                        "none"
+                      ],
+                      "description": "Window chrome style. macos = traffic lights, windows = min/max/close, minimal = dots only, none = no frame."
+                    },
+                    "frameTheme": {
+                      "type": "string",
+                      "enum": [
+                        "light",
+                        "dark",
+                        "auto"
+                      ],
+                      "description": "Frame color theme (default: auto)"
+                    },
+                    "background": {
+                      "type": "string",
+                      "enum": [
+                        "ocean",
+                        "sunset",
+                        "forest",
+                        "midnight",
+                        "aurora",
+                        "lavender",
+                        "peach",
+                        "arctic",
+                        "ember",
+                        "slate",
+                        "neon",
+                        "glass",
+                        "solid",
+                        "spotlight",
+                        "dots",
+                        "grid",
+                        "noise",
+                        "none"
+                      ],
+                      "description": "Background style. Gradients: ocean, sunset, forest, midnight, aurora, lavender, peach, arctic, ember, slate, neon. Special: glass (frosted glass effect), solid, spotlight, dots, grid, noise. none = transparent."
+                    },
+                    "bgColor": {
+                      "type": "string",
+                      "description": "Background color as hex (e.g. \"#1e3a5f\"). Used for solid backgrounds or as base for patterns."
+                    },
+                    "bgColors": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Array of 2 hex colors for custom gradient (e.g. [\"#1e3a5f\", \"#7c3aed\"])"
+                    },
+                    "padding": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 120,
+                      "description": "Padding around screenshot in pixels (default: 40)"
+                    },
+                    "borderRadius": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 40,
+                      "description": "Corner radius in pixels (default: 12)"
+                    },
+                    "shadow": {
+                      "type": "string",
+                      "enum": [
+                        "none",
+                        "xs",
+                        "sm",
+                        "md",
+                        "lg",
+                        "xl",
+                        "2xl"
+                      ],
+                      "description": "Drop shadow size (default: md)"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "description": "Screenshot styling options — add a macOS/Windows frame, gradient/glass background, shadow, and rounded corners. Use the \"theme\" shortcut for one-click presets, or customize individual properties."
+                },
+                "url_b": {
+                  "type": "string",
+                  "format": "uri",
+                  "description": "URL of the comparison page (for diff action). The current page state is \"A\"; this URL is rendered as \"B\"."
+                },
+                "html_b": {
+                  "type": "string",
+                  "description": "HTML of the comparison page (for diff action). The current page state is \"A\"; this HTML is rendered as \"B\"."
+                },
+                "selector_a": {
+                  "type": "string",
+                  "description": "CSS selector to capture on the current page as side \"A\" (for diff action). If omitted, captures the full viewport/page."
+                },
+                "threshold": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "description": "Pixelmatch sensitivity 0–1 (for diff action, default: 0.1). Lower = more sensitive."
+                }
+              },
+              "required": [
+                "action"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1,
+            "maxItems": 20,
+            "description": "Array of steps to execute in order. Must include at least one output step (screenshot, pdf, or diff). Max 20 steps, max 5 outputs."
+          },
+          "viewport": {
+            "type": "object",
+            "properties": {
+              "width": {
+                "type": "integer",
+                "minimum": 320,
+                "maximum": 3840,
+                "description": "Viewport width (default: 1280)"
+              },
+              "height": {
+                "type": "integer",
+                "minimum": 200,
+                "maximum": 2160,
+                "description": "Viewport height (default: 720)"
+              }
+            },
+            "additionalProperties": false,
+            "description": "Browser viewport size"
+          },
+          "darkMode": {
+            "type": "boolean",
+            "description": "Emulate dark color scheme (default: false)"
+          },
+          "blockBanners": {
+            "type": "boolean",
+            "description": "Hide cookie consent banners (default: false)"
+          },
+          "blockAds": {
+            "type": "boolean",
+            "description": "Block advertisements on the page"
+          },
+          "blockChats": {
+            "type": "boolean",
+            "description": "Block live chat widgets"
+          },
+          "blockTrackers": {
+            "type": "boolean",
+            "description": "Block tracking scripts"
+          },
+          "deviceScaleFactor": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 3,
+            "description": "Device pixel ratio (default: 1)"
+          },
+          "session_id": {
+            "type": "string",
+            "description": "Persistent session ID (Starter+ only). Reuse a live browser page created with create_session — browser state (cookies, localStorage, auth) carries over from previous requests in this session."
+          },
+          "observeAfterEachStep": {
+            "type": "boolean",
+            "description": "FREE (no extra request charged). After every step, attach a compact, token-budgeted state snapshot — page type + the top interactive elements (id/role/name/selector) + suggested actions, NO screenshot. Use this when a step might open a dropdown/popover/modal or navigate: read the trace to confirm what is now on screen and pick the right selector for the NEXT call, instead of blind-batching. Hidden/off-screen elements are filtered out."
+          }
+        },
+        "required": [
+          "steps"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "record_video",
+      "description": "Record a professional demo video of a multi-step browser automation sequence. Produces MP4/WebM/GIF with cursor highlighting, click effects, smooth movement, step notes, browser frame (macOS/Windows), gradient/glass backgrounds, and more. Costs 3 API requests. Saves to disk. BEST PRACTICE: Keep videos concise (5-15 action steps). Do NOT add wait steps between every action — the pace parameter handles timing. Only use wait for page loads or narration holds. Do NOT use zoom unless the user explicitly asks for it.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "navigate",
+                    "click",
+                    "dblclick",
+                    "fill",
+                    "select",
+                    "hover",
+                    "scroll",
+                    "wait",
+                    "wait_for",
+                    "evaluate",
+                    "press_key"
+                  ],
+                  "description": "The action to perform (no screenshot/pdf — the whole sequence is recorded as video)"
+                },
+                "url": {
+                  "type": "string",
+                  "format": "uri",
+                  "description": "URL to navigate to (for navigate action)"
+                },
+                "selector": {
+                  "type": "string",
+                  "description": "CSS selector for the target element (optional for press_key to focus a field first)"
+                },
+                "value": {
+                  "type": "string",
+                  "description": "Value to type or select"
+                },
+                "key": {
+                  "type": "string",
+                  "enum": [
+                    "Escape",
+                    "Enter",
+                    "Tab",
+                    "Backspace",
+                    "Delete",
+                    "Space",
+                    "ArrowUp",
+                    "ArrowDown",
+                    "ArrowLeft",
+                    "ArrowRight",
+                    "Home",
+                    "End",
+                    "PageUp",
+                    "PageDown"
+                  ],
+                  "description": "Key to press (for press_key action). Use Escape to dismiss a dropdown/popover/modal that a previous step opened — the cleanest way to avoid a stuck-open overlay obscuring later steps."
+                },
+                "ms": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10000,
+                  "description": "Milliseconds to wait (for wait action). Only use wait steps when the page needs loading time or to hold for narration — the pace parameter handles inter-step timing automatically."
+                },
+                "timeout": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 15000,
+                  "description": "Timeout in ms for wait_for (default: 10000)"
+                },
+                "x": {
+                  "type": "number",
+                  "description": "Horizontal scroll position in pixels (scroll action). Use when scrolling horizontally without a selector."
+                },
+                "y": {
+                  "type": "number",
+                  "description": "Vertical scroll position in pixels (scroll action). REQUIRED when no selector is provided — e.g. {\"action\":\"scroll\",\"y\":800} scrolls 800px down."
+                },
+                "script": {
+                  "type": "string",
+                  "maxLength": 5000,
+                  "description": "JavaScript to execute in page context (for evaluate action)"
+                },
+                "note": {
+                  "type": "string",
+                  "maxLength": 200,
+                  "description": "Tooltip annotation text shown during this step (max 200 chars). Add a note on EVERY step except wait/wait_for for a guided-tour overlay."
+                },
+                "narration": {
+                  "type": "string",
+                  "maxLength": 500,
+                  "description": "Text to speak at this step (max 500 chars, requires audioGuide.enabled). Used in per-step mode."
+                },
+                "live": {
+                  "type": "boolean",
+                  "description": "For wait steps: true captures animated content in real-time, false freezes a single frame (default: false)"
+                },
+                "zoom": {
+                  "type": "object",
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean",
+                      "description": "Enable zoom on this step (default: false). Only use when user explicitly requests zoom."
+                    },
+                    "level": {
+                      "type": "number",
+                      "minimum": 1.2,
+                      "maximum": 4,
+                      "description": "Zoom magnification (inherits from global zoom.level if not set)"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "description": "Per-step zoom override. Do NOT add zoom unless the user specifically requests it — it adds encoding time and visual complexity."
+                }
+              },
+              "required": [
+                "action"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1,
+            "maxItems": 50,
+            "description": "Array of action steps to record. Keep concise: 5-15 steps is ideal. Do NOT pad with wait steps — pace handles timing."
+          },
+          "viewport": {
+            "type": "object",
+            "properties": {
+              "width": {
+                "type": "integer",
+                "minimum": 320,
+                "maximum": 3840,
+                "description": "Viewport width (default: 1280)"
+              },
+              "height": {
+                "type": "integer",
+                "minimum": 200,
+                "maximum": 2160,
+                "description": "Viewport height (default: 720)"
+              }
+            },
+            "additionalProperties": false,
+            "description": "Browser viewport size"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "mp4",
+              "webm",
+              "gif"
+            ],
+            "description": "Video format (default: mp4). webm/gif require Starter+ plan."
+          },
+          "framerate": {
+            "type": "integer",
+            "description": "Frames per second: 24, 30, or 60 (default: 30)"
+          },
+          "cursor": {
+            "type": "object",
+            "properties": {
+              "visible": {
+                "type": "boolean",
+                "description": "Show cursor overlay (default: true)"
+              },
+              "style": {
+                "type": "string",
+                "enum": [
+                  "highlight",
+                  "circle",
+                  "spotlight",
+                  "dot",
+                  "classic"
+                ],
+                "description": "Cursor style (default: highlight). classic = natural arrow cursor."
+              },
+              "color": {
+                "type": "string",
+                "description": "Cursor color as hex, e.g. \"#3B82F6\" (default: blue)"
+              },
+              "size": {
+                "type": "integer",
+                "minimum": 8,
+                "maximum": 60,
+                "description": "Cursor size in pixels (default: 20)"
+              },
+              "smoothing": {
+                "type": "boolean",
+                "description": "Smooth animated cursor movement (default: true)"
+              },
+              "opacity": {
+                "type": "number",
+                "minimum": 0.1,
+                "maximum": 1,
+                "description": "Cursor opacity 0.1-1.0 (default: 1.0)"
+              },
+              "persist": {
+                "type": "boolean",
+                "description": "Keep cursor visible between actions, not just during them (default: false)"
+              }
+            },
+            "additionalProperties": false,
+            "description": "Cursor appearance settings"
+          },
+          "zoom": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "description": "Enable auto-zoom on clicks (default: false — use per-step zoom instead)"
+              },
+              "level": {
+                "type": "number",
+                "minimum": 1.2,
+                "maximum": 4,
+                "description": "Default zoom magnification (default: 1.5)"
+              },
+              "duration": {
+                "type": "integer",
+                "minimum": 400,
+                "maximum": 3000,
+                "description": "Zoom animation duration in ms (default: 1200)"
+              },
+              "easing": {
+                "type": "string",
+                "enum": [
+                  "ease-in-out",
+                  "linear",
+                  "ease"
+                ],
+                "description": "Zoom animation easing (default: ease-in-out)"
+              }
+            },
+            "additionalProperties": false,
+            "description": "Global zoom settings. Only use when the user explicitly requests zoom. Do NOT enable by default."
+          },
+          "autoZoom": {
+            "type": "boolean",
+            "description": "Enable auto-zoom on all clicks (default: false). Only use when user explicitly requests zoom."
+          },
+          "clickEffect": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "description": "Show click ripple effects (default: true)"
+              },
+              "style": {
+                "type": "string",
+                "enum": [
+                  "ripple",
+                  "pulse",
+                  "ring"
+                ],
+                "description": "Click effect style (default: ripple)"
+              },
+              "color": {
+                "type": "string",
+                "description": "Click effect color as hex"
+              }
+            },
+            "additionalProperties": false,
+            "description": "Visual click effect settings"
+          },
+          "pace": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.25,
+                "maximum": 6
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "fast",
+                  "normal",
+                  "slow",
+                  "dramatic",
+                  "cinematic"
+                ]
+              }
+            ],
+            "description": "Controls how deliberate the video feels. Number (0.25–6.0, higher = slower) or preset: \"fast\" (0.5×), \"normal\" (1×), \"slow\" (2×), \"dramatic\" (3×), \"cinematic\" (4.5×). Default: \"normal\"."
+          },
+          "frame": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "description": "Enable browser frame around the video (default: false)"
+              },
+              "style": {
+                "type": "string",
+                "enum": [
+                  "macos",
+                  "windows",
+                  "minimal"
+                ],
+                "description": "Frame style: macos (traffic lights), windows (min/max/close), minimal (dots only). Default: macos."
+              },
+              "theme": {
+                "type": "string",
+                "enum": [
+                  "light",
+                  "dark",
+                  "auto"
+                ],
+                "description": "Frame color theme (default: auto)"
+              },
+              "showUrl": {
+                "type": "boolean",
+                "description": "Show URL in the frame bar (default: true)"
+              }
+            },
+            "additionalProperties": false,
+            "description": "Browser chrome frame around the video. Adds a macOS/Windows-style title bar."
+          },
+          "background": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "description": "Enable styled background (default: false)"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "solid",
+                  "gradient"
+                ],
+                "description": "Background type (default: gradient)"
+              },
+              "gradient": {
+                "type": "string",
+                "enum": [
+                  "ocean",
+                  "sunset",
+                  "forest",
+                  "midnight",
+                  "aurora",
+                  "lavender",
+                  "peach",
+                  "arctic",
+                  "ember",
+                  "slate",
+                  "neon",
+                  "custom"
+                ],
+                "description": "Gradient preset name. 12 built-in presets, or \"custom\" to use colors array. Default: ocean."
+              },
+              "color": {
+                "type": "string",
+                "description": "Solid background color as hex (e.g. \"#1e3a5f\"). Used when type is \"solid\" or gradient is \"custom\"."
+              },
+              "colors": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Array of 2 hex colors for custom gradient (e.g. [\"#1e3a5f\", \"#7c3aed\"]). Only used when gradient is \"custom\"."
+              },
+              "padding": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 120,
+                "description": "Padding around the video in pixels (default: 40)"
+              },
+              "borderRadius": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 40,
+                "description": "Corner radius in pixels (default: 12)"
+              }
+            },
+            "additionalProperties": false,
+            "description": "Styled background behind the video. Adds gradient/solid background with padding and rounded corners — creates a \"floating window\" effect."
+          },
+          "darkMode": {
+            "type": "boolean",
+            "description": "Emulate dark color scheme (default: false)"
+          },
+          "blockBanners": {
+            "type": "boolean",
+            "description": "Hide cookie consent banners (default: true for videos)"
+          },
+          "blockAds": {
+            "type": "boolean",
+            "description": "Block advertisements on the page"
+          },
+          "blockChats": {
+            "type": "boolean",
+            "description": "Block live chat widgets"
+          },
+          "blockTrackers": {
+            "type": "boolean",
+            "description": "Block tracking scripts"
+          },
+          "deviceScaleFactor": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 3,
+            "description": "Device pixel ratio (default: 1)"
+          },
+          "audioGuide": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "description": "Enable Audio Guide narration"
+              },
+              "provider": {
+                "type": "string",
+                "enum": [
+                  "azure",
+                  "openai"
+                ],
+                "description": "TTS provider (default: azure)"
+              },
+              "voice": {
+                "type": "string",
+                "description": "Voice preset. Azure voices (default provider): ava (female), andrew (male), emma (female), brian (male), aria (female), guy (male), jenny (female), davis (male), christopher (male), michelle (female). Default: ava. OpenAI voices (only if provider:\"openai\"): alloy, echo, fable, nova, onyx, shimmer. Do NOT use OpenAI voices with Azure provider."
+              },
+              "speed": {
+                "type": "number",
+                "minimum": 0.5,
+                "maximum": 2,
+                "description": "Speech rate (default: 1.0)"
+              },
+              "pitch": {
+                "type": "string",
+                "description": "Voice pitch: default, x-low, low, medium, high, x-high (Azure only)"
+              },
+              "volume": {
+                "type": "string",
+                "description": "Audio volume: default, silent, x-soft, soft, medium, loud, x-loud (Azure only)"
+              },
+              "style": {
+                "type": "string",
+                "description": "Speaking style: narration-professional, cheerful, excited, friendly, etc. (Azure only)"
+              },
+              "styleDegree": {
+                "type": "number",
+                "minimum": 0.01,
+                "maximum": 2,
+                "description": "Style intensity 0.01-2.0 (Azure only)"
+              },
+              "model": {
+                "type": "string",
+                "enum": [
+                  "tts-1",
+                  "tts-1-hd"
+                ],
+                "description": "OpenAI model (OpenAI only, default: tts-1)"
+              },
+              "script": {
+                "type": "string",
+                "maxLength": 5000,
+                "description": "Script mode: a single narration script with {{N}} step markers (0-indexed) for synchronized narration. Steps execute when narration reaches each marker. When provided, per-step \"narration\" fields are ignored."
+              }
+            },
+            "additionalProperties": false,
+            "description": "Audio Guide TTS settings. Two modes: (1) Per-step — add \"narration\" to individual steps. (2) Script — provide \"script\" with {{N}} markers for continuous narration synchronized to steps."
+          },
+          "variables": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Key-value map for variable substitution in step URLs/values. E.g. { \"base_url\": \"https://example.com\" } replaces {{base_url}} in steps."
+          },
+          "async": {
+            "type": "boolean",
+            "description": "Render via an async job for reliability. The video is enqueued (202 + job_id) and this tool polls until it finishes, so long recordings do not hit the API's per-request timeout. The finished video is delivered as a private hosted URL (its bytes cannot be pulled back via the API key). Set false to force a single blocking synchronous request that returns the video INLINE (base64 embedded + saved to saveTo). DEFAULT: true, except when you pass saveTo (then sync is used so the file is actually produced on disk). If async is unavailable on your plan, it automatically falls back to sync. Quota is charged only on success; max 5 pending jobs per account."
+          },
+          "pollTimeoutMs": {
+            "type": "integer",
+            "minimum": 10000,
+            "maximum": 600000,
+            "description": "Max time to wait for an async video job to finish, in milliseconds (default: 240000 = 4 min). If the job is still running when this elapses, the job_id is returned so you can check it later with get_job."
+          },
+          "saveTo": {
+            "type": "string",
+            "description": "Output file path (default: ./recording.mp4)"
+          }
+        },
+        "required": [
+          "steps"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "inspect_page",
+      "description": "Inspect a web page and get a structured map of all interactive elements, headings, forms, links, and images — each with a unique CSS selector. Use this BEFORE run_sequence or record_video to discover what elements exist on the page and get reliable selectors. Returns text (not an image), so it is fast and cheap. Costs 1 API request.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to inspect (required if no html)"
+          },
+          "html": {
+            "type": "string",
+            "description": "Raw HTML to inspect (required if no url)"
+          },
+          "width": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3840,
+            "description": "Viewport width in pixels (default: 1280)"
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2160,
+            "description": "Viewport height in pixels (default: 720)"
+          },
+          "viewportDevice": {
+            "type": "string",
+            "description": "Device preset for viewport emulation (e.g. \"iphone_14_pro\"). Use list_devices to see all presets."
+          },
+          "viewportMobile": {
+            "type": "boolean",
+            "description": "Enable mobile meta viewport emulation"
+          },
+          "viewportHasTouch": {
+            "type": "boolean",
+            "description": "Enable touch event emulation"
+          },
+          "viewportLandscape": {
+            "type": "boolean",
+            "description": "Landscape orientation"
+          },
+          "deviceScaleFactor": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 3,
+            "description": "Device pixel ratio (default: 1)"
+          },
+          "waitUntil": {
+            "type": "string",
+            "enum": [
+              "load",
+              "domcontentloaded",
+              "networkidle0",
+              "networkidle2"
+            ],
+            "description": "When to consider navigation finished (default: networkidle2)"
+          },
+          "waitForSelector": {
+            "type": "string",
+            "description": "Wait for this CSS selector to appear before inspecting"
+          },
+          "navigationTimeout": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 30000,
+            "description": "Navigation timeout in ms (default: 25000)"
+          },
+          "darkMode": {
+            "type": "boolean",
+            "description": "Emulate dark color scheme (default: false)"
+          },
+          "reducedMotion": {
+            "type": "boolean",
+            "description": "Emulate prefers-reduced-motion"
+          },
+          "mediaType": {
+            "type": "string",
+            "enum": [
+              "screen",
+              "print"
+            ],
+            "description": "Emulate CSS media type"
+          },
+          "timeZone": {
+            "type": "string",
+            "description": "Override browser timezone"
+          },
+          "geolocation": {
+            "type": "object",
+            "properties": {
+              "latitude": {
+                "type": "number"
+              },
+              "longitude": {
+                "type": "number"
+              },
+              "accuracy": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "latitude",
+              "longitude"
+            ],
+            "additionalProperties": false,
+            "description": "Emulate geolocation"
+          },
+          "userAgent": {
+            "type": "string",
+            "description": "Override the browser User-Agent string"
+          },
+          "cookies": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "string"
+                    },
+                    "domain": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "value"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "description": "Cookies to set — array of \"name=value\" strings or { name, value, domain? } objects"
+          },
+          "headers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Extra HTTP headers to send with the request"
+          },
+          "authorization": {
+            "type": "string",
+            "description": "Authorization header value (e.g. \"Bearer <token>\")"
+          },
+          "bypassCSP": {
+            "type": "boolean",
+            "description": "Bypass Content-Security-Policy on the page"
+          },
+          "hideSelectors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Array of CSS selectors to hide before inspecting"
+          },
+          "injectCss": {
+            "type": "string",
+            "description": "Custom CSS to inject before inspecting"
+          },
+          "injectJs": {
+            "type": "string",
+            "description": "Custom JavaScript to execute before inspecting"
+          },
+          "blockBanners": {
+            "type": "boolean",
+            "description": "Hide cookie consent banners (default: false)"
+          },
+          "blockAds": {
+            "type": "boolean",
+            "description": "Block advertisements on the page"
+          },
+          "blockChats": {
+            "type": "boolean",
+            "description": "Block live chat widgets"
+          },
+          "blockTrackers": {
+            "type": "boolean",
+            "description": "Block tracking scripts"
+          },
+          "blockRequests": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "URL patterns to block"
+          },
+          "blockResources": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Resource types to block"
+          },
+          "includeConsole": {
+            "type": "boolean",
+            "description": "Capture browser console output (console.log/info/warn/error/debug) and uncaught page errors emitted during page load. Adds a \"Console\" section to the result — lets you debug the page's runtime behavior, not just its static DOM. Default: false."
+          },
+          "session_id": {
+            "type": "string",
+            "description": "Inspect the LIVE state of a persistent session (Starter+; create with create_session) instead of a fresh page load. Omit url to inspect the page exactly as the last run_sequence/take_screenshot left it; pass url to navigate within the session first. Ideal for re-perceiving between agent actions."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "observe_page",
+      "description": "Get a compact, token-budgeted \"observation\" of any web page, purpose-built for AI agents. In ONE request it returns: id-indexed interactive elements (role, name, CSS selector, state), a heuristic page-type classification (login, signup, search, article, form, generic), and grouped \"suggested actions\" (login flow, search, primary buttons, navigation). Optionally include readable content (Markdown), the ARIA tree, and a screenshot. This is the fastest way for an agent to understand and act on an un-instrumented page — far more token-efficient than a raw screenshot or full DOM. Use the returned selectors with run_sequence to act. Costs 1 API request.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to observe (required if no html)"
+          },
+          "html": {
+            "type": "string",
+            "description": "Raw HTML to observe (required if no url)"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "json",
+              "flatdomtree"
+            ],
+            "description": "Observation representation. \"json\" (default) returns the id-indexed \"elements\" array. \"flatdomtree\" returns \"dom_text\" — the indexed plain-text DOM used by browser-use / Alibaba page-agent (e.g. `[1]<button>Sign in</button>`) — plus a \"selectors\" map ({\"1\":\"#signin\"}) INSTEAD of the elements array. Feed dom_text to a page-agent, then pass its action trace + this selectors map to import_agent_trace to build a re-runnable sequence."
+          },
+          "maxElements": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 150,
+            "description": "Cap on interactive elements returned (default 40, max 150). Lower = fewer tokens."
+          },
+          "includeRects": {
+            "type": "boolean",
+            "description": "Include bounding boxes {x,y,w,h} per element (default false — omit to save tokens)"
+          },
+          "includeContent": {
+            "type": "boolean",
+            "description": "Also extract the main readable content as Markdown (default false)"
+          },
+          "includeAriaTree": {
+            "type": "boolean",
+            "description": "Also include the interesting-only ARIA accessibility tree (default false)"
+          },
+          "includeScreenshot": {
+            "type": "boolean",
+            "description": "Also capture a screenshot in the same page load (default false)"
+          },
+          "screenshotFormat": {
+            "type": "string",
+            "enum": [
+              "jpeg",
+              "png",
+              "webp"
+            ],
+            "description": "Screenshot format when includeScreenshot is true (default jpeg)"
+          },
+          "screenshotFullPage": {
+            "type": "boolean",
+            "description": "Capture the full scrollable page for the screenshot (default false)"
+          },
+          "includeConsole": {
+            "type": "boolean",
+            "description": "Also capture browser console output (console.log/info/warn/error/debug) and uncaught page errors emitted during load (default false). Adds a \"Console\" section — useful for debugging the page's runtime behavior alongside its structure."
+          },
+          "width": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3840,
+            "description": "Viewport width in pixels (default: 1280)"
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2160,
+            "description": "Viewport height in pixels (default: 720)"
+          },
+          "viewportDevice": {
+            "type": "string",
+            "description": "Device preset for viewport emulation (e.g. \"iphone_14_pro\"). Use list_devices to see all presets."
+          },
+          "deviceScaleFactor": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 3,
+            "description": "Device pixel ratio (default: 1)"
+          },
+          "waitUntil": {
+            "type": "string",
+            "enum": [
+              "load",
+              "domcontentloaded",
+              "networkidle0",
+              "networkidle2"
+            ],
+            "description": "When to consider navigation finished (default: networkidle2)"
+          },
+          "waitForSelector": {
+            "type": "string",
+            "description": "Wait for this CSS selector to appear before observing"
+          },
+          "navigationTimeout": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 30000,
+            "description": "Navigation timeout in ms (default: 25000)"
+          },
+          "darkMode": {
+            "type": "boolean",
+            "description": "Emulate dark color scheme (default: false)"
+          },
+          "timeZone": {
+            "type": "string",
+            "description": "Override browser timezone"
+          },
+          "userAgent": {
+            "type": "string",
+            "description": "Override the browser User-Agent string"
+          },
+          "cookies": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "string"
+                    },
+                    "domain": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "value"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "description": "Cookies to set — array of \"name=value\" strings or { name, value, domain? } objects"
+          },
+          "headers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Extra HTTP headers to send with the request"
+          },
+          "authorization": {
+            "type": "string",
+            "description": "Authorization header value (e.g. \"Bearer <token>\")"
+          },
+          "bypassCSP": {
+            "type": "boolean",
+            "description": "Bypass Content-Security-Policy on the page"
+          },
+          "blockBanners": {
+            "type": "boolean",
+            "description": "Hide cookie consent banners (default: false)"
+          },
+          "blockAds": {
+            "type": "boolean",
+            "description": "Block advertisements on the page"
+          },
+          "blockChats": {
+            "type": "boolean",
+            "description": "Block live chat widgets"
+          },
+          "blockTrackers": {
+            "type": "boolean",
+            "description": "Block tracking scripts"
+          },
+          "session_id": {
+            "type": "string",
+            "description": "Observe the LIVE state of a persistent session (Starter+; create with create_session) instead of a fresh page load. Omit url to observe the page exactly as the last run_sequence/take_screenshot left it; pass url to navigate within the session first. This is the recommended way to re-perceive between agent actions and recover from popovers/redirects."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "import_agent_trace",
+      "description": "Convert a page-agent/browser-use action trace into a re-runnable PageBolt sequence. Give it the array of actions a page-agent produced (each entry may be either {action, index|selector, value, ...} or the {action_name: {...}} shape) plus, optionally, the selectors map from observe_page with format:\"flatdomtree\" to resolve indices to CSS selectors. Set save:false for a dry run that returns the translated steps without persisting. This endpoint does NOT consume request quota. Pair with observe_page (format:\"flatdomtree\") → run an agent → import_agent_trace to turn an ad-hoc agent run into a deterministic, replayable sequence.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "trace": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            },
+            "minItems": 1,
+            "description": "Required. Array of page-agent/browser-use action entries. Supports both {action, index|selector, value, ...} and {action_name: {...}} shapes."
+          },
+          "selectors": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Optional index→CSS selector map (e.g. from observe_page format:\"flatdomtree\"). Used to resolve numeric element indices in the trace to concrete selectors."
+          },
+          "name": {
+            "type": "string",
+            "description": "Optional name for the resulting sequence."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "sequence",
+              "video"
+            ],
+            "description": "Optional target type for the imported steps: \"sequence\" (default) or \"video\"."
+          },
+          "save": {
+            "type": "boolean",
+            "description": "Whether to persist the sequence (default true). Set false for a dry run that returns the translated steps + step_count without saving."
+          }
+        },
+        "required": [
+          "trace"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "act_on_page",
+      "description": "Give PageBolt a URL and a plain-English GOAL; it runs an observe→plan→act→verify loop server-side until the goal is met, then returns a structured trace of every action it took plus a success/failure status. This is the \"hands\" on top of observe_page (the \"eyes\") — you do NOT author selectors or a step list yourself. Use act_on_page when you only know the OUTCOME you want (e.g. \"log in and open billing\", \"accept the cookie banner and start a trial\"); use run_sequence when you already know the exact deterministic steps/selectors (cheaper). Available on Starter+ plans. Cost is metered: 2 requests base + 1 per step taken. SECURITY: page text is treated as untrusted — the agent pursues only your goal and ignores instructions embedded in the page. Scope allowedDomains tightly and avoid destructive flows.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Required. The page to start on."
+          },
+          "goal": {
+            "type": "string",
+            "minLength": 3,
+            "description": "Required. Plain-English description of the outcome you want (e.g. \"Log in and go to the billing page\")."
+          },
+          "maxSteps": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20,
+            "description": "Cap on planning iterations (default 8). Clamped to your plan ceiling (Starter 10, Growth 15, Scale 20)."
+          },
+          "allowedDomains": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Hosts the agent may navigate to (e.g. [\"app.example.com\"]). Defaults to the start URL host only; navigation elsewhere is rejected."
+          },
+          "credentials": {
+            "type": "object",
+            "properties": {
+              "username": {
+                "type": "string",
+                "description": "Username/email — substituted at execution time only, never logged or sent to the planner LLM."
+              },
+              "password": {
+                "type": "string",
+                "description": "Password — substituted at execution time only, never logged or sent to the planner LLM."
+              }
+            },
+            "required": [
+              "username",
+              "password"
+            ],
+            "additionalProperties": false,
+            "description": "Login credentials. The agent references them as {{username}}/{{password}} and they appear in the returned trace as <redacted>."
+          },
+          "session_id": {
+            "type": "string",
+            "description": "Run inside an existing persistent session (Starter+; create with create_session) to reuse cookies/login. Otherwise an ephemeral browser is used and discarded."
+          }
+        },
+        "required": [
+          "url",
+          "goal"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "visual_diff",
+      "description": "Compare two web pages (or HTML strings) pixel-by-pixel and return a diff image highlighting all visual differences. Supports full-page capture, device emulation, element selectors, and all screenshot-like options. Returns the diff image, changed pixel count, and percentage changed. Costs 1 API request.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url_a": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL of the first page (required if no html_a)"
+          },
+          "url_b": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL of the second page (required if no html_b)"
+          },
+          "html_a": {
+            "type": "string",
+            "description": "Raw HTML for the first page (required if no url_a)"
+          },
+          "html_b": {
+            "type": "string",
+            "description": "Raw HTML for the second page (required if no url_b)"
+          },
+          "threshold": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Pixelmatch sensitivity 0–1 (default: 0.1). Lower = more sensitive to subtle differences."
+          },
+          "width": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3840,
+            "description": "Viewport width in pixels (default: 1280)"
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2160,
+            "description": "Viewport height in pixels (default: 720)"
+          },
+          "viewportDevice": {
+            "type": "string",
+            "description": "Device preset for viewport emulation (e.g. \"iphone_14_pro\"). Use list_devices to see all presets."
+          },
+          "viewportMobile": {
+            "type": "boolean",
+            "description": "Enable mobile meta viewport emulation"
+          },
+          "viewportHasTouch": {
+            "type": "boolean",
+            "description": "Enable touch event emulation"
+          },
+          "viewportLandscape": {
+            "type": "boolean",
+            "description": "Landscape orientation"
+          },
+          "deviceScaleFactor": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 3,
+            "description": "Device pixel ratio (default: 1)"
+          },
+          "fullPage": {
+            "type": "boolean",
+            "description": "Capture the full scrollable page for both sides (default: false)"
+          },
+          "fullPageScroll": {
+            "type": "boolean",
+            "description": "Auto-scroll pages before capture to trigger lazy-loaded images"
+          },
+          "fullPageScrollDelay": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2000,
+            "description": "Delay between scroll steps in ms (default: 400)"
+          },
+          "fullPageScrollBy": {
+            "type": "integer",
+            "description": "Pixels to scroll per step (default: viewport height)"
+          },
+          "fullPageMaxHeight": {
+            "type": "integer",
+            "description": "Maximum pixel height cap for full-page captures"
+          },
+          "selector": {
+            "type": "string",
+            "description": "CSS selector — capture only this element on both pages"
+          },
+          "clip": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "width": {
+                "type": "number"
+              },
+              "height": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "width",
+              "height"
+            ],
+            "additionalProperties": false,
+            "description": "Crop region { x, y, width, height } in pixels"
+          },
+          "delay": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 30000,
+            "description": "Milliseconds to wait before capture on both pages (default: 0)"
+          },
+          "click": {
+            "type": "string",
+            "description": "CSS selector to click before capturing on both pages"
+          },
+          "waitUntil": {
+            "type": "string",
+            "enum": [
+              "load",
+              "domcontentloaded",
+              "networkidle0",
+              "networkidle2"
+            ],
+            "description": "When to consider navigation finished (default: networkidle2)"
+          },
+          "waitForSelector": {
+            "type": "string",
+            "description": "Wait for this CSS selector to appear before capturing"
+          },
+          "navigationTimeout": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 30000,
+            "description": "Navigation timeout in ms (default: 25000)"
+          },
+          "darkMode": {
+            "type": "boolean",
+            "description": "Emulate dark color scheme (default: false)"
+          },
+          "reducedMotion": {
+            "type": "boolean",
+            "description": "Emulate prefers-reduced-motion to disable animations"
+          },
+          "mediaType": {
+            "type": "string",
+            "enum": [
+              "screen",
+              "print"
+            ],
+            "description": "Emulate CSS media type"
+          },
+          "timeZone": {
+            "type": "string",
+            "description": "Override browser timezone (e.g. \"America/New_York\")"
+          },
+          "geolocation": {
+            "type": "object",
+            "properties": {
+              "latitude": {
+                "type": "number"
+              },
+              "longitude": {
+                "type": "number"
+              },
+              "accuracy": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "latitude",
+              "longitude"
+            ],
+            "additionalProperties": false,
+            "description": "Emulate geolocation { latitude, longitude, accuracy? }"
+          },
+          "userAgent": {
+            "type": "string",
+            "description": "Override the browser User-Agent string"
+          },
+          "cookies": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "string"
+                    },
+                    "domain": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "value"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "description": "Cookies to set — array of \"name=value\" strings or { name, value, domain? } objects"
+          },
+          "headers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Extra HTTP headers to send with the request"
+          },
+          "authorization": {
+            "type": "string",
+            "description": "Authorization header value (e.g. \"Bearer <token>\")"
+          },
+          "bypassCSP": {
+            "type": "boolean",
+            "description": "Bypass Content-Security-Policy on the page"
+          },
+          "hideSelectors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Array of CSS selectors to hide before capture"
+          },
+          "injectCss": {
+            "type": "string",
+            "description": "Custom CSS to inject before capturing (max 50KB)"
+          },
+          "injectJs": {
+            "type": "string",
+            "description": "Custom JavaScript to execute before capturing (max 50KB)"
+          },
+          "blockBanners": {
+            "type": "boolean",
+            "description": "Hide cookie consent banners (default: false)"
+          },
+          "blockAds": {
+            "type": "boolean",
+            "description": "Block advertisements on the page"
+          },
+          "blockChats": {
+            "type": "boolean",
+            "description": "Block live chat widgets on the page"
+          },
+          "blockTrackers": {
+            "type": "boolean",
+            "description": "Block tracking scripts on the page"
+          },
+          "blockRequests": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "URL patterns to block (array of strings)"
+          },
+          "blockResources": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Resource types to block (e.g. [\"image\", \"font\"])"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "list_devices",
+      "description": "List all available device presets for viewport emulation (e.g. iphone_14_pro, macbook_pro_14). Use the returned device names with the viewportDevice parameter in take_screenshot.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "check_usage",
+      "description": "Check your current PageBolt API usage and plan limits.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "list_jobs",
+      "description": "List your recent async jobs (e.g. videos enqueued with record_video). Returns each job's id, type, status, and timestamps. Use get_job to fetch a specific job's full output. Free (no request quota).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_job",
+      "description": "Fetch the status and output of a single async job by id (e.g. an async video render started by record_video). While pending/processing, returns the current status; when completed, returns the job output — for videos, the hosted watch/embed/file URLs. Free (no request quota).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "description": "The job id to look up (returned when a video is enqueued as an async job)."
+          }
+        },
+        "required": [
+          "job_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "create_session",
+      "description": "Create a persistent browser session (Starter+ plan required). The session keeps a live browser page open so you can reuse cookies, localStorage, and auth state across multiple take_screenshot or run_sequence calls. Pass the returned session_id to those tools. Sessions expire after 10 minutes of inactivity (hard cap: 30 minutes). Useful for AI agent workflows that log in once and then take multiple screenshots of authenticated pages.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "cookies": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "string"
+                    },
+                    "domain": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "value"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "description": "Cookies to pre-load into the session browser page"
+          },
+          "viewport": {
+            "type": "object",
+            "properties": {
+              "width": {
+                "type": "integer"
+              },
+              "height": {
+                "type": "integer"
+              }
+            },
+            "additionalProperties": false,
+            "description": "Viewport dimensions for the session browser page"
+          },
+          "stealth": {
+            "type": "boolean",
+            "description": "Launch this session with stealth mode (bypasses bot detection). Note: stealth sessions use a dedicated browser and consume more memory."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "list_sessions",
+      "description": "List all active persistent browser sessions for your API key. Returns session IDs, creation times, and expiry times. Useful for checking which sessions are still alive before reusing them.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "destroy_session",
+      "description": "Explicitly destroy a persistent browser session before it expires. Frees the browser page immediately. Use this when you are done with a session to free up capacity.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "The session ID to destroy (returned by create_session)"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 18967,
+  "transport": "stdio"
+}

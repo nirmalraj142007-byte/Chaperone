@@ -1,0 +1,8 @@
+{
+  "serverId": "kinti__a11y-toolkit__kinti-a11y-toolkit",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "Installed 1 package in 1ms\nAn executable named `a11y-toolkit` is not provided by package `a11y-toolkit`.\nThe following executables are available:\n- a11y-toolkit-mcp\n- a11ytoolkit\n\nUse `uvx --from a11y-toolkit <EXECUTABLE-NAME>` instead.\n\n",
+  "durationMs": 2408,
+  "transport": "stdio"
+}

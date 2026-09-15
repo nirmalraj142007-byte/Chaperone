@@ -1,0 +1,4069 @@
+{
+  "serverId": "twelvetake-studios__reaper-mcp__twelvetake-studios-reaper-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "get_track_count",
+      "description": "Get the total number of tracks in the current REAPER project (excluding master track).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "get_track",
+      "description": "Get information about a track.\n\nReturns:\n    Object with 'info': guid, name, volume, volume_db, pan, muted, soloed,\n    has_midi, has_audio, fx_names, role.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index"
+        ]
+      }
+    },
+    {
+      "name": "get_all_tracks",
+      "description": "Get information about all tracks in the project.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "get_master_track",
+      "description": "Get information about the master track.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "insert_track",
+      "description": "Insert a new track at the specified index.\n\nArgs:\n    index: Position to insert track (0-based). If not specified, adds at end.\n    name: Optional name for the new track.\n\nReturns:\n    Info about the created track.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "default": null,
+            "type": "integer"
+          },
+          "name": {
+            "default": null,
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "name": "delete_track",
+      "description": "Delete a track.\n\nArgs:\n    track_index: Track index to delete (0-based). Cannot delete master track (-1).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index"
+        ]
+      }
+    },
+    {
+      "name": "set_track_name",
+      "description": "Set the name of a track.\n\nArgs:\n    name: New name for the track.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "track_index",
+          "name"
+        ]
+      }
+    },
+    {
+      "name": "set_track_volume",
+      "description": "Set the volume of a track in decibels.\n\nArgs:\n    volume_db: Volume in dB (0 = unity gain, -inf to +12 typical range).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "volume_db": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "track_index",
+          "volume_db"
+        ]
+      }
+    },
+    {
+      "name": "set_track_pan",
+      "description": "Set the pan position of a track.\n\nArgs:\n    pan: Pan position from -1.0 (full left) to 1.0 (full right). 0 = center.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "pan": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "track_index",
+          "pan"
+        ]
+      }
+    },
+    {
+      "name": "set_track_mute",
+      "description": "Set the mute state of a track.\n\nArgs:\n    mute: True to mute, False to unmute.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "mute": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "track_index",
+          "mute"
+        ]
+      }
+    },
+    {
+      "name": "set_track_solo",
+      "description": "Set the solo state of a track.\n\nArgs:\n    solo: True to solo, False to unsolo.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "solo": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "track_index",
+          "solo"
+        ]
+      }
+    },
+    {
+      "name": "track_fx_get_count",
+      "description": "Get the number of FX plugins on a track.\n\nReturns:\n    Object with 'ret' field containing count.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index"
+        ]
+      }
+    },
+    {
+      "name": "track_fx_get_list",
+      "description": "Get list of all FX plugins on a track.\n\nReturns:\n    Object with 'fx' array, one entry per FX with index, name, enabled and offline,\n    plus fx_count. 'enabled' is False when the FX is bypassed. Normal FX chain only,\n    not input/record FX or master monitoring FX.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index"
+        ]
+      }
+    },
+    {
+      "name": "track_fx_add_by_name",
+      "description": "Add an FX plugin to a track by name.\n\nArgs:\n    fx_name: Name of the FX plugin to add (e.g., \"ReaEQ\", \"ReaComp\", \"ReaLimit\").\n             Use the exact plugin name as it appears in REAPER's FX browser.\n    position: Optional insertion position (0-based) in the FX chain.\n              Default -1 adds at the end; 0 inserts at the beginning.\n\nReturns:\n    Info about the added FX including its index.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "fx_name": {
+            "type": "string"
+          },
+          "position": {
+            "default": -1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "fx_name"
+        ]
+      }
+    },
+    {
+      "name": "track_fx_move",
+      "description": "Move an FX plugin to a new position within the same track's FX chain.\n\nArgs:\n    fx_index: Current FX index (0-based) in the FX chain.\n    new_position: Target position (0-based). 0 = beginning of the chain.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "fx_index": {
+            "type": "integer"
+          },
+          "new_position": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "fx_index",
+          "new_position"
+        ]
+      }
+    },
+    {
+      "name": "track_fx_delete",
+      "description": "Remove an FX plugin from a track.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "fx_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "fx_index"
+        ]
+      }
+    },
+    {
+      "name": "track_fx_get_name",
+      "description": "Get the name of an FX plugin.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "fx_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "fx_index"
+        ]
+      }
+    },
+    {
+      "name": "track_fx_get_enabled",
+      "description": "Get the enabled state of an FX plugin.\n\nReturns:\n    Object with 'ret' field (boolean).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "fx_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "fx_index"
+        ]
+      }
+    },
+    {
+      "name": "track_fx_set_enabled",
+      "description": "Enable or disable an FX plugin.\n\nArgs:\n    enabled: True to enable, False to bypass.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "fx_index": {
+            "type": "integer"
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "track_index",
+          "fx_index",
+          "enabled"
+        ]
+      }
+    },
+    {
+      "name": "track_fx_get_num_params",
+      "description": "Get the number of parameters for an FX plugin.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "fx_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "fx_index"
+        ]
+      }
+    },
+    {
+      "name": "track_fx_get_param_name",
+      "description": "Get the name of an FX parameter.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "fx_index": {
+            "type": "integer"
+          },
+          "param_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "fx_index",
+          "param_index"
+        ]
+      }
+    },
+    {
+      "name": "track_fx_get_param",
+      "description": "Get a specific parameter value of an FX plugin.\n\nReturns:\n    Object with value, min, max for the parameter.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "fx_index": {
+            "type": "integer"
+          },
+          "param_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "fx_index",
+          "param_index"
+        ]
+      }
+    },
+    {
+      "name": "track_fx_set_param",
+      "description": "Set a parameter value on an FX plugin.\n\nArgs:\n    value: New value for the parameter (typically normalized 0-1, check min/max).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "fx_index": {
+            "type": "integer"
+          },
+          "param_index": {
+            "type": "integer"
+          },
+          "value": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "track_index",
+          "fx_index",
+          "param_index",
+          "value"
+        ]
+      }
+    },
+    {
+      "name": "take_fx_get_count",
+      "description": "Get the number of FX plugins on a take.\n\nReturns:\n    Object with 'ret' field containing the FX count.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "take_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index",
+          "take_index"
+        ]
+      }
+    },
+    {
+      "name": "take_fx_get_list",
+      "description": "Get a list of all FX plugins on a take.\n\nReturns:\n    Object with 'fx' array, each entry having index, name, and enabled state.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "take_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index",
+          "take_index"
+        ]
+      }
+    },
+    {
+      "name": "take_fx_add_by_name",
+      "description": "Add an FX plugin to a take by name.\n\nArgs:\n    fx_name: Name of the FX plugin to add (e.g., \"ReaEQ\", \"ReaComp\"). Use the exact\n             plugin name as it appears in REAPER's FX browser.\n\nReturns:\n    Object with 'ret' field containing the new FX index (or -1 if it could not be added).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "take_index": {
+            "type": "integer"
+          },
+          "fx_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index",
+          "take_index",
+          "fx_name"
+        ]
+      }
+    },
+    {
+      "name": "take_fx_delete",
+      "description": "Remove an FX plugin from a take.\n\nArgs:",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "take_index": {
+            "type": "integer"
+          },
+          "fx_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index",
+          "take_index",
+          "fx_index"
+        ]
+      }
+    },
+    {
+      "name": "take_fx_get_name",
+      "description": "Get the name of an FX plugin on a take.\n\nArgs:",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "take_index": {
+            "type": "integer"
+          },
+          "fx_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index",
+          "take_index",
+          "fx_index"
+        ]
+      }
+    },
+    {
+      "name": "take_fx_get_enabled",
+      "description": "Get the enabled (not bypassed) state of an FX plugin on a take.\n\nArgs:\n\nReturns:\n    Object with 'ret' field (boolean).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "take_index": {
+            "type": "integer"
+          },
+          "fx_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index",
+          "take_index",
+          "fx_index"
+        ]
+      }
+    },
+    {
+      "name": "take_fx_set_enabled",
+      "description": "Enable or bypass an FX plugin on a take.\n\nArgs:\n    enabled: True to enable, False to bypass.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "take_index": {
+            "type": "integer"
+          },
+          "fx_index": {
+            "type": "integer"
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index",
+          "take_index",
+          "fx_index",
+          "enabled"
+        ]
+      }
+    },
+    {
+      "name": "take_fx_get_num_params",
+      "description": "Get the number of parameters for an FX plugin on a take.\n\nArgs:",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "take_index": {
+            "type": "integer"
+          },
+          "fx_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index",
+          "take_index",
+          "fx_index"
+        ]
+      }
+    },
+    {
+      "name": "take_fx_get_param_name",
+      "description": "Get the name of a parameter on a take's FX plugin.\n\nArgs:",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "take_index": {
+            "type": "integer"
+          },
+          "fx_index": {
+            "type": "integer"
+          },
+          "param_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index",
+          "take_index",
+          "fx_index",
+          "param_index"
+        ]
+      }
+    },
+    {
+      "name": "take_fx_get_param",
+      "description": "Get a parameter value on a take's FX plugin.\n\nArgs:\n\nReturns:\n    Object with 'value', 'min', and 'max' for the parameter.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "take_index": {
+            "type": "integer"
+          },
+          "fx_index": {
+            "type": "integer"
+          },
+          "param_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index",
+          "take_index",
+          "fx_index",
+          "param_index"
+        ]
+      }
+    },
+    {
+      "name": "take_fx_set_param",
+      "description": "Set a parameter value on a take's FX plugin.\n\nArgs:\n    value: New value (typically normalized 0-1; check min/max via take_fx_get_param).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "take_index": {
+            "type": "integer"
+          },
+          "fx_index": {
+            "type": "integer"
+          },
+          "param_index": {
+            "type": "integer"
+          },
+          "value": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index",
+          "take_index",
+          "fx_index",
+          "param_index",
+          "value"
+        ]
+      }
+    },
+    {
+      "name": "get_takes",
+      "description": "List all takes of a media item.\n\nReturns:\n    Object with 'takes' array (each entry: index, name, is_active) and 'ret' = take count.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index"
+        ]
+      }
+    },
+    {
+      "name": "get_active_take",
+      "description": "Get the index of the active take of a media item.\n\nReturns:\n    Object with 'ret' = active take index (-1 if the item has no active take).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index"
+        ]
+      }
+    },
+    {
+      "name": "set_active_take",
+      "description": "Set the active take of a media item (which take plays).\n\nArgs:",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "take_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index",
+          "take_index"
+        ]
+      }
+    },
+    {
+      "name": "explode_takes",
+      "description": "Explode all takes of a media item in place (each take becomes its own overlapping item).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index"
+        ]
+      }
+    },
+    {
+      "name": "crop_to_active_take",
+      "description": "Crop a media item to its active take, discarding all other takes.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index"
+        ]
+      }
+    },
+    {
+      "name": "delete_take",
+      "description": "Delete a specific take from a media item.\n\nArgs:\n    take_index: Take index to delete (0-based). The take is activated first, then removed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "take_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index",
+          "take_index"
+        ]
+      }
+    },
+    {
+      "name": "select_comp_lane",
+      "description": "Make a fixed lane play exclusively on a track (REAPER 7 lane-based comping).\n\nThe track must be in fixed-lane mode (right-click track -> Track lanes). Returns a clear\nerror if it is not, or if the lane index is out of range.\n\nArgs:\n    lane_index: Fixed lane index to play exclusively (0-based).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "lane_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "lane_index"
+        ]
+      }
+    },
+    {
+      "name": "create_send",
+      "description": "Create a send from one track to another.\n\nArgs:\n    src_track: Source track index (0-based).\n    dest_track: Destination track index (0-based).\n\nReturns:\n    Object with send_index.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "src_track": {
+            "type": "integer"
+          },
+          "dest_track": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "src_track",
+          "dest_track"
+        ]
+      }
+    },
+    {
+      "name": "delete_send",
+      "description": "Delete a send from a track.\n\nArgs:\n    track_index: Source track index (0-based).\n    send_index: Send index (0-based) to delete.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "send_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "send_index"
+        ]
+      }
+    },
+    {
+      "name": "set_send_volume",
+      "description": "Set the volume of a track send.\n\nArgs:\n    track_index: Source track index (0-based).\n    volume_db: Send volume in dB.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "send_index": {
+            "type": "integer"
+          },
+          "volume_db": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "track_index",
+          "send_index",
+          "volume_db"
+        ]
+      }
+    },
+    {
+      "name": "get_track_num_sends",
+      "description": "Get the number of sends from a track.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index"
+        ]
+      }
+    },
+    {
+      "name": "set_send_dest_channels",
+      "description": "Set the destination channels for a send (used for sidechain routing).\n\nArgs:\n    track_index: Source track index (0-based).\n    dest_chan: Destination channel pair (0=1-2 main, 2=3-4 sidechain, 4=5-6, etc.).\n               For sidechain compression, use 2 to route to channels 3-4.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "send_index": {
+            "type": "integer"
+          },
+          "dest_chan": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "send_index",
+          "dest_chan"
+        ]
+      }
+    },
+    {
+      "name": "set_send_source_channels",
+      "description": "Set the source channels for a send.\n\nArgs:\n    track_index: Source track index (0-based).\n    src_chan: Source channel (-1=none, 0=stereo 1-2, 1024+n=mono from channel n).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "send_index": {
+            "type": "integer"
+          },
+          "src_chan": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "send_index",
+          "src_chan"
+        ]
+      }
+    },
+    {
+      "name": "setup_sidechain_send",
+      "description": "Create a sidechain send from one track to another track's FX sidechain input.\n\nThis creates a send routed to channels 3-4 of the destination track,\nwhich is the standard sidechain input for compressors like ReaComp.\n\nArgs:\n    src_track: Source/trigger track index (e.g., kick drum).\n    dest_track: Destination track index (e.g., bass with compressor).\n    volume_db: Send volume in dB (default 0dB = unity).\n\nReturns:\n    Object with send_index and routing info.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "src_track": {
+            "type": "integer"
+          },
+          "dest_track": {
+            "type": "integer"
+          },
+          "volume_db": {
+            "default": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "src_track",
+          "dest_track"
+        ]
+      }
+    },
+    {
+      "name": "configure_reacomp_sidechain",
+      "description": "Configure ReaComp to use sidechain input for detection.\n\nArgs:\n    track_index: Track index (0-based) where ReaComp is located.\n    fx_index: FX index (0-based) of ReaComp in the FX chain.\n    use_sidechain: True to use auxiliary input (channels 3-4), False for main input.\n\nReturns:\n    Object with configuration status.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "fx_index": {
+            "type": "integer"
+          },
+          "use_sidechain": {
+            "default": true,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "track_index",
+          "fx_index"
+        ]
+      }
+    },
+    {
+      "name": "setup_sidechain_compression",
+      "description": "Complete sidechain compression setup: creates send and configures compressor.\n\nThis is the all-in-one function for setting up sidechain compression.\nIt creates a send from the trigger track to the target track's sidechain input\nand configures ReaComp to listen to that sidechain.\n\nArgs:\n    trigger_track: Track that triggers compression (e.g., kick drum = track 0).\n    target_track: Track to be compressed (e.g., bass = track 1).\n    compressor_fx_index: Index of ReaComp in target track's FX chain.\n    send_volume_db: Sidechain send volume in dB (default 0dB).\n\nReturns:\n    Object with complete setup info.\n\nExample:\n    For kick-triggered bass compression where:\n    - Drums are on track 0\n    - Bass is on track 1 with ReaComp at FX index 2\n    Call: setup_sidechain_compression(0, 1, 2)",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "trigger_track": {
+            "type": "integer"
+          },
+          "target_track": {
+            "type": "integer"
+          },
+          "compressor_fx_index": {
+            "type": "integer"
+          },
+          "send_volume_db": {
+            "default": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "trigger_track",
+          "target_track",
+          "compressor_fx_index"
+        ]
+      }
+    },
+    {
+      "name": "play",
+      "description": "Start playback in REAPER.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "stop",
+      "description": "Stop playback in REAPER.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "get_play_state",
+      "description": "Get the current playback state.\n\nReturns:\n    Object with play state info.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "get_cursor_position",
+      "description": "Get the edit cursor position.\n\nReturns:\n    Object with cursor position in seconds.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "set_cursor_position",
+      "description": "Set the edit cursor position.\n\nArgs:\n    position: Position in seconds from project start.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "position"
+        ]
+      }
+    },
+    {
+      "name": "save_project",
+      "description": "Save the current REAPER project.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "get_project_path",
+      "description": "Get the project path.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "get_project_name",
+      "description": "Get the project name.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "get_tempo",
+      "description": "Get the project tempo.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "get_time_signature",
+      "description": "Get the project time signature.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "add_mastering_chain",
+      "description": "Add a standard mastering chain to the master track.\n\nAdds the following plugins in order:\n1. ReaEQ (corrective EQ)\n2. ReaComp (glue compression)\n3. ReaEQ (tonal shaping)\n4. ReaLimit (brickwall limiter)\n\nReturns:\n    Object with list of added FX indices.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "add_parallel_compression",
+      "description": "Set up New York style parallel compression for a track.\n\nCreates a new bus track with heavy compression, fed by a send from the source track.\n\nArgs:\n    track_index: Source track index (0-based).\n    blend_db: Send level in dB for the compressed signal (default -6dB).\n\nReturns:\n    Object with bus_track_index, send_index, and compressor_fx_index.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "blend_db": {
+            "default": -6,
+            "type": "number"
+          }
+        },
+        "required": [
+          "track_index"
+        ]
+      }
+    },
+    {
+      "name": "create_bus",
+      "description": "Create a submix/stem bus and route specified tracks to it.\n\nArgs:\n    name: Name for the bus track.\n    source_track_indices: List of track indices to route to this bus.\n\nReturns:\n    Object with bus_track_index and routing info.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "source_track_indices": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "source_track_indices"
+        ]
+      }
+    },
+    {
+      "name": "add_eq",
+      "description": "Add ReaEQ to a track.\n\nReturns:\n    Object with fx_index.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index"
+        ]
+      }
+    },
+    {
+      "name": "add_compressor",
+      "description": "Add ReaComp to a track.\n\nReturns:\n    Object with fx_index.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index"
+        ]
+      }
+    },
+    {
+      "name": "add_limiter",
+      "description": "Add ReaLimit (brickwall limiter) to a track.\n\nReturns:\n    Object with fx_index.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index"
+        ]
+      }
+    },
+    {
+      "name": "create_midi_item",
+      "description": "Create an empty MIDI item on a track.\n\nArgs:\n    position: Start position in seconds.\n    length: Length in seconds.\n\nReturns:\n    Object with item info including the new item_index.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "position": {
+            "type": "number"
+          },
+          "length": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "track_index",
+          "position",
+          "length"
+        ]
+      }
+    },
+    {
+      "name": "get_midi_item",
+      "description": "Get information about a MIDI item.\n\nReturns:\n    Object with item info including position, length, note count.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index"
+        ]
+      }
+    },
+    {
+      "name": "add_midi_note",
+      "description": "Add a MIDI note to an item using musical timing (beats).\n\nArgs:\n    pitch: MIDI note number (0-127, 60 = middle C).\n    velocity: Note velocity (1-127).\n    start_beat: Start position in beats from the item start (0 = first beat).\n    length_beats: Note length in beats (0.25 = sixteenth, 0.5 = eighth, 1.0 = quarter).\n\nExample:\n    Four-on-the-floor kick: add_midi_note(0, 0, 36, 110, start_beat=0, length_beats=0.25)\n    then start_beat=1, 2, 3.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "pitch": {
+            "type": "integer"
+          },
+          "velocity": {
+            "type": "integer"
+          },
+          "start_beat": {
+            "type": "number"
+          },
+          "length_beats": {
+            "type": "number"
+          },
+          "channel": {
+            "default": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index",
+          "pitch",
+          "velocity",
+          "start_beat",
+          "length_beats"
+        ]
+      }
+    },
+    {
+      "name": "add_midi_notes_batch",
+      "description": "Add multiple MIDI notes to an item in one call, using musical timing (beats).\n\nArgs:\n    notes: List of note dicts with keys: pitch, velocity, start_beat, length_beats,\n           channel (optional).\n\nReturns:\n    Object with count of notes added.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "notes": {
+            "items": {},
+            "type": "array"
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index",
+          "notes"
+        ]
+      }
+    },
+    {
+      "name": "get_midi_notes",
+      "description": "Get all MIDI notes from an item.\n\nReturns:\n    Object with list of notes.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "fields": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index"
+        ]
+      }
+    },
+    {
+      "name": "delete_midi_note",
+      "description": "Delete a MIDI note from an item.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "note_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index",
+          "note_index"
+        ]
+      }
+    },
+    {
+      "name": "clear_midi_item",
+      "description": "Delete all MIDI notes from an item.\n\nReturns:\n    Object with count of notes deleted.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index"
+        ]
+      }
+    },
+    {
+      "name": "set_midi_note_velocity",
+      "description": "Set the velocity of a MIDI note.\n\nArgs:\n    velocity: New velocity (1-127).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "note_index": {
+            "type": "integer"
+          },
+          "velocity": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index",
+          "note_index",
+          "velocity"
+        ]
+      }
+    },
+    {
+      "name": "transpose_midi_notes",
+      "description": "Transpose MIDI notes by a number of semitones (12 = an octave).\n\nA note that would land outside pitch 0-127 keeps its original pitch and is counted in\n`skipped` instead.\n\nArgs:\n    semitones: Signed shift; positive is up, negative is down. 0 = no-op.\n\nReturns:\n    {ok, notes_changed, clamped, skipped, out_of_bounds, notes:[...]}, where `notes` is\n    the full note list after the transform, re-indexed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "semitones": {
+            "type": "integer"
+          },
+          "pitch_low": {
+            "default": 0,
+            "type": "integer"
+          },
+          "pitch_high": {
+            "default": 127,
+            "type": "integer"
+          },
+          "start_beat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "end_beat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "channel": {
+            "default": -1,
+            "type": "integer"
+          },
+          "return_notes": {
+            "default": true,
+            "type": "boolean"
+          },
+          "fields": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index",
+          "semitones"
+        ]
+      }
+    },
+    {
+      "name": "nudge_midi_notes",
+      "description": "Shift MIDI notes in time by a number of beats (+ = later, - = earlier).\n\nStart and end move together, so note lengths are preserved. A note pushed before the\nitem start clamps to it and one pushed past the item end is left there; both count in\n`out_of_bounds`, not `clamped`.\n\nArgs:\n    amount_beats: Signed beat shift (0.25 = a 16th later, -1.0 = a beat earlier). 0 = no-op.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "amount_beats": {
+            "type": "number"
+          },
+          "pitch_low": {
+            "default": 0,
+            "type": "integer"
+          },
+          "pitch_high": {
+            "default": 127,
+            "type": "integer"
+          },
+          "start_beat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "end_beat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "channel": {
+            "default": -1,
+            "type": "integer"
+          },
+          "return_notes": {
+            "default": true,
+            "type": "boolean"
+          },
+          "fields": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index",
+          "amount_beats"
+        ]
+      }
+    },
+    {
+      "name": "get_selected_midi_notes",
+      "description": "Read the MIDI notes currently SELECTED in REAPER's editor for the active take.\n\nThe escape hatch for \"operate on what I've selected\": select notes by hand in REAPER,\ncall this to see which they are, then translate that into an explicit value filter\n(pitch range / beat window / channel) for the transform tools. Read-only, no undo.\n\nReturns:\n    {ok, notes:[...], ret} - the selected notes, same shape as get_midi_notes (each note\n    carries item-relative start_beat/end_beat). `index` is REAPER's absolute PPQ-sorted\n    note index, so a partial selection is non-contiguous. Empty selection -> notes:[].",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "fields": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index"
+        ]
+      }
+    },
+    {
+      "name": "set_midi_note",
+      "description": "Edit one existing MIDI note in place: pitch, start, length and/or channel. Only the\nfields you pass change, and at least one is required. (Velocity: set_midi_note_velocity.)\n\nnote_index is REAPER's PPQ-sorted index from get_midi_notes / get_selected_midi_notes and\nis unstable - re-read after the edit, since the returned list reflects the new order.\n\nArgs:\n    pitch: New pitch (0-127).\n    start_beat: New start in beats from item start; length is preserved. A start before\n        the item start clamps there and is counted in out_of_bounds, not clamped.\n    length_beats: New length in beats (> 0), resized from the current start.\n    channel: New MIDI channel (0-15).\n\nReturns:\n    {ok, notes_changed, clamped, skipped, out_of_bounds, notes:[...]}, or {ok:false, error}\n    for a bad index, an empty edit, or an out-of-range value (nothing is written).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "note_index": {
+            "type": "integer"
+          },
+          "pitch": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "start_beat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "length_beats": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "channel": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "return_notes": {
+            "default": true,
+            "type": "boolean"
+          },
+          "fields": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index",
+          "note_index"
+        ]
+      }
+    },
+    {
+      "name": "ramp_midi_note_velocities",
+      "description": "Apply a linear velocity ramp (crescendo / decrescendo) across MIDI notes.\n\nVelocities interpolate by onset: the earliest note in the filtered set gets\nstart_velocity, the latest gets end_velocity, everything between is linear. Notes\nsharing an onset (a chord) get the same velocity. Results clamp to 1-127.\n\nArgs:\n    start_velocity: Velocity at the earliest onset (1-127; out of range clamps, not an error).\n    end_velocity: Velocity at the latest onset (1-127).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "start_velocity": {
+            "type": "integer"
+          },
+          "end_velocity": {
+            "type": "integer"
+          },
+          "pitch_low": {
+            "default": 0,
+            "type": "integer"
+          },
+          "pitch_high": {
+            "default": 127,
+            "type": "integer"
+          },
+          "start_beat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "end_beat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "channel": {
+            "default": -1,
+            "type": "integer"
+          },
+          "return_notes": {
+            "default": true,
+            "type": "boolean"
+          },
+          "fields": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index",
+          "start_velocity",
+          "end_velocity"
+        ]
+      }
+    },
+    {
+      "name": "scale_midi_note_velocities",
+      "description": "Scale MIDI note velocities: multiply, set to a fixed value, or compress toward a pivot.\nResults clamp to 1-127.\n\nArgs:\n    mode: \"multiply\" (velocity * ratio), \"set\" (velocity becomes `value`), or \"compress\"\n        (pivot + (velocity - pivot) * ratio).\n    ratio: Multiply factor (>= 0, no upper cap), or compress amount (0.0-1.0, where 0\n        collapses every note onto the pivot and 1.0 changes nothing).\n    value: Target velocity for \"set\" mode (1-127).\n    pivot: What compress pulls toward (1-127), or -1 for the rounded mean of the matched\n        notes' velocities (reported as pivot_used).\n\nReturns:\n    {ok, notes_changed, clamped, skipped, out_of_bounds, pivot_used, notes:[...]}.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "mode": {
+            "default": "multiply",
+            "type": "string"
+          },
+          "ratio": {
+            "default": 1,
+            "type": "number"
+          },
+          "value": {
+            "default": 100,
+            "type": "integer"
+          },
+          "pivot": {
+            "default": -1,
+            "type": "integer"
+          },
+          "pitch_low": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "pitch_high": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "start_beat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "end_beat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "channel": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "return_notes": {
+            "default": true,
+            "type": "boolean"
+          },
+          "fields": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index"
+        ]
+      }
+    },
+    {
+      "name": "strum_midi_notes",
+      "description": "Strum chords: stagger the onsets of simultaneous notes so each chord rolls out.\n\nOnly onsets move; note lengths are preserved.\n\nArgs:\n    spread_beats: Total first-to-last onset span within each chord (>= 0; 0 = no-op).\n    direction: \"up\" strikes the lowest note of a chord first, \"down\" the highest.\n    chord_window_beats: Onset tolerance for grouping notes into one chord (0 = exact\n        same onset).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "spread_beats": {
+            "type": "number"
+          },
+          "direction": {
+            "default": "up",
+            "type": "string"
+          },
+          "chord_window_beats": {
+            "default": 0,
+            "type": "number"
+          },
+          "pitch_low": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "pitch_high": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "start_beat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "end_beat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "channel": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "return_notes": {
+            "default": true,
+            "type": "boolean"
+          },
+          "fields": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index",
+          "spread_beats"
+        ]
+      }
+    },
+    {
+      "name": "snap_midi_notes_to_scale",
+      "description": "Snap off-key MIDI notes onto a scale (fix a wrong note, force a part into a key).\n\nNotes already in the scale are left alone; each off-scale note moves to the nearest\nin-scale pitch, and under `nearest` a tie resolves toward the middle of the selection.\nA note with no in-scale pitch left inside 0-127 stays put and is counted in `skipped`.\n\nArgs:\n    root: Root pitch class, 0-11 (0=C, 1=C#, 2=D ... 11=B).\n    mode: Scale name: major, minor, harmonic_minor, melodic_minor, dorian, phrygian,\n        lydian, mixolydian, locrian, major_pentatonic, minor_pentatonic, blues,\n        whole_tone, chromatic (aliases: ionian, aeolian, natural_minor). Or a custom\n        list of semitone intervals from the root, each 0-11 (e.g. [0,2,4,7,9]).\n    direction: \"nearest\" (closest scale tone), \"up\" or \"down\" (that way only, skipping\n        a note rather than falling back to the other direction).\n\nReturns:\n    {ok, notes_changed, clamped, skipped, out_of_bounds, notes:[...]}; `notes` is the\n    post-transform list, with indices re-synced after the sort.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "root": {
+            "type": "integer"
+          },
+          "mode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              }
+            ],
+            "default": "major"
+          },
+          "direction": {
+            "default": "nearest",
+            "type": "string"
+          },
+          "pitch_low": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "pitch_high": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "start_beat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "end_beat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "channel": {
+            "default": -1,
+            "type": "integer"
+          },
+          "return_notes": {
+            "default": true,
+            "type": "boolean"
+          },
+          "fields": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index",
+          "root"
+        ]
+      }
+    },
+    {
+      "name": "quantize_midi_notes",
+      "description": "Quantize MIDI note onsets onto the grid (tighten sloppy timing, add swing).\n\nOnsets snap to the PROJECT bar/beat grid, not to an offset from the item's own start,\nand note lengths are preserved: start and end move together. Notes that land past the\nitem end are kept, and one that would land before the item start is placed at it; both\nare counted in `out_of_bounds` (`clamped` stays 0 here).\n\nArgs:\n    grid: Grid spacing in beats: 0.25 = 1/16, 0.5 = 1/8, 1.0 = 1/4. Must be > 0.\n    strength: 0.0-1.0. 1.0 snaps exactly onto the grid, 0.5 moves each note halfway\n        there, 0.0 is a no-op.\n    swing: 0.0-1.0. 0.0 = straight, 1.0 = full triplet feel (off-beats at 66.7%),\n        scaling linearly between. Only the off-beat (odd) grid cells are delayed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "grid": {
+            "default": 0.25,
+            "type": "number"
+          },
+          "strength": {
+            "default": 1,
+            "type": "number"
+          },
+          "swing": {
+            "default": 0,
+            "type": "number"
+          },
+          "pitch_low": {
+            "default": 0,
+            "type": "integer"
+          },
+          "pitch_high": {
+            "default": 127,
+            "type": "integer"
+          },
+          "start_beat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "end_beat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "channel": {
+            "default": -1,
+            "type": "integer"
+          },
+          "return_notes": {
+            "default": true,
+            "type": "boolean"
+          },
+          "fields": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index"
+        ]
+      }
+    },
+    {
+      "name": "stretch_midi_notes",
+      "description": "Stretch or compress MIDI timing (half-time, double-time, or any ratio).\n\nEach targeted note scales as a rigid unit about one fixed pivot: its distance from the\npivot and its own length both multiply by `factor`, so the rhythm is preserved and only\nthe speed changes. Notes that land past the item end are kept as-is; one pushed before\nthe item start begins at the item start but keeps its scaled end, so it comes out\nshorter. Both are counted in `out_of_bounds` (`clamped` stays 0 here).\n\nArgs:\n    factor: Time scale ratio, must be > 0. 2.0 = twice as long (half-time), 0.5 = half\n        as long (double-time).\n    pivot_beat: The fixed point, in beats from the item start; may be negative. None =\n        the earliest targeted onset.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "factor": {
+            "type": "number"
+          },
+          "pivot_beat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "pitch_low": {
+            "default": 0,
+            "type": "integer"
+          },
+          "pitch_high": {
+            "default": 127,
+            "type": "integer"
+          },
+          "start_beat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "end_beat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "channel": {
+            "default": -1,
+            "type": "integer"
+          },
+          "return_notes": {
+            "default": true,
+            "type": "boolean"
+          },
+          "fields": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index",
+          "factor"
+        ]
+      }
+    },
+    {
+      "name": "legato_midi_notes",
+      "description": "Close the gaps in a MIDI line (legato), or set every note to one length.\n\nOnly note ends move; starts are never touched. \"connect\" extends each note's end to the\nnext onset and never shortens anything; a gap wider than max_gap_beats is left as a rest\nand counted in gaps_preserved, and the last note is left alone. \"fixed\" instead sets every\ntargeted note's length to length_beats. Notes whose new end passes the item end are kept\nand reported in out_of_bounds.\n\nArgs:\n    mode: \"connect\" (extend each end to the next onset) or \"fixed\" (set every length).\n    voice: connect only. \"chordal\" extends to the next onset of any note, so a chord's\n        notes move together; \"per_pitch\" extends to the next note of the SAME pitch and\n        channel, keeping interleaved voices independent.\n    max_gap_beats: connect only. Gaps wider than this are left as rests (>= 0).\n    length_beats: fixed only. The length every targeted note is set to (> 0).\n\nReturns:\n    {ok, notes_changed, clamped, skipped, out_of_bounds, gaps_preserved, notes:[...]}.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "mode": {
+            "default": "connect",
+            "type": "string"
+          },
+          "voice": {
+            "default": "chordal",
+            "type": "string"
+          },
+          "max_gap_beats": {
+            "default": 4,
+            "type": "number"
+          },
+          "length_beats": {
+            "default": 1,
+            "type": "number"
+          },
+          "pitch_low": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "pitch_high": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "start_beat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "end_beat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "channel": {
+            "default": -1,
+            "type": "integer"
+          },
+          "return_notes": {
+            "default": true,
+            "type": "boolean"
+          },
+          "fields": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index"
+        ]
+      }
+    },
+    {
+      "name": "humanize_midi_notes",
+      "description": "Humanize MIDI: nudge timing and velocity by small random amounts, reproducibly.\n\nEach note gets its own timing and velocity offset drawn from a bell curve. Note lengths\nare preserved (start and end move together) and pitches are never touched. The randomness\nis seeded, so the same take with the same seed and settings gives identical results every\ntime. Velocities are clamped to 1-127 and counted in clamped; notes pushed past the item\nend are kept and reported in out_of_bounds.\n\nUnlike the other timing tools, a note pushed before the item start is placed at the\nitem start and counted in out_of_bounds, not clamped; clamped here counts only the\nvelocity clamp.\n\nArgs:\n    timing: Timing spread in beats (standard deviation); 0.02 is a subtle human feel,\n        0.0 leaves timing alone.\n    velocity: Velocity spread (standard deviation, in velocity units); 0.0 leaves\n        velocity alone.\n    seed: Any integer. The same seed, settings and take give the same result.\n    max_sigma: Cap on how far one note may stray, in multiples of the spread.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "timing": {
+            "default": 0.02,
+            "type": "number"
+          },
+          "velocity": {
+            "default": 8,
+            "type": "number"
+          },
+          "seed": {
+            "default": 0,
+            "type": "integer"
+          },
+          "pitch_low": {
+            "default": 0,
+            "type": "integer"
+          },
+          "pitch_high": {
+            "default": 127,
+            "type": "integer"
+          },
+          "start_beat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "end_beat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "channel": {
+            "default": -1,
+            "type": "integer"
+          },
+          "max_sigma": {
+            "default": 2,
+            "type": "number"
+          },
+          "return_notes": {
+            "default": true,
+            "type": "boolean"
+          },
+          "fields": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index"
+        ]
+      }
+    },
+    {
+      "name": "remove_overlapping_midi_notes",
+      "description": "Clean up overlapping MIDI notes (same pitch stacked on itself).\n\nTwo notes conflict only if they share a pitch AND a channel AND overlap in time, so a\nchord is never a conflict and notes that merely touch are left alone. \"trim\" shortens the\nearlier note to stop where the next begins, losing nothing; \"delete\" drops one note of\neach overlapping pair, keeping the louder (ties go to the longer note).\n\nEither mode can remove notes: notes stacked on the exact same onset collapse to the\nloudest, since there is nothing to trim between them, and a trim left shorter than\nmin_length_beats is removed rather than left as a click.\n\nArgs:\n    mode: \"trim\" (shorten the earlier note) or \"delete\" (drop the quieter note).\n    min_length_beats: A trimmed note left shorter than this is removed instead. Default\n        1/128 of a beat; 0 disables it.\n    pitch_low, pitch_high: Notes outside the filter are invisible: never touched,\n        and never counted as an overlap partner.\n\nReturns:\n    {ok, mode, notes_changed, clamped, skipped, out_of_bounds, notes_removed, trimmed,\n    deduped, deleted, notes:[...]} where notes_removed = deduped + deleted.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "mode": {
+            "default": "trim",
+            "type": "string"
+          },
+          "min_length_beats": {
+            "default": 0.0078125,
+            "type": "number"
+          },
+          "pitch_low": {
+            "default": 0,
+            "type": "integer"
+          },
+          "pitch_high": {
+            "default": 127,
+            "type": "integer"
+          },
+          "start_beat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "end_beat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "channel": {
+            "default": -1,
+            "type": "integer"
+          },
+          "return_notes": {
+            "default": true,
+            "type": "boolean"
+          },
+          "fields": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index"
+        ]
+      }
+    },
+    {
+      "name": "insert_audio_file",
+      "description": "Insert an audio file onto a track.\n\nArgs:\n    file_path: Full path to the audio file.\n    position: Position in seconds.\n\nReturns:\n    Object with track_index, item_index of the created item, and position.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "file_path": {
+            "type": "string"
+          },
+          "position": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "track_index",
+          "file_path",
+          "position"
+        ]
+      }
+    },
+    {
+      "name": "get_track_items",
+      "description": "Get all media items on a track.\n\nReturns:\n    Object with list of items.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index"
+        ]
+      }
+    },
+    {
+      "name": "get_item_info",
+      "description": "Get information about a media item.\n\nReturns:\n    Object with item properties (position, length, take info, etc.).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index"
+        ]
+      }
+    },
+    {
+      "name": "set_item_position",
+      "description": "Set the position of a media item.\n\nArgs:\n    position: New position in seconds.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "position": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index",
+          "position"
+        ]
+      }
+    },
+    {
+      "name": "set_item_length",
+      "description": "Set the length of a media item.\n\nArgs:\n    length: New length in seconds.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "length": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index",
+          "length"
+        ]
+      }
+    },
+    {
+      "name": "delete_item",
+      "description": "Delete a media item.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index"
+        ]
+      }
+    },
+    {
+      "name": "duplicate_item",
+      "description": "Duplicate a media item.\n\nReturns:\n    Object with new item info.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index"
+        ]
+      }
+    },
+    {
+      "name": "split_item",
+      "description": "Split a media item at a position.\n\nArgs:\n    position: Split position in seconds (absolute project time).\n\nReturns:\n    Object with info about both resulting items.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "position": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index",
+          "position"
+        ]
+      }
+    },
+    {
+      "name": "set_item_mute",
+      "description": "Mute or unmute a media item.\n\nArgs:\n    mute: True to mute, False to unmute.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "mute": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index",
+          "mute"
+        ]
+      }
+    },
+    {
+      "name": "set_item_volume",
+      "description": "Set the volume of a media item.\n\nArgs:\n    volume_db: Volume in dB.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "volume_db": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index",
+          "volume_db"
+        ]
+      }
+    },
+    {
+      "name": "set_item_fade_in",
+      "description": "Set the fade-in length of a media item.\n\nArgs:\n    length: Fade-in length in seconds.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "length": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index",
+          "length"
+        ]
+      }
+    },
+    {
+      "name": "set_item_fade_out",
+      "description": "Set the fade-out length of a media item.\n\nArgs:\n    length: Fade-out length in seconds.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "item_index": {
+            "type": "integer"
+          },
+          "length": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "track_index",
+          "item_index",
+          "length"
+        ]
+      }
+    },
+    {
+      "name": "set_tempo",
+      "description": "Set the project tempo.\n\nArgs:\n    bpm: Tempo in beats per minute.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "bpm": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "bpm"
+        ]
+      }
+    },
+    {
+      "name": "set_time_signature",
+      "description": "Set the project time signature.\n\nArgs:\n    numerator: Beats per measure (e.g., 4 for 4/4).\n    denominator: Beat unit (e.g., 4 for quarter note).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "numerator": {
+            "type": "integer"
+          },
+          "denominator": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "numerator",
+          "denominator"
+        ]
+      }
+    },
+    {
+      "name": "create_project",
+      "description": "Create a new REAPER project.\n\nNote: REAPER has no API to name a project that has never been saved, so this server\nhas no way to name one either. The removed `name` parameter never took effect.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "open_project",
+      "description": "Open a REAPER project file.\n\nArgs:\n    path: Full path to the .rpp file.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    },
+    {
+      "name": "render_project",
+      "description": "Render the project's master mix to an audio file (uses REAPER's last render settings\nfor format details; a .wav extension selects WAV output).\n\nIf the target file already exists, this returns an error unless overwrite=True\n(which deletes the existing file first). This is explicit because REAPER's own\nbehavior on existing files (prompt vs auto-increment) is a user preference, and the\noverwrite prompt blocks unattended rendering.\n\nArgs:\n    output_path: Full path for output file (extension determines format).\n    start_time: Start time in seconds (None = project start).\n    end_time: End time in seconds (None = project end).\n    tail_seconds: Extra seconds to render at end for reverb tails.\n    overwrite: True to replace an existing file at output_path.\n\nReturns:\n    Object with render status and REAPER's computed output target(s).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "output_path": {
+            "type": "string"
+          },
+          "start_time": {
+            "default": null,
+            "type": "number"
+          },
+          "end_time": {
+            "default": null,
+            "type": "number"
+          },
+          "tail_seconds": {
+            "default": 0,
+            "type": "number"
+          },
+          "overwrite": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "output_path"
+        ]
+      }
+    },
+    {
+      "name": "render_region",
+      "description": "NOT IMPLEMENTED. Use render_project with the region's start/end from get_regions.\n\nArgs:\n    output_path: Full path for output file.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "region_index": {
+            "type": "integer"
+          },
+          "output_path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "region_index",
+          "output_path"
+        ]
+      }
+    },
+    {
+      "name": "add_marker",
+      "description": "Add a marker at a position.\n\nArgs:\n    position: Position in seconds.\n    name: Marker name.\n    color: Marker color (0 = default).\n\nReturns:\n    Object with marker index.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "number"
+          },
+          "name": {
+            "default": "",
+            "type": "string"
+          },
+          "color": {
+            "default": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "position"
+        ]
+      }
+    },
+    {
+      "name": "add_region",
+      "description": "Add a region.\n\nArgs:\n    start: Start position in seconds.\n    end: End position in seconds.\n    name: Region name.\n    color: Region color (0 = default).\n\nReturns:\n    Object with region index.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "start": {
+            "type": "number"
+          },
+          "end": {
+            "type": "number"
+          },
+          "name": {
+            "default": "",
+            "type": "string"
+          },
+          "color": {
+            "default": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "start",
+          "end"
+        ]
+      }
+    },
+    {
+      "name": "get_markers",
+      "description": "Get all markers in the project.\n\nReturns:\n    Object with list of markers (position, name, index).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "get_regions",
+      "description": "Get all regions in the project.\n\nReturns:\n    Object with list of regions (start, end, name, index).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "delete_marker",
+      "description": "Delete a marker by index.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "marker_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "marker_index"
+        ]
+      }
+    },
+    {
+      "name": "delete_region",
+      "description": "Delete a region by index.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "region_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "region_index"
+        ]
+      }
+    },
+    {
+      "name": "go_to_marker",
+      "description": "Move the edit cursor to a marker.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "marker_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "marker_index"
+        ]
+      }
+    },
+    {
+      "name": "go_to_region",
+      "description": "Move the edit cursor to a region start.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "region_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "region_index"
+        ]
+      }
+    },
+    {
+      "name": "get_track_envelope",
+      "description": "Get a track envelope by name.\n\nArgs:\n    envelope_name: Envelope name (e.g., \"Volume\", \"Pan\", \"Mute\").\n\nReturns:\n    Object with envelope info.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "envelope_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "track_index",
+          "envelope_name"
+        ]
+      }
+    },
+    {
+      "name": "get_envelope_point_count",
+      "description": "Get the number of points in an envelope.\n\nArgs:\n    envelope_name: Envelope name.\n\nReturns:\n    Object with point count.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "envelope_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "track_index",
+          "envelope_name"
+        ]
+      }
+    },
+    {
+      "name": "add_envelope_point",
+      "description": "Add a point to an envelope.\n\nArgs:\n    envelope_name: Envelope name.\n    time: Time position in seconds.\n    value: Envelope value (0.0-1.0 for most envelopes).\n    shape: Point shape (0=linear, 1=square, 2=slow start/end, 3=fast start, 4=fast end, 5=bezier).\n\nReturns:\n    Object with point index.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "envelope_name": {
+            "type": "string"
+          },
+          "time": {
+            "type": "number"
+          },
+          "value": {
+            "type": "number"
+          },
+          "shape": {
+            "default": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "envelope_name",
+          "time",
+          "value"
+        ]
+      }
+    },
+    {
+      "name": "get_envelope_points",
+      "description": "Get all points from an envelope.\n\nArgs:\n    envelope_name: Envelope name.\n\nReturns:\n    Object with list of points (time, value, shape).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "envelope_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "track_index",
+          "envelope_name"
+        ]
+      }
+    },
+    {
+      "name": "delete_envelope_point",
+      "description": "Delete an envelope point.\n\nArgs:\n    envelope_name: Envelope name.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "envelope_name": {
+            "type": "string"
+          },
+          "point_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "envelope_name",
+          "point_index"
+        ]
+      }
+    },
+    {
+      "name": "clear_envelope",
+      "description": "Delete all points from an envelope.\n\nArgs:\n    envelope_name: Envelope name.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "envelope_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "track_index",
+          "envelope_name"
+        ]
+      }
+    },
+    {
+      "name": "set_track_automation_mode",
+      "description": "Set the automation mode for a track.\n\nArgs:\n    mode: 0=trim/read, 1=read, 2=touch, 3=write, 4=latch.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "mode": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "mode"
+        ]
+      }
+    },
+    {
+      "name": "arm_track_envelope",
+      "description": "Arm or disarm an envelope for recording.\n\nArgs:\n    envelope_name: Envelope name.\n    arm: True to arm, False to disarm.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "envelope_name": {
+            "type": "string"
+          },
+          "arm": {
+            "default": true,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "track_index",
+          "envelope_name"
+        ]
+      }
+    },
+    {
+      "name": "get_fx_envelope",
+      "description": "Get or create an automation envelope for an FX parameter.\n\nThis enables automation of any FX parameter (e.g., a flanger knob in Guitar Rig).\nThe envelope is created if it doesn't exist.\n\nArgs:\n    param_index: Parameter index (0-based). Use track_fx_get_num_params() to find available parameters.\n\nReturns:\n    Object with envelope_name, param_name, point_count, and indices.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "fx_index": {
+            "type": "integer"
+          },
+          "param_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "fx_index",
+          "param_index"
+        ]
+      }
+    },
+    {
+      "name": "add_fx_envelope_point",
+      "description": "Add an automation point to an FX parameter envelope.\n\nArgs:\n    time: Time position in seconds.\n    value: Parameter value (typically 0.0-1.0, normalized).\n    shape: Point shape (0=linear, 1=square, 2=slow start/end, 3=fast start, 4=fast end, 5=bezier).\n\nReturns:\n    Object with point_index and confirmation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "fx_index": {
+            "type": "integer"
+          },
+          "param_index": {
+            "type": "integer"
+          },
+          "time": {
+            "type": "number"
+          },
+          "value": {
+            "type": "number"
+          },
+          "shape": {
+            "default": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "fx_index",
+          "param_index",
+          "time",
+          "value"
+        ]
+      }
+    },
+    {
+      "name": "get_fx_envelope_points",
+      "description": "Get all automation points from an FX parameter envelope.\n\nReturns:\n    Object with list of points (time, value, shape, tension, selected).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "fx_index": {
+            "type": "integer"
+          },
+          "param_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "fx_index",
+          "param_index"
+        ]
+      }
+    },
+    {
+      "name": "delete_fx_envelope_point",
+      "description": "Delete an automation point from an FX parameter envelope.\n\nArgs:\n    point_index: Point index (0-based) to delete.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "fx_index": {
+            "type": "integer"
+          },
+          "param_index": {
+            "type": "integer"
+          },
+          "point_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "fx_index",
+          "param_index",
+          "point_index"
+        ]
+      }
+    },
+    {
+      "name": "clear_fx_envelope",
+      "description": "Clear all automation points from an FX parameter envelope.\n\nReturns:\n    Object with deleted_count.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "fx_index": {
+            "type": "integer"
+          },
+          "param_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "fx_index",
+          "param_index"
+        ]
+      }
+    },
+    {
+      "name": "undo",
+      "description": "Undo the last action in REAPER.\n\nReturns:\n    Object with undo description.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "redo",
+      "description": "Redo the last undone action in REAPER.\n\nReturns:\n    Object with redo description.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "get_undo_state",
+      "description": "Get the current undo/redo state.\n\nReturns:\n    Object with undo and redo descriptions.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "select_track",
+      "description": "Select a track.\n\nArgs:\n    exclusive: If True, deselect other tracks first.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "exclusive": {
+            "default": true,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "track_index"
+        ]
+      }
+    },
+    {
+      "name": "select_all_tracks",
+      "description": "Select all tracks.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "unselect_all_tracks",
+      "description": "Unselect all tracks.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "get_selected_tracks",
+      "description": "Get indices of all selected tracks.\n\nReturns:\n    Object with list of selected track indices.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "select_all_items",
+      "description": "Select all media items.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "unselect_all_items",
+      "description": "Unselect all media items.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "get_selected_items",
+      "description": "Get all selected media items.\n\nReturns:\n    Object with list of selected items.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "copy_selected_items",
+      "description": "Copy selected items to clipboard.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "cut_selected_items",
+      "description": "Cut selected items to clipboard.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "paste_items",
+      "description": "Paste items from clipboard at edit cursor.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "delete_selected_items",
+      "description": "Delete all selected items.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "set_time_selection",
+      "description": "Set the time selection.\n\nArgs:\n    start: Start time in seconds.\n    end: End time in seconds.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "start": {
+            "type": "number"
+          },
+          "end": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "start",
+          "end"
+        ]
+      }
+    },
+    {
+      "name": "get_time_selection",
+      "description": "Get the current time selection.\n\nReturns:\n    Object with start and end times.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "clear_time_selection",
+      "description": "Clear the time selection.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "set_track_phase",
+      "description": "Set the phase inversion of a track.\n\nArgs:\n    invert: True to invert phase, False for normal.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "invert": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "track_index",
+          "invert"
+        ]
+      }
+    },
+    {
+      "name": "set_track_width",
+      "description": "Set the stereo width of a track.\n\nArgs:\n    width: Width value (0=mono, 1=stereo, 2=200% width).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "width": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "track_index",
+          "width"
+        ]
+      }
+    },
+    {
+      "name": "set_track_as_folder",
+      "description": "Set a track as a folder parent or child.\n\nArgs:\n    folder_depth: 0=normal, 1=folder parent, -1=end of folder.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "folder_depth": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "folder_depth"
+        ]
+      }
+    },
+    {
+      "name": "arm_track",
+      "description": "Arm or disarm a track for recording.\n\nArgs:\n    arm: True to arm, False to disarm.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "arm": {
+            "default": true,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "track_index"
+        ]
+      }
+    },
+    {
+      "name": "set_track_input",
+      "description": "Set the record input for a track.\n\nArgs:\n    input_index: Input index (-1=no input, 0+=hardware inputs, 4096+=virtual MIDI).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "input_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "input_index"
+        ]
+      }
+    },
+    {
+      "name": "set_track_monitor",
+      "description": "Set the monitor mode for a track.\n\nArgs:\n    monitor: 0=off, 1=normal, 2=not when playing.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "monitor": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "monitor"
+        ]
+      }
+    },
+    {
+      "name": "set_track_color",
+      "description": "Set the color of a track.\n\nArgs:\n    r: Red component (0-255).\n    g: Green component (0-255).\n    b: Blue component (0-255).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "r": {
+            "type": "integer"
+          },
+          "g": {
+            "type": "integer"
+          },
+          "b": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "r",
+          "g",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "get_track_peak",
+      "description": "Get the current peak level of a track.\n\nArgs:\n    channel: Channel (0=left, 1=right).\n\nReturns:\n    Object with peak value in dB.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "channel": {
+            "default": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index"
+        ]
+      }
+    },
+    {
+      "name": "get_track_peak_hold",
+      "description": "Get the peak hold level of a track (highest peak since meters were last reset).\n\nReturns the max peak from a previous playback without needing to be actively\nplaying - play the project, stop, then call this for gain staging.\n\nArgs:\n    channel: Channel (0=left, 1=right).\n\nReturns:\n    Object with peak hold value in dB.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "channel": {
+            "default": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index"
+        ]
+      }
+    },
+    {
+      "name": "clear_all_peak_indicators",
+      "description": "Clear the peak hold indicators on all tracks (including master).\n\nResets the held peak values that accumulate during playback. Use before a\nfresh playback pass when you want clean readings for gain staging.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "get_track_master_send",
+      "description": "Get the master/parent send state of a track.\n\nReturns:\n    Object with 'ret' field (1 = enabled, 0 = disabled).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index"
+        ]
+      }
+    },
+    {
+      "name": "set_track_master_send",
+      "description": "Enable or disable the master/parent send on a track.\n\nWhen enabled, the track's audio routes to its parent folder track (or the\nmaster if it has no parent). Disable it when a track should only output\nthrough its sends (e.g., routed exclusively to a bus).\n\nArgs:\n    enabled: True to enable, False to disable.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "track_index",
+          "enabled"
+        ]
+      }
+    },
+    {
+      "name": "run_action",
+      "description": "Run a REAPER action by command ID.\n\nArgs:\n    action_id: REAPER action/command ID number.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action_id": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "action_id"
+        ]
+      }
+    },
+    {
+      "name": "run_action_by_name",
+      "description": "Run a REAPER action by its named command id.\n\nNamed commands (e.g. ReaScripts \"_RS12345\" or SWS \"_SWS_...\") are resolved\nto a numeric command id via NamedCommandLookup before firing. A purely numeric\nstring (e.g. \"40297\") is treated as a built-in command id and run directly;\nprefer run_action(action_id) for built-ins.\n\nArgs:\n    action_name: Named command id (e.g. \"_RS12345\") or a numeric command id string.\n\nReturns:\n    If the named command cannot be resolved,\n    returns {\"ok\": False, \"error\": ...} without firing any action.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "action_name"
+        ]
+      }
+    },
+    {
+      "name": "get_fx_presets",
+      "description": "Get list of presets available for an FX.\n\nReturns:\n    Object with list of preset names.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "fx_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "fx_index"
+        ]
+      }
+    },
+    {
+      "name": "get_fx_preset",
+      "description": "Get the current preset name of an FX.\n\nReturns:\n    Object with current preset name.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "fx_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "fx_index"
+        ]
+      }
+    },
+    {
+      "name": "set_fx_preset",
+      "description": "Set the preset of an FX.\n\nArgs:\n    preset_name: Preset name.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "fx_index": {
+            "type": "integer"
+          },
+          "preset_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "track_index",
+          "fx_index",
+          "preset_name"
+        ]
+      }
+    },
+    {
+      "name": "save_fx_preset",
+      "description": "Save the current FX settings as a preset.\n\nArgs:\n    preset_name: Name for the new preset.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "fx_index": {
+            "type": "integer"
+          },
+          "preset_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "track_index",
+          "fx_index",
+          "preset_name"
+        ]
+      }
+    },
+    {
+      "name": "get_eq_bands",
+      "description": "Get all ReaEQ band settings in one structured call.\n\nArgs:\n    fx_index: FX index (0-based) of ReaEQ in the FX chain.\n\nReturns:\n    Object with a 'bands' list. Each band has band_index, bandtype,\n    bandtype_name, bandidx, paramtype, paramtype_name, normval, the\n    REAPER-formatted value, and (for gain params) the computed gain_db.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "fx_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "fx_index"
+        ]
+      }
+    },
+    {
+      "name": "set_eq_band",
+      "description": "Set a ReaEQ band parameter.\n\nPass real values by default: frequency in Hz (paramtype 0), gain in dB\n(paramtype 1), or Q (paramtype 2). Gain is converted to ReaEQ's normalized\ncurve internally; freq and Q are sent raw.\n\nArgs:\n    fx_index: FX index (0-based) of ReaEQ.\n    bandtype: -1=master gain, 0=hipass, 1=loshelf, 2=band, 3=notch,\n              4=hishelf, 5=lopass, 6=bandpass, 7=parallel bandpass.\n    bandidx: Band index within that type (0=first). Ignored for master gain.\n    paramtype: 0=frequency (Hz), 1=gain (dB), 2=Q. Ignored for master gain.\n    value: The value, in real units unless is_normalized=True.\n    is_normalized: If True, value is a raw 0-1 normalized value written directly.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "fx_index": {
+            "type": "integer"
+          },
+          "bandtype": {
+            "type": "integer"
+          },
+          "bandidx": {
+            "type": "integer"
+          },
+          "paramtype": {
+            "type": "integer"
+          },
+          "value": {
+            "type": "number"
+          },
+          "is_normalized": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "track_index",
+          "fx_index",
+          "bandtype",
+          "bandidx",
+          "paramtype",
+          "value"
+        ]
+      }
+    },
+    {
+      "name": "get_eq_band_enabled",
+      "description": "Check whether a ReaEQ band is enabled.\n\nArgs:\n    fx_index: FX index (0-based) of ReaEQ.\n    bandtype: Band type (0=hipass, 1=loshelf, 2=band, 3=notch, 4=hishelf, 5=lopass).\n    bandidx: Band index within that type (0=first).\n\nReturns:\n    Object with 'ret' boolean (true=enabled).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "fx_index": {
+            "type": "integer"
+          },
+          "bandtype": {
+            "type": "integer"
+          },
+          "bandidx": {
+            "default": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "fx_index",
+          "bandtype"
+        ]
+      }
+    },
+    {
+      "name": "set_eq_band_enabled",
+      "description": "Enable or disable a ReaEQ band.\n\nArgs:\n    fx_index: FX index (0-based) of ReaEQ.\n    bandtype: Band type (0=hipass, 1=loshelf, 2=band, 3=notch, 4=hishelf, 5=lopass).\n    bandidx: Band index within that type (0=first).\n    enabled: True to enable, False to disable.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "fx_index": {
+            "type": "integer"
+          },
+          "bandtype": {
+            "type": "integer"
+          },
+          "bandidx": {
+            "default": 0,
+            "type": "integer"
+          },
+          "enabled": {
+            "default": true,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "track_index",
+          "fx_index",
+          "bandtype"
+        ]
+      }
+    },
+    {
+      "name": "find_eq",
+      "description": "Find ReaEQ on a track, optionally adding it if absent.\n\nArgs:\n    instantiate: If True and ReaEQ is not present, add it.\n\nReturns:\n    Object with 'ret' = the FX index of ReaEQ, or -1 if not found.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "instantiate": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "track_index"
+        ]
+      }
+    },
+    {
+      "name": "get_track_fx_chunk",
+      "description": "Get the raw state chunk from an FX plugin (includes preset/state data).\n\nUseful for reading VSTi state data like Toontrack EZkeys chord progressions.\nThe chunk contains the full serialized state of the plugin.\n\nReturns:\n    Object with 'chunk' containing the FX state data string.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_index": {
+            "type": "integer"
+          },
+          "fx_index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_index",
+          "fx_index"
+        ]
+      }
+    },
+    {
+      "name": "get_project_length",
+      "description": "Get the length of the project (end of last item).\n\nReturns:\n    Object with project length in seconds.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "get_project_summary",
+      "description": "Get a comprehensive summary of the current REAPER project.\n\nReturns everything needed to understand the project state and give\nuseful mixing/production advice in a single call.\n\nReturns:\n    Object with:\n    - project_name: Name of the project file\n    - project_path: Full path to the project\n    - tempo: Project tempo in BPM\n    - time_signature: {numerator, denominator}\n    - project_length: Length in seconds\n    - track_count: Total number of tracks\n    - tracks: List of track info objects, each containing:\n        - index: Track index (0-based)\n        - name: Track name\n        - volume_db: Volume in decibels\n        - pan: Pan position (-1 to 1)\n        - mute: Boolean mute state\n        - solo: Boolean solo state\n        - fx_count: Number of FX plugins\n        - fx_names: List of FX plugin names\n    - master: Master track info {volume_db, fx_count, fx_names}\n    - markers: List of {index, position, name}\n    - regions: List of {index, start, end, name}",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "get_play_position",
+      "description": "Get the current playback position.\n\nReturns:\n    Object with play position in seconds.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "record",
+      "description": "Start recording in REAPER.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "pause",
+      "description": "Pause playback in REAPER.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "toggle_repeat",
+      "description": "Toggle repeat/loop mode.\n\nReturns:\n    Object with new repeat state.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "get_repeat_state",
+      "description": "Get the current repeat state.\n\nReturns:\n    Object with repeat state (true/false).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "zoom_to_selection",
+      "description": "Zoom the arrange view to the time selection.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "zoom_to_project",
+      "description": "Zoom the arrange view to show the entire project.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  ],
+  "stderrTail": "Downloading pydantic-core (2.0MiB)\nDownloading cryptography (4.5MiB)\n Downloaded pydantic-core\n Downloaded cryptography\nInstalled 30 packages in 8ms\ntwelvetake-reaper-mcp 1.7.3 | bridge dir: /tmp/.config/REAPER/Scripts/mcp_bridge_data\nProcessing request of type ListToolsRequest\n",
+  "durationMs": 16118,
+  "transport": "stdio"
+}

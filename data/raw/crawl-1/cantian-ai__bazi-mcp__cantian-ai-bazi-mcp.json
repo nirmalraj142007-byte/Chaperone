@@ -1,0 +1,73 @@
+{
+  "serverId": "cantian-ai__bazi-mcp__cantian-ai-bazi-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "getBaziDetail",
+      "description": "根据时间（公历或农历）、性别来获取八字信息。solarDatetime和lunarDatetime必须传且只传其中一个。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "solarDatetime": {
+            "type": "string",
+            "description": "用ISO时间格式表示的公历时间. 例如：`2008-03-01T13:00:00+08:00`。"
+          },
+          "lunarDatetime": {
+            "type": "string",
+            "description": "农历时间。例如农历2000年5月初五中午12点整表示为：`2000-5-5 12:00:00`。"
+          },
+          "gender": {
+            "type": "number",
+            "description": "传0表示女性，传1表示男性。"
+          },
+          "eightCharProviderSect": {
+            "type": "number",
+            "default": 2,
+            "description": "早晚子时配置。传1表示23:00-23:59日干支为明天，传2表示23:00-23:59日干支为当天。"
+          }
+        },
+        "required": [
+          "gender"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "getSolarTimes",
+      "description": "根据八字获取公历时间列表。返回的时间格式为：YYYY-MM-DD hh:mm:ss。例如时间1998年7月31日下午2点整表示为：1998-07-31 14:00:00",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "bazi": {
+            "type": "string",
+            "description": "八字，按年柱、月柱、日柱、时柱顺序，用空格隔开。例如：戊寅 己未 己卯 辛未"
+          }
+        },
+        "required": [
+          "bazi"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "getChineseCalendar",
+      "description": "获取指定公历时间（默认今天）的黄历信息。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "solarDatetime": {
+            "type": "string",
+            "description": "用ISO时间格式表示的公历时间. 例如：`2008-03-01T13:00:00+08:00`。"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 33412,
+  "transport": "stdio"
+}

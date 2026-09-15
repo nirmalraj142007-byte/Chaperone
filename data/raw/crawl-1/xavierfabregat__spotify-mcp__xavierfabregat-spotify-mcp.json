@@ -1,0 +1,283 @@
+{
+  "serverId": "xavierfabregat__spotify-mcp__xavierfabregat-spotify-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "authenticate",
+      "description": "Connects the user's Spotify account via OAuth. Opens a browser on this machine for approval and stores tokens locally. Use when other tools report you are not authenticated, or to switch accounts.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "play",
+      "description": "Plays music by free-text query (searches and starts the best match) or by Spotify URI. Handles \"play some Radiohead\", \"play the album Kind of Blue\", \"play my Discover Weekly\". Reports what it picked — relay that to the user so they can correct it.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "description": "What to play, e.g. \"Bill Evans\" or \"Kind of Blue\". Required unless uri is given.",
+            "type": "string"
+          },
+          "type": {
+            "description": "What the query refers to (default: track)",
+            "type": "string",
+            "enum": [
+              "track",
+              "album",
+              "artist",
+              "playlist"
+            ]
+          },
+          "uri": {
+            "description": "Spotify URI to play directly, e.g. from a previous search result",
+            "type": "string"
+          },
+          "device_id": {
+            "description": "Target device id (see the devices tool)",
+            "type": "string"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "playback",
+      "description": "Transport controls for the active playback: pause, resume, next, previous, seek (value = seconds), volume (value = 0-100), shuffle (value = on/off), repeat (value = off/context/track).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "pause",
+              "resume",
+              "next",
+              "previous",
+              "seek",
+              "volume",
+              "shuffle",
+              "repeat"
+            ]
+          },
+          "value": {
+            "description": "seek: seconds · volume: 0-100 · shuffle: on/off · repeat: off/context/track",
+            "type": [
+              "number",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "now_playing",
+      "description": "Current track, artist, album, progress, device, and shuffle/repeat state.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "queue",
+      "description": "action=add queues a track by query or URI; action=list shows what's playing and up next.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "add",
+              "list"
+            ]
+          },
+          "query": {
+            "description": "Track to queue by name (action=add)",
+            "type": "string"
+          },
+          "uri": {
+            "description": "Track URI to queue (action=add)",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "devices",
+      "description": "action=list shows available Spotify devices; action=transfer moves playback to a device by name or id.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "list",
+              "transfer"
+            ]
+          },
+          "device": {
+            "description": "Device name (fuzzy) or id (action=transfer)",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "search",
+      "description": "Searches the Spotify catalog. Use when the user wants options to choose from; for a direct 'play X' request, prefer the play tool. Results include URIs usable with play, queue, playlists, and library. Max 10 results per type (API limit).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search text"
+          },
+          "types": {
+            "description": "Result types to include (default: track)",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "track",
+                "album",
+                "artist",
+                "playlist"
+              ]
+            }
+          },
+          "limit": {
+            "description": "Results per type, 1-10 (default 5)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_playlists",
+      "description": "Lists the user's playlists with item counts and URIs.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "get_playlist_items",
+      "description": "Lists the tracks in one of the user's own or collaborative playlists (Spotify no longer exposes other users' playlist contents). Accepts a playlist id, URI, or URL.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "playlist": {
+            "type": "string",
+            "description": "Playlist id, spotify:playlist:… URI, or open.spotify.com URL"
+          },
+          "offset": {
+            "description": "Pagination offset (default 0)",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "playlist"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "modify_playlist",
+      "description": "action=create makes a new playlist (private by default); action=add_items appends track URIs to an existing playlist. Does not delete or remove anything.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "create",
+              "add_items"
+            ]
+          },
+          "name": {
+            "description": "New playlist name (action=create)",
+            "type": "string"
+          },
+          "description": {
+            "description": "New playlist description (action=create)",
+            "type": "string"
+          },
+          "public": {
+            "description": "Make the new playlist public (default false)",
+            "type": "boolean"
+          },
+          "playlist": {
+            "description": "Target playlist id/URI/URL (action=add_items)",
+            "type": "string"
+          },
+          "uris": {
+            "description": "Track URIs to add (action=add_items)",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "library",
+      "description": "Saves, removes, or checks items in the user's Spotify library ('liked'). Works with any content URI: tracks, albums, artists (follow), shows, episodes. To save the current song, get its URI from now_playing first.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "save",
+              "remove",
+              "check"
+            ]
+          },
+          "uris": {
+            "minItems": 1,
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Spotify URIs to act on"
+          }
+        },
+        "required": [
+          "action",
+          "uris"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "spotify-mcp ready (stdio)\n",
+  "durationMs": 35080,
+  "transport": "stdio"
+}

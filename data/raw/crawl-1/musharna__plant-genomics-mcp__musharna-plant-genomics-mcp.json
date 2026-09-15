@@ -1,0 +1,1503 @@
+{
+  "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "ensembl_plants_lookup_locus",
+      "description": "Fetch metadata for a plant locus identifier from Ensembl Plants. Defaults to arabidopsis_thaliana; pass organism= for other plant species (oryza_sativa, zea_mays, ...). Locus is the TAIR-style identifier (e.g. AT1G01010 for Arabidopsis NAC001).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "locus": {
+            "type": "string",
+            "description": "e.g. AT1G01010 (Arabidopsis), Os01g0100100 (rice)"
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Plant organism — accepts canonical slug (arabidopsis_thaliana), scientific or common name, or NCBI taxid",
+            "default": "arabidopsis_thaliana"
+          }
+        },
+        "required": [
+          "locus"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_gene_xrefs",
+      "description": "Fetch cross-database references (UniProt, NCBI Gene, TAIR, ArrayExpress, …) for a plant locus from Ensembl Plants. Defaults to arabidopsis_thaliana; pass organism= for other Ensembl Plants species. Returns count + raw xref list + a by_db rollup keyed on Ensembl's dbname (e.g. 'Uniprot_gn', 'EntrezGene') for fast lookup of a single foreign identifier.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "locus": {
+            "type": "string",
+            "description": "e.g. AT1G01010 (Arabidopsis), Os01g0100100 (rice)"
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Plant organism — accepts canonical slug (arabidopsis_thaliana), scientific or common name, or NCBI taxid",
+            "default": "arabidopsis_thaliana"
+          }
+        },
+        "required": [
+          "locus"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_sequence",
+      "description": "Fetch a locus's sequence from Ensembl Plants. seq_type is one of genomic / cds / cdna / protein (default protein — the canonical-transcript product). Closes the lookup → fetch → BLAST loop: feed the returned `sequence` straight to blast_sequence (protein for blastp, cds/cdna for blastn). Defaults to arabidopsis_thaliana; pass organism= for other plant species.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "locus": {
+            "type": "string",
+            "description": "e.g. AT1G01010 (Arabidopsis), Os01g0100100 (rice)"
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Plant organism — accepts canonical slug (arabidopsis_thaliana), scientific or common name, or NCBI taxid",
+            "default": "arabidopsis_thaliana"
+          },
+          "seq_type": {
+            "type": "string",
+            "enum": [
+              "genomic",
+              "cds",
+              "cdna",
+              "protein"
+            ],
+            "default": "protein",
+            "description": "Sequence type to fetch"
+          }
+        },
+        "required": [
+          "locus"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "ensembl_region_query",
+      "description": "List features overlapping a genomic interval via Ensembl Plants /overlap/region. region is the seq-region name (chromosome / contig, e.g. '1'); start and end are 1-based inclusive. feature is one of gene / transcript / cds / exon (default gene). Answers 'what genes are in this QTL interval / assembly window' without a per-locus lookup. Ensembl caps the span — oversized regions error. Defaults to arabidopsis_thaliana; pass organism= for other species.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "region": {
+            "type": "string",
+            "description": "seq-region name (chromosome / contig), e.g. '1' or 'Chr1'"
+          },
+          "start": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "1-based start"
+          },
+          "end": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "1-based inclusive end"
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Plant organism — accepts canonical slug (arabidopsis_thaliana), scientific or common name, or NCBI taxid",
+            "default": "arabidopsis_thaliana"
+          },
+          "feature": {
+            "type": "string",
+            "enum": [
+              "gene",
+              "transcript",
+              "cds",
+              "exon"
+            ],
+            "default": "gene",
+            "description": "Feature type to return"
+          }
+        },
+        "required": [
+          "region",
+          "start",
+          "end"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "phytozome_lookup_locus",
+      "description": "Fetch a gene record from Phytozome BioMart (phytozome-next.jgi.doe.gov). Defaults to arabidopsis_thaliana; pass organism= for other Phytozome proteomes (slug, scientific/common name, or NCBI taxid — e.g. glycine_max, sorghum_bicolor). Locus is the source-genome gene name (e.g. AT1G01010, Glyma.01G000100). Returns organism_name, gene_name, chromosome, gene_start, gene_end, strand, description.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "locus": {
+            "type": "string",
+            "description": "e.g. AT1G01010 (Arabidopsis), Glyma.01G000100 (soybean)"
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Plant organism — accepts canonical slug (arabidopsis_thaliana), scientific or common name, or NCBI taxid",
+            "default": "arabidopsis_thaliana"
+          }
+        },
+        "required": [
+          "locus"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "resolve_locus_to_uniprot",
+      "description": "Resolve a plant locus to its canonical UniProtKB record. Prefers reviewed (Swiss-Prot) entries; falls back to unreviewed (TrEMBL) when no curated record exists (common for non-Arabidopsis plants). organism accepts a canonical slug, scientific/common name, or NCBI taxid (default arabidopsis_thaliana; e.g. oryza_sativa, zea_mays). Returns primaryAccession, uniProtkbId, entryType, recommendedName, geneNames, organism, taxonId, sequenceLength, web_url. This is the protein-side entry point — pair with InterPro / AlphaFold / Reactome / structural-bio tools.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "locus": {
+            "type": "string",
+            "description": "e.g. AT1G01010 (Arabidopsis), Os01g0100100 (rice)"
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Plant organism — accepts canonical slug (arabidopsis_thaliana), scientific or common name, or NCBI taxid",
+            "default": "arabidopsis_thaliana"
+          }
+        },
+        "required": [
+          "locus"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "locus_literature",
+      "description": "Search Europe PMC for literature mentioning a plant locus. Free, no API key. Returns up to `size` results (default 10, capped at 25) with title, authors, journal, year, DOI, PMID, open-access status, citation count, and abstract. For non-Arabidopsis species the species common name is appended to the query to disambiguate locus IDs (rice, maize, ...). Pair with resolve_locus_to_uniprot or ensembl_plants_lookup_locus to ground the locus before fanning out to the literature.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "locus": {
+            "type": "string",
+            "description": "e.g. AT1G01010 (Arabidopsis), Os01g0100100 (rice)"
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Plant organism — accepts canonical slug (arabidopsis_thaliana), scientific or common name, or NCBI taxid",
+            "default": "arabidopsis_thaliana"
+          },
+          "size": {
+            "type": "integer",
+            "description": "Max results (1–25, default 10)",
+            "default": 10,
+            "minimum": 1,
+            "maximum": 25
+          },
+          "include_abstract": {
+            "type": "boolean",
+            "default": true,
+            "description": "Set false to null out abstractText, which is ~67% of this payload. The response echoes 'abstracts_included' so a null abstract is not mistaken for an article that has none."
+          }
+        },
+        "required": [
+          "locus"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "locus_go_annotations",
+      "description": "Fetch Gene Ontology annotations for a plant locus from QuickGO (EBI). Free, no API key. The locus is first resolved to a UniProt accession via the same logic as resolve_locus_to_uniprot, then QuickGO is queried by geneProductId. Returns annotations[] with goId/goName/goAspect/qualifier/evidence + a by_aspect rollup ({molecular_function: [{goId, goName}, ...], biological_process: [...], cellular_component: [...]}) deduped on goId so the high-level term set is one read away.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "locus": {
+            "type": "string",
+            "description": "e.g. AT1G01010 (Arabidopsis), Os01g0100100 (rice)"
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Plant organism — accepts canonical slug (arabidopsis_thaliana), scientific or common name, or NCBI taxid",
+            "default": "arabidopsis_thaliana"
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Max annotations from QuickGO (1–100, default 50)",
+            "default": 50,
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "locus"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "locus_plant_ontology",
+      "description": "Fetch Plant Ontology (PO) + Trait Ontology (TO) + experimental-condition (PECO) annotations for a plant locus from Planteome (browser.planteome.org, AmiGO2/GOlr; free, no API key). Complements locus_go_annotations: QuickGO serves GO (species-agnostic), Planteome serves the plant-specific ontologies — PO (anatomy + developmental stage), TO (traits). The locus is matched across Planteome's searchable bioentity fields and filtered by the organism's NCBI taxon. Returns annotations[] (term_id / term_name / ontology / aspect / evidence / reference) + a by_ontology rollup ({PO: [{term_id, term_name}, ...], TO: [...], PECO: [...]}) deduped on term_id. Coverage is strong for arabidopsis, rice, maize, grape, soybean, tomato; other organisms return an empty list, not an error. Defaults to arabidopsis_thaliana; pass organism= for other species.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "locus": {
+            "type": "string",
+            "description": "e.g. AT1G01010 (Arabidopsis), Os01g0100100 (rice)"
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Plant organism — accepts canonical slug (arabidopsis_thaliana), scientific or common name, or NCBI taxid",
+            "default": "arabidopsis_thaliana"
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Max annotations from Planteome (1–200, default 100)",
+            "default": 100,
+            "minimum": 1,
+            "maximum": 200
+          }
+        },
+        "required": [
+          "locus"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "go_enrichment",
+      "description": "GO + KEGG over-representation analysis for a gene LIST via g:Profiler g:GOSt (biit.cs.ut.ee/gprofiler; free, no API key). Unlike locus_go_annotations (one locus → its terms), this answers 'what is my gene SET enriched for?' — the dominant question for a differential-expression or co-expression cluster. loci is the query gene list (e.g. AT-codes for Arabidopsis, RAP-DB IDs for rice). sources defaults to GO:BP/GO:MF/GO:CC + KEGG; user_threshold is the g:SCS-corrected significance cutoff (default 0.05). Optional background sets a custom statistical domain (default: all annotated genes). Returns enriched[] (term_id/name/p_value/intersection_size/…, capped at top_n by p-value) plus unmapped[] — query loci g:Profiler could not recognize, surfaced so a locus-namespace mismatch is visible. Defaults to arabidopsis_thaliana; pass organism= for any of the 12 species.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "loci": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Query gene set, e.g. ['AT2G46830', 'AT1G01060', ...]"
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Plant organism — accepts canonical slug (arabidopsis_thaliana), scientific or common name, or NCBI taxid",
+            "default": "arabidopsis_thaliana"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "GO:BP",
+                "GO:MF",
+                "GO:CC",
+                "KEGG"
+              ]
+            },
+            "description": "Annotation sources to test (default: all four)"
+          },
+          "background": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Optional custom statistical background gene set"
+          },
+          "user_threshold": {
+            "type": "number",
+            "description": "Significance cutoff, g:SCS-corrected (default 0.05)",
+            "default": 0.05,
+            "exclusiveMinimum": 0,
+            "maximum": 1
+          },
+          "top_n": {
+            "type": "integer",
+            "description": "Max terms returned, sorted by p-value (1–200, default 50)",
+            "default": 50,
+            "minimum": 1,
+            "maximum": 200
+          }
+        },
+        "required": [
+          "loci"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "gramene_homologs",
+      "description": "Fetch orthologs and paralogs for a plant locus from Gramene compara (data.gramene.org v69). Default homology_type='ortholog'; pass 'paralog' for in-species duplicates or 'all' for everything. Returns target_locus + homology category (type) + shared gene_tree_id per hit. The fl=homology projection does not carry per-row taxon, identity, or protein ID; pair with resolve_locus_to_uniprot for protein-level enrichment and with blast_sequence for sequence similarity discovery.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "locus": {
+            "type": "string",
+            "description": "e.g. AT1G01010 (Arabidopsis), Os01g0100100 (rice)"
+          },
+          "homology_type": {
+            "type": "string",
+            "enum": [
+              "ortholog",
+              "paralog",
+              "all"
+            ],
+            "description": "Filter on homology kind",
+            "default": "ortholog"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 100,
+            "description": "Max homolog rows to return. 'total' always reports the true pre-cap count and 'truncated' says whether the cap bit."
+          }
+        },
+        "required": [
+          "locus"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "kegg_pathways",
+      "description": "Fetch KEGG pathway memberships for an Arabidopsis locus from rest.kegg.jp. Returns a list of pathway IDs + names + KEGG category classes the locus participates in. Pairs with locus_go_annotations for the GO-level functional view. Multi-organism caveat (v1.1.0): the organism= field accepts any plant in the matrix for symmetry with the other backends, but only arabidopsis_thaliana resolves — KEGG uses NCBI Entrez Gene IDs for rice/maize/etc. and our cross-backend locus contract can't produce those yet, so any other organism raises OrganismNotSupported before any HTTP call. KEGG v118+ is case-sensitive on the locus: pass AGI loci as uppercase.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "locus": {
+            "type": "string",
+            "description": "Arabidopsis AGI locus, e.g. AT1G01010 (case preserved verbatim — KEGG v118+ is case-sensitive)"
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Plant organism — only arabidopsis_thaliana is supported in v1.1.0; other plants raise OrganismNotSupported until an Entrez bridge lands",
+            "default": "arabidopsis_thaliana"
+          }
+        },
+        "required": [
+          "locus"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "bar_gene_summary",
+      "description": "Fetch the BAR (Bio-Analytic Resource, U Toronto) merged ThaleMine + GAIA-aliases summary for an Arabidopsis locus. Returns the TAIR curator summary + Araport11 computational description from /thalemine/gene_information/ together with the NCBI Gene ID and cross-DB aliases (RefSeq, UniProt, TIGR locus-model IDs) from /gaia/aliases/. Arabidopsis only — ThaleMine carries taxon 3702 plus yeast/human for ortholog cross-reference. BAR is keyless and a Global Core Biodata Resource (2023); replaces the v0.9 subscription-gated tair_locus_info stub for the curator-summary use case.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "locus": {
+            "type": "string",
+            "description": "Arabidopsis AGI locus, e.g. AT1G01010"
+          }
+        },
+        "required": [
+          "locus"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "bar_efp_expression",
+      "description": "Fetch BAR/eFP world-map natural-variation expression for an Arabidopsis locus. Wraps the world-eFP view at /microarray_gene_expression/world_efp/arabidopsis/{locus} — returns expression across ~36 ecotypes (Bay-0, Col-0, Cvi-1, Ler-2, ...) with per-replicate values, control samples, collection lat/lng, and a per-ecotype mean computed client-side. Arabidopsis only. BAR is keyless and a Global Core Biodata Resource (2023).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "locus": {
+            "type": "string",
+            "description": "Arabidopsis AGI locus, e.g. AT1G01010"
+          }
+        },
+        "required": [
+          "locus"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "bar_aiv_interactions",
+      "description": "Fetch BAR AIV (Arabidopsis Interactions Viewer) interactions for an Arabidopsis or rice locus. Dispatches by organism: Arabidopsis returns curated GRN paper refs from /interactions/get_paper_by_agi/{locus} (PubMed ID, title, image, comments, pipe-split tags); rice returns predicted PPI partners from /interactions/rice/{locus} with Pearson co-expression r (pcc), evidence hits, and quality score. The `kind` field discriminates the response shape (grn_papers vs ppi_predictions). Rice requires the MSU LOC_Os* locus format — RAP-DB Os*g* is rejected upstream. Only Arabidopsis and rice are supported by AIV; other organisms raise OrganismNotSupported.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "locus": {
+            "type": "string",
+            "description": "AGI locus (AT1G01010) for Arabidopsis or MSU locus (LOC_Os01g01080) for rice"
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "arabidopsis_thaliana or oryza_sativa — slug, scientific/common name, or NCBI taxid",
+            "default": "arabidopsis_thaliana"
+          }
+        },
+        "required": [
+          "locus"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "string_interactions",
+      "description": "Fetch protein-protein interaction partners from STRING-DB (string-db.org). Accepts either a UniProt accession or a locus identifier — the latter is resolved via UniProt first. Defaults to arabidopsis_thaliana; pass organism= for other plant species (slug, scientific/common name, or NCBI taxid). Returns first-neighbor partners with the combined STRING score plus per-channel sub-scores (experimental, database, textmining, predicted).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "locus_or_accession": {
+            "type": "string",
+            "description": "UniProt accession (Q0WV96) or locus (AT1G01010)"
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Number of partners to return",
+            "default": 20,
+            "minimum": 1,
+            "maximum": 500
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Plant organism — accepts canonical slug (arabidopsis_thaliana), scientific or common name, or NCBI taxid",
+            "default": "arabidopsis_thaliana"
+          }
+        },
+        "required": [
+          "locus_or_accession"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "tair_locus_info",
+      "description": "Fetch the TAIR curator-vetted Arabidopsis locus summary. Served via BAR/ThaleMine (U Toronto, Global Core Biodata Resource 2023) since TAIR's free per-locus REST API is gated behind a paid Phoenix Bioinformatics subscription. Returns TAIR curator summary + Araport11 computational description + NCBI Gene ID + cross-DB aliases (RefSeq, UniProt, TIGR locus-model IDs). Arabidopsis only. Alias of bar_gene_summary.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "locus": {
+            "type": "string",
+            "description": "Arabidopsis AGI locus, e.g. AT1G01010"
+          }
+        },
+        "required": [
+          "locus"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "plantcyc_locus_info",
+      "description": "Fetch metabolic annotation for a locus from PlantCyc / the Plant Metabolic Network (pmn.plantcyc.org; free BioCyc web-services API, no key). Walks gene → enzyme → catalyzed reactions → PlantCyc pathways in the organism's PGDB, returning enzymes[] + reactions[] (id/name) + pathways[] (id/name) — the metabolic-pathway view KEGG and GO don't provide. A non-enzymatic gene (e.g. a transcription factor) returns found=false with empty lists, not an error. reaction_count / pathway_count report true totals even when the lists are capped. 11 organisms have a PGDB (arabidopsis, rice, maize, soybean, grape, poplar, tomato, barley, sorghum, medicago, brachypodium); wheat is not yet mapped. Defaults to arabidopsis_thaliana (AraCyc, the best-curated); pass organism= for other species.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "locus": {
+            "type": "string",
+            "description": "e.g. AT3G51240 (Arabidopsis), Os11g0530600 (rice RAP-DB)"
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Plant organism — accepts canonical slug (arabidopsis_thaliana), scientific or common name, or NCBI taxid",
+            "default": "arabidopsis_thaliana"
+          }
+        },
+        "required": [
+          "locus"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "alphafold_structure",
+      "description": "Fetch the AlphaFold DB predicted-structure summary for a locus (alphafold.ebi.ac.uk; free, no key). Resolves the locus → UniProt accession, then returns the predicted model's global mean pLDDT confidence, the per-band pLDDT distribution, modelled residue span, latest model version, and mmCIF / PDB / PAE download URLs. A valid protein with no deposited model returns found=false (a normal outcome, not an error); a locus with no UniProt entry raises a typed NotFoundError. Works for all 12 organisms (UniProt-keyed). Complements resolve_locus_to_uniprot (sequence-level) with the structure-level view. Defaults to arabidopsis_thaliana; pass organism= for other species.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "locus": {
+            "type": "string",
+            "description": "e.g. AT4G09760 (Arabidopsis), Os01g0100100 (rice RAP-DB)"
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Plant organism — accepts canonical slug (arabidopsis_thaliana), scientific or common name, or NCBI taxid",
+            "default": "arabidopsis_thaliana"
+          }
+        },
+        "required": [
+          "locus"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "experimental_structures",
+      "description": "Fetch experimentally-solved (X-ray / cryo-EM / NMR) protein structures for a locus from PDBe (www.ebi.ac.uk/pdbe; free, no key). Resolves the locus → UniProt accession, then returns PDBe's best_structures mapping ranked best-first: per entry the PDB id, chain, experimental method, resolution, coverage, and modelled residue span. Most plant proteins have NO deposited structure — that returns found=false (a normal outcome, not an error); a locus with no UniProt entry raises a typed NotFoundError. structure_count is the true total even when the list is capped. Complements alphafold_structure (the predicted view). Works for all 12 organisms (UniProt-keyed). Defaults to arabidopsis_thaliana; pass organism= for other species.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "locus": {
+            "type": "string",
+            "description": "e.g. AT4G09760 (Arabidopsis), Os01g0100100 (rice RAP-DB)"
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Plant organism — accepts canonical slug (arabidopsis_thaliana), scientific or common name, or NCBI taxid",
+            "default": "arabidopsis_thaliana"
+          }
+        },
+        "required": [
+          "locus"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "tf_binding_motifs",
+      "description": "Fetch curated transcription-factor DNA binding motifs for a locus from JASPAR (jaspar.elixir.no; free, no key) — the cis-regulatory view. Resolves the locus → UniProt accession + gene symbol, searches JASPAR by symbol scoped to the organism's taxid, then CONFIRMS each candidate by matching the accession against the profile's uniprot_ids. Returns per motif the JASPAR matrix id, TF class/family, assay type (SELEX / ChIP-seq / PBM / DAP-seq), an IUPAC consensus derived from the position-frequency matrix (e.g. CACGTG, the G-box/ABRE core), motif length, PubMed refs, and an SVG sequence-logo URL. IMPORTANT: JASPAR's name search is fuzzy, so name-similarity hits belonging to a DIFFERENT gene are returned separately in name_only_matches and must NOT be attributed to this locus; only `motifs` is UniProt-confirmed. found=false means the gene has no curated profile (not a TF, or its family is unprofiled for that species) — a normal outcome, not an error. Use jaspar_motif to retrieve the raw matrix for any matrix_id. Coverage is Arabidopsis-heavy (1236 profiles) and thin elsewhere (maize 131, soybean 91, wheat 58, tomato 51, rice 10; Brachypodium and sorghum have none). Defaults to arabidopsis_thaliana; pass organism= for other species.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "locus": {
+            "type": "string",
+            "description": "e.g. AT2G46830 (Arabidopsis CCA1), Os01g0100100 (rice RAP-DB)"
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Plant organism — accepts canonical slug (arabidopsis_thaliana), scientific or common name, or NCBI taxid",
+            "default": "arabidopsis_thaliana"
+          }
+        },
+        "required": [
+          "locus"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "jaspar_motif",
+      "description": "Fetch one JASPAR binding profile by matrix id, including its raw position-frequency matrix (PFM: per-base count vectors keyed A/C/G/T) plus TF class/family, assay type, source species, UniProt accessions, PubMed refs, IUPAC consensus, and the sequence-logo URL. The drill-down companion to tf_binding_motifs, which returns the derived consensus but not the matrix. Accepts a versioned id (MA0570.1) or a bare base id (MA0570, which resolves to the newest version). Unknown ids raise a typed NotFoundError.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "matrix_id": {
+            "type": "string",
+            "description": "JASPAR profile id, e.g. MA0570.1 or MA0570 (latest version)"
+          }
+        },
+        "required": [
+          "matrix_id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "experimental_interactions",
+      "description": "Fetch CURATED EXPERIMENTAL protein/genetic interaction partners for an Arabidopsis locus from ThaleMine (BAR's InterMine instance; free, no key), sourced from BioGRID, IntAct and PSI-MI. Unlike string_interactions (predicted / text-mined, scored) and bar_aiv_interactions (which returns GRN *paper references* for Arabidopsis, not partner pairs), every partner here carries the actual experimental provenance: detection method (two hybrid, pull down, genetic interference, ...), PSI-MI relationship type, physical vs genetic class, source database, and the PubMed IDs that reported it. ThaleMine emits one row per evidence record, so rows are aggregated to one entry per partner with evidence_count as a crude support signal; partners are ordered by that count. found=false means the gene is real but has no curated interaction on record — a normal outcome; an unknown locus raises a typed NotFoundError. Arabidopsis only (ThaleMine carries genes for taxon 3702; other organisms raise OrganismNotSupported).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "locus": {
+            "type": "string",
+            "description": "AGI locus, e.g. AT5G11260 (HY5)"
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Plant organism — accepts canonical slug (arabidopsis_thaliana), scientific or common name, or NCBI taxid. ThaleMine supports Arabidopsis only.",
+            "default": "arabidopsis_thaliana"
+          }
+        },
+        "required": [
+          "locus"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "locus_gene_rifs",
+      "description": "Fetch curated GeneRIF functional statements for an Arabidopsis locus from ThaleMine (free, no key). A GeneRIF is a one-sentence, manually curated statement of what the gene does, each anchored to the PubMed ID of the publication that demonstrated it — dense, directly citable functional context that GO terms (locus_go_annotations) and raw abstracts (locus_literature) do not provide. Well-studied genes have many: HY5 (AT5G11260) has 114. Upstream order is preserved because ThaleMine supplies no meaningful ranking, so `truncated` means later statements were cut, not that they were less relevant. found=false means the gene exists but has no GeneRIF; an unknown locus raises a typed NotFoundError. Arabidopsis only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "locus": {
+            "type": "string",
+            "description": "AGI locus, e.g. AT5G11260 (HY5)"
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Plant organism — accepts canonical slug (arabidopsis_thaliana), scientific or common name, or NCBI taxid. ThaleMine supports Arabidopsis only.",
+            "default": "arabidopsis_thaliana"
+          }
+        },
+        "required": [
+          "locus"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "interpro_domains",
+      "description": "Fetch the InterPro domain / family architecture for a locus (www.ebi.ac.uk/interpro; free, no key). Resolves the locus → UniProt accession, then returns the protein's InterPro entries — each with accession, name, type (domain / family / homologous_superfamily / …), source_database (Pfam appears here as source_database='pfam', not a separate tool), the integrated InterPro accession, and residue spans — plus a count_by_type rollup. A protein with no annotated domains returns found=true with an empty list; a locus with no UniProt entry raises a typed NotFoundError. domain_count is the true total even when the row list is page-capped. Works for all 12 organisms (UniProt-keyed). Defaults to arabidopsis_thaliana; pass organism= for other species.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "locus": {
+            "type": "string",
+            "description": "e.g. AT4G09760 (Arabidopsis), Os01g0100100 (rice RAP-DB)"
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Plant organism — accepts canonical slug (arabidopsis_thaliana), scientific or common name, or NCBI taxid",
+            "default": "arabidopsis_thaliana"
+          }
+        },
+        "required": [
+          "locus"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "locus_variants",
+      "description": "List natural (germline) variants overlapping a locus's genomic span via Ensembl (rest.ensembl.org; free, no key). Resolves the locus → gene coordinates, then returns EVA/dbSNP-sourced SNPs and indels with id, source, consequence class, alleles, and clinical significance. variant_count is the true overlap total; the variant list is capped for payload size with truncated flagged. Opens the variation axis (distinct from get_sequence / ensembl_region_query). Works for all 12 organisms. Defaults to arabidopsis_thaliana; pass organism= for other species.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "locus": {
+            "type": "string",
+            "description": "e.g. AT1G01010 (Arabidopsis), Os01g0100100 (rice RAP-DB)"
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Plant organism — accepts canonical slug (arabidopsis_thaliana), scientific or common name, or NCBI taxid",
+            "default": "arabidopsis_thaliana"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500,
+            "default": 500,
+            "description": "Max variant rows to return. 'variant_count' always reports the true pre-cap total and 'truncated' says whether the cap bit."
+          }
+        },
+        "required": [
+          "locus"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "vep_annotate",
+      "description": "Predict a variant's molecular consequences with Ensembl VEP (rest.ensembl.org; free, no key). Variant-first (not locus-first): supply an Ensembl region (chr:start-end:strand, e.g. '1:10000-10000:1') and an alternate allele (e.g. 'C'); returns the most-severe consequence plus one row per overlapping transcript (consequence terms, IMPACT, and SIFT/PolyPhen when the variant is coding-missense). found=false when Ensembl reports no overlapping feature. Works for all 12 organisms. Defaults to arabidopsis_thaliana; pass organism= for other species.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "region": {
+            "type": "string",
+            "description": "Ensembl region chr:start-end:strand, e.g. '1:10000-10000:1'"
+          },
+          "allele": {
+            "type": "string",
+            "description": "Alternate allele, e.g. 'C' (or 'A/C', an insertion, etc.)"
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Plant organism — accepts canonical slug (arabidopsis_thaliana), scientific or common name, or NCBI taxid",
+            "default": "arabidopsis_thaliana"
+          }
+        },
+        "required": [
+          "region",
+          "allele"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "panther_family",
+      "description": "Fetch the PANTHER protein-family classification for a locus (pantherdb.org; free, no key). Returns the PANTHER family and subfamily (id + name) plus curated GO terms grouped by aspect (molecular_function / biological_process / cellular_component), the PANTHER protein class, and pathways. found=false when PANTHER cannot classify the locus. Complements the sequence-homology tools (gramene_homologs / consensus_homologs) with an evolutionary-family view. Works for all 12 organisms. Defaults to arabidopsis_thaliana; pass organism= for other species.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "locus": {
+            "type": "string",
+            "description": "e.g. AT1G01060 (Arabidopsis), Os01g0100100 (rice RAP-DB)"
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Plant organism — accepts canonical slug (arabidopsis_thaliana), scientific or common name, or NCBI taxid",
+            "default": "arabidopsis_thaliana"
+          }
+        },
+        "required": [
+          "locus"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "orthodb_orthologs",
+      "description": "Resolve a locus to its OrthoDB ortholog group and cross-species member genes (data.orthodb.org; free, no key). Searches at the Viridiplantae level, then returns the group metadata (name, evolutionary rate) and member genes grouped by organism (organism, gene id, description). organism_count is the true cluster total; the member list is capped with truncated flagged. found=false when the locus maps to no ortholog group. Works for all 12 organisms. NOTE: unlike the other locus tools, organism= does NOT scope the search — the group is resolved from the locus id alone at the Viridiplantae level, and organism is only validated and echoed back. Passing a mismatched organism therefore still returns the locus's real group.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "locus": {
+            "type": "string",
+            "description": "e.g. AT1G01060 (Arabidopsis), Os01g0100100 (rice RAP-DB)"
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Plant organism — accepts canonical slug (arabidopsis_thaliana), scientific or common name, or NCBI taxid. Validated and echoed only: it does NOT scope the OrthoDB search, which keys on the locus id at the Viridiplantae level",
+            "default": "arabidopsis_thaliana"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 100,
+            "description": "Max ortholog member rows to return. 'member_count' always reports the true pre-cap total and 'truncated' says whether the cap bit."
+          }
+        },
+        "required": [
+          "locus"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "aragwas_associations",
+      "description": "Fetch AraGWAS genome-wide association study hits for an Arabidopsis locus (aragwas.1001genomes.org; free, no key). Returns each significant SNP association overlapping the gene with effect size (score), minor-allele frequency, the SNP's predicted molecular effect (impact, amino-acid change), and the phenotype/study it came from. association_count is the true total even when page-capped. ARABIDOPSIS-ONLY — any other organism raises OrganismNotSupported. Defaults to arabidopsis_thaliana.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "locus": {
+            "type": "string",
+            "description": "Arabidopsis AGI locus, e.g. AT1G01060"
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Arabidopsis only (the 1001 Genomes panel is A. thaliana)",
+            "default": "arabidopsis_thaliana"
+          }
+        },
+        "required": [
+          "locus"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "arabidopsis_natural_variation",
+      "description": "Fetch 1001 Genomes natural-variation SNP effects for an Arabidopsis locus (tools.1001genomes.org; free, no key) — the variation observed across 1135 resequenced natural accessions. Returns per-SNP effect rows (chromosome, position, accession id, effect, impact, amino-acid change, transcript) plus the gene's genomic span. variant_count is the true row total even when capped. ARABIDOPSIS-ONLY — any other organism raises OrganismNotSupported. Defaults to arabidopsis_thaliana.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "locus": {
+            "type": "string",
+            "description": "Arabidopsis AGI locus, e.g. AT1G01060 (a bare AGI is transcript-scoped to .1)"
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Arabidopsis only (the 1001 Genomes panel is A. thaliana)",
+            "default": "arabidopsis_thaliana"
+          }
+        },
+        "required": [
+          "locus"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "batch_ensembl_plants_lookup_locus",
+      "description": "Batch variant of ensembl_plants_lookup_locus. Uses Ensembl's native POST /lookup/id endpoint — one HTTP round-trip for up to 50 loci, materially cheaper than N parallel GETs. Successes in results[] with the same shape as the single-locus tool. Retries 429/5xx via the shared `_http` helper (Retry-After capped at 60 s). Misses (loci with no record) still land in `errors[]` with the `[NotFoundError]` prefix; the whole batch only fails when the retry budget is exhausted.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "loci": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "maxItems": 50,
+            "description": "List of locus identifiers (1–50). Successes land in results[locus]; PlantGenomicsError failures in errors[locus]."
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Plant organism — accepts canonical slug (arabidopsis_thaliana), scientific or common name, or NCBI taxid",
+            "default": "arabidopsis_thaliana"
+          }
+        },
+        "required": [
+          "loci"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "batch_get_gene_xrefs",
+      "description": "Batch variant of get_gene_xrefs. Fans out per-locus xref lookups over Ensembl Plants in parallel (up to 50 loci). Each results[locus] is the full single-locus shape (count + xrefs[] + by_db rollup).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "loci": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "maxItems": 50,
+            "description": "List of locus identifiers (1–50). Successes land in results[locus]; PlantGenomicsError failures in errors[locus]."
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Plant organism — accepts canonical slug (arabidopsis_thaliana), scientific or common name, or NCBI taxid",
+            "default": "arabidopsis_thaliana"
+          }
+        },
+        "required": [
+          "loci"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "batch_phytozome_lookup_locus",
+      "description": "Batch variant of phytozome_lookup_locus. Fans out per-locus BioMart queries in parallel (up to 50 loci). Each results[locus] is the full single-locus row (organism_name, gene_name, chromosome, start/end/strand, description).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "loci": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "maxItems": 50,
+            "description": "List of locus identifiers (1–50). Successes land in results[locus]; PlantGenomicsError failures in errors[locus]."
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Plant organism — accepts canonical slug (arabidopsis_thaliana), scientific or common name, or NCBI taxid",
+            "default": "arabidopsis_thaliana"
+          }
+        },
+        "required": [
+          "loci"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "batch_resolve_locus_to_uniprot",
+      "description": "Batch variant of resolve_locus_to_uniprot. Fans out per-locus UniProtKB searches in parallel (up to 50 loci). Each results[locus] is the full single-locus record (primaryAccession + uniProtkbId + entryType + geneNames + organism + sequenceLength + web_url + …).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "loci": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "maxItems": 50,
+            "description": "List of locus identifiers (1–50). Successes land in results[locus]; PlantGenomicsError failures in errors[locus]."
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Plant organism — accepts canonical slug (arabidopsis_thaliana), scientific or common name, or NCBI taxid",
+            "default": "arabidopsis_thaliana"
+          }
+        },
+        "required": [
+          "loci"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "batch_locus_literature",
+      "description": "Batch variant of locus_literature. Fans out per-locus Europe PMC searches in parallel (up to 50 loci). Each results[locus] is the full single-locus payload (query + hitCount + returned + hits[]).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "loci": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "maxItems": 50,
+            "description": "List of locus identifiers (1–50). Successes land in results[locus]; PlantGenomicsError failures in errors[locus]."
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Plant organism — accepts canonical slug (arabidopsis_thaliana), scientific or common name, or NCBI taxid",
+            "default": "arabidopsis_thaliana"
+          },
+          "size": {
+            "type": "integer",
+            "description": "Max results per locus (1–25, default 10)",
+            "default": 10,
+            "minimum": 1,
+            "maximum": 25
+          }
+        },
+        "required": [
+          "loci"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "blast_sequence",
+      "description": "Run a BLAST sequence-similarity search against NCBI BLAST URLAPI. Async Put/Get under the hood — submits the query, polls the RID (honoring NCBI's per-RID 60s floor), and returns the parsed top hits + raw text report excerpt. Programs: blastn / blastp / blastx / tblastn / tblastx. Database defaults to swissprot for protein programs, core_nt for nucleotide. Emits notifications/progress on each poll. Long searches (>10 min) raise [NotFoundError] with the RID preserved so the client can re-poll. Set PLANT_GENOMICS_MCP_NCBI_EMAIL to identify the request per NCBI etiquette.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sequence": {
+            "type": "string",
+            "description": "Raw or FASTA-formatted query sequence.",
+            "maxLength": 1000000
+          },
+          "program": {
+            "type": "string",
+            "enum": [
+              "blastn",
+              "blastp",
+              "blastx",
+              "tblastn",
+              "tblastx"
+            ],
+            "description": "BLAST program — default blastp.",
+            "default": "blastp"
+          },
+          "database": {
+            "type": "string",
+            "description": "NCBI BLAST database slug (e.g. swissprot, core_nt, refseq_protein). Defaults to swissprot for protein programs and core_nt for nucleotide programs."
+          },
+          "hitlist_size": {
+            "type": "integer",
+            "description": "Max hits to return (default 10).",
+            "default": 10,
+            "minimum": 1,
+            "maximum": 100
+          },
+          "expect": {
+            "type": "number",
+            "description": "E-value threshold (default 10).",
+            "default": 10,
+            "exclusiveMinimum": 0
+          },
+          "megablast": {
+            "type": "boolean",
+            "description": "Enable megablast (blastn only). Default false.",
+            "default": false
+          },
+          "poll_interval": {
+            "type": "number",
+            "description": "Seconds between polls. Clamped up to NCBI's per-RID 60s floor.",
+            "default": 60,
+            "minimum": 60
+          },
+          "max_wait": {
+            "type": "number",
+            "description": "Max seconds to wait for the search to finish before raising NotFoundError with the RID preserved (default 600).",
+            "default": 600,
+            "exclusiveMinimum": 0
+          }
+        },
+        "required": [
+          "sequence"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "batch_locus_go_annotations",
+      "description": "Batch variant of locus_go_annotations. Two-stage fanout — each locus is resolved to UniProt and then queried in QuickGO. Per-locus NotFoundError from either stage lands in errors[] with the typed prefix preserved. Capped at 50 loci.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "loci": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "maxItems": 50,
+            "description": "List of locus identifiers (1–50). Successes land in results[locus]; PlantGenomicsError failures in errors[locus]."
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Plant organism — accepts canonical slug (arabidopsis_thaliana), scientific or common name, or NCBI taxid",
+            "default": "arabidopsis_thaliana"
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Max annotations per locus from QuickGO (1–100, default 50)",
+            "default": 50,
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "loci"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "batch_gramene_homologs",
+      "description": "Batch version of gramene_homologs. Up to 50 loci per call; shares the homology_type filter across all loci. Returns the standard batch envelope (count + results dict + errors dict).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "loci": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50,
+            "description": "List of locus identifiers (max 50)"
+          },
+          "homology_type": {
+            "type": "string",
+            "enum": [
+              "ortholog",
+              "paralog",
+              "all"
+            ],
+            "default": "ortholog"
+          }
+        },
+        "required": [
+          "loci"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "batch_kegg_pathways",
+      "description": "Batch version of kegg_pathways. Up to 50 loci per call. v1.1.0: only arabidopsis_thaliana resolves — KEGG uses NCBI Entrez Gene IDs for other plants and our cross-backend locus contract can't produce those yet, so a non-ath organism= raises OrganismNotSupported before any HTTP fan-out.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "loci": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Plant organism — only arabidopsis_thaliana is supported in v1.1.0; other plants raise OrganismNotSupported until an Entrez bridge lands",
+            "default": "arabidopsis_thaliana"
+          }
+        },
+        "required": [
+          "loci"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "batch_bar_gene_summary",
+      "description": "Batch variant of bar_gene_summary. Fans out per-locus BAR ThaleMine + GAIA-aliases calls in parallel (up to 50 loci). Each results[locus] is the full single-locus payload (curator summary, computational description, NCBI Gene ID, cross-DB aliases). Arabidopsis only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "loci": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "maxItems": 50,
+            "description": "List of locus identifiers (1–50). Successes land in results[locus]; PlantGenomicsError failures in errors[locus]."
+          }
+        },
+        "required": [
+          "loci"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "batch_bar_aiv_interactions",
+      "description": "Batch variant of bar_aiv_interactions. Fans out per-locus BAR AIV calls in parallel (up to 50 loci); all loci in a single call share the same organism. Each results[locus] is the full single-locus payload (kind=grn_papers for Arabidopsis with `papers` list, kind=ppi_predictions for rice with `partners` list).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "loci": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "maxItems": 50,
+            "description": "List of locus identifiers (1–50). Successes land in results[locus]; PlantGenomicsError failures in errors[locus]."
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "arabidopsis_thaliana or oryza_sativa — slug, scientific/common name, or NCBI taxid",
+            "default": "arabidopsis_thaliana"
+          }
+        },
+        "required": [
+          "loci"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "batch_string_interactions",
+      "description": "Batch version of string_interactions. Up to 50 inputs per call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "loci_or_accessions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50
+          },
+          "limit": {
+            "type": "integer",
+            "default": 20,
+            "minimum": 1,
+            "maximum": 500
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Plant organism — accepts canonical slug (arabidopsis_thaliana), scientific or common name, or NCBI taxid",
+            "default": "arabidopsis_thaliana"
+          }
+        },
+        "required": [
+          "loci_or_accessions"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "atted_coexpression",
+      "description": "Fetch co-expressed gene neighbors from ATTED-II (atted.jp, API v5) for a plant locus. Returns top_n neighbors with target locus + NCBI Entrez gene ID + z-score (higher = stronger coexpression). The ATTED-II release (e.g. Ath-u.c4-0 for Arabidopsis, Osa-u.c1-0 for rice) is resolved per-organism; wheat, sorghum, barley, poplar, and brachypodium have no published release and raise OrganismNotSupported. Pairs with string_interactions to surface high-confidence functional partners (interactors that are also coexpressed).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "locus": {
+            "type": "string",
+            "description": "Plant locus, e.g. AT1G01010 (Arabidopsis) or Os01g0100100 (rice)"
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "default": "arabidopsis_thaliana",
+            "description": "Plant organism — accepts canonical slug (arabidopsis_thaliana), scientific or common name, or NCBI taxid"
+          },
+          "top_n": {
+            "type": "integer",
+            "default": 25,
+            "minimum": 1,
+            "maximum": 300
+          }
+        },
+        "required": [
+          "locus"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "batch_atted_coexpression",
+      "description": "Batch version of atted_coexpression. Up to 50 loci per call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "loci": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "default": "arabidopsis_thaliana",
+            "description": "Plant organism — accepts canonical slug (arabidopsis_thaliana), scientific or common name, or NCBI taxid"
+          },
+          "top_n": {
+            "type": "integer",
+            "default": 25,
+            "minimum": 1,
+            "maximum": 300
+          }
+        },
+        "required": [
+          "loci"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "analyze_locus_synth",
+      "description": "Synthesis: one-call equivalent of the analyze_locus prompt. Resolves a locus through Ensembl Plants, then fans out to xrefs, UniProt, Europe PMC, and QuickGO in parallel. Returns a SynthesisEnvelope with per-step status and a reconciled summary flagging cross-source name/accession disagreements.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "locus": {
+            "type": "string",
+            "description": "Locus name, e.g. AT1G01010"
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "default": "arabidopsis_thaliana",
+            "description": "Plant organism — accepts canonical slug (arabidopsis_thaliana), scientific or common name, or NCBI taxid"
+          }
+        },
+        "required": [
+          "locus"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "find_homologs_synth",
+      "description": "Synthesis: one-call equivalent of the find_homologs prompt. Runs BLAST then resolves UniProt-shaped subject accessions via the batch UniProt helper. Returns ranked hits each annotated with their UniProt record (or null if subject_id is not a UniProt accession).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sequence": {
+            "type": "string",
+            "description": "Query sequence (protein or nucleotide)",
+            "maxLength": 1000000
+          },
+          "program": {
+            "type": "string",
+            "enum": [
+              "blastn",
+              "blastp",
+              "blastx",
+              "tblastn",
+              "tblastx"
+            ],
+            "default": "blastp"
+          },
+          "top_n": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "default": 10
+          }
+        },
+        "required": [
+          "sequence"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "biological_context_synth",
+      "description": "Synthesis: one-call equivalent of the biological_context prompt. Resolves UniProt accession, then fans out to Gramene homologs, KEGG pathways, STRING-DB partners, and ATTED-II coexpression in parallel. Adds a consensus_partners ranking that merges STRING + ATTED scores.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "locus": {
+            "type": "string"
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Plant organism — accepts canonical slug (arabidopsis_thaliana), scientific or common name, or NCBI taxid",
+            "default": "arabidopsis_thaliana"
+          },
+          "top_n": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "default": 10
+          }
+        },
+        "required": [
+          "locus"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "consensus_homologs",
+      "description": "Synthesis: cross-source homology consensus. Resolves UniProt + FASTA sequence, then runs Gramene homology calls and NCBI BLAST in parallel. Dedupes hits by normalized locus token and scores by n_sources * mean_identity — Gramene contributes identity=1.0, BLAST contributes pident/100.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "locus": {
+            "type": "string"
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Plant organism — accepts canonical slug (arabidopsis_thaliana), scientific or common name, or NCBI taxid",
+            "default": "arabidopsis_thaliana"
+          },
+          "top_n": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "default": 10
+          }
+        },
+        "required": [
+          "locus"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "gene_report",
+      "description": "Synthesis: one-shot 'tell me about this gene' dossier. Resolves a locus through Ensembl Plants + UniProt, then fans out to cross-references, KEGG pathways, STRING interactors, Europe PMC literature, and QuickGO GO terms. Returns a SynthesisEnvelope whose result.markdown is a rendered Markdown gene dossier (the headline output) alongside a structured result.sections mirror. Any single backend failure degrades that section to an 'Unavailable' note; the rest of the dossier still renders.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "locus": {
+            "type": "string",
+            "description": "Locus name, e.g. AT1G01010"
+          },
+          "organism": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Plant organism — accepts canonical slug (arabidopsis_thaliana), scientific or common name, or NCBI taxid",
+            "default": "arabidopsis_thaliana"
+          },
+          "top_n": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "default": 10,
+            "description": "Caps GO terms, pathways, interactors, xrefs, and papers per section"
+          }
+        },
+        "required": [
+          "locus"
+        ],
+        "additionalProperties": false
+      }
+    }
+  ],
+  "stderrTail": "Downloading cryptography (4.5MiB)\nDownloading pydantic-core (2.0MiB)\n Downloaded pydantic-core\n Downloaded cryptography\nInstalled 32 packages in 8ms\n",
+  "durationMs": 43023,
+  "transport": "stdio"
+}

@@ -1,0 +1,198 @@
+{
+  "serverId": "junipr-labs__mcp-server__junipr-labs-mcp-server",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "screenshot",
+      "description": "Capture a screenshot of any webpage. Returns the image as base64-encoded data.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL of the webpage to capture"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "png",
+              "jpeg",
+              "webp"
+            ],
+            "default": "png",
+            "description": "Image format (png, jpeg, or webp)"
+          },
+          "width": {
+            "type": "integer",
+            "minimum": 320,
+            "maximum": 3840,
+            "default": 1280,
+            "description": "Viewport width in pixels (320-3840)"
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 200,
+            "maximum": 2160,
+            "default": 720,
+            "description": "Viewport height in pixels (200-2160)"
+          },
+          "fullPage": {
+            "type": "boolean",
+            "default": false,
+            "description": "Capture the full scrollable page instead of just the viewport"
+          },
+          "deviceType": {
+            "type": "string",
+            "enum": [
+              "desktop",
+              "mobile",
+              "tablet"
+            ],
+            "default": "desktop",
+            "description": "Device type to emulate"
+          },
+          "blockCookieBanners": {
+            "type": "boolean",
+            "default": true,
+            "description": "Attempt to dismiss or hide cookie consent banners"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "pdf",
+      "description": "Generate a PDF from a URL or raw HTML. Returns the PDF as base64-encoded data.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL of the webpage to convert to PDF (provide url or html, not both)"
+          },
+          "html": {
+            "type": "string",
+            "description": "Raw HTML string to convert to PDF (provide url or html, not both)"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "A4",
+              "Letter",
+              "Legal",
+              "Tabloid",
+              "A3",
+              "A5"
+            ],
+            "default": "A4",
+            "description": "Paper format"
+          },
+          "landscape": {
+            "type": "boolean",
+            "default": false,
+            "description": "Use landscape orientation"
+          },
+          "printBackground": {
+            "type": "boolean",
+            "default": true,
+            "description": "Include background graphics and colors"
+          },
+          "margin": {
+            "type": "object",
+            "properties": {
+              "top": {
+                "type": "string",
+                "default": "1cm",
+                "description": "Top margin (CSS units)"
+              },
+              "right": {
+                "type": "string",
+                "default": "1cm",
+                "description": "Right margin (CSS units)"
+              },
+              "bottom": {
+                "type": "string",
+                "default": "1cm",
+                "description": "Bottom margin (CSS units)"
+              },
+              "left": {
+                "type": "string",
+                "default": "1cm",
+                "description": "Left margin (CSS units)"
+              }
+            },
+            "additionalProperties": false,
+            "description": "Page margins in CSS units"
+          },
+          "headerTemplate": {
+            "type": "string",
+            "description": "HTML template for the page header"
+          },
+          "footerTemplate": {
+            "type": "string",
+            "description": "HTML template for the page footer"
+          },
+          "displayHeaderFooter": {
+            "type": "boolean",
+            "default": false,
+            "description": "Show header and footer templates"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "metadata",
+      "description": "Extract metadata from any webpage — title, description, Open Graph tags, Twitter Cards, JSON-LD structured data, favicon, canonical URL, and more.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL of the webpage to extract metadata from"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "run_tool",
+      "description": "Run any Junipr API tool by its slug. 75+ tools available across these categories:\n\nVALIDATION & CONVERSION: address-validator, disposable-email-checker, document-format-converter, email-validator, json-to-csv-converter, markdown-to-html, mx-lookup, phone-number-validator, temporary-email-generator\n\nANALYSIS & PROCESSING: ai-content-detector, brave-search, domain-whois-lookup, google-position-checker, image-to-pdf, image-to-text, lighthouse-checker, multi-resolution-screenshot, pdf-ocr-tool, pdf-to-html, pdf-to-text, rag-web-extractor, resize-image, sentiment-analyzer, seo-audit-tool, tech-stack-detector, watermark-image, web-page-change-monitor, webm-to-mp4, website-performance-analyzer, website-tech-stack-detector, website-to-rss\n\nSCRAPERS & DATA EXTRACTION: amazon-reviews-scraper, b2b-lead-scraper, bluesky-scraper, booking-scraper, capterra-reviews-scraper, contact-info-scraper, craigslist-scraper, earnings-call-scraper, ebay-sold-listings, etsy-product-scraper, finance-news-scraper, fiverr-scraper, g2-reviews-scraper, github-trending-scraper, glassdoor-jobs-scraper, google-ads-affiliate-checker, google-news-scraper, google-shopping, hacker-news-scraper, healthcare-scraper, indeed-job-scraper, medium-scraper, news-sentiment-analyzer, pagesjaunes-scraper, price-comparison, product-hunt-scraper, property-value-estimator, quotes-scraper, reddit-scraper, shein-scraper, sitemap-generator, spotify-playlist-scraper, temu-scraper, transfermarkt-scraper, trustpilot-reviews-scraper, upwork-jobs, video-download-crawler, walmart-price-history, walmart-scraper, whitepages-scraper, yellow-pages-scraper, yelp-scraper, youtube-transcript-extractor\n\nPass any parameters the tool accepts as a JSON object in the \"input\" field.\nFull docs: https://junipr.io",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "description": "The tool slug (e.g., 'email-validator', 'reddit-scraper')"
+          },
+          "input": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Input parameters for the tool as a JSON object"
+          }
+        },
+        "required": [
+          "slug",
+          "input"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 17992,
+  "transport": "stdio"
+}

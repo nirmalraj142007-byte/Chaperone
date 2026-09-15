@@ -1,0 +1,651 @@
+{
+  "serverId": "genwavellc__svgmaker-mcp__genwavellc-svgmaker-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "svgmaker_generate",
+      "description": "Generate a new SVG image from a text prompt. Use this to create artwork from a description; use svgmaker_edit to change an existing image, and svgmaker_convert to vectorize a raster image. Write a detailed prompt covering subject, style, colors and composition. Returns the saved file path when output_path is given, otherwise a hosted SVGMaker URL. Quality defaults to medium.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "minLength": 1,
+            "description": "A detailed text description of the SVG image to generate. Include style, colors, composition, and key visual elements for best results."
+          },
+          "output_path": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Optional absolute file path to save the result locally. Use the .svg extension, or .png when raster is true. Example: \"/Users/username/Documents/artwork.svg\". Omit it to get a hosted SVGMaker URL instead of a file."
+          },
+          "quality": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ],
+            "default": "medium",
+            "description": "Quality level for SVG generation. Affects processing time and detail level: low (fast, basic), medium (balanced, default, preferred if not specified explicitly by the user), high (best quality, forces square aspect ratio)"
+          },
+          "aspectRatio": {
+            "type": "string",
+            "enum": [
+              "square",
+              "portrait",
+              "landscape"
+            ],
+            "description": "Aspect ratio for the generated SVG: square (1:1, good for logos), portrait (taller, good for posters), landscape (wider, good for banners). If not specified by the user, no need to specify, as the quality will determine the default (low and medium use auto, high forces square aspect ratio)"
+          },
+          "background": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "transparent",
+              "opaque"
+            ],
+            "default": "auto",
+            "description": "Background style: auto (AI determines best, default, preferred if not specified explicitly by the user), transparent (no background, good for overlays), opaque (solid background color)"
+          },
+          "style": {
+            "type": "string",
+            "enum": [
+              "flat",
+              "line_art",
+              "engraving",
+              "linocut",
+              "silhouette",
+              "isometric",
+              "cartoon",
+              "ghibli"
+            ],
+            "description": "Art style for the SVG: flat (clean minimal), line_art (outline-based), engraving (detailed etched), linocut (block print), silhouette (solid shapes), isometric (3D-like), cartoon (playful), ghibli (anime-inspired). Only specify if user requests a specific style."
+          },
+          "color_mode": {
+            "type": "string",
+            "enum": [
+              "full_color",
+              "monochrome",
+              "few_colors"
+            ],
+            "description": "Color scheme: full_color (default, wide palette), monochrome (single color/shades), few_colors (limited palette). Only specify if user requests a specific color scheme."
+          },
+          "image_complexity": {
+            "type": "string",
+            "enum": [
+              "icon",
+              "illustration",
+              "scene"
+            ],
+            "description": "Complexity level: icon (simple, minimal detail), illustration (moderate detail), scene (complex, full composition). Only specify if user requests a specific complexity."
+          },
+          "composition": {
+            "type": "string",
+            "enum": [
+              "centered_object",
+              "repeating_pattern",
+              "full_scene",
+              "objects_in_grid"
+            ],
+            "description": "Layout composition: centered_object (single focus element), repeating_pattern (tiled/repeated), full_scene (complete scene), objects_in_grid (grid arrangement). Only specify if user requests a specific layout."
+          },
+          "text_style": {
+            "type": "string",
+            "enum": [
+              "only_title",
+              "embedded_text"
+            ],
+            "description": "Text handling in SVG: only_title (just a title/heading), embedded_text (text integrated into the design). Only specify if the design should include text."
+          },
+          "raster": {
+            "type": "boolean",
+            "description": "When true, skips SVG vectorization and returns a raster PNG image instead of SVG. The output_path should use .png extension. Useful when the user wants a quick raster image without vectorization. Cannot be used with storage."
+          },
+          "storage": {
+            "type": "boolean",
+            "description": "When true, stores the generated image permanently in cloud storage. Cannot be used with raster mode. Defaults to true when raster is not set."
+          }
+        },
+        "required": [
+          "prompt"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "svgmaker_edit",
+      "description": "Edit an existing image or SVG with a text prompt. Use this to change artwork you already have; use svgmaker_generate to create new artwork, and svgmaker_convert to vectorize a raster image without changing it. The image comes from `input`, which accepts a local absolute file path, an https:// URL, an upl_ upload id, or a generation id. Returns the saved file path when output_path is given, otherwise a hosted SVGMaker URL.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Image source. Accepts a local absolute file path, an https:// URL, an upl_ upload id, or an SVGMaker generation id (your own generations or public gallery items)."
+          },
+          "input_path": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Deprecated alias for `input`, restricted to a local absolute file path. Prefer `input`."
+          },
+          "generation_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Deprecated alias for `input`, restricted to an SVGMaker generation or gallery id. Prefer `input`."
+          },
+          "prompt": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Detailed instructions for how to modify the image. Be specific about changes like style adjustments, color modifications, element additions/removals, or layout changes. Example: \"Change the background to blue and add a white border\""
+          },
+          "output_path": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Optional absolute file path to save the result locally. Use the .svg extension, or .png when raster is true. Example: \"/Users/username/Documents/modified-artwork.svg\". Omit it to get a hosted SVGMaker URL instead of a file."
+          },
+          "quality": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ],
+            "default": "medium",
+            "description": "Quality level for SVG editing. Do not specifiy if not explicitely mentioned by the user. Affects processing time and detail level: low (fast, basic edits), medium (balanced quality and speed, default), high (best quality, forces square aspect ratio)"
+          },
+          "aspectRatio": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "portrait",
+              "landscape",
+              "square"
+            ],
+            "description": "Aspect ratio for the edited SVG: auto (maintain original proportions), square (1:1, good for logos), portrait (taller, good for posters), landscape (wider, good for banners). Do not specifiy if not explicitely mentioned by the user. When not specified the quality will determine the default (low and medium use auto, high forces square aspect ratio)"
+          },
+          "background": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "transparent",
+              "opaque"
+            ],
+            "default": "auto",
+            "description": "Background style for the edited SVG: auto (AI determines best, default), transparent (no background, preserves transparency), opaque (solid background color). Do not specify if not explicitly mentioned by the user."
+          },
+          "style": {
+            "type": "string",
+            "enum": [
+              "flat",
+              "line_art",
+              "engraving",
+              "linocut",
+              "silhouette",
+              "isometric",
+              "cartoon",
+              "ghibli"
+            ],
+            "description": "Art style for the SVG: flat (clean minimal), line_art (outline-based), engraving (detailed etched), linocut (block print), silhouette (solid shapes), isometric (3D-like), cartoon (playful), ghibli (anime-inspired). Only specify if user requests a specific style."
+          },
+          "color_mode": {
+            "type": "string",
+            "enum": [
+              "full_color",
+              "monochrome",
+              "few_colors"
+            ],
+            "description": "Color scheme: full_color (default, wide palette), monochrome (single color/shades), few_colors (limited palette). Only specify if user requests a specific color scheme."
+          },
+          "image_complexity": {
+            "type": "string",
+            "enum": [
+              "icon",
+              "illustration",
+              "scene"
+            ],
+            "description": "Complexity level: icon (simple, minimal detail), illustration (moderate detail), scene (complex, full composition). Only specify if user requests a specific complexity."
+          },
+          "composition": {
+            "type": "string",
+            "enum": [
+              "centered_object",
+              "repeating_pattern",
+              "full_scene",
+              "objects_in_grid"
+            ],
+            "description": "Layout composition: centered_object (single focus element), repeating_pattern (tiled/repeated), full_scene (complete scene), objects_in_grid (grid arrangement). Only specify if user requests a specific layout."
+          },
+          "text_style": {
+            "type": "string",
+            "enum": [
+              "only_title",
+              "embedded_text"
+            ],
+            "description": "Text handling in SVG: only_title (just a title/heading), embedded_text (text integrated into the design). Only specify if the design should include text."
+          },
+          "raster": {
+            "type": "boolean",
+            "description": "When true, skips SVG vectorization and returns a raster PNG image instead of SVG. The output_path should use .png extension. Useful when the user wants a quick raster image without vectorization. Cannot be used with storage."
+          },
+          "storage": {
+            "type": "boolean",
+            "description": "When true, stores the edited image permanently in cloud storage. Cannot be used with raster mode. Defaults to true when raster is not set."
+          }
+        },
+        "required": [
+          "prompt"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "svgmaker_convert",
+      "description": "Convert a raster image (PNG, JPEG, WebP) to SVG by AI vectorization. Use this to trace an existing image as-is; use svgmaker_edit when the image should also be changed. The image comes from `input`, which accepts a local absolute file path, an https:// URL, or an upl_ upload id. Generation ids are not accepted — a generation is already an SVG. Returns the saved file path when output_path is given, otherwise a hosted SVGMaker URL.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Image source. Accepts a local absolute file path, an https:// URL, or an upl_ upload id. Generation ids are not accepted."
+          },
+          "input_path": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Deprecated alias for `input`, restricted to a local absolute file path. Prefer `input`."
+          },
+          "output_path": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Optional absolute file path to save the SVG locally. Must include the .svg extension. Example: \"/Users/username/Documents/vector-art.svg\". Omit it to get a hosted SVGMaker URL instead of a file."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "svgmaker_remove_background",
+      "description": "Remove the background from an image and return the subject as a transparent SVG. Use this to cut out a subject; use svgmaker_edit for any other change. The image comes from `input`, which accepts a local absolute file path, an https:// URL, an upl_ upload id, or a generation id. Returns the saved file path when output_path is given, otherwise a hosted SVGMaker URL.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Image source. Accepts a local absolute file path, an https:// URL, an upl_ upload id, or an SVGMaker generation id (your own generations or public gallery items)."
+          },
+          "input_path": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Deprecated alias for `input`, restricted to a local absolute file path. Prefer `input`."
+          },
+          "generation_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Deprecated alias for `input`, restricted to an SVGMaker generation or gallery id. Prefer `input`."
+          },
+          "output_path": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Optional absolute file path to save the cutout SVG locally. Must include the .svg extension. Example: \"/Users/username/Documents/cutout.svg\". Omit it to get a hosted SVGMaker URL instead of a file."
+          },
+          "storage": {
+            "type": "boolean",
+            "description": "When true, stores the resulting SVG permanently in cloud storage (it appears in your SVGMaker generations). When false, a temporary hosted URL is returned. Defaults to true."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "svgmaker_account_info",
+      "description": "Get the SVGMaker account identity and credit balance: email, display name, account type, and remaining credits. Use this to check credits before a paid operation, or to confirm which account the key belongs to. For per-request counts and credit spend over time, use svgmaker_account_usage instead. Takes no arguments.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "svgmaker_account_usage",
+      "description": "Get SVGMaker API usage statistics for the account: request counts, credits used, success and error counts, and breakdowns by category and by day. Use this to answer \"how much have I used\"; use svgmaker_account_info for the current credit balance. Pick one time window: either days, or a start/end pair, or neither for all-time.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "Whole number of days to look back from today, e.g. 30. Cannot be combined with start/end. Omit all three arguments for all-time totals."
+          },
+          "start": {
+            "type": "string",
+            "description": "Start date of the range, YYYY-MM-DD, e.g. \"2026-01-01\". Must be sent together with end, and cannot be combined with days."
+          },
+          "end": {
+            "type": "string",
+            "description": "End date of the range, YYYY-MM-DD, e.g. \"2026-01-31\". Must be sent together with start, and cannot be combined with days."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "svgmaker_generations_list",
+      "description": "List the ids of your own SVG generations, with optional filters and pagination. Use this to find the id of earlier work before calling svgmaker_generations_get, _preview, _download, _share or _delete. For public community images, use svgmaker_gallery_list instead. Returns ids and page counts only, not images.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "Page number, 1-indexed. Defaults to 1."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Items per page, 1 to 100."
+          },
+          "type": {
+            "type": "string",
+            "description": "Keep only this generation type: \"generate\", \"edit\", \"convert\"."
+          },
+          "hashtags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Keep only items carrying all these hashtags."
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Keep only items in these categories."
+          },
+          "query": {
+            "type": "string",
+            "description": "Free-text search over the prompt and description."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "svgmaker_generations_get",
+      "description": "Get the details of one of your generations by id: the prompt used, type, quality, public/private state, hashtags and categories. Returns metadata as text, not the image — use svgmaker_generations_preview to see the image itself.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "generation_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Id of one of your generations, as returned by svgmaker_generations_list."
+          }
+        },
+        "required": [
+          "generation_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "svgmaker_generations_delete",
+      "description": "Delete one of your generations and its files. The deletion is permanent and cannot be undone, so confirm the exact id with the user before you call this. Requires a paid account. Returns a confirmation message.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "generation_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Id of the generation to delete permanently."
+          }
+        },
+        "required": [
+          "generation_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "svgmaker_generations_share",
+      "description": "Make one of your generations publicly visible and return its permanent share URL. Use this when the user wants a link other people can open. This exposes the image publicly, so ask first if the intent is unclear.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "generation_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Id of the generation to make public."
+          }
+        },
+        "required": [
+          "generation_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "svgmaker_generations_download",
+      "description": "Download one of your generations in a chosen format. Saves the file to output_path when you pass one, otherwise returns a time-limited SVGMaker-hosted download URL. Formats: svg, svg-optimized, svgz, png, webp. Requires a paid account. Use svgmaker_generations_preview instead when you only need to look at the image.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "generation_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Id of one of your generations, as returned by svgmaker_generations_list."
+          },
+          "output_path": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Absolute file path to save the download to, e.g. \"/Users/me/Desktop/panda.svg\". Give it the extension that matches format. Omit it to get an SVGMaker-hosted download URL instead of a file. Stdio transport only."
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "svg",
+              "webp",
+              "png",
+              "svg-optimized",
+              "svgz"
+            ],
+            "description": "Output format: svg (source vector), svg-optimized (smaller vector), svgz (gzipped vector), png or webp (raster). Defaults to webp."
+          },
+          "optimize": {
+            "type": "boolean",
+            "description": "Optimize the vector before gzip compression. Applies to the svgz format only."
+          }
+        },
+        "required": [
+          "generation_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "svgmaker_generations_preview",
+      "description": "Show one of your generations in the conversation as a PNG image. Use this to check what a generation looks like, on any transport. Use svgmaker_generations_download instead when the user wants the file or a URL, and svgmaker_gallery_preview for a public gallery item.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "generation_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Id of one of your generations, as returned by svgmaker_generations_list."
+          }
+        },
+        "required": [
+          "generation_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "svgmaker_preview",
+      "description": "Show a local image file (PNG, SVG, WebP or SVGZ) in the conversation as a PNG image. Use this to look at a file already on disk. Works over the stdio transport only, because it reads the local filesystem. To look at an SVGMaker generation or a gallery item, use svgmaker_generations_preview or svgmaker_gallery_preview with an id instead.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Absolute path to a local image file, e.g. \"/Users/me/Desktop/icon.svg\". Accepts PNG, SVG, WebP and SVGZ. Readable over the stdio transport only."
+          },
+          "file_path": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Deprecated alias for `input`. Prefer `input`. Send one of the two, never both."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "svgmaker_gallery_list",
+      "description": "Browse the public SVGMaker gallery and list item ids, with optional filters and pagination. Use this to find reference or inspiration images made by other users. For images the caller made themselves, use svgmaker_generations_list instead. Returns ids and page counts only, not images.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "Page number, 1-indexed. Defaults to 1."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Items per page, 1 to 100."
+          },
+          "type": {
+            "type": "string",
+            "description": "Keep only this generation type: \"generate\", \"edit\", \"convert\"."
+          },
+          "hashtags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Keep only items carrying all these hashtags."
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Keep only items in these categories."
+          },
+          "query": {
+            "type": "string",
+            "description": "Free-text search over the prompt and description."
+          },
+          "pro": {
+            "type": "string",
+            "description": "Pass the string \"true\" to keep only pro images."
+          },
+          "gold": {
+            "type": "string",
+            "description": "Pass the string \"true\" to keep only gold images."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "svgmaker_gallery_get",
+      "description": "Get the details of a public gallery item by id: the prompt used, type, quality, hashtags and categories. Returns metadata as text, not the image — use svgmaker_gallery_preview to see the image itself.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "generation_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Id of a public gallery item, as returned by svgmaker_gallery_list."
+          }
+        },
+        "required": [
+          "generation_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "svgmaker_gallery_download",
+      "description": "Download a public gallery item in a chosen format. Saves the file to output_path when you pass one, otherwise returns a time-limited SVGMaker-hosted download URL. Formats: svg, svg-optimized, svgz, png, webp. The vector formats cost 1 credit each, png and webp are free. Use svgmaker_gallery_preview instead when you only need to look at the image.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "generation_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Id of a public gallery item, as returned by svgmaker_gallery_list."
+          },
+          "output_path": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Absolute file path to save the download to, e.g. \"/Users/me/Desktop/icon.svg\". Give it the extension that matches format. Omit it to get an SVGMaker-hosted download URL instead of a file. Stdio transport only."
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "svg",
+              "webp",
+              "png",
+              "svg-optimized",
+              "svgz"
+            ],
+            "description": "Output format: svg (source vector), svg-optimized (smaller vector), svgz (gzipped vector), png or webp (raster). Defaults to webp. The three vector formats cost 1 credit each; png and webp are free."
+          },
+          "optimize": {
+            "type": "boolean",
+            "description": "Optimize the vector before gzip compression. Applies to the svgz format only."
+          }
+        },
+        "required": [
+          "generation_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "svgmaker_gallery_preview",
+      "description": "Show a public gallery item in the conversation as a PNG image. Use this to check what a gallery item looks like, on any transport, and it costs no credits. Use svgmaker_gallery_download instead when the user wants the file or a URL, and svgmaker_generations_preview for generations the caller made.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "generation_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Id of a public gallery item, as returned by svgmaker_gallery_list."
+          }
+        },
+        "required": [
+          "generation_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 40569,
+  "transport": "stdio"
+}

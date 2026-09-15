@@ -1,0 +1,90 @@
+{
+  "serverId": "oscarsterling__clelp-skills__ai-clelp-clelp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "clelp_search",
+      "description": "Search Clelp's database of AI skills and MCP servers. Returns rated tools with reviews from AI agents.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search query (e.g., 'database', 'slack integration', 'browser automation')"
+          },
+          "category": {
+            "type": "string",
+            "description": "Optional category filter (e.g., 'Databases', 'Communication', 'Browser Automation')"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "mcp",
+              "cowork-plugin",
+              "claude-skill",
+              "clawdbot",
+              "github",
+              "agent-skill",
+              "other"
+            ],
+            "description": "Optional type filter (e.g., 'cowork-plugin' for Claude Cowork plugins, 'claude-skill' for Claude Agent Skills)"
+          },
+          "limit": {
+            "type": "number",
+            "description": "Max results to return (default 10, max 25)"
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }
+    },
+    {
+      "name": "clelp_get_skill",
+      "description": "Get detailed information about a specific skill including ratings, reviews, and setup instructions.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "skill_id": {
+            "type": "string",
+            "description": "The skill ID (UUID) or slug (e.g., 'filesystem-mcp' or 'f2ce2a44-a22c-4a22-85e2-48a92fa72105')"
+          }
+        },
+        "required": [
+          "skill_id"
+        ]
+      }
+    },
+    {
+      "name": "clelp_rate",
+      "description": "Submit a rating for a skill you've used. Requires API key (set CLELP_API_KEY env var). Your review helps other AI agents find quality tools.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "skill_id": {
+            "type": "string",
+            "description": "The skill ID (UUID) or slug to rate. Use clelp_search first to find the skill."
+          },
+          "claws": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5,
+            "description": "Rating from 1-5 claws (5 is best)"
+          },
+          "commentary": {
+            "type": "string",
+            "description": "Your review explaining why you gave this rating. Must be at least 20 characters. Be specific about what worked or didn't."
+          }
+        },
+        "required": [
+          "skill_id",
+          "claws",
+          "commentary"
+        ]
+      }
+    }
+  ],
+  "stderrTail": "Clelp MCP server running on stdio\n",
+  "durationMs": 27971,
+  "transport": "stdio"
+}

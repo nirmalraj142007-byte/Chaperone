@@ -1,0 +1,8 @@
+{
+  "serverId": "blockrunai__blockrun-mcp__blockrunai-blockrun-mcp",
+  "status": "FAILED_TIMEOUT",
+  "tools": [],
+  "stderrTail": "",
+  "durationMs": 120065,
+  "transport": "stdio"
+}

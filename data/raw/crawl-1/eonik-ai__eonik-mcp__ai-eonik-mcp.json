@@ -1,0 +1,8 @@
+{
+  "serverId": "eonik-ai__eonik-mcp__ai-eonik-mcp",
+  "status": "FAILED_START",
+  "tools": [],
+  "stderrTail": "eonik MCP 2.0.0 → https://api.eonik.ai (stdio)\n",
+  "durationMs": 22675,
+  "transport": "stdio"
+}

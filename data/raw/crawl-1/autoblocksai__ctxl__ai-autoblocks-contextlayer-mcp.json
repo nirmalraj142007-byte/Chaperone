@@ -1,0 +1,8 @@
+{
+  "serverId": "autoblocksai__ctxl__ai-autoblocks-contextlayer-mcp",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "npm error could not determine executable to run\nnpm notice\nnpm notice New major version of npm available! 10.9.8 -> 12.0.2\nnpm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2\nnpm notice To update run: npm install -g npm@12.0.2\nnpm notice\nnpm error A complete log of this run can be found in: /tmp/npm-cache/_logs/2026-09-15T06_23_48_166Z-debug-0.log\n",
+  "durationMs": 2095,
+  "transport": "stdio"
+}

@@ -1,0 +1,8 @@
+{
+  "serverId": "dxpert-ai__uns-tools__ai-dxpert-uns-tools",
+  "status": "FAILED_TIMEOUT",
+  "tools": [],
+  "stderrTail": "",
+  "durationMs": 120290,
+  "transport": "stdio"
+}

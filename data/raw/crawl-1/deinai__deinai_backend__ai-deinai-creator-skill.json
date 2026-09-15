@@ -1,0 +1,8 @@
+{
+  "serverId": "deinai__deinai_backend__ai-deinai-creator-skill",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "sh: 1: exec: deinai-mcp: not found\n",
+  "durationMs": 71742,
+  "transport": "stdio"
+}

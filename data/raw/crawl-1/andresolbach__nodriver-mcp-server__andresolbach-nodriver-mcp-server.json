@@ -1,0 +1,2168 @@
+{
+  "serverId": "andresolbach__nodriver-mcp-server__andresolbach-nodriver-mcp-server",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "list_frames",
+      "description": "List the page's frames, so their content can be reached at all.\n\nChrome's accessibility tree stops at a frame boundary, and\ndocument.querySelector never crosses one, so anything inside an iframe —\npayment fields, consent walls, embedded editors, CAPTCHA widgets — is\ninvisible to take_snapshot and query_selector by default.\n\nIndex 0 is always the main frame. Pass an index or frame id as the `frame`\nargument of get_page_content, query_selector, evaluate_script,\nwait_for_selector or take_snapshot to work inside one.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "title": "list_framesArguments"
+      }
+    },
+    {
+      "name": "bypass_insecure_warning",
+      "description": "Click through Chrome's \"Your connection is not private\" interstitial.\n\nUse this when a navigation lands on an SSL/certificate warning page (expired\nor self-signed certificate, hostname mismatch) instead of the site itself —\nthe snapshot then shows a warning page rather than the expected content.\nThis performs the Advanced -> Proceed click for you.\n\nHas no effect on any other kind of page.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "title": "bypass_insecure_warningArguments"
+      }
+    },
+    {
+      "name": "cf_verify",
+      "description": "Attempt to solve a Cloudflare \"Verify you are human\" challenge.\n\nUse when a page is stuck on a Cloudflare interstitial — a checkbox widget,\nor \"Checking your browser before accessing\". Drives nodriver's built-in\nverification bypass, which locates the checkbox visually and clicks it.\n\nNeeds opencv, which is an optional extra: install nodriver-mcp[cf], or this\nreports that it is missing rather than failing obscurely. Many challenges\nclear by themselves after a few seconds, so wait_for([\"some text from the\nreal page\"]) is worth trying first — and this says so when it looks at the\npage and finds no challenge at all.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "title": "cf_verifyArguments"
+      }
+    },
+    {
+      "name": "click",
+      "description": "Click an element addressed by its snapshot uid.\n\nThis is the click you want in almost all cases — prefer it over click_at,\nbecause a uid survives layout shifts and raw coordinates do not. The element\nis scrolled into view first, so it need not be visible beforehand.\n\nSends real CDP input events, so the page sees `isTrusted=true`, which is the\nentire point of an undetected driver. Because those are delivered by\ncoordinate, the click is aimed at a point that actually hits the element:\nseveral points inside it are hit-tested first, since a sticky header or a\nbanner can cover the centre. If none of them reach it, `if_covered` decides\nwhat happens, and the response always says which path was taken.\n\nTwo other situations force the scripted fallback regardless: a touch-emulated\ntarget, where CDP mouse input can crash the renderer, and a CDP click that\ntimes out or errors. Every step is bounded at 10s, so a wedged page cannot\nhang the call.\n\nOn \"unknown uid\", take a fresh take_snapshot and retry with the new uid.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "uid": {
+            "description": "Element uid from the most recent take_snapshot, e.g. \"4_12\". uids are invalidated whenever the page changes — if you get \"unknown uid\", take a fresh snapshot and retry with the new uid.",
+            "title": "Uid",
+            "type": "string"
+          },
+          "dbl_click": {
+            "default": false,
+            "description": "Send a double-click instead of a single click.",
+            "title": "Dbl Click",
+            "type": "boolean"
+          },
+          "if_covered": {
+            "default": "report",
+            "description": "What to do when something else sits on top of the element, so a real mouse click at its position would hit that instead. \"report\" (the default) does not click at all: it returns an error naming what is in the way, leaving the page untouched and the session indistinguishable from a person's. Dismiss the cookie banner, close the modal or scroll, then click again. \"synthetic_click\" dispatches the click on the element directly, which works through anything — but the page sees `isTrusted=false`, which is precisely the signal anti-bot systems look for. Choose it when the overlay cannot be dismissed, or when stealth does not matter on this site; not as a default.",
+            "enum": [
+              "report",
+              "synthetic_click"
+            ],
+            "title": "If Covered",
+            "type": "string"
+          },
+          "include_snapshot": {
+            "default": false,
+            "description": "Append a fresh page snapshot to the response. Worth it when this action changes the page and take_snapshot would be your next call anyway — it saves a round trip, at the cost of a much larger response.",
+            "title": "Include Snapshot",
+            "type": "boolean"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "required": [
+          "uid"
+        ],
+        "title": "clickArguments"
+      }
+    },
+    {
+      "name": "click_at",
+      "description": "Click a raw viewport coordinate instead of an element.\n\nUse `click` with a uid whenever the target shows up in a snapshot — it is\nrobust against layout shifts, this is not. Coordinates are for surfaces with\nno addressable element: canvases, maps, video players, image hotspots.\n\nThe point must lie inside the current viewport; scroll_page or\nscroll_to_selector first if it does not. Coordinates are in CSS pixels and\nignore the device pixel ratio, so they match what emulate/resize_page report.\n\nSame input path as `click`: real CDP events, the same reported scripted\nfallback, the same 10s bound per step.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "x": {
+            "description": "X coordinate in CSS pixels, relative to the viewport's top-left corner.",
+            "title": "X",
+            "type": "integer"
+          },
+          "y": {
+            "description": "Y coordinate in CSS pixels, relative to the viewport's top-left corner.",
+            "title": "Y",
+            "type": "integer"
+          },
+          "dbl_click": {
+            "default": false,
+            "description": "Send a double-click instead of a single click.",
+            "title": "Dbl Click",
+            "type": "boolean"
+          },
+          "include_snapshot": {
+            "default": false,
+            "description": "Append a fresh page snapshot to the response. Worth it when this action changes the page and take_snapshot would be your next call anyway — it saves a round trip, at the cost of a much larger response.",
+            "title": "Include Snapshot",
+            "type": "boolean"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "required": [
+          "x",
+          "y"
+        ],
+        "title": "click_atArguments"
+      }
+    },
+    {
+      "name": "close_page",
+      "description": "Close a single browser tab.\n\nThe last remaining tab cannot be closed — use close_browser to shut Chrome\ndown entirely. Closing the selected page clears the selection, so subsequent\ntools fall back to the most recently opened tab.\n\nReturns the remaining open pages, because indices shift when a tab closes:\nre-read them from this response rather than reusing older ones.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "page_id": {
+            "default": -1,
+            "description": "Index of the page to close, as listed by list_pages. -1 (the default) closes the currently selected page.",
+            "title": "Page Id",
+            "type": "integer"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "title": "close_pageArguments"
+      }
+    },
+    {
+      "name": "close_browser",
+      "description": "Quit Chrome entirely, closing every tab.\n\nUnlike close_page (which always keeps one tab alive), this tears down the\nwhole browser. Chrome relaunches automatically on the next tool call with\nthe currently selected profile, so this is also how you apply pending launch\nflags without switching profiles.\n\nOn an ephemeral temp profile (the default) this discards cookies, logins and\nlocalStorage — save_session first if you need them back. Persistent profiles\ncreated with create_profile keep everything.\n\nIt keeps the browser itself. The name, its selected profile and its launch\nflags survive for the next relaunch, so the name goes on counting against the\n12-browser limit. When an agent is finished for good, call shutdown_browser\ninstead: it also releases the name.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "title": "close_browserArguments"
+      }
+    },
+    {
+      "name": "drag",
+      "description": "Drag one element onto another (press, move, release).\n\nBoth uids must come from the same take_snapshot. Both ends are scrolled into\nview and hit-tested first, and the pointer is moved in steps with the button\nheld, which is what mouse-driven sortables and sliders listen for.\n\nThis drives the mouse. Native HTML5 drag-and-drop — the dataTransfer kind —\nis a separate protocol that a synthetic mouse does not trigger in Chrome; if\nnothing happens on a page that uses it, that is why.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "from_uid": {
+            "description": "uid of the element to pick up, from the most recent take_snapshot.",
+            "title": "From Uid",
+            "type": "string"
+          },
+          "to_uid": {
+            "description": "uid of the element to drop onto, from the most recent take_snapshot.",
+            "title": "To Uid",
+            "type": "string"
+          },
+          "include_snapshot": {
+            "default": false,
+            "description": "Append a fresh page snapshot to the response. Worth it when this action changes the page and take_snapshot would be your next call anyway — it saves a round trip, at the cost of a much larger response.",
+            "title": "Include Snapshot",
+            "type": "boolean"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "required": [
+          "from_uid",
+          "to_uid"
+        ],
+        "title": "dragArguments"
+      }
+    },
+    {
+      "name": "emulate",
+      "description": "Emulate network, CPU, geolocation, user agent, color scheme or viewport.\n\nApplies to the selected page and persists across navigations until\nreset_emulation. Every parameter is independent — pass only what you want to\nchange, leave the rest at their defaults. Settings already in force are\ncarried over rather than dropped: a user_agent on its own keeps the client\nhints a device preset established, and a viewport on its own keeps its touch\nand mobile flags unless you clear them with `notouch` / `nomobile`.\n\nTo emulate a real phone or tablet, use emulate_device instead: it sets user\nagent, client hints, viewport, DPR and touch as one coherent set, which\nhand-assembled overrides here get wrong in ways anti-bot systems detect.\n\nTurning `touch` on in the viewport also changes how `click` behaves — CDP\nmouse input can crash a touch-emulated renderer, so clicks fall back to the\nscripted path (`isTrusted=false`) for as long as touch is enabled.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "network_conditions": {
+            "default": "",
+            "description": "Throttle the network to a preset profile. \"Offline\" cuts the connection entirely. Empty string leaves throttling unchanged.",
+            "enum": [
+              "",
+              "Offline",
+              "Slow 3G",
+              "Fast 3G",
+              "Slow 4G",
+              "Fast 4G"
+            ],
+            "title": "Network Conditions",
+            "type": "string"
+          },
+          "cpu_throttling_rate": {
+            "default": 0,
+            "description": "Slow the CPU by this factor to emulate a low-end device (4 = 4x slower; 1-20 is the useful range). 0 or 1 means no throttling.",
+            "minimum": 0,
+            "title": "Cpu Throttling Rate",
+            "type": "number"
+          },
+          "geolocation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Override geolocation, as \"latitude,longitude\" (e.g. \"37.7749,-122.4194\"). Omit to leave unchanged; pass an empty string to clear a previous override.",
+            "title": "Geolocation"
+          },
+          "user_agent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Override the User-Agent header and navigator.userAgent. Omit to leave unchanged; pass an empty string to restore Chrome's real one. This does NOT touch UA client hints (Sec-CH-UA-*), which then contradict the spoofed UA and give the automation away — use emulate_device for mobile, it sets both consistently.",
+            "title": "User Agent"
+          },
+          "color_scheme": {
+            "default": "",
+            "description": "Emulate the prefers-color-scheme media feature. \"auto\" clears a previous override; empty string leaves it unchanged.",
+            "enum": [
+              "",
+              "dark",
+              "light",
+              "auto"
+            ],
+            "title": "Color Scheme",
+            "type": "string"
+          },
+          "viewport": {
+            "default": "",
+            "description": "Viewport override as \"WIDTHxHEIGHTxDPR[,mobile][,touch][,landscape]\", e.g. \"375x812x3,mobile,touch\" or \"1920x1080x1\". The trailing flags are optional: `mobile` turns on mobile viewport behaviour, `touch` enables touch emulation, `landscape` sets the screen orientation. Omitting `mobile` or `touch` leaves that setting as it is, so resizing after emulate_device keeps the phone's touch support; turn them off explicitly with `nomobile` / `notouch`. Empty string leaves the viewport unchanged.",
+            "title": "Viewport",
+            "type": "string"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "title": "emulateArguments"
+      }
+    },
+    {
+      "name": "reset_emulation",
+      "description": "Clear every emulation override on the selected page.\n\nResets in one call: network throttling, CPU throttling, geolocation, user\nagent and client hints, color scheme, viewport, device pixel ratio, page\nscale and touch emulation — back to the real browser defaults.\n\nUse after emulate or emulate_device to make the page behave like ordinary\ndesktop Chrome again. Turning touch emulation off here also restores trusted\nCDP clicks.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "title": "reset_emulationArguments"
+      }
+    },
+    {
+      "name": "emulate_device",
+      "description": "Emulate a phone or tablet with one internally consistent set of signals.\n\nPreferred over assembling `emulate` parameters by hand for mobile work: user\nagent, UA client hints (Sec-CH-UA-*), viewport, device pixel ratio, touch\nsupport and Accept-Language are set together so they cannot contradict each\nother — a mismatch between them is a classic automation tell.\n\nPresets are pixel_7, pixel_7_landscape and ipad_air (aliases are listed in\nthe `device` parameter). ipad_air deliberately reports desktop-class Safari\nwith touch and sends no client hints, which is what a real iPad does.\n\nApplies to the selected page and survives navigation. To have mobile signals\npresent on a page's very first request, pass `device` to new_page or\nnavigate_page instead of calling this afterwards. Undo with reset_emulation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "device": {
+            "description": "Device to emulate — sets user agent, UA client hints, viewport, device pixel ratio and touch together. Presets: \"pixel_7\" (aliases: pixel7, android, android_phone), \"pixel_7_landscape\" (pixel7_landscape, android_landscape), \"ipad_air\" (ipadair, ipad, tablet). Case, spaces and -/_ are normalised. Empty string leaves emulation unchanged.",
+            "title": "Device",
+            "type": "string"
+          },
+          "color_scheme": {
+            "default": "",
+            "description": "Emulate the prefers-color-scheme media feature. \"auto\" clears a previous override; empty string leaves it unchanged.",
+            "enum": [
+              "",
+              "dark",
+              "light",
+              "auto"
+            ],
+            "title": "Color Scheme",
+            "type": "string"
+          },
+          "network_conditions": {
+            "default": "",
+            "description": "Throttle the network to a preset profile. \"Offline\" cuts the connection entirely. Empty string leaves throttling unchanged.",
+            "enum": [
+              "",
+              "Offline",
+              "Slow 3G",
+              "Fast 3G",
+              "Slow 4G",
+              "Fast 4G"
+            ],
+            "title": "Network Conditions",
+            "type": "string"
+          },
+          "cpu_throttling_rate": {
+            "default": 0,
+            "description": "Slow the CPU by this factor to emulate a low-end device (4 = 4x slower; 1-20 is the useful range). 0 or 1 means no throttling.",
+            "minimum": 0,
+            "title": "Cpu Throttling Rate",
+            "type": "number"
+          },
+          "geolocation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Override geolocation, as \"latitude,longitude\" (e.g. \"37.7749,-122.4194\"). Omit to leave unchanged; pass an empty string to clear a previous override.",
+            "title": "Geolocation"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "required": [
+          "device"
+        ],
+        "title": "emulate_deviceArguments"
+      }
+    },
+    {
+      "name": "evaluate_script",
+      "description": "Run JavaScript inside the page and get the result back as JSON.\n\nThe escape hatch for anything the other tools do not cover: reading computed\nstyles, calling a page's own JS API, or extracting structured data in a\nsingle round trip instead of a dozen snapshot-and-click cycles.\n\nWithout `args` the function runs at page level in the main world. With\n`args`, the given uids become real element references, which is how you\noperate on one specific element from a snapshot.\n\nReturn values must be JSON-serialisable — DOM nodes, functions and circular\nstructures are not, so map them to plain values inside the function. A script\nthat throws comes back as a failed call carrying the JavaScript error, not as\na result you have to inspect for the word \"Error\".\n\nPass script_path to run a function kept in a .js file, and file_path to write\nthe result to disk instead of into the conversation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "function": {
+            "default": "",
+            "description": "A JavaScript function expression, e.g. \"() => document.title\" or \"(el) => el.innerText\". It is invoked immediately and its return value is JSON-serialised back to you. Async functions are awaited, so \"async () => (await fetch('/api/x')).json()\" works. Return a value — console.log output is not captured. Leave empty when using script_path.",
+            "title": "Function",
+            "type": "string"
+          },
+          "script_path": {
+            "default": "",
+            "description": "Read the function from this local .js file instead of the `function` parameter. Use it for anything long or quote-heavy, where escaping the script into a JSON string is where the mistakes happen.",
+            "title": "Script Path",
+            "type": "string"
+          },
+          "file_path": {
+            "default": "",
+            "description": "Write the JSON result to this local path instead of returning it — for extractions too large to put in the conversation.",
+            "title": "File Path",
+            "type": "string"
+          },
+          "frame": {
+            "default": "",
+            "description": "Run inside one of the page's frames instead of the main document: an index or frame id from list_frames. Runs in an isolated world, which shares the frame's DOM but not its own JavaScript variables, so use it to read and drive the DOM rather than to call the page's own functions. Ignored when `args` is given, since a uid already carries its frame.",
+            "title": "Frame",
+            "type": "string"
+          },
+          "args": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Element uids from the most recent take_snapshot, resolved to live DOM nodes and passed as the function's arguments. The first uid is also bound as `this`. Omit for page-level scripts.",
+            "title": "Args"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "title": "evaluate_scriptArguments"
+      }
+    },
+    {
+      "name": "fill",
+      "description": "Set the value of an input, textarea, select or contenteditable element.\n\nSelects whatever is already in the field and types over it, character by\ncharacter, so `input` events fire and React/Vue-style controlled components\nregister the change. It deliberately does not blank the field first: that\nmakes such components re-render, the focus follows the replaced node, and\nthe keystrokes end up nowhere. For <select>, the option is chosen by value\nand a `change` event is dispatched.\n\nThe value is read back afterwards. If it did not land you get an error, not\na success you cannot trust — a field can be read-only, disabled, covered by\nan overlay, or rewrite what you type, and silently reporting success would\nsend you looking for the problem several steps later.\n\nUse type_text instead when you want to append to a focused field rather than\nreplace its contents. For several fields at once, fill_form does it in one\nround trip.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "uid": {
+            "description": "Element uid from the most recent take_snapshot, e.g. \"4_12\". uids are invalidated whenever the page changes — if you get \"unknown uid\", take a fresh snapshot and retry with the new uid.",
+            "title": "Uid",
+            "type": "string"
+          },
+          "value": {
+            "description": "The text to enter. For a <select> element this must match the option's value attribute, not its visible label.",
+            "title": "Value",
+            "type": "string"
+          },
+          "include_snapshot": {
+            "default": false,
+            "description": "Append a fresh page snapshot to the response. Worth it when this action changes the page and take_snapshot would be your next call anyway — it saves a round trip, at the cost of a much larger response.",
+            "title": "Include Snapshot",
+            "type": "boolean"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "required": [
+          "uid",
+          "value"
+        ],
+        "title": "fillArguments"
+      }
+    },
+    {
+      "name": "fill_form",
+      "description": "Fill several form fields in a single call.\n\nBehaves like `fill` per field, but costs one round trip instead of one per\nfield. Fields are processed in the order given, which matters on pages that\nreveal or enable later fields in response to earlier ones.\n\nA field that fails does not abort the rest: the response reports success or\nthe specific error per uid, so a partially filled form is always visible\nrather than silent.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "elements": {
+            "description": "The fields to fill, in order — each entry is {\"uid\": \"...\", \"value\": \"...\"}.",
+            "items": {
+              "$ref": "#/$defs/FormField"
+            },
+            "title": "Elements",
+            "type": "array"
+          },
+          "include_snapshot": {
+            "default": false,
+            "description": "Append a fresh page snapshot to the response. Worth it when this action changes the page and take_snapshot would be your next call anyway — it saves a round trip, at the cost of a much larger response.",
+            "title": "Include Snapshot",
+            "type": "boolean"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "required": [
+          "elements"
+        ],
+        "$defs": {
+          "FormField": {
+            "description": "A single field for fill_form to populate.",
+            "properties": {
+              "uid": {
+                "description": "Element uid from the most recent take_snapshot, e.g. \"4_12\".",
+                "title": "Uid",
+                "type": "string"
+              },
+              "value": {
+                "description": "The text to enter. For a <select> element, the option's value attribute rather than its visible label.",
+                "title": "Value",
+                "type": "string"
+              }
+            },
+            "required": [
+              "uid",
+              "value"
+            ],
+            "title": "FormField",
+            "type": "object"
+          }
+        },
+        "title": "fill_formArguments"
+      }
+    },
+    {
+      "name": "set_checked",
+      "description": "Tick or untick a checkbox, or select a radio button, and verify it took.\n\nUse this instead of fill for anything with a checked state. fill types over a\nfield's text, which a checkbox does not have — and its read-back compares\n`value`, which a checkbox never changes, so a fill could report success while\nnothing was selected.\n\nIdempotent: asking for the state it is already in is reported and does not\nclick. Otherwise it delivers a real CDP click, on the element or, when the\ninput is visually hidden behind a styled label (the usual custom-control\npattern), on the label that controls it. The state is read back afterwards, so\na failure is an error rather than a success you cannot trust.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "uid": {
+            "description": "Element uid from the most recent take_snapshot, e.g. \"4_12\". uids are invalidated whenever the page changes — if you get \"unknown uid\", take a fresh snapshot and retry with the new uid.",
+            "title": "Uid",
+            "type": "string"
+          },
+          "checked": {
+            "default": true,
+            "description": "True to tick the box or select the radio, False to untick it. Radio buttons cannot be unticked by the browser — select a different one in the group instead.",
+            "title": "Checked",
+            "type": "boolean"
+          },
+          "include_snapshot": {
+            "default": false,
+            "description": "Append a fresh page snapshot to the response. Worth it when this action changes the page and take_snapshot would be your next call anyway — it saves a round trip, at the cost of a much larger response.",
+            "title": "Include Snapshot",
+            "type": "boolean"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "required": [
+          "uid"
+        ],
+        "title": "set_checkedArguments"
+      }
+    },
+    {
+      "name": "select_option",
+      "description": "Choose an option in a <select>, by value, visible label or index.\n\nfill also works on a <select>, but only matches the value attribute, which is\nnot what a snapshot shows you — so it had to be guessed. This matches what you\ncan actually see, and when nothing matches it lists the real options instead of\nonly saying no.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "uid": {
+            "description": "Element uid from the most recent take_snapshot, e.g. \"4_12\". uids are invalidated whenever the page changes — if you get \"unknown uid\", take a fresh snapshot and retry with the new uid.",
+            "title": "Uid",
+            "type": "string"
+          },
+          "option": {
+            "description": "The option to choose. Matched against the value attribute first, then the visible label, then — if it is a plain number — the position in the list. A failure names every option the <select> actually has.",
+            "title": "Option",
+            "type": "string"
+          },
+          "include_snapshot": {
+            "default": false,
+            "description": "Append a fresh page snapshot to the response. Worth it when this action changes the page and take_snapshot would be your next call anyway — it saves a round trip, at the cost of a much larger response.",
+            "title": "Include Snapshot",
+            "type": "boolean"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "required": [
+          "uid",
+          "option"
+        ],
+        "title": "select_optionArguments"
+      }
+    },
+    {
+      "name": "get_console_message",
+      "description": "Read one console message in full, by id.\n\nlist_console_messages truncates every entry to 200 characters; use this to\nget a complete stack trace or error payload.\n\nRequires enable_console_collection to have been called for this page. The\nserver leaves the CDP Runtime domain disabled by default because enabling it\nis itself something sites can detect.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "msgid": {
+            "description": "Message id, as shown in square brackets by list_console_messages.",
+            "minimum": 0,
+            "title": "Msgid",
+            "type": "integer"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "required": [
+          "msgid"
+        ],
+        "title": "get_console_messageArguments"
+      }
+    },
+    {
+      "name": "get_cookies",
+      "description": "List browser cookies with their domain, path and secure flag.\n\nReads the whole browser cookie jar, not just the current page, unless you\npass `url`. Values are returned in full, so treat the output as sensitive —\nit contains live session tokens.\n\nTo carry these across a browser restart use save_session, or switch to a\npersistent profile with use_profile.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "default": "",
+            "description": "Only return cookies that would be sent to this URL (matching domain, path and secure flag). Empty string returns every cookie in the browser.",
+            "title": "Url",
+            "type": "string"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "title": "get_cookiesArguments"
+      }
+    },
+    {
+      "name": "get_local_storage",
+      "description": "Read all localStorage entries for the current page's origin.\n\nValues are truncated to 200 characters each; for one entry in full use\nevaluate_script with `() => localStorage.getItem(\"key\")`.\n\nlocalStorage is scoped per origin, so this returns nothing on about:blank —\nnavigate to the site first. sessionStorage is not included.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "title": "get_local_storageArguments"
+      }
+    },
+    {
+      "name": "get_network_request",
+      "description": "Inspect one network request: URL, method, resource type and both bodies.\n\nOften the fastest way to get structured data out of a site: find the page's\nown API call with list_network_requests, then read the JSON it already\nreceived here, instead of scraping the rendered DOM.\n\nInline bodies are truncated at 5000 characters, so pass a file path for\nanything larger. Response bodies are only available while Chrome still holds\nthem in its buffer — for a long-finished request the entry may still be\nlisted while its body is already gone.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "reqid": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Request id, as shown in square brackets by list_network_requests. Omit to get the most recent request.",
+            "title": "Reqid"
+          },
+          "request_file_path": {
+            "default": "",
+            "description": "Write the request body (POST data) to this local file path instead of including it in the response.",
+            "title": "Request File Path",
+            "type": "string"
+          },
+          "response_file_path": {
+            "default": "",
+            "description": "Write the response body to this local file path instead of including it. Use this for binary responses (images, PDFs, archives) — they are base64-decoded on the way out.",
+            "title": "Response File Path",
+            "type": "string"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "title": "get_network_requestArguments"
+      }
+    },
+    {
+      "name": "handle_dialog",
+      "description": "Answer an open JavaScript dialog — alert, confirm or prompt.\n\nA dialog blocks the page and every subsequent tool call until it is handled,\nso call this as soon as one appears. Returns an error if no dialog is open.\n\nbeforeunload dialogs triggered by navigating away are handled automatically\nvia navigate_page's `handle_before_unload` parameter; this tool is for\ndialogs the page opens by itself.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "default": "accept",
+            "description": "Accept (OK) or dismiss (Cancel) the dialog. Either closes an alert(); for confirm() the choice is what the page's JavaScript receives.",
+            "enum": [
+              "accept",
+              "dismiss"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "prompt_text": {
+            "default": "",
+            "description": "Text to enter into a prompt() dialog before accepting it. Ignored for alert() and confirm() dialogs.",
+            "title": "Prompt Text",
+            "type": "string"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "title": "handle_dialogArguments"
+      }
+    },
+    {
+      "name": "hover",
+      "description": "Move the mouse over an element without clicking it.\n\nThis is how you open hover-triggered menus, tooltips and dropdowns before\nreading what they reveal — pass include_snapshot=true to get the revealed\ncontent back in the same call.\n\nThe element is scrolled into view and hit-tested first, the same way click\ndoes it: a point that lands on a sticky header instead opens that header's\nmenu, not the one you asked for. If something covers the element, this says\nwhat, rather than hovering the wrong thing.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "uid": {
+            "description": "Element uid from the most recent take_snapshot, e.g. \"4_12\". uids are invalidated whenever the page changes — if you get \"unknown uid\", take a fresh snapshot and retry with the new uid.",
+            "title": "Uid",
+            "type": "string"
+          },
+          "include_snapshot": {
+            "default": false,
+            "description": "Append a fresh page snapshot to the response. Worth it when this action changes the page and take_snapshot would be your next call anyway — it saves a round trip, at the cost of a much larger response.",
+            "title": "Include Snapshot",
+            "type": "boolean"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "required": [
+          "uid"
+        ],
+        "title": "hoverArguments"
+      }
+    },
+    {
+      "name": "list_console_messages",
+      "description": "List console output collected for the selected page.\n\nRequires enable_console_collection first. Console capture is opt-in because\nit needs the CDP Runtime domain, which some sites use to detect an attached\ndebugger; without it this returns a reminder instead of messages.\n\nEach line is prefixed with its id and truncated to 200 characters — pass the\nid to get_console_message for the full text. Only the most recent 1000\nmessages are retained.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "page_size": {
+            "anyOf": [
+              {
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Maximum number of messages to return. Omit to return all.",
+            "title": "Page Size"
+          },
+          "page_idx": {
+            "default": 0,
+            "description": "0-based page number, used together with page_size.",
+            "minimum": 0,
+            "title": "Page Idx",
+            "type": "integer"
+          },
+          "types": {
+            "anyOf": [
+              {
+                "items": {
+                  "enum": [
+                    "log",
+                    "debug",
+                    "info",
+                    "error",
+                    "warning",
+                    "dir",
+                    "dirxml",
+                    "table",
+                    "trace",
+                    "clear",
+                    "startGroup",
+                    "startGroupCollapsed",
+                    "endGroup",
+                    "assert",
+                    "profile",
+                    "profileEnd",
+                    "count",
+                    "timeEnd"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Only return these console types, e.g. [\"error\", \"warning\"]. Note the value is \"warning\", not \"warn\". Omit for all types.",
+            "title": "Types"
+          },
+          "include_preserved_messages": {
+            "default": false,
+            "description": "Also include messages from before the last navigation — the server keeps the previous 3 navigations. Default false: current page only.",
+            "title": "Include Preserved Messages",
+            "type": "boolean"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "title": "list_console_messagesArguments"
+      }
+    },
+    {
+      "name": "enable_console_collection",
+      "description": "Start capturing console output on the current page.\n\nCall this before list_console_messages or get_console_message — neither\nreturns anything until collection is on. Network capture, by contrast, is\nalways on and needs no equivalent call.\n\nThis is opt-in rather than automatic because it enables the CDP Runtime\ndomain, which some anti-bot scripts probe for to detect an attached\ndebugger. Leave it off while stealth matters, and use\ndisable_console_collection when you are done debugging.\n\nApplies per page: a new tab needs its own call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "title": "enable_console_collectionArguments"
+      }
+    },
+    {
+      "name": "disable_console_collection",
+      "description": "Stop capturing console output on the current page.\n\nTurns the CDP Runtime domain back off, which restores the quieter,\nharder-to-detect default — worth doing once you are finished debugging and\nthe page still has anti-bot checks ahead of it.\n\nMessages already collected stay readable; only new ones stop arriving.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "title": "disable_console_collectionArguments"
+      }
+    },
+    {
+      "name": "list_network_requests",
+      "description": "List the network requests the selected page has made.\n\nCollection is automatic — unlike console capture, nothing needs enabling.\n\nThe main use is finding the JSON API a page calls: filter with\nresource_types=[\"XHR\", \"Fetch\"], then pass the id from the square brackets\nto get_network_request to read the actual response body. That is usually far\ncheaper and more reliable than scraping the rendered DOM.\n\nOnly the most recent 1000 requests are retained, and each URL is truncated\nto 150 characters in this listing.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "page_size": {
+            "anyOf": [
+              {
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Maximum number of requests to return. Omit to return all.",
+            "title": "Page Size"
+          },
+          "page_idx": {
+            "default": 0,
+            "description": "0-based page number, used together with page_size.",
+            "minimum": 0,
+            "title": "Page Idx",
+            "type": "integer"
+          },
+          "resource_types": {
+            "anyOf": [
+              {
+                "items": {
+                  "enum": [
+                    "Document",
+                    "Stylesheet",
+                    "Image",
+                    "Media",
+                    "Font",
+                    "Script",
+                    "TextTrack",
+                    "XHR",
+                    "Fetch",
+                    "Prefetch",
+                    "EventSource",
+                    "WebSocket",
+                    "Manifest",
+                    "SignedExchange",
+                    "Ping",
+                    "CSPViolationReport",
+                    "Preflight",
+                    "FedCM",
+                    "Other"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Only return these resource types. [\"XHR\", \"Fetch\"] is the useful filter for finding a page's own API calls. Matching is case-insensitive. Omit for all types.",
+            "title": "Resource Types"
+          },
+          "url_filter": {
+            "default": "",
+            "description": "Only return requests whose URL contains this substring (plain text, not a regex), e.g. \"/api/\" or \"graphql\".",
+            "title": "Url Filter",
+            "type": "string"
+          },
+          "include_preserved_requests": {
+            "default": false,
+            "description": "Also include requests from before the last navigation — the server keeps the previous 3 navigations. Default false: current page only.",
+            "title": "Include Preserved Requests",
+            "type": "boolean"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "title": "list_network_requestsArguments"
+      }
+    },
+    {
+      "name": "list_pages",
+      "description": "List every open browser tab with its index, URL and title.\n\nThe index shown here is the `page_id` taken by select_page and close_page.\nIndices are positional and shift whenever a tab opens or closes, so re-read\nthem here rather than reusing an index from an earlier call.\n\nTools act on the page chosen with select_page, or on the most recently\nopened tab if none was selected; the selected one is marked here.\n\nEach entry also carries the page's CDP targetId, which is the stable\nidentity of a tab: unlike the index it survives other tabs opening and\nclosing, and it is what CDP-level tooling and logs refer to.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "title": "list_pagesArguments"
+      }
+    },
+    {
+      "name": "navigate_page",
+      "description": "Navigate the selected page — load a URL, or go back, forward or reload.\n\nNavigating rotates the collected logs: the previous page's console and\nnetwork entries move into the preserved history (the last 3 navigations are\nkept), still reachable via `include_preserved_*` on the list tools.\n\nPassing `device` applies the emulation before the request is sent, so the\nserver sees mobile signals on the very first byte — calling emulate_device\nafterwards is too late for that first request.\n\nReturns the resulting URL together with all open pages. This reuses the\ncurrent tab; use new_page to open an additional one.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "default": "url",
+            "description": "The kind of navigation: \"url\" loads `url`, \"back\" and \"forward\" move through session history, \"reload\" reloads the current page.",
+            "enum": [
+              "url",
+              "back",
+              "forward",
+              "reload"
+            ],
+            "title": "Type",
+            "type": "string"
+          },
+          "url": {
+            "default": "",
+            "description": "Target URL — required when type=\"url\", ignored otherwise. Include the scheme: \"https://example.com\", not \"example.com\".",
+            "title": "Url",
+            "type": "string"
+          },
+          "ignore_cache": {
+            "default": false,
+            "description": "Bypass the HTTP cache (a hard reload). Only applies to type=\"reload\".",
+            "title": "Ignore Cache",
+            "type": "boolean"
+          },
+          "handle_before_unload": {
+            "default": "accept",
+            "description": "How to answer a beforeunload confirmation (\"Leave site?\") raised by the page being left. \"accept\" leaves, \"dismiss\" stays — in which case the navigation does not happen.",
+            "enum": [
+              "accept",
+              "dismiss"
+            ],
+            "title": "Handle Before Unload",
+            "type": "string"
+          },
+          "init_script": {
+            "default": "",
+            "description": "JavaScript executed in every new document before any of the page's own scripts, for this navigation. Use it to stub out APIs or plant values a page reads at startup. Plain statements, not a function expression.",
+            "title": "Init Script",
+            "type": "string"
+          },
+          "timeout": {
+            "default": 0,
+            "description": "Maximum wait in milliseconds. 0 uses the built-in default.",
+            "minimum": 0,
+            "title": "Timeout",
+            "type": "integer"
+          },
+          "device": {
+            "default": "",
+            "description": "Device to emulate — sets user agent, UA client hints, viewport, device pixel ratio and touch together. Presets: \"pixel_7\" (aliases: pixel7, android, android_phone), \"pixel_7_landscape\" (pixel7_landscape, android_landscape), \"ipad_air\" (ipadair, ipad, tablet). Case, spaces and -/_ are normalised. Empty string leaves emulation unchanged.",
+            "title": "Device",
+            "type": "string"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "title": "navigate_pageArguments"
+      }
+    },
+    {
+      "name": "new_page",
+      "description": "Open a new browser tab and load a URL.\n\nChrome always starts with one tab, so the first call here reuses that empty\nstartup tab rather than leaving a stray blank page behind for the rest of\nthe session. A blank tab sitting among others is left alone, and an isolated\ncontext always gets a target of its own.\n\nUnless `background` is set, the new page becomes the selected page for every\nsubsequent tool call.\n\nPassing `device` applies emulation before the first real request, so mobile\nsignals are present from the very first byte — which calling emulate_device\nafterwards cannot achieve.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "default": "about:blank",
+            "description": "URL to load in the new tab, including the scheme. Defaults to \"about:blank\" for an empty tab.",
+            "title": "Url",
+            "type": "string"
+          },
+          "background": {
+            "default": false,
+            "description": "Open the tab without focusing it, leaving the current page selected. Default false, which focuses the new page and makes it the target of all following tool calls.",
+            "title": "Background",
+            "type": "boolean"
+          },
+          "isolated_context": {
+            "default": "",
+            "description": "Open the page in a named isolated browser context — its own cookie jar and storage, comparable to a separate incognito window. Pages given the same name share that context; different names are fully isolated from each other. Use it to hold several logins to one site at once. Empty string uses the normal shared context.",
+            "title": "Isolated Context",
+            "type": "string"
+          },
+          "timeout": {
+            "default": 0,
+            "description": "Maximum wait in milliseconds. 0 uses the built-in default.",
+            "minimum": 0,
+            "title": "Timeout",
+            "type": "integer"
+          },
+          "device": {
+            "default": "",
+            "description": "Device to emulate — sets user agent, UA client hints, viewport, device pixel ratio and touch together. Presets: \"pixel_7\" (aliases: pixel7, android, android_phone), \"pixel_7_landscape\" (pixel7_landscape, android_landscape), \"ipad_air\" (ipadair, ipad, tablet). Case, spaces and -/_ are normalised. Empty string leaves emulation unchanged.",
+            "title": "Device",
+            "type": "string"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "title": "new_pageArguments"
+      }
+    },
+    {
+      "name": "performance_start_trace",
+      "description": "Record a Chrome performance trace of page load or interaction.\n\nCaptures the same DevTools timeline categories the Performance panel uses:\nrendering, scripting, loading, screenshots and the V8 CPU profile.\n\nWith the defaults (reload + auto_stop) this is one self-contained call that\nreloads, records for ~5s and returns. Only one trace can run at a time.\n\nPass file_path to keep the data — without it you get just an event count,\nwhich confirms the trace ran but says nothing about what it measured. The\noutput is raw trace JSON: load it via DevTools -> Performance -> Load profile.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "reload": {
+            "default": true,
+            "description": "Reload the page after starting the trace so the recording covers page load. Default true, which is what you want for load performance; set false to profile the page as it currently stands.",
+            "title": "Reload",
+            "type": "boolean"
+          },
+          "auto_stop": {
+            "default": true,
+            "description": "Record for about 5 seconds, then stop and return the result in this same call. Default true. Set false to control the window yourself and end it with performance_stop_trace.",
+            "title": "Auto Stop",
+            "type": "boolean"
+          },
+          "file_path": {
+            "default": "",
+            "description": "Write the raw trace JSON to this local path. Omit to get only the collected event count back.",
+            "title": "File Path",
+            "type": "string"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "title": "performance_start_traceArguments"
+      }
+    },
+    {
+      "name": "performance_stop_trace",
+      "description": "Stop the running performance trace and collect its data.\n\nOnly needed when performance_start_trace was called with auto_stop=false —\notherwise the trace has already ended and this returns an error.\n\nWaits up to 30 seconds for Chrome to flush its buffered events.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "file_path": {
+            "default": "",
+            "description": "Write the raw trace JSON to this local path (e.g. \"trace.json\"), loadable in DevTools -> Performance. Omit to get only the event count.",
+            "title": "File Path",
+            "type": "string"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "title": "performance_stop_traceArguments"
+      }
+    },
+    {
+      "name": "press_key",
+      "description": "Send a key press or keyboard shortcut to the page.\n\nGoes to whatever currently holds focus, so click or fill the target element\nfirst — with nothing focused the key lands on the document body.\n\nModifiers are held around the main key with the proper modifier bitmask, so\nreal chords such as Control+A or Control+Shift+R register as shortcuts\ninstead of arriving as unrelated key presses.\n\nFor entering text use fill (replaces the field) or type_text (appends to it);\nthis tool is for single keys and shortcuts.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "description": "A key or chord, e.g. \"Enter\", \"Tab\", \"Escape\", \"ArrowDown\", \"a\", \"Control+A\" or \"Control+Shift+R\". Modifiers are Control, Shift, Alt and Meta, joined with +. Named keys: Enter, Tab, Backspace, Delete, Escape, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Home, End, PageUp, PageDown, Space. Any single character works as itself.",
+            "title": "Key",
+            "type": "string"
+          },
+          "include_snapshot": {
+            "default": false,
+            "description": "Append a fresh page snapshot to the response. Worth it when this action changes the page and take_snapshot would be your next call anyway — it saves a round trip, at the cost of a much larger response.",
+            "title": "Include Snapshot",
+            "type": "boolean"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "required": [
+          "key"
+        ],
+        "title": "press_keyArguments"
+      }
+    },
+    {
+      "name": "resize_page",
+      "description": "Resize the browser window so the page gets the given dimensions.\n\nMoves the actual OS window, which is what you want for responsive-layout\nchecks that should also come out right in a screenshot.\n\nTo emulate a viewport size without touching the window — including device\npixel ratio, the mobile flag and touch — use emulate's `viewport` parameter\nor emulate_device. Those are what a site's media queries and fingerprinting\nread as a genuine device change.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "width": {
+            "description": "Target page width in CSS pixels.",
+            "exclusiveMinimum": 0,
+            "title": "Width",
+            "type": "integer"
+          },
+          "height": {
+            "description": "Target page height in CSS pixels.",
+            "exclusiveMinimum": 0,
+            "title": "Height",
+            "type": "integer"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "required": [
+          "width",
+          "height"
+        ],
+        "title": "resize_pageArguments"
+      }
+    },
+    {
+      "name": "scroll_page",
+      "description": "Scroll the page up or down by a percentage of the viewport.\n\nThe way to trigger lazy-loaded content and infinite scroll; take a fresh\ntake_snapshot afterwards to see what was added.\n\nThe response reports how far the page actually moved and whether the end has\nbeen reached, so a scroll loop has something to stop on: \"did not move\" means\nyou are at the end, and a page height that keeps growing means more content\nis still loading.\n\nTo bring one known element into view, scroll_to_selector is more precise.\n`click` already scrolls to its target, so no scrolling is needed before it.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "direction": {
+            "default": "down",
+            "description": "Direction to scroll.",
+            "enum": [
+              "up",
+              "down"
+            ],
+            "title": "Direction",
+            "type": "string"
+          },
+          "amount": {
+            "default": 50,
+            "description": "How far to scroll, as a percentage of the viewport height — 25 is a quarter screen, 100 a full screen.",
+            "exclusiveMinimum": 0,
+            "title": "Amount",
+            "type": "integer"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "title": "scroll_pageArguments"
+      }
+    },
+    {
+      "name": "select_page",
+      "description": "Choose which open tab every subsequent tool call acts on.\n\nWithout a selection, tools act on the most recently opened tab. Selecting\nmakes that choice explicit and sticky — needed when a click opened a tab you\nnow want to drive, or when working across several sites at once.\n\nIndices come from list_pages and shift as tabs open and close, so the\nresponse lists them again. If the selected tab is later closed, the\nselection is dropped and the default applies again.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "page_id": {
+            "description": "Index of the page to select, as listed by list_pages.",
+            "minimum": 0,
+            "title": "Page Id",
+            "type": "integer"
+          },
+          "bring_to_front": {
+            "default": true,
+            "description": "Also focus the tab in the real browser window. Default true. Many pages pause animations, timers and media while backgrounded, so leave this on unless you specifically want the page to stay hidden.",
+            "title": "Bring To Front",
+            "type": "boolean"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "required": [
+          "page_id"
+        ],
+        "title": "select_pageArguments"
+      }
+    },
+    {
+      "name": "set_cookie",
+      "description": "Set a single browser cookie.\n\nUseful for injecting a known session token, consent flag or A/B bucket\nwithout walking through a login flow.\n\nThis creates a session cookie: no expiry, gone when the browser closes. To\nrestore a full cookie set including expiry and SameSite, use load_session.\nCookies are browser-wide, not per tab.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "description": "Cookie name.",
+            "title": "Name",
+            "type": "string"
+          },
+          "value": {
+            "description": "Cookie value.",
+            "title": "Value",
+            "type": "string"
+          },
+          "domain": {
+            "description": "Domain the cookie belongs to, e.g. \"example.com\". A leading dot (\".example.com\") makes it apply to subdomains as well.",
+            "title": "Domain",
+            "type": "string"
+          },
+          "path": {
+            "default": "/",
+            "description": "URL path the cookie is scoped to. \"/\" covers the whole site.",
+            "title": "Path",
+            "type": "string"
+          },
+          "secure": {
+            "default": false,
+            "description": "Send the cookie over HTTPS only. Browsers require this for any cookie with SameSite=None.",
+            "title": "Secure",
+            "type": "boolean"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "required": [
+          "name",
+          "value",
+          "domain"
+        ],
+        "title": "set_cookieArguments"
+      }
+    },
+    {
+      "name": "set_local_storage",
+      "description": "Write entries into the current page's localStorage.\n\nMerges into what is already there rather than clearing it. Handy for setting\nfeature flags, consent state or auth tokens before the page's own scripts\nread them.\n\nlocalStorage is scoped per origin, so navigate to the site first — writing\non about:blank goes nowhere. Most pages read these values only at startup,\nso reload after setting them.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Key-value pairs to write, e.g. {\"token\": \"abc\", \"locale\": \"de\"}. Values must be strings — JSON-encode anything structured yourself.",
+            "title": "Items",
+            "type": "object"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "set_local_storageArguments"
+      }
+    },
+    {
+      "name": "take_memory_snapshot",
+      "description": "Capture a V8 heap snapshot of the page, for memory-leak debugging.\n\nWrites the raw .heapsnapshot file for Chrome DevTools -> Memory -> Load. The\nusual workflow is two snapshots taken around a suspect interaction, then\ncomparing retained objects between them.\n\nOn a heavy page a snapshot can be hundreds of megabytes and take several\nseconds; the response reports the resulting file size.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "file_path": {
+            "description": "Local path to write the .heapsnapshot file to. Open it in DevTools -> Memory -> Load profile.",
+            "title": "File Path",
+            "type": "string"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "required": [
+          "file_path"
+        ],
+        "title": "take_memory_snapshotArguments"
+      }
+    },
+    {
+      "name": "take_screenshot",
+      "description": "Capture the page, the viewport or a single element as an image.\n\nDo NOT use this to read a page. take_snapshot gives you the same content as\nsearchable text, is dramatically smaller, and yields the uids every\ninteraction tool needs. Use a screenshot only when you genuinely need\npixels: layout and styling checks, visual regression, or text that exists\nonly inside an image.\n\nElement capture needs a uid from the current snapshot. Without file_path the\nimage is returned inline as a base64 data URL.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "full_page": {
+            "default": false,
+            "description": "Capture the whole scrollable page rather than just the visible viewport. Cannot be combined with `uid`.",
+            "title": "Full Page",
+            "type": "boolean"
+          },
+          "format": {
+            "default": "png",
+            "description": "Image format. \"png\" is lossless and the default; \"jpeg\" or \"webp\" with a quality setting are far smaller, which matters for full-page captures.",
+            "enum": [
+              "png",
+              "jpeg",
+              "webp"
+            ],
+            "title": "Format",
+            "type": "string"
+          },
+          "quality": {
+            "default": 0,
+            "description": "Compression quality from 1 to 100, for jpeg and webp only. Ignored for png. 0 leaves Chrome's default.",
+            "maximum": 100,
+            "minimum": 0,
+            "title": "Quality",
+            "type": "integer"
+          },
+          "uid": {
+            "default": "",
+            "description": "Capture just this element, using a uid from the most recent take_snapshot. Cannot be combined with full_page. Empty string captures the page.",
+            "title": "Uid",
+            "type": "string"
+          },
+          "file_path": {
+            "default": "",
+            "description": "Write the image to this local path. Omit to get a base64 data URL inline in the response — that is expensive, so prefer a file for full-page or high-DPR captures.",
+            "title": "File Path",
+            "type": "string"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "title": "take_screenshotArguments"
+      }
+    },
+    {
+      "name": "take_snapshot",
+      "description": "Read the page as compact text, with a uid for every element.\n\nThis is the primary way to see a page, and the source of the uids that\nclick, fill, hover, drag and upload_file all take. Prefer it over\ntake_screenshot for anything but a genuine visual check: it is searchable,\nfar smaller, and it is what makes interaction possible at all.\n\nThe output is the accessibility tree — roles, names, values and states,\nindented by nesting — with Chrome-internal and purely presentational nodes\nfiltered out unless `verbose` is set.\n\nA URL on the same origin as the page is printed relative to it — the root node\ncarries the absolute one, so nothing is lost and a link-dense page costs\nnoticeably less to read.\n\nuids stay stable across snapshots for elements that did not change, but any\npage change can invalidate them. Whenever a tool reports \"unknown uid\", take\na fresh snapshot and use the new uid. Output is capped at 200 000 characters.\n\nFrames are included and marked, so an element inside an iframe gets a uid like\nany other and click, fill and evaluate_script work on it unchanged.\n\nFor plain page text without uids, get_page_content is cheaper; to find\nelements by CSS selector, use query_selector.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "verbose": {
+            "default": false,
+            "description": "Return the complete accessibility tree, including nodes normally filtered out as noise and containers that are otherwise collapsed. Much larger — use it only when an element you need is missing from the default output.",
+            "title": "Verbose",
+            "type": "boolean"
+          },
+          "file_path": {
+            "default": "",
+            "description": "Write the snapshot to this local path instead of returning it — useful for very large pages you intend to search rather than read in full.",
+            "title": "File Path",
+            "type": "string"
+          },
+          "include_frames": {
+            "default": true,
+            "description": "Also read the page's iframes and splice each one in under the element that hosts it. On by default, because Chrome's accessibility tree stops at a frame boundary and anything inside an iframe would otherwise be invisible. Set false on a page with many frames to keep the output small.",
+            "title": "Include Frames",
+            "type": "boolean"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "title": "take_snapshotArguments"
+      }
+    },
+    {
+      "name": "type_text",
+      "description": "Type text into whatever element currently has focus.\n\nAppends at the caret instead of replacing, and needs something focused\nalready — click the field first, or use fill, which takes a uid, clears the\nfield and needs no separate focus step.\n\nPrefer fill for ordinary form filling. Use type_text when you must add to\nexisting content, or for widgets that only react to raw key events such as\ncontenteditable, rich-text and canvas editors.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "description": "The text to type, one character at a time.",
+            "title": "Text",
+            "type": "string"
+          },
+          "submit_key": {
+            "default": "",
+            "description": "Key to press once typing finishes, e.g. \"Enter\" to submit a search box or \"Tab\" to move to the next field. Empty string presses nothing.",
+            "title": "Submit Key",
+            "type": "string"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "type_textArguments"
+      }
+    },
+    {
+      "name": "upload_file",
+      "description": "Attach a local file to a file input on the page.\n\nSets the input's files directly over CDP, so no OS file-picker dialog ever\nopens — clicking an upload button normally would open one, and that blocks\nevery further tool call until a human dismisses it.\n\nChrome renders a file input with an internal shadow button, and that is what\nthe accessibility tree exposes, so the uid you can see is usually not the\ninput itself. This resolves to the real input: the element, one inside it,\nthe input a label controls, or one just above in the tree.\n\nThe result is read back. If the page's own uploader consumed the file\nstraight away, the response says so, which is a successful upload rather\nthan an empty input.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "uid": {
+            "description": "uid of the file input, or of the button, label or drop zone in front of it — the real <input type=\"file\"> is resolved from there. Comes from the most recent take_snapshot.",
+            "title": "Uid",
+            "type": "string"
+          },
+          "file_path": {
+            "description": "Absolute path to a local file on the machine running this server.",
+            "title": "File Path",
+            "type": "string"
+          },
+          "include_snapshot": {
+            "default": false,
+            "description": "Append a fresh page snapshot to the response. Worth it when this action changes the page and take_snapshot would be your next call anyway — it saves a round trip, at the cost of a much larger response.",
+            "title": "Include Snapshot",
+            "type": "boolean"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "required": [
+          "uid",
+          "file_path"
+        ],
+        "title": "upload_fileArguments"
+      }
+    },
+    {
+      "name": "wait_for",
+      "description": "Wait until one of several texts appears on the page, then snapshot it.\n\nThe right way to wait after an action that starts loading — far more\nreliable than guessing a delay, and it returns the moment the text shows up\ninstead of always burning the whole timeout.\n\nOn success the page snapshot is included in the response, so no separate\ntake_snapshot call is needed.\n\nPolls the visible text twice a second. To wait for an element rather than\nfor wording, use wait_for_selector.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "description": "Texts to wait for — the wait ends as soon as any one of them appears. Passing both outcomes, e.g. [\"Welcome back\", \"Login failed\"], lets one call tell you which happened. Matching is a case-sensitive substring test against the page's visible text.",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Text",
+            "type": "array"
+          },
+          "timeout": {
+            "default": 30000,
+            "description": "Maximum wait in milliseconds before giving up.",
+            "exclusiveMinimum": 0,
+            "title": "Timeout",
+            "type": "integer"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "wait_forArguments"
+      }
+    },
+    {
+      "name": "save_session",
+      "description": "Save cookies, localStorage and open page URLs to a reusable file.\n\nThis is how you keep a login obtained interactively, so a later run can skip\nthe login flow entirely — restore it with load_session.\n\nStored as JSON under ~/.nodriver-mcp/sessions/. That file holds live session\ntokens in plain text, so treat it as a credential.\n\nOnly the current page's origin contributes localStorage. For a login meant\nto survive without an explicit restore step, a persistent profile\n(create_profile + use_profile) is the sturdier option.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "description": "A human-readable name for this session, e.g. \"github-logged-in\". It forms the filename, with a timestamp appended so repeated saves never overwrite one another.",
+            "title": "Name",
+            "type": "string"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "save_sessionArguments"
+      }
+    },
+    {
+      "name": "load_session",
+      "description": "Restore cookies and localStorage from a saved session file.\n\nUse it at the start of a run to arrive already logged in. The page is first\nnavigated to the saved origin so localStorage lands where it belongs, then\nreloaded so the restored cookies take effect.\n\nCookies that no longer apply are skipped rather than failing the whole\nrestore, and the response reports how many were actually restored. Expired\ntokens still leave you logged out, so check the page afterwards.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "filename": {
+            "description": "Session filename as shown by list_sessions, or an absolute path to a session JSON file.",
+            "title": "Filename",
+            "type": "string"
+          },
+          "restore_pages": {
+            "default": false,
+            "description": "Also re-open the tabs that were open when the session was saved. Default false, which restores only cookies and localStorage.",
+            "title": "Restore Pages",
+            "type": "boolean"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "required": [
+          "filename"
+        ],
+        "title": "load_sessionArguments"
+      }
+    },
+    {
+      "name": "list_sessions",
+      "description": "List saved session files with their name, save time and contents.\n\nShows the filename to hand to load_session, along with how many cookies and\nlocalStorage entries each one holds, newest first.\n\nSessions live in ~/.nodriver-mcp/sessions/ and are never cleaned up\nautomatically, so old logins accumulate there over time.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "title": "list_sessionsArguments"
+      }
+    },
+    {
+      "name": "get_page_content",
+      "description": "Get the page's visible text, or its full HTML.\n\nThe cheapest way to read a page when you only need content and not the uids\ntake_snapshot provides: no accessibility tree is built, and the text form\ncarries no markup overhead.\n\nReturns the DOM as it stands right now, so on pages that render\nasynchronously call wait_for or wait_for_selector first.\n\nUse take_snapshot when you intend to interact with elements, and\nquery_selector when you want specific elements rather than the whole page.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "format": {
+            "default": "text",
+            "description": "\"text\" returns document.body.innerText — visible text without markup, which is what you want for reading. \"html\" returns the full outerHTML including scripts and attributes, needed when you care about markup, data- attributes or hidden field values.",
+            "enum": [
+              "text",
+              "html"
+            ],
+            "title": "Format",
+            "type": "string"
+          },
+          "max_chars": {
+            "default": 100000,
+            "description": "Truncate the output at this many characters. 0 means no limit, which is risky on large pages — especially with format=\"html\".",
+            "minimum": 0,
+            "title": "Max Chars",
+            "type": "integer"
+          },
+          "file_path": {
+            "default": "",
+            "description": "Write the content to this local path instead of returning it — the way to capture a large page without flooding the conversation.",
+            "title": "File Path",
+            "type": "string"
+          },
+          "frame": {
+            "default": "",
+            "description": "Read inside one of the page's frames instead of the main document: an index or frame id from list_frames. Chrome's DOM queries never cross a frame boundary, so anything inside an iframe is unreachable without this. The frame is read through an isolated world, which shares the DOM but not the page's own JavaScript variables. Empty string reads the main document.",
+            "title": "Frame",
+            "type": "string"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "title": "get_page_contentArguments"
+      }
+    },
+    {
+      "name": "query_selector",
+      "description": "Find elements by CSS selector; list their tag, text, href, id and class.\n\nThe efficient way to pull a repeated structure off a page — search results,\nproduct tiles, table rows — without paying for a full snapshot.\n\nReturns a compact listing only. It yields no uids, so it cannot drive clicks:\ntake a snapshot when you need to interact, or operate on the elements\ndirectly via evaluate_script.\n\nElement text is truncated to 200 characters.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "selector": {
+            "description": "A CSS selector, e.g. \"a.result\", \"#nav li\", \"input[type=file]\". Standard querySelectorAll syntax — no jQuery extensions such as :contains().",
+            "title": "Selector",
+            "type": "string"
+          },
+          "limit": {
+            "default": 20,
+            "description": "Maximum number of matching elements to return.",
+            "exclusiveMinimum": 0,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "frame": {
+            "default": "",
+            "description": "Read inside one of the page's frames instead of the main document: an index or frame id from list_frames. Chrome's DOM queries never cross a frame boundary, so anything inside an iframe is unreachable without this. The frame is read through an isolated world, which shares the DOM but not the page's own JavaScript variables. Empty string reads the main document.",
+            "title": "Frame",
+            "type": "string"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "required": [
+          "selector"
+        ],
+        "title": "query_selectorArguments"
+      }
+    },
+    {
+      "name": "get_computed_styles",
+      "description": "Read an element's computed styles, as the browser actually resolved them.\n\nComputed styles are the end result of the whole cascade, so this answers\nwhat a stylesheet alone cannot: why an element is invisible\n(`display: none`, `visibility: hidden`, `opacity: 0`), what a CSS variable\nresolved to, or which font actually got used.\n\nAlso reports the element's box: position, size, and whether it is currently\nin the viewport. An element with zero width or height is present in the DOM\nbut not rendered, which is the usual reason a click appears to do nothing.\n\nBy default only properties that differ from the browser default are\nreturned, because the full set runs to several hundred entries and buries\nthe interesting ones.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "selector": {
+            "default": "",
+            "description": "CSS selector of the element to inspect, e.g. \"#header\" or \".btn.primary\". The first match is used. Leave empty to use `uid` instead.",
+            "title": "Selector",
+            "type": "string"
+          },
+          "uid": {
+            "default": "",
+            "description": "Element uid from the most recent take_snapshot, as an alternative to `selector`. Ignored when `selector` is given.",
+            "title": "Uid",
+            "type": "string"
+          },
+          "properties": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Only return these CSS properties, e.g. [\"display\", \"color\", \"font-size\"]. Omit to get the properties that differ from the browser default, which is usually what you want — the full computed set is several hundred entries.",
+            "title": "Properties"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "title": "get_computed_stylesArguments"
+      }
+    },
+    {
+      "name": "scroll_to_selector",
+      "description": "Scroll the first element matching a CSS selector into view, centered.\n\nMore precise than scroll_page when you already know what you are looking\nfor, and the usual preparation for click_at, which needs its target inside\nthe viewport.\n\n`click` scrolls to its own target, so this is unnecessary before it. Reports\nwhether anything matched instead of failing silently.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "selector": {
+            "description": "CSS selector of the element to scroll to; the first match wins.",
+            "title": "Selector",
+            "type": "string"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "required": [
+          "selector"
+        ],
+        "title": "scroll_to_selectorArguments"
+      }
+    },
+    {
+      "name": "block_resources",
+      "description": "Block images, fonts, stylesheets or media to speed up page loads.\n\nRemoves most of the bytes on a media-heavy page, which makes scraping\nseveral times faster and far cheaper over a metered or proxied connection.\n\nBlocking stylesheets breaks layout, so anything that depends on element\ngeometry becomes unreliable — click_at, element screenshots, and the\n`visible` check in wait_for_selector. Text extraction is unaffected.\n\nRequests are matched on the resource type Chrome reports for them, so an\nasset served from an extension-less URL is still blocked, and blocking one\ntype never catches another.\n\nApplies to ONE TAB — the selected page — and stays in effect there across\nnavigations until called again with no types. A tab opened afterwards with\nnew_page starts unblocked and needs its own call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "types": {
+            "anyOf": [
+              {
+                "items": {
+                  "enum": [
+                    "image",
+                    "font",
+                    "stylesheet",
+                    "media"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Resource types to block. [\"image\", \"font\", \"media\"] is the usual choice for scraping — it keeps stylesheets, so layout-dependent behaviour still works. Pass an empty list or omit to unblock everything.",
+            "title": "Types"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "title": "block_resourcesArguments"
+      }
+    },
+    {
+      "name": "wait_for_selector",
+      "description": "Wait until an element matching a CSS selector appears on the page.\n\nThe structural counterpart to wait_for: use it when you know the markup but\nnot the wording, or when the wording is localised.\n\nPolls about three times a second and returns as soon as the element shows\nup. Unlike wait_for it does not return a snapshot, so follow with\ntake_snapshot when you intend to interact.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "selector": {
+            "description": "CSS selector to wait for, e.g. \"#login\" or \".results .item\".",
+            "title": "Selector",
+            "type": "string"
+          },
+          "timeout": {
+            "default": 30000,
+            "description": "Maximum wait in milliseconds before giving up.",
+            "exclusiveMinimum": 0,
+            "title": "Timeout",
+            "type": "integer"
+          },
+          "visible": {
+            "default": false,
+            "description": "Also require the element to have a non-zero size. Use this with frameworks that insert an element into the DOM before rendering it — presence alone would otherwise resolve too early.",
+            "title": "Visible",
+            "type": "boolean"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "required": [
+          "selector"
+        ],
+        "title": "wait_for_selectorArguments"
+      }
+    },
+    {
+      "name": "save_pdf",
+      "description": "Export the current page to a PDF using Chrome's print-to-PDF.\n\nRenders the entire document rather than just the viewport, and applies the\npage's print stylesheet — so the result can differ from the screen layout.\n\nA good way to archive a rendered page as one file. For a pixel-accurate copy\nof what is on screen, use take_screenshot with full_page instead.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "file_path": {
+            "description": "Local path to write the .pdf file to.",
+            "title": "File Path",
+            "type": "string"
+          },
+          "landscape": {
+            "default": false,
+            "description": "Use landscape orientation instead of portrait.",
+            "title": "Landscape",
+            "type": "boolean"
+          },
+          "print_background": {
+            "default": true,
+            "description": "Include background colours and images. Default true, which resembles the page as seen on screen; false gives the leaner print view.",
+            "title": "Print Background",
+            "type": "boolean"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "required": [
+          "file_path"
+        ],
+        "title": "save_pdfArguments"
+      }
+    },
+    {
+      "name": "clear_cookies",
+      "description": "Delete every cookie in the browser.\n\nBrowser-wide, not per site and not per tab — this logs you out of everything\nat once, with no undo. Restore a previous state with load_session if you\nhave one saved.\n\nUseful for testing a first-time-visitor flow or resetting a consent banner\ndecision. localStorage is left untouched, so sites that keep state there may\nstill recognise you.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "title": "clear_cookiesArguments"
+      }
+    },
+    {
+      "name": "set_browser_flags",
+      "description": "Change Chrome's launch flags at runtime, and show the current ones.\n\nCall with no arguments at all to just read the effective configuration —\nthat form changes nothing.\n\nThese are launch-time flags, so applying them restarts Chrome and closes\nevery open page; on an ephemeral profile that also drops its cookies. Values\nset here override the NODRIVER_ENABLE_* environment variables.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "translate": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "True allows Chrome's Google Translate popup, false suppresses it. Omit to leave unchanged. Suppressed by default, because the popup covers page content and swallows clicks.",
+            "title": "Translate"
+          },
+          "extensions": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "True allows externally-installed Chrome extensions, false blocks them. Omit to leave unchanged. Blocked by default, so no \"an extension requires your attention\" prompt appears. manage_extensions offers the same switch plus listing and loading.",
+            "title": "Extensions"
+          },
+          "extra_args": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Replace the set of extra Chrome launch flags with this list, e.g. [\"--lang=de-DE\", \"--window-size=1280,800\"]. A leading \"--\" is added if missing. Pass [] to clear them, omit to leave unchanged. This replaces the list rather than appending to it.",
+            "title": "Extra Args"
+          },
+          "restart": {
+            "default": true,
+            "description": "Restart Chrome now so the flags take effect, closing all open pages. Default true; false defers them to the next browser start.",
+            "title": "Restart",
+            "type": "boolean"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "title": "set_browser_flagsArguments"
+      }
+    },
+    {
+      "name": "set_proxy",
+      "description": "Send this browser's traffic through a proxy, with credentials if it wants them.\n\nThe proxy itself is a launch flag, so it needs a browser restart — which on an\nephemeral profile also drops its cookies. Authentication is handled live: an\nauthenticating proxy stops Chrome at a native dialog that no page and no other\nCDP command can dismiss, so the page just never loads and nothing says why.\n\nAnswering it means enabling the Fetch domain, which pauses every request for a\nround trip, so that only happens when a username is actually set. A proxy that\ndoes not ask for credentials costs nothing extra.\n\nCall with no arguments to see what is configured. The password is never echoed\nback. Values set here override the NODRIVER_PROXY environment variable.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "server": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Proxy to route through, e.g. \"http://198.51.100.7:8080\" or \"socks5://198.51.100.7:1080\". A bare \"host:port\" is treated as http. Pass \"\" to remove the proxy; omit it to leave the current one alone.",
+            "title": "Server"
+          },
+          "username": {
+            "default": "",
+            "description": "Username, for a proxy that demands authentication. Chrome ignores credentials embedded in the proxy URL, so they have to be given here.",
+            "title": "Username",
+            "type": "string"
+          },
+          "password": {
+            "default": "",
+            "description": "Password that goes with `username`.",
+            "title": "Password",
+            "type": "string"
+          },
+          "bypass": {
+            "default": "",
+            "description": "Hosts to reach directly, Chrome's own syntax, e.g. \"localhost;127.0.0.1;*.internal\". Empty string sends everything through the proxy.",
+            "title": "Bypass",
+            "type": "string"
+          },
+          "restart": {
+            "default": true,
+            "description": "Restart Chrome now so the proxy takes effect, closing all open pages. Default true; false defers it to the next browser start.",
+            "title": "Restart",
+            "type": "boolean"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "title": "set_proxyArguments"
+      }
+    },
+    {
+      "name": "manage_extensions",
+      "description": "List, enable, disable or load Chrome extensions.\n\nTwo separate mechanisms are in play. The master switch: Chrome runs with\n--disable-extensions by default, so extensions installed in the profile stay\ndark until it is turned on. And unpacked extensions loaded from a folder on\ndisk. The master switch governs both — with it off, unpacked extensions stay\nregistered but do not load.\n\n\"load\" only works on Chromium or Chrome for Testing. Official Google Chrome\nbuilds have ignored --load-extension since v137 (still true on Chrome 151,\neven with --enable-unsafe-extension-debugging), and this tool says so rather\nthan pretending it worked. On official Chrome the working path is: install\nthe extension once from the Web Store into a persistent profile, then switch\nit on with \"on\".\n\nExtensions only persist in a persistent profile — on the default ephemeral\none nothing can stay installed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "default": "list",
+            "description": "\"list\" shows the extensions installed in the active profile plus the current state, and changes nothing. \"on\" and \"off\" flip the master switch. \"load\" registers an unpacked extension from `path` and implies \"on\". \"unload\" stops loading `path`, or every unpacked extension when `path` is empty. Every action except \"list\" restarts the browser.",
+            "enum": [
+              "list",
+              "on",
+              "off",
+              "load",
+              "unload"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "path": {
+            "default": "",
+            "description": "Folder containing the extension's manifest.json, for \"load\" and \"unload\". Ignored by the other actions.",
+            "title": "Path",
+            "type": "string"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "title": "manage_extensionsArguments"
+      }
+    },
+    {
+      "name": "list_profiles",
+      "description": "List persistent Chrome profiles and show which one is active.\n\nBy default the browser runs on a fresh ephemeral temp profile that is\ndeleted when the session ends. That default is what lets several nodriver\ninstances — Claude Desktop, Claude Code, the VS Code extension — run at the\nsame time without fighting over one profile directory.\n\nPersistent profiles keep cookies, logins and installed extensions across\nsessions. Create one with create_profile, switch with use_profile, and\nreturn to ephemeral with use_temp_profile.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "title": "list_profilesArguments"
+      }
+    },
+    {
+      "name": "create_profile",
+      "description": "Create a named persistent Chrome profile — a reusable user-data dir.\n\nA persistent profile keeps cookies, logins and Web Store extensions between\nruns, so a site you log into once stays logged in. It is the sturdier\nalternative to save_session / load_session.\n\nCreating one is harmless by itself: nothing changes until you activate it,\nhere or via use_profile. An existing profile of the same name is left\nuntouched rather than overwritten. Profiles live under\n~/.nodriver-mcp/profiles/<name>.\n\nOnly one browser instance can use a given profile at a time, so give\nconcurrent setups different names.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "description": "Profile name, e.g. \"google-login\". Only letters, digits, \"-\" and \"_\" are kept; any other character is stripped out.",
+            "title": "Name",
+            "type": "string"
+          },
+          "activate": {
+            "default": false,
+            "description": "Switch to the new profile straight away. That restarts the browser and closes all open pages. Default false, which only creates the directory.",
+            "title": "Activate",
+            "type": "boolean"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "create_profileArguments"
+      }
+    },
+    {
+      "name": "use_running_browser",
+      "description": "Drive a Chrome that is already running, instead of launching a new one.\n\nThis is how you use a browser you are already signed into. Chrome locks its\nuser-data-dir, so the profile holding your real logins cannot be opened a\nsecond time — attaching to the running instance is the only way in, and it\nsaves rebuilding every login through the automation.\n\nThe user starts Chrome themselves, once:\n\n    chrome --remote-debugging-port=9222 --user-data-dir=/path/to/profile\n\nthen this tool attaches to it. Every tool then acts on that browser and its\nreal tabs.\n\n`--user-data-dir` is not optional, and it must not be Chrome's own default\ndirectory. Since Chrome 136 the port is refused there — Chrome starts\nnormally, says nothing, and nothing ever listens, which is a confusing way\nto fail. So the everyday profile cannot be reached by adding the flag to\nit; it has to be a directory of its own, and a copy of an existing profile\nis accepted (`--profile-directory` then picks which profile inside it).\n\nSECURITY: that profile becomes part of the agent's reach. Whatever it is\nsigned into — mail, bank, company systems — is reachable from here, because\na cookie jar is all or nothing. Point this at a profile you are willing to\nexpose, not your everyday one.\n\nWhile attached, close_browser and every profile switch only detach; they\nnever close a browser they did not start. Return to a self-launched browser\nwith use_temp_profile or use_profile.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "port": {
+            "default": 9222,
+            "description": "The remote debugging port Chrome was started with, e.g. 9222 for --remote-debugging-port=9222.",
+            "exclusiveMinimum": 0,
+            "maximum": 65535,
+            "title": "Port",
+            "type": "integer"
+          },
+          "host": {
+            "default": "127.0.0.1",
+            "description": "Host the browser is listening on. Leave at 127.0.0.1 unless you are attaching to a browser on another machine or in a container.",
+            "title": "Host",
+            "type": "string"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "title": "use_running_browserArguments"
+      }
+    },
+    {
+      "name": "use_temp_profile",
+      "description": "Switch back to a fresh ephemeral profile, created and deleted per session.\n\nThis is the default. It leaves nothing behind on disk and lets many nodriver\ninstances run concurrently without colliding on a profile directory.\n\nRestarts the browser and closes all open pages. The profile you are leaving\nis not deleted — a persistent one keeps its cookies for the next\nuse_profile. Anything held in the outgoing temp profile is gone.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "title": "use_temp_profileArguments"
+      }
+    },
+    {
+      "name": "use_profile",
+      "description": "Switch the browser to a named persistent profile.\n\nUse it to pick up the cookies, logins and extensions stored in an earlier\nsession, so a run starts out already authenticated.\n\nRestarts the browser and closes every open page. The profile has to exist\nalready — create it first with create_profile. Only one browser may use a\nprofile at a time; a second instance pointed at the same one fails to start.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "description": "Name of an existing persistent profile, as shown by list_profiles. Pass \"\", \"temp\", \"ephemeral\" or \"none\" to switch back to an ephemeral profile.",
+            "title": "Name",
+            "type": "string"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "use_profileArguments"
+      }
+    },
+    {
+      "name": "delete_profile",
+      "description": "Permanently delete a persistent Chrome profile directory.\n\nIrreversible: the profile's cookies, logins, history and installed\nextensions are removed from disk, with no undo.\n\nThe active profile cannot be deleted — switch away with use_temp_profile\nfirst.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "description": "Name of the persistent profile to delete, as shown by list_profiles.",
+            "title": "Name",
+            "type": "string"
+          },
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Which browser to act on. Each name is an independent Chrome, created on first use. Omit for the shared default; parallel agents each need their own name."
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "delete_profileArguments"
+      }
+    },
+    {
+      "name": "list_browsers",
+      "description": "List every browser this server currently holds: its name, whether its Chrome is running, which profile it uses, how many tabs it has and what they show. Reports without starting anything.\n\nThere is always a browser called \"default\", which runs in the server process. Others are created implicitly, by passing a new name as the `browser` argument of any tool, so this only shows names already used. A name missing here is not an error; it simply has not been opened.\n\nchrome_running=false means the browser exists but has no Chrome, either because no tool has needed one yet or because close_browser was called. The next call relaunches it.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "shutdown_browser",
+      "description": "Quit one browser's Chrome and free its name, releasing all memory behind it. Use it when an agent is finished with its browser.\n\nThe difference to close_browser: close_browser quits Chrome but keeps the browser, so its selected profile and runtime flags survive and the next call relaunches Chrome with them. shutdown_browser discards that too, and the name starts fresh if it is ever used again.\n\nThe \"default\" browser cannot be retired, since it is the server itself; shutting it down quits its Chrome and resets it. A browser you attached to with use_running_browser is only detached from, never closed: it belongs to the user.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "browser": {
+            "type": "string",
+            "default": "default",
+            "description": "Name of the browser to shut down."
+          }
+        }
+      }
+    }
+  ],
+  "stderrTail": "Downloading pillow (6.6MiB)\nDownloading cryptography (4.5MiB)\nDownloading pydantic-core (2.0MiB)\n Downloaded pydantic-core\n Downloaded cryptography\n Downloaded pillow\nInstalled 37 packages in 19ms\n2026-09-15 06:22:24,580 [INFO] Processing request of type ListToolsRequest\n",
+  "durationMs": 31991,
+  "transport": "stdio"
+}

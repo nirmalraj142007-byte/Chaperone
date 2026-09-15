@@ -1,0 +1,8 @@
+{
+  "serverId": "bridgenode-ai__bridgenode-mcp__bridgenode-ai-bridgenode-mcp",
+  "status": "FAILED_START",
+  "tools": [],
+  "stderrTail": "bridgenode-mcp error: TypeError: fetch failed\n    at node:internal/deps/undici/undici:15157:13\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async StreamableHTTPClientTransport.send (file:///tmp/npm-cache/_npx/ff3c8aff30b52231/node_modules/@modelcontextprotocol/sdk/dist/esm/client/streamableHttp.js:307:30) {\n  [cause]: Error: getaddrinfo EAI_AGAIN bridgenode.cc\n      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26) {\n    errno: -3001,\n    code: 'EAI_AGAIN',\n    syscall: 'getaddrinfo',\n    hostname: 'bridgenode.cc'\n  }\n}\nnpm notice\nnpm notice New major version of npm available! 10.9.8 -> 12.0.2\nnpm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2\nnpm notice To update run: npm install -g npm@12.0.2\nnpm notice\n",
+  "durationMs": 107932,
+  "transport": "stdio"
+}

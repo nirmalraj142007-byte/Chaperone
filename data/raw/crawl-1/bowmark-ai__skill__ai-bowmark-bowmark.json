@@ -1,0 +1,8 @@
+{
+  "serverId": "bowmark-ai__skill__ai-bowmark-bowmark",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "sh: 1: exec: bowmark-mcp: not found\n",
+  "durationMs": 68745,
+  "transport": "stdio"
+}

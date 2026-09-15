@@ -1,0 +1,8 @@
+{
+  "serverId": "cswkim__discogs-mcp-server__cswkim-discogs-mcp-server",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "npm error code ENOENT\nnpm error syscall spawn git\nnpm error path git\nnpm error errno -2\nnpm error enoent An unknown git error occurred\nnpm error enoent This is related to npm not being able to find a file.\nnpm error enoent\nnpm notice\nnpm notice New major version of npm available! 10.9.8 -> 12.0.2\nnpm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2\nnpm notice To update run: npm install -g npm@12.0.2\nnpm notice\nnpm error A complete log of this run can be found in: /tmp/npm-cache/_logs/2026-09-15T06_28_58_412Z-debug-0.log\n",
+  "durationMs": 37448,
+  "transport": "stdio"
+}

@@ -1,0 +1,242 @@
+{
+  "serverId": "arikusi__nakkas__arikusi-nakkas",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "render_svg",
+      "description": "Render animated SVG from JSON config. AI controls all design parameters.\n\n**Workflow:** render_svg returns a PNG preview of the result plus an artifact id — critique the image, revise the config, render again. Iterate at least 3 times before finalizing. The SVG text stays on the server: pass the artifact id to save (and to preview for a different width).\n\n**output options (response shape, not content):** {\"svg\":false,\"preview\":true,\"previewWidth\":800,\"minify\":false,\"frames\":4} — all optional. minify:true collapses whitespace in the stored/saved SVG. frames:N (2-10) replaces the static preview with one filmstrip image sampling the CSS animations at N times — use it to verify motion (rotation direction, timing, easing) since a single preview only shows t=0. SMIL is not sampled.\n\n**Element types:** rect, circle, ellipse, line, polyline, polygon, path, image, text, textPath, group, use, radial-group, arc-group, grid-group, scatter-group, path-group, parametric\n\n**Pattern groups** (use for repetitive designs): radial-group (circular: cx, cy, radius, count), arc-group (arc: cx, cy, radius, count, startAngle, endAngle), grid-group (matrix: cols, rows, colSpacing, rowSpacing), scatter-group (random: width, height, count, seed), path-group (along polyline: waypoints, count). Each takes ONE \"child\" element. The child is drawn at the local origin and, with rotateChildren true (the default), rotates so local +x points outward from the center: draw spokes, rays and petals long along the x axis, never the y axis, or they render as a chord ring.\n\n**Parametric curves** (fn field): rose, heart, lissajous, spiral, star, superformula, epitrochoid, hypotrochoid, wave. Size via \"scale\" field. Server computes coordinates.\n\n**defs:** gradients (linear/radial, SMIL animated stops), filters (presets: glow, neon, blur, drop-shadow, glitch, chromatic-aberration, noise, outline, inner-shadow, emboss + 5 more), clipPaths, masks, patterns (tile fills), markers (arrowheads: triangle, arrow, circle, square, diamond, bar; set markerStart/markerEnd:\"id\" on line/polyline/path, scales with strokeWidth).\n\n**Animations:** CSS @keyframes via animations array. Set cssClass on element matching animation name. For transforms add transformBox=\"fill-box\" transformOrigin=\"center\". SMIL via smilAnimations on elements (animate, animateTransform, animateMotion).\n\n**Design guide (what makes output look good):** Pick one spacing unit (e.g. 8) and use multiples of it for every gap and margin; keep content clear of the canvas edges by at least 5% of the smaller dimension (the bbox audit reports overflow in px). Use at most 3 font sizes per design with clear jumps (e.g. 12/16/24). Body-size text needs 4.5:1 contrast against its background, 3:1 from 24px up (the contrast audit checks plain hex pairs). Text ink boxes are measured after every render; escaping or overlapping text comes back as a named design note. Motion: ease-out for entrances, ease-in-out for back-and-forth loops, linear only for continuous rotation or travel; 0.8-3s durations read well for UI-scale loops.\n\n**Critical format rules:**\n- Gradient type must be \"linearGradient\" or \"radialGradient\" (not \"linear\"/\"radial\"). Each needs id, stops (array with offset 0-1, color).\n- Filter type must be \"preset\" with a \"preset\" field: {\"type\":\"preset\",\"id\":\"myGlow\",\"preset\":\"glow\",\"stdDeviation\":8,\"color\":\"#ff00ff\"}\n- Keyframe offset: use \"from\"/\"to\" or percentage number 0-100 (not \"0%\"/\"100%\").\n- Gradient stop and filter colors: hex only (#rrggbb or #rrggbbaa). Element fill/stroke accept '#rrggbb', 'none', or 'url(#id)' (hex is safest).\n- Every element needs \"type\" field. circle needs r, rect needs width+height, path needs d.\n\n**Field names that differ from raw SVG:**\n- text: string goes in \"content\" (not \"text\"): {\"type\":\"text\",\"x\":100,\"y\":50,\"content\":\"Hello\",\"fontSize\":24,\"textAnchor\":\"middle\"}\n- textPath: {\"type\":\"textPath\",\"pathId\":\"idFromDefsPaths\",\"text\":\"...\"} — here the field IS \"text\".\n- group: {\"type\":\"group\",\"children\":[...]} — children are shapes/text/use only, no nested groups.\n- Pattern groups take ONE \"child\" element drawn at local origin (child uses cx=0/cy=0); set rotateChildren:false to keep text upright.\n\n**Output:** Pure SVG XML. No JavaScript. CSS @keyframes + SMIL only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "canvas": {
+            "type": "object",
+            "properties": {
+              "width": {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              },
+              "height": {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              },
+              "viewBox": {
+                "type": "string"
+              },
+              "background": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "width",
+              "height"
+            ],
+            "additionalProperties": true
+          },
+          "defs": {
+            "type": "object",
+            "properties": {
+              "gradients": {
+                "type": "array"
+              },
+              "filters": {
+                "type": "array"
+              },
+              "clipPaths": {
+                "type": "array"
+              },
+              "masks": {
+                "type": "array"
+              },
+              "symbols": {
+                "type": "array"
+              },
+              "paths": {
+                "type": "array"
+              },
+              "patterns": {
+                "type": "array"
+              },
+              "markers": {
+                "type": "array"
+              }
+            },
+            "additionalProperties": true
+          },
+          "elements": {
+            "type": "array"
+          },
+          "animations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "duration": {
+                  "type": "string"
+                },
+                "keyframes": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "offset": {
+                        "type": [
+                          "number",
+                          "string"
+                        ]
+                      },
+                      "properties": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "required": [
+                      "offset",
+                      "properties"
+                    ],
+                    "additionalProperties": true
+                  }
+                },
+                "timingFunction": {
+                  "type": "string"
+                },
+                "iterationCount": {
+                  "type": [
+                    "number",
+                    "string"
+                  ]
+                },
+                "direction": {
+                  "type": "string"
+                },
+                "fillMode": {
+                  "type": "string"
+                },
+                "delay": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "duration",
+                "keyframes"
+              ],
+              "additionalProperties": true
+            }
+          },
+          "output": {
+            "type": "object",
+            "properties": {
+              "svg": {
+                "type": "boolean"
+              },
+              "preview": {
+                "type": "boolean"
+              },
+              "previewWidth": {
+                "type": "number"
+              },
+              "minify": {
+                "type": "boolean"
+              },
+              "frames": {
+                "type": "number"
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "canvas",
+          "elements"
+        ],
+        "additionalProperties": true,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "preview",
+      "description": "Render SVG content to a PNG image so the AI can visually inspect the output.\n\n**When to use:**\n- render_svg already returns a preview image by default; call this tool to re-preview a stored artifact at a different width, or to preview SVG that did not come from render_svg\n- Stop iterating when the visual result matches the intent\n\n**Input:** pass EITHER artifact (id from render_svg, e.g. \"art-1\" — preferred, no SVG resend) OR content (raw SVG string).\n\n**Behavior:**\n- Returns a PNG image (base64) rendered from the SVG\n- Background is transparent by default\n- CSS animations and SMIL are rendered as a static snapshot (t=0) — motion is not captured\n\n**Width:**\n- Omit width to use the SVG's own declared width/viewBox\n- Pass width to scale the output (useful for small SVGs that need a larger preview)",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "artifact": {
+            "type": "string",
+            "description": "Artifact id returned by render_svg (e.g. \"art-1\"). Preferred over content."
+          },
+          "content": {
+            "type": "string",
+            "description": "SVG string to render as PNG. Only needed when no artifact id exists."
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "svg",
+              "html"
+            ],
+            "description": "Content format; auto-detected from content if omitted"
+          },
+          "width": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "Render width in pixels; defaults to SVG's own declared width"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "save",
+      "description": "Save rendered content to disk. Format-aware: can save as text or render to raster image.\n\nIMPORTANT: Use this only AFTER iterating on the design with render_svg's preview images.\nDo not save on the first render. Preview and refine your work first.\n\n**Input:** pass EITHER artifact (id from render_svg, e.g. \"art-1\" — preferred, no SVG resend) OR content (raw string).\n\n**Format detection:**\n- 'auto' (default): infers format from file extension. .svg saves as text, .png renders to image.\n- 'svg': saves content as a UTF-8 text file\n- 'png': renders the content (assumed SVG) to a PNG image, then saves it\n\nIf the file already exists, a numeric counter is appended before the extension\nto prevent overwriting: design.svg becomes design-1.svg, then design-2.svg.\nThe actual saved path is returned in the response.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "artifact": {
+            "type": "string",
+            "description": "Artifact id returned by render_svg (e.g. \"art-1\"). Preferred over content."
+          },
+          "content": {
+            "type": "string",
+            "description": "Raw content to save. Only needed when the content did not come from render_svg."
+          },
+          "outputPath": {
+            "type": "string",
+            "description": "File path to save to. The directory must already exist. If the file already exists, a numeric counter is appended before the extension: design.svg becomes design-1.svg, then design-2.svg, and so on. The actual saved path is returned in the response."
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "svg",
+              "png"
+            ],
+            "default": "auto",
+            "description": "Output format. 'auto' infers from file extension (.svg saves as text, .png renders to image). 'svg' saves content as a UTF-8 text file. 'png' renders SVG content to a PNG image before saving."
+          },
+          "width": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "For raster formats (png): render width in pixels. Defaults to the source content's own declared dimensions."
+          }
+        },
+        "required": [
+          "outputPath"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "[nakkas] MCP server v0.5.0 starting on stdio\n",
+  "durationMs": 29806,
+  "transport": "stdio"
+}

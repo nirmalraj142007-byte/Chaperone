@@ -1,0 +1,8 @@
+{
+  "serverId": "jackalope-dev__allmcps-server__jackalope-dev-allmcps-server",
+  "status": "FAILED_START",
+  "tools": [],
+  "stderrTail": "AllMCPs MCP Server running on stdio (proxying https://allmcps.com/api/mcp)\n",
+  "durationMs": 18795,
+  "transport": "stdio"
+}

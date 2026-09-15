@@ -1,0 +1,393 @@
+{
+  "serverId": "dealfluence__adeu__ai-adeu-adeu",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "accept_all_changes",
+      "description": "Accepts every tracked change in the document, producing a finalized clean document.\n\nremove_comments (boolean, DEFAULT TRUE): also delete every comment. The default is TRUE because this tool's purpose is a distributable clean document, and comments are internal review notes that must not travel to a counterparty. Pass remove_comments=false to accept the tracked changes while KEEPING the comments — use that when the review conversation is still live. Either way the response reports how many comments were deleted and names each one with its author, and comments whose anchored text an accepted deletion consumes are removed regardless, exactly as Word does. [Adeu v3.0.5+0d80b9a]",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "reasoning": {
+            "description": "Why do I need to accept all changes in this document? State this reason before any other parameter.",
+            "type": "string"
+          },
+          "docx_path": {
+            "type": "string",
+            "description": "Absolute path to the DOCX file."
+          },
+          "output_path": {
+            "description": "Optional output path.",
+            "type": "string"
+          },
+          "remove_comments": {
+            "default": true,
+            "description": "Also delete every comment in the document. Defaults to true (finalized clean document); pass false to keep comments while accepting the tracked changes.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "docx_path"
+        ]
+      }
+    },
+    {
+      "name": "apply_text_revision",
+      "description": "Applies whole-text revised text to a DOCX document by computing a diff and generating tracked changes. Includes a clean-text verification gate to ensure the applied document matches the supplied text.\n\n`revised_text` must be the complete CLEAN view of the document: read it with `read_docx` (`clean_view=true`, `page='all'`), edit that text, and send ALL of it back. Never CriticMarkup ({++, {--, {>>) — this tool diffs against the clean view, so markup tokens would land in the document as literal prose. Never one page of a paginated extract — everything absent from the text is applied as a tracked deletion.\n\nINTERLOCK: a revision that drops >50% of the characters (>75% for documents under 2000 characters) is refused unless you pass allow_major_deletions=true.\n\nIf the applied document's clean text does not then match `revised_text`, NOTHING is written to output_path: a diagnostic copy is kept at <name>.unverified.docx and the call fails. output_path defaults to <name>_redlined.docx; an existing _redlined/_processed artifact is revised in place. [Adeu v3.0.5+0d80b9a]",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "reasoning": {
+            "description": "Why do I need to apply this text revision? State this reason before any other parameter.",
+            "type": "string"
+          },
+          "file_path": {
+            "type": "string",
+            "description": "Absolute path to the source DOCX file."
+          },
+          "revised_text": {
+            "type": "string",
+            "description": "The complete revised clean text of the document."
+          },
+          "output_path": {
+            "description": "Optional output path for the modified DOCX.",
+            "type": "string"
+          },
+          "author": {
+            "description": "Author name for Track Changes.",
+            "type": "string"
+          },
+          "allow_major_deletions": {
+            "default": false,
+            "description": "Allow deleting >50% of characters (>75% for documents under 2000 characters).",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "file_path",
+          "revised_text"
+        ]
+      }
+    },
+    {
+      "name": "diff_docx_files",
+      "description": "Compares two DOCX files and returns a compact `@@ Word Patch @@` diff — Adeu's token-level, sub-word patch format — of their text content. Useful for analyzing differences between versions before editing. [Adeu v3.0.5+0d80b9a]",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "reasoning": {
+            "description": "Why do I need to diff these two documents? State this reason before any other parameter.",
+            "type": "string"
+          },
+          "original_path": {
+            "type": "string",
+            "description": "Absolute path to the baseline DOCX file."
+          },
+          "modified_path": {
+            "type": "string",
+            "description": "Absolute path to the modified DOCX file."
+          },
+          "compare_clean": {
+            "default": true,
+            "description": "If True, compares 'Accepted' state. If False, compares raw text.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "original_path",
+          "modified_path"
+        ]
+      }
+    },
+    {
+      "name": "finalize_document",
+      "description": "Prepares a document for external distribution or e-signature. Note: in this zero-dependency environment, protection_mode='encrypt' is unsupported and falls back to a native read-only lock; export_pdf and password are ignored. [Adeu v3.0.5+0d80b9a]",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "reasoning": {
+            "description": "Why do I need to finalize this document? State this reason before any other parameter.",
+            "type": "string"
+          },
+          "file_path": {
+            "type": "string",
+            "description": "Absolute path to the DOCX file."
+          },
+          "output_path": {
+            "description": "Optional output path.",
+            "type": "string"
+          },
+          "sanitize_mode": {
+            "description": "full removes all markup, keep-markup redacts metadata.",
+            "type": "string",
+            "enum": [
+              "full",
+              "keep-markup"
+            ]
+          },
+          "accept_all": {
+            "description": "If true, auto-accepts all unresolved track changes before finalizing.",
+            "type": "boolean"
+          },
+          "protection_mode": {
+            "description": "Native OOXML document locking. Note: 'encrypt' is unsupported in this zero-dependency build and falls back to 'read_only'.",
+            "type": "string",
+            "enum": [
+              "read_only",
+              "encrypt"
+            ]
+          },
+          "password": {
+            "description": "Ignored in this environment.",
+            "type": "string"
+          },
+          "author": {
+            "description": "Replace all remaining markup authorship with this name.",
+            "type": "string"
+          },
+          "export_pdf": {
+            "description": "Ignored in this environment.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "file_path"
+        ]
+      }
+    },
+    {
+      "name": "process_document_batch",
+      "description": "Applies a batch of edits and review actions to a DOCX.\n\nBatches apply SEQUENTIALLY: each change validates against state from prior changes. Valid changes apply when others fail (salvage default): response LEADS with `PARTIAL: applied K of N` listing unapplied changes. Pass partial=false for all-or-nothing.\n\nEach item in `changes` needs a `type`:\n1. 'modify': search-and-replace. `target_text` must match uniquely (`match_mode`:'strict', default) — add context or set `match_mode`:'first'/'all'. Set `regex`:true for regex matching (groups in `new_text` as $1, $2…). `new_text` supports Markdown: '#'–'######' headings, '**bold**', '_italic_', '\\n\\n' paragraph split. Omit it (with a comment) to annotate without changing text; empty string deletes. Never write CriticMarkup manually — use `comment`.\n   • EMPTY CELLS: blank cells carry `{#cell:<id>}` anchors — set `target_text` to the anchor and value in `new_text`. Pipes are display separators.\n2. 'accept'/'reject': finalize or revert a tracked change by `target_id` (e.g. 'Chg:12').\n3. 'reply': reply to a comment by `target_id` (e.g. 'Com:5') with `text`.\n4. 'set_field': fill a form field — `field` is its 'CC:<N>' id, tag or alias, `value` the text; list via `read_docx` `mode`:'fields'. Checkboxes take true/false, dates YYYY-MM-DD, dropdowns a listed option. Dual-writes bound stores. A locked/protected control refuses and names the override permitting it.\n5. 'insert_row': add table row — `target_text` anchors on an existing row's text, `cells` holds cell values (left-to-right), `position` is 'above'/'below' (default below). 'delete_row': remove row matching `target_text`. Disk mode only.\n\nID VOLATILITY: 'Chg:N'/'Com:N' ids shift between states — call `read_docx` before accept/reject/reply; never reuse ids from earlier turns.\n\n`author_name` sets Track Changes attribution; defaults to 'Adeu AI (TS)' when omitted. [Adeu v3.0.5+0d80b9a]",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "reasoning": {
+            "description": "Why do I need to apply these changes to the document? State this reason before any other parameter.",
+            "type": "string"
+          },
+          "original_docx_path": {
+            "type": "string",
+            "description": "Absolute path to the source file."
+          },
+          "author_name": {
+            "default": "Adeu AI (TS)",
+            "description": "Name to appear in Track Changes (e.g., 'Reviewer AI'). Defaults to 'Adeu AI (TS)' when omitted.",
+            "type": "string"
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "description": "Change kind: 'modify' (search-and-replace), 'accept'/'reject' (resolve a tracked change by id), 'reply' (reply to a comment by id), 'set_field' (fill a content control), 'insert_row'/'delete_row' (table edits; disk mode only). If omitted it is inferred when unambiguous from the other fields.",
+                  "type": "string"
+                },
+                "target_text": {
+                  "description": "modify / insert_row / delete_row: the existing text to locate (interpreted as a regex when regex=true).",
+                  "type": "string"
+                },
+                "new_text": {
+                  "description": "modify: replacement text. Supports Markdown (headings, **bold**, _italic_, '\\n\\n' paragraph splits); empty string deletes. Regex capture groups are available as $1, $2… Omit it (with a comment) to annotate without changing the text; an explicit empty string deletes.",
+                  "type": "string"
+                },
+                "field": {
+                  "description": "set_field only: which control to fill - the 'CC:<N>' id, its tag, or its alias. Run read_docx with mode='fields' to list them.",
+                  "type": "string"
+                },
+                "value": {
+                  "description": "set_field only: the value to write. Checkboxes take true/false; dates take YYYY-MM-DD; dropdowns must match a listed option. Empty string clears the field.",
+                  "type": "string"
+                },
+                "target_id": {
+                  "description": "accept / reject / reply: the 'Chg:N' or 'Com:N' id taken from a fresh read_docx.",
+                  "type": "string"
+                },
+                "part": {
+                  "description": "accept / reject: the package part holding the change, e.g. 'word/header1.xml'. Revision ids are numbered per part, so the same Chg:N can name unrelated changes in different parts; a bare ambiguous id is refused with an error listing the parts, and this field picks one. Omit whenever the id is unique (the usual case).",
+                  "type": "string"
+                },
+                "text": {
+                  "description": "reply: the reply body.",
+                  "type": "string"
+                },
+                "comment": {
+                  "description": "modify: attach a margin comment to the edited text. accept / reject: record the rationale as a margin comment anchored where the change was resolved (reported as Com:N).",
+                  "type": "string"
+                },
+                "match_mode": {
+                  "description": "modify only: 'strict' (default — target must match uniquely), 'first' (first occurrence), or 'all' (every occurrence).",
+                  "type": "string",
+                  "enum": [
+                    "strict",
+                    "first",
+                    "all"
+                  ]
+                },
+                "regex": {
+                  "description": "modify only: treat target_text as a regular expression (default false).",
+                  "type": "boolean"
+                },
+                "position": {
+                  "description": "insert_row: place the new row above or below the matched row.",
+                  "type": "string",
+                  "enum": [
+                    "above",
+                    "below"
+                  ]
+                },
+                "cells": {
+                  "description": "insert_row: the cell values for the new row, left to right.",
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "additionalProperties": {}
+            },
+            "description": "Ordered list of changes to apply. Each item is an object carrying a `type` discriminator plus that type's fields (see the per-field docs and the tool description). Items apply SEQUENTIALLY: each one evaluates against the document state produced by the items before it, so later items may target text an earlier item introduced."
+          },
+          "output_path": {
+            "description": "Optional output path.",
+            "type": "string"
+          },
+          "partial": {
+            "default": true,
+            "description": "Whether to apply valid edits when some fail (salvage mode). Defaults to true.",
+            "type": "boolean"
+          },
+          "ignore_control_locks": {
+            "default": false,
+            "description": "Apply edits even inside content-locked or grouped content controls. Defaults to false. Word refuses such edits, so overriding means the document owner has accepted the lock is wrong.",
+            "type": "boolean"
+          },
+          "ignore_document_protection": {
+            "default": false,
+            "description": "Apply changes even when the document carries enforced editing protection (read-only, fill-in-forms, comments-only, tracked-changes-only). Defaults to false.",
+            "type": "boolean"
+          },
+          "allow_untracked_writes": {
+            "default": false,
+            "description": "Permit writes that Word records WITHOUT tracked changes. Defaults to false. Applies only to fill-in-forms-protected documents, where Word does not record revisions at all; every such write is flagged in the report. Separate from ignore_document_protection because it concedes Adeu's own always-tracked guarantee rather than bypassing the author's restriction.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "original_docx_path",
+          "changes"
+        ]
+      }
+    },
+    {
+      "name": "read_docx",
+      "description": "Reads a DOCX file. Returns text with inline CriticMarkup for Tracked Changes and Comments: {++inserted++}, {--deleted--}, {==highlighted==}{>>comment<<}. Set clean_view=True for the finalized 'Accepted' text without markup.\n\nModes:\n- 'full' (default): paginated body content. Use page=N to navigate.\n- 'outline': heading map only — start here for large docs to plan targeted reads. Defaults to L1-L2 headings; pass outline_max_level=3-6 to see deeper structure.\n- 'appendix': defined terms, anchors, and cross-reference targets. Consult before editing legal/technical docs to avoid breaking references.\n- 'changes' (mode='changes'): a ledger of every tracked change and comment (id, type, author, page, snippet) — start here for review work instead of reading pages. Filter with changes_author, page, and changes_offset.\n- 'fields' (mode='fields'): a ledger of every content control (ordinal, class, alias/tag, location, lock/binding state, current value) — start here to discover fillable fields. Paginate with fields_offset; `page` and `search_query` do not apply.\n\n`page`: a positive integer (1-indexed, default 1), a page RANGE like '2-6' (returns up to 8 pages in one call, then names the next range), or 'all'. Pages are synthetic length-based chunks sized for LLM consumption, NOT printed Word pages. In mode='full', page='all' returns the whole body with no page chrome; oversized documents are refused with an outline and a bounded-read recipe unless force=true. With `search_query`, `page` instead restricts matches to that page (default: search all pages). [Adeu v3.0.5+0d80b9a]",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "reasoning": {
+            "description": "Why do I need to read this docx document? State this reason before any other parameter.",
+            "type": "string"
+          },
+          "file_path": {
+            "type": "string",
+            "description": "Absolute path to the DOCX file."
+          },
+          "clean_view": {
+            "default": false,
+            "description": "If False (default), returns the 'Raw' text with inline CriticMarkup. If True, returns 'Accepted' text.",
+            "type": "boolean"
+          },
+          "mode": {
+            "default": "full",
+            "description": "'full' returns body content. 'outline' returns a structural heading map. 'appendix' returns defined terms. 'changes' returns tracked changes and comments ledger. 'fields' returns the content-control ledger.",
+            "type": "string",
+            "enum": [
+              "full",
+              "outline",
+              "appendix",
+              "changes",
+              "fields"
+            ]
+          },
+          "page": {
+            "type": "string",
+            "description": "Positive integer (1-indexed, defaults to 1) or 'all'. See the tool description for the full behavior per mode."
+          },
+          "force": {
+            "default": false,
+            "description": "For mode='full' with page='all': read the whole document even when it exceeds the response budget.",
+            "type": "boolean"
+          },
+          "outline_max_level": {
+            "default": 2,
+            "description": "For mode='outline' only: cap on heading depth.",
+            "type": "number"
+          },
+          "outline_verbose": {
+            "default": false,
+            "description": "For mode='outline' only: includes metadata.",
+            "type": "boolean"
+          },
+          "changes_author": {
+            "description": "For mode='changes' only: filter tracked changes ledger by author name.",
+            "type": "string"
+          },
+          "changes_offset": {
+            "default": 0,
+            "description": "For mode='changes' only: entry offset for paginating tracked changes ledger.",
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "fields_offset": {
+            "default": 0,
+            "description": "For mode='fields' only: entry offset for paginating the content-control ledger.",
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "search_query": {
+            "description": "The substring or regex pattern to search for. When provided, filters results to matching paragraphs.",
+            "type": "string"
+          },
+          "search_regex": {
+            "default": false,
+            "description": "Set to true to interpret search_query as a regular expression.",
+            "type": "boolean"
+          },
+          "search_case_sensitive": {
+            "default": true,
+            "description": "Set to false to perform case-insensitive matching.",
+            "type": "boolean"
+          },
+          "max_matches": {
+            "default": 20,
+            "description": "For search queries: maximum number of search matches to return (default 20).",
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "match_offset": {
+            "default": 0,
+            "description": "For search queries: 0-based match offset to start search results from for pagination (default 0).",
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "full_paragraph": {
+            "default": false,
+            "description": "For search queries: return full paragraph for search matches instead of clamping snippets to ±120 chars.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "file_path"
+        ]
+      }
+    }
+  ],
+  "stderrTail": "Adeu MCP Server (Node.js Engine: adeu-core-node) running on stdio build=0d80b9a@2026-09-14T09:42:36.204Z\n",
+  "durationMs": 23864,
+  "transport": "stdio"
+}

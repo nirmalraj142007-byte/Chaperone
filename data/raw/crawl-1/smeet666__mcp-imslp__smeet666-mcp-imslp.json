@@ -1,0 +1,229 @@
+{
+  "serverId": "smeet666__mcp-imslp__smeet666-mcp-imslp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "search_works",
+      "description": "Search the works of IMSLP by title, by composer, or by words printed on their pages. Each row names the page of a work, which is how get_work and list_work_files address it: a title is written 'Work (Composer)', and the row splits it into the work and the person it names. IMSLP publishes no count of what a search matched, so 'total' is always null; 'has_more' and 'next_offset' say whether the library held more rows and where to read on from. A snippet is words taken from the page around the match. The library writes its pages in wikitext, so a snippet sometimes shows the name of a file rather than a sentence, and some rows carry none at all. The library titles a work in the language its composer used, so 'Die Zauberflöte' and not 'The Magic Flute', 'Sinfonia' and not 'Symphony'. A title translated into another language finds nothing, or finds only the works written about it: rows that look thin for a famous work are a sign the work sits under its original title, not that the library lacks it. Searching for a person by name finds the works naming them; search_people finds the person. When you show a result to a user, credit IMSLP and link the page.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "description": "What to look for in the works of the library. Words are matched across the page, not only titles."
+          },
+          "limit": {
+            "default": 10,
+            "description": "Rows to serve, from 1 to 50.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          },
+          "offset": {
+            "default": 0,
+            "description": "Rows to skip, using the 'next_offset' a previous answer named.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "search_people",
+      "description": "Find the composers, editors, arrangers and performers of IMSLP by name. The library addresses a person by a category, written 'Category:Surname, Forename', and that is what list_person_works and get_person take. A name is written the library's own way, so searching finds it where guessing at the spelling does not. Some rows stand for another category rather than for a person: the library keeps a redirect for a name spelled differently, and 'redirect_to' names the category it leads to. Follow it rather than reading works under the redirect, which holds none. IMSLP publishes no count of what a search matched, so 'total' is always null. When you show a person to a user, credit IMSLP and link the page.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "description": "What to look for among the people of the library. Words are matched across the page, not only titles."
+          },
+          "limit": {
+            "default": 10,
+            "description": "Rows to serve, from 1 to 50.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          },
+          "offset": {
+            "default": 0,
+            "description": "Rows to skip, using the 'next_offset' a previous answer named.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_work",
+      "description": "Read one work on IMSLP: its title and alternative titles, the composer, the opus and catalogue numbers, the year it was written and the year it was first published, the dedication, the key, the instrumentation, the style and period, and how many scores and recordings the page holds. Address a work by its page title, written 'Work (Composer)', for example 'Nocturnes, Op.9 (Chopin, Frédéric)', or by the page id. Dates and durations come back in the wording the page used: 'ca.1830' stays 'ca.1830', because a bare year would state a certainty the library declined to state. A facet the page leaves empty comes back null rather than guessed. A work holding a few editions comes back with them, files included. One holding many comes back with 'editions' null and 'editions_truncated' true, and list_work_files pages through them. The copyright of a score is stated per jurisdiction: 'Public Domain - Non-PD US' is free in Canada and the European Union and protected in the United States, so never report a score as public domain without saying where. No score file is downloaded or linked; the work page is what an answer links to. When you show a work to a user, credit IMSLP and link that page.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "description": "The title of the work's page, written 'Work (Composer)', for example 'Nocturnes, Op.9 (Chopin, Frédéric)'. Pass this or 'pageid', not both.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "pageid": {
+            "description": "The page id a search returns. Pass this or 'page', not both.",
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "list_work_files",
+      "description": "Read the scores and recordings a work on IMSLP holds, edition by edition. An edition is a set of files published under one set of terms: the publisher, the editor and the copyright statement belong to the edition, and its files are the entries under it. A block of recordings carries performers instead, and no copyright statement at all. Address the work by its page title, written 'Work (Composer)', or by its page id, and read it a page at a time with 'limit' and 'offset'. 'editions_on_page' counts the editions the page holds, so it says how far a reading can go. Restrict to one part of the page with 'section', using the names the page itself prints: 'Scores', 'Parts', 'Arrangements and Transcriptions', 'Recordings', 'Full Scores' and others. A restriction matching nothing comes back with the sections the page does hold rather than as a work without scores. The copyright of a score is stated per jurisdiction: 'Public Domain - Non-PD US' is free in Canada and the European Union and protected in the United States, so never report a score as public domain without saying where. No score file is downloaded or linked; the work page is what an answer links to. When you show an edition to a user, credit IMSLP and link that page.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "description": "The title of the work's page, written 'Work (Composer)', for example 'Nocturnes, Op.9 (Chopin, Frédéric)'. Pass this or 'pageid', not both.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "pageid": {
+            "description": "The page id a search returns. Pass this or 'page', not both.",
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "section": {
+            "description": "One section of the page, in the wording the page prints: 'Scores', 'Parts', 'Recordings', 'Arrangements and Transcriptions', 'Full Scores', 'Synthesized/MIDI'. Matched without regard to case. Left out, every section is read.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "limit": {
+            "default": 10,
+            "description": "Editions to serve, from 1 to 100.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "offset": {
+            "default": 0,
+            "description": "Editions to skip, for reading a work whose page holds many.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "list_person_works",
+      "description": "Read the works IMSLP files under a person: what a composer wrote, and also what an editor, an arranger or a performer is credited on. The person is named by the category the library addresses them by, written 'Category:Surname, Forename', which search_people finds. The prefix may be left out. IMSLP publishes no count of what a category holds, so 'total' is always null; 'has_more' and 'cursor' say whether the library held more rows and how to read them. A category the library does not hold answers exactly as an empty one does, so an answer with no rows means one of the two rather than a person without works. When you show a work to a user, credit IMSLP and link the page.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "description": "The person's category, written 'Category:Surname, Forename', for example 'Category:Chopin, Frédéric'. The prefix is added when it is left out."
+          },
+          "limit": {
+            "default": 25,
+            "description": "Rows to serve, from 1 to 100.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "cursor": {
+            "description": "The 'cursor' a previous answer named, to read on from where it stopped. The library writes it itself, so it is passed back as it was given rather than built.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "category"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_person",
+      "description": "Read what IMSLP holds about a person: the name as its page prints it, the life dates it states, the other names it files them under, the registers holding a record of them, and the addresses it points to off the site. The person is named by the category the library addresses them by, written 'Category:Surname, Forename', which search_people finds. The prefix may be left out. Life dates come back in the wording the page used, since the library writes '1861-1934' on one page and '4 March 1861 — 2 November 1934' on another, and a page holding none says so. This reads the person; list_person_works reads what they wrote. When you show a person to a user, credit IMSLP and link the page.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "description": "The person's category, written 'Category:Surname, Forename', for example 'Category:Satie, Erik'. The prefix is added when it is left out."
+          }
+        },
+        "required": [
+          "category"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "browse_category",
+      "description": "Read the works IMSLP files under a category: a genre, a key, an instrumentation or a period. The library writes these names itself, and get_work hands them back for a work under 'genre_categories': 'Nocturnes', 'For piano', 'Scores featuring the piano', 'B-flat minor'. Pass one of those rather than a name of your own, since a category the library does not hold answers exactly as an empty one does. The 'Category:' prefix may be left out. The library cannot cross two categories, so a question naming both a genre and an instrument is answered by browsing one and reading the other off each work. IMSLP publishes no count of what a category holds, so 'total' is always null; 'has_more' and 'cursor' say whether more rows remain and how to read them. When you show a work to a user, credit IMSLP and link the page.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "description": "The category to read, in the library's own wording, for example 'For piano', 'Nocturnes' or 'Category:B-flat minor'. The prefix is added when it is left out."
+          },
+          "limit": {
+            "default": 25,
+            "description": "Rows to serve, from 1 to 100.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "cursor": {
+            "description": "The 'cursor' a previous answer named, to read on from where it stopped. The library writes it itself, so it is passed back as it was given rather than built.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "category"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    }
+  ],
+  "stderrTail": "npm warn EBADENGINE Unsupported engine {\nnpm warn EBADENGINE   package: 'mcp-imslp@1.0.1',\nnpm warn EBADENGINE   required: { node: '>=24.0.0' },\nnpm warn EBADENGINE   current: { node: 'v22.23.2', npm: '10.9.8' }\nnpm warn EBADENGINE }\n",
+  "durationMs": 16383,
+  "transport": "stdio"
+}

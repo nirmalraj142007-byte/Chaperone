@@ -1,0 +1,405 @@
+{
+  "serverId": "rekordcloud__sonovault-mcp__rekordcloud-sonovault-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "search_tracks",
+      "description": "Search the SonoVault catalog (93M+ tracks) by artist and title. Both are required; there is no free-text search. Returns ISRC, genre, duration, artist credits, and release info (album, label, release date) per track.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "artist": {
+            "type": "string",
+            "description": "Artist name, e.g. 'Daft Punk'"
+          },
+          "title": {
+            "type": "string",
+            "description": "Track title, e.g. 'One More Time'"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Max results (default 20)"
+          }
+        },
+        "required": [
+          "artist",
+          "title"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_track",
+      "description": "Fetch one track by its SonoVault track ID, with full metadata.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "SonoVault track ID"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "lookup_isrc",
+      "description": "Exact lookup of a recording by its ISRC (International Standard Recording Code, e.g. GBDUW0000053). Returns the track's full metadata.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "isrc": {
+            "type": "string",
+            "description": "ISRC code, e.g. GBDUW0000053"
+          }
+        },
+        "required": [
+          "isrc"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_work_codes",
+      "description": "Find the ISWC work code(s) behind a recording, by ISRC or SonoVault track ID. Useful for royalty and publishing workflows. One recording can carry several ISWCs (medleys, samples).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "isrc": {
+            "type": "string",
+            "description": "ISRC of the recording"
+          },
+          "track_id": {
+            "type": "integer",
+            "description": "SonoVault track ID (alternative to isrc)"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_recordings_of_work",
+      "description": "List every recording of a musical work by its ISWC (e.g. T0710204399 or T-071.020.439-9). Returns recordings sorted by popularity, each with a representative ISRC.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "iswc": {
+            "type": "string",
+            "description": "ISWC work code"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200,
+            "description": "Max recordings (default 50)"
+          }
+        },
+        "required": [
+          "iswc"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_platform_links",
+      "description": "Resolve a track to its ID and deep link on every supported platform: Spotify, Apple Music, Tidal, Beatport, Discogs, MusicBrainz, YouTube. Identify the track by exactly one of: SonoVault id, ISRC, or any platform's ID.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "SonoVault track ID"
+          },
+          "isrc": {
+            "type": "string"
+          },
+          "spotify_id": {
+            "type": "string"
+          },
+          "applemusic_id": {
+            "type": "string"
+          },
+          "tidal_id": {
+            "type": "string"
+          },
+          "beatport_id": {
+            "type": "string"
+          },
+          "discogs_id": {
+            "type": "string"
+          },
+          "musicbrainz_id": {
+            "type": "string"
+          },
+          "youtube_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "resolve_tracks",
+      "description": "Resolve up to 100 inputs in one call to canonical tracks plus cross-platform links. input_type picks the key: 'track_name' (items are {artist, title} objects), 'isrc', 'sonovault_id', or a platform id type ('spotify_id', 'applemusic_id', 'tidal_id', 'beatport_id', 'discogs_id', 'musicbrainz_id'). Costs one API credit per line.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input_type": {
+            "type": "string",
+            "enum": [
+              "track_name",
+              "isrc",
+              "sonovault_id",
+              "spotify_id",
+              "applemusic_id",
+              "tidal_id",
+              "beatport_id",
+              "discogs_id",
+              "musicbrainz_id"
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "artist": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "artist",
+                    "title"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 100,
+            "description": "Strings for id/isrc types; {artist, title} objects for track_name"
+          }
+        },
+        "required": [
+          "input_type",
+          "items"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "search_artists",
+      "description": "Search artists by name. Returns id, name, country, formation year, release count, and the wikidata_id and musicbrainz_id identifiers for joining against external datasets.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Artist name to search for"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_artist_releases",
+      "description": "An artist's releases, newest first. Use the cursor from a previous call for the next page.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "artist_id": {
+            "type": "integer",
+            "description": "SonoVault artist ID (from search_artists)"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "cursor": {
+            "type": "string",
+            "description": "next_cursor from the previous page"
+          }
+        },
+        "required": [
+          "artist_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "search_labels",
+      "description": "Search record labels by name. Returns id, name, and release count.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Label name to search for"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_label_releases",
+      "description": "A label's releases, newest first, with artist per release. Cursor-paginated.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "label_id": {
+            "type": "integer",
+            "description": "SonoVault label ID (from search_labels)"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "cursor": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "label_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "search_releases",
+      "description": "Search releases by title, optionally narrowed by artist name.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Release/album title"
+          },
+          "artist": {
+            "type": "string",
+            "description": "Artist name to narrow the match"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_release",
+      "description": "Fetch one release by SonoVault release ID, including its full tracklist with ISRCs. Tracks come back in playing order, each with disc_number and track_number; a track whose position is unknown sorts last with both null. A SonoVault release groups every edition of an album onto one record, so the response also carries an editions array naming the real editions behind it, each with its provider, format, release date, barcode, country and track count; pass one of their ids as `edition` to render that edition's numbering instead of the default consensus. musicbrainz_release_ids and musicbrainz_release_group_ids are arrays for the same reason.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "SonoVault release ID"
+          },
+          "edition": {
+            "type": "integer",
+            "description": "Edition id from the response's editions array. Renders that edition's track numbering; tracks it does not carry keep a null position and come last."
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "list_genres",
+      "description": "The canonical SonoVault genre hierarchy: 25 main genres plus subgenres, with IDs.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "browse_tracks",
+      "description": "Discover tracks by filter: label ID, artist ID, genre name or genre ID (from list_genres), or release year. At least one filter is required. Needs a paid SonoVault tier; free-tier keys get a 403.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "label_id": {
+            "type": "integer"
+          },
+          "artist_id": {
+            "type": "integer"
+          },
+          "genre": {
+            "type": "string",
+            "description": "Exact genre name (mutually exclusive with genre_id)"
+          },
+          "genre_id": {
+            "type": "integer",
+            "description": "Canonical genre ID (mutually exclusive with genre)"
+          },
+          "year": {
+            "type": "integer",
+            "minimum": 1900,
+            "maximum": 2100
+          },
+          "randomize": {
+            "type": "boolean",
+            "description": "Sample randomly instead of newest first"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "sonovault-mcp ready (stdio)\n",
+  "durationMs": 17388,
+  "transport": "stdio"
+}

@@ -1,0 +1,2075 @@
+{
+  "serverId": "gavxm__ani-mcp__gavxm-ani-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "anilist_search",
+      "description": "Search for anime or manga by title with optional filters. Use when the user wants to find an anime/manga by name, discover titles in a genre, or find what aired in a specific year. Supports common abbreviations (aot, jjk, csm). Returns ranked list with title, format, year, score, genres, episode count, studios, and AniList URL.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Search term, e.g. \"steins gate\", \"one piece\", \"chainsaw man\""
+          },
+          "type": {
+            "default": "ANIME",
+            "description": "Search for anime or manga",
+            "type": "string",
+            "enum": [
+              "ANIME",
+              "MANGA"
+            ]
+          },
+          "genre": {
+            "description": "Filter by genre, e.g. \"Action\", \"Romance\", \"Thriller\"",
+            "type": "string"
+          },
+          "year": {
+            "description": "Filter by release year",
+            "type": "integer",
+            "minimum": 1940,
+            "maximum": 2030
+          },
+          "format": {
+            "description": "Filter by format (TV, MOVIE, etc.)",
+            "type": "string",
+            "enum": [
+              "TV",
+              "MOVIE",
+              "OVA",
+              "ONA",
+              "SPECIAL",
+              "MANGA",
+              "NOVEL",
+              "ONE_SHOT"
+            ]
+          },
+          "isAdult": {
+            "default": false,
+            "description": "Include adult (18+) content in results",
+            "type": "boolean"
+          },
+          "limit": {
+            "default": 10,
+            "description": "Number of results to return (default 10, max 25)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 25
+          },
+          "page": {
+            "default": 1,
+            "description": "Page number for pagination (default 1)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_details",
+      "description": "Get full details about a specific anime or manga. Use when the user asks about a specific title and wants synopsis, score, episodes, studios, related works, and recommendations. Accepts AniList ID (faster, exact) or title (fuzzy match with abbreviation support). Returns format, status, episodes/chapters, season, score, studios, source, genres, tags, synopsis, related works, and community recommendations.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "AniList media ID (e.g. 1 for Cowboy Bebop). Use this if you know the exact ID.",
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "title": {
+            "description": "Search by title if no ID is known (e.g. \"Attack on Titan\"). Finds the best match.",
+            "type": "string"
+          },
+          "type": {
+            "default": "ANIME",
+            "description": "Media type to look up. Defaults to ANIME.",
+            "type": "string",
+            "enum": [
+              "ANIME",
+              "MANGA"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_seasonal",
+      "description": "Browse anime airing in a given season. Use when the user asks what's airing this season, what aired in a past season, or wants to discover seasonal anime. Defaults to current season/year. Returns ranked list with title, format, score, genres, and episode count.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "season": {
+            "description": "Season to browse. Defaults to the current season.",
+            "type": "string",
+            "enum": [
+              "WINTER",
+              "SPRING",
+              "SUMMER",
+              "FALL"
+            ]
+          },
+          "year": {
+            "description": "Year to browse. Defaults to the current year.",
+            "type": "integer",
+            "minimum": 1940,
+            "maximum": 2028
+          },
+          "sort": {
+            "default": "POPULARITY",
+            "description": "How to rank results",
+            "type": "string",
+            "enum": [
+              "POPULARITY",
+              "SCORE",
+              "TRENDING"
+            ]
+          },
+          "isAdult": {
+            "default": false,
+            "description": "Include adult (18+) content in results",
+            "type": "boolean"
+          },
+          "limit": {
+            "default": 15,
+            "description": "Number of results to return (default 15, max 50)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          },
+          "page": {
+            "default": 1,
+            "description": "Page number for pagination (default 1)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_recommendations",
+      "description": "Get community recommendations for a specific anime or manga. Use when the user asks for shows similar to a specific title, or says \"I liked X, what else should I watch?\" Returns titles ranked by recommendation count with format, score, and genres.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "AniList media ID",
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "title": {
+            "description": "Search by title if no ID is known",
+            "type": "string"
+          },
+          "type": {
+            "default": "ANIME",
+            "description": "Media type. Defaults to ANIME.",
+            "type": "string",
+            "enum": [
+              "ANIME",
+              "MANGA"
+            ]
+          },
+          "limit": {
+            "default": 10,
+            "description": "Number of recommendations to return (default 10, max 25)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 25
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_list",
+      "description": "Get a user's anime or manga list, filtered by watching status. Use when the user asks about their list, what they're watching, what they've completed, or what's on their plan-to-watch. Supports custom lists via status CUSTOM. Returns entries with title, score, progress, status, updated date, and entry ID.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "description": "AniList username. Falls back to configured default if not provided.",
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 20,
+            "pattern": "^[a-zA-Z0-9_-]+$"
+          },
+          "type": {
+            "default": "ANIME",
+            "description": "Get anime or manga list",
+            "type": "string",
+            "enum": [
+              "ANIME",
+              "MANGA"
+            ]
+          },
+          "status": {
+            "default": "ALL",
+            "description": "Filter by list status. CURRENT = watching/reading now. CUSTOM = user-created lists.",
+            "type": "string",
+            "enum": [
+              "CURRENT",
+              "COMPLETED",
+              "PLANNING",
+              "DROPPED",
+              "PAUSED",
+              "ALL",
+              "CUSTOM"
+            ]
+          },
+          "customListName": {
+            "description": "Filter to a specific custom list by name. Only used when status is CUSTOM.",
+            "type": "string"
+          },
+          "sort": {
+            "default": "UPDATED",
+            "description": "How to sort results",
+            "type": "string",
+            "enum": [
+              "SCORE",
+              "TITLE",
+              "UPDATED",
+              "PROGRESS"
+            ]
+          },
+          "limit": {
+            "default": 25,
+            "description": "Maximum entries to return (default 25, max 100)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "page": {
+            "default": 1,
+            "description": "Page number for pagination (default 1)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_stats",
+      "description": "Get a user's watching/reading statistics. Use when the user asks about their overall stats, how much anime they've watched, their average score, top genres, or score distribution. Returns title count, mean score, episodes/chapters, top genres, score distribution chart, and format breakdown.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "description": "AniList username. Falls back to configured default if not provided.",
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 20,
+            "pattern": "^[a-zA-Z0-9_-]+$"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_lookup",
+      "description": "Check if a specific title is on a user's list and show its status. Use when the user asks \"is this on my list?\", \"have I seen this?\", or wants to check their progress or score for a single title. Returns status, score, progress, and dates without fetching the full list.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "mediaId": {
+            "description": "AniList media ID to look up",
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "title": {
+            "description": "Search by title if no ID is known",
+            "type": "string"
+          },
+          "username": {
+            "description": "AniList username. Falls back to configured default if not provided.",
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 20,
+            "pattern": "^[a-zA-Z0-9_-]+$"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_export",
+      "description": "Export a user's anime or manga list as CSV or JSON for backup or migration. Use when the user wants to download, back up, or transfer their list data.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "description": "AniList username. Falls back to configured default if not provided.",
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 20,
+            "pattern": "^[a-zA-Z0-9_-]+$"
+          },
+          "type": {
+            "default": "ANIME",
+            "description": "Export anime or manga list",
+            "type": "string",
+            "enum": [
+              "ANIME",
+              "MANGA"
+            ]
+          },
+          "status": {
+            "description": "Filter by status (omit for all statuses)",
+            "type": "string",
+            "enum": [
+              "CURRENT",
+              "COMPLETED",
+              "PLANNING",
+              "DROPPED",
+              "PAUSED"
+            ]
+          },
+          "format": {
+            "default": "csv",
+            "description": "Export format",
+            "type": "string",
+            "enum": [
+              "csv",
+              "json"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_taste",
+      "description": "Generate a taste profile summary from a user's completed list. Use when the user asks about their anime/manga preferences, what genres they like, or how they tend to score. Returns genre weights, top themes, scoring patterns with distribution chart, and format split.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "description": "AniList username. Falls back to configured default if not provided.",
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 20,
+            "pattern": "^[a-zA-Z0-9_-]+$"
+          },
+          "type": {
+            "default": "BOTH",
+            "description": "Analyze anime list, manga list, or both",
+            "type": "string",
+            "enum": [
+              "ANIME",
+              "MANGA",
+              "BOTH"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_pick",
+      "description": "\"What should I watch/read next?\" Recommends from your Planning list based on your taste profile. Also works for backlog analysis - \"which of my 200 Planning titles should I actually start?\" Falls back to top-rated AniList titles if the Planning list is empty. Optionally filter by mood or max episodes. Returns ranked picks with match score, genre alignment, and mood fit.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "description": "AniList username. Falls back to configured default if not provided.",
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 20,
+            "pattern": "^[a-zA-Z0-9_-]+$"
+          },
+          "type": {
+            "default": "ANIME",
+            "description": "Recommend from anime or manga planning list",
+            "type": "string",
+            "enum": [
+              "ANIME",
+              "MANGA"
+            ]
+          },
+          "profileType": {
+            "description": "Build taste profile from this media type. Defaults to same as type. Set to get cross-media recs, e.g. anime picks based on manga taste.",
+            "type": "string",
+            "enum": [
+              "ANIME",
+              "MANGA"
+            ]
+          },
+          "source": {
+            "default": "PLANNING",
+            "description": "Where to find candidates. PLANNING = user's plan-to-watch list (default). SEASONAL = currently airing anime. DISCOVER = top-rated titles matching taste.",
+            "type": "string",
+            "enum": [
+              "PLANNING",
+              "SEASONAL",
+              "DISCOVER"
+            ]
+          },
+          "season": {
+            "description": "Season for SEASONAL source. Defaults to the current season.",
+            "type": "string",
+            "enum": [
+              "WINTER",
+              "SPRING",
+              "SUMMER",
+              "FALL"
+            ]
+          },
+          "year": {
+            "description": "Year for SEASONAL source. Defaults to the current year.",
+            "type": "integer",
+            "minimum": 1940,
+            "maximum": 2028
+          },
+          "mood": {
+            "description": "Freeform mood or vibe, e.g. \"something dark\", \"chill and wholesome\", \"hype action\"",
+            "type": "string"
+          },
+          "maxEpisodes": {
+            "description": "Filter out series longer than this episode count",
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "exclude": {
+            "description": "Media IDs to exclude from results (e.g. from previous recommendations)",
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "limit": {
+            "default": 5,
+            "description": "Number of recommendations to return (default 5, max 15)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 15
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_session",
+      "description": "Plan a watching or reading session within a time budget. Picks from your currently-watching list, scored by taste match and mood. Returns a session plan with titles, episodes to watch, and estimated time.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "description": "AniList username. Falls back to configured default if not provided.",
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 20,
+            "pattern": "^[a-zA-Z0-9_-]+$"
+          },
+          "type": {
+            "default": "ANIME",
+            "description": "Plan session from anime or manga currently-watching list",
+            "type": "string",
+            "enum": [
+              "ANIME",
+              "MANGA"
+            ]
+          },
+          "minutes": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 720,
+            "description": "Time budget in minutes (10-720)"
+          },
+          "mood": {
+            "description": "Optional mood to prioritize titles, e.g. \"dark\", \"chill\"",
+            "type": "string"
+          }
+        },
+        "required": [
+          "minutes"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_sequels",
+      "description": "Find sequels airing this season for titles you've completed. Use when the user asks what sequels are coming, or wants to know if any currently airing anime continue shows they've already watched. Returns matches with the completed prequel and the airing sequel.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "description": "AniList username. Falls back to configured default if not provided.",
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 20,
+            "pattern": "^[a-zA-Z0-9_-]+$"
+          },
+          "season": {
+            "description": "Season to check for sequels. Defaults to the current season.",
+            "type": "string",
+            "enum": [
+              "WINTER",
+              "SPRING",
+              "SUMMER",
+              "FALL"
+            ]
+          },
+          "year": {
+            "description": "Year to check. Defaults to the current year.",
+            "type": "integer",
+            "minimum": 1940,
+            "maximum": 2028
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_watch_order",
+      "description": "Suggested viewing order for a franchise. Use when the user asks what order to watch a series, how to start a long franchise, or wants to know the chronological release order of sequels and prequels. Accepts any title in the franchise and traces the full chain. Returns a numbered list from first to last.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "AniList media ID of any title in the franchise",
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "title": {
+            "description": "Search by title if no ID is known",
+            "type": "string"
+          },
+          "includeSpecials": {
+            "default": false,
+            "description": "Include OVAs, specials, and spin-offs in the watch order",
+            "type": "boolean"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_compare",
+      "description": "Compare taste profiles between two AniList users. Use when someone asks to compare their taste with another user. Returns compatibility %, shared favorites, biggest disagreements, genre divergences, and cross-recommendations.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "user1": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 20,
+            "pattern": "^[a-zA-Z0-9_-]+$",
+            "description": "First AniList username"
+          },
+          "user2": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 20,
+            "pattern": "^[a-zA-Z0-9_-]+$",
+            "description": "Second AniList username"
+          },
+          "type": {
+            "default": "ANIME",
+            "description": "Compare anime or manga taste",
+            "type": "string",
+            "enum": [
+              "ANIME",
+              "MANGA"
+            ]
+          }
+        },
+        "required": [
+          "user1",
+          "user2"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_wrapped",
+      "description": "Year-in-review summary for a user. Use when the user asks about their anime/manga year, what they watched/read in a given year, or wants a recap. Defaults to the current year. Returns title count, average score, highest rated, most controversial, genre breakdown, and consumption stats.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "description": "AniList username. Falls back to configured default if not provided.",
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 20,
+            "pattern": "^[a-zA-Z0-9_-]+$"
+          },
+          "year": {
+            "description": "Year to summarize. Defaults to the current year.",
+            "type": "integer",
+            "minimum": 2000,
+            "maximum": 2028
+          },
+          "type": {
+            "default": "BOTH",
+            "description": "Summarize anime, manga, or both",
+            "type": "string",
+            "enum": [
+              "ANIME",
+              "MANGA",
+              "BOTH"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_explain",
+      "description": "Score a specific title against a user's taste profile and explain the alignment. Use when the user asks \"why would I like this?\", \"is this for me?\", or wants to know how well a specific anime/manga matches their preferences. Returns match score, genre/theme affinity breakdown, mood fit, and existing list status.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "mediaId": {
+            "description": "AniList media ID to evaluate against your taste profile",
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "title": {
+            "description": "Search by title if no ID is known",
+            "type": "string"
+          },
+          "username": {
+            "description": "AniList username. Falls back to configured default if not provided.",
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 20,
+            "pattern": "^[a-zA-Z0-9_-]+$"
+          },
+          "type": {
+            "default": "BOTH",
+            "description": "Build taste profile from anime list, manga list, or both",
+            "type": "string",
+            "enum": [
+              "ANIME",
+              "MANGA",
+              "BOTH"
+            ]
+          },
+          "mood": {
+            "description": "Optional mood context, e.g. \"dark and brainy\"",
+            "type": "string"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_similar",
+      "description": "Find titles similar to a specific anime or manga. Use when the user asks for shows like a specific title, or wants content-based recommendations without needing a user profile. Returns ranked results with similarity %, shared genres, and community rec strength.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "mediaId": {
+            "description": "AniList media ID to find similar titles for",
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "title": {
+            "description": "Search by title if no ID is known",
+            "type": "string"
+          },
+          "type": {
+            "default": "ANIME",
+            "description": "Media type. Defaults to ANIME.",
+            "type": "string",
+            "enum": [
+              "ANIME",
+              "MANGA"
+            ]
+          },
+          "limit": {
+            "default": 10,
+            "description": "Number of similar titles to return (default 10, max 25)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 25
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_trending",
+      "description": "Show what's trending on AniList right now. Use when the user asks what's hot, trending, or generating buzz. No search term needed. Returns ranked list with title, format, score, genres, and episode count.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "default": "ANIME",
+            "description": "Show trending anime or manga",
+            "type": "string",
+            "enum": [
+              "ANIME",
+              "MANGA"
+            ]
+          },
+          "isAdult": {
+            "default": false,
+            "description": "Include adult (18+) content in results",
+            "type": "boolean"
+          },
+          "limit": {
+            "default": 10,
+            "description": "Number of results to return (default 10, max 25)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 25
+          },
+          "page": {
+            "default": 1,
+            "description": "Page number for pagination (default 1)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_genres",
+      "description": "Browse top anime or manga in a specific genre. Use when the user asks for the best titles in a genre, e.g. \"best romance anime\" or \"top thriller manga from 2023\". Supports year, status, and format filters. Returns ranked list with title, score, and genres.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "genre": {
+            "type": "string",
+            "description": "Genre to browse, e.g. \"Action\", \"Romance\", \"Horror\""
+          },
+          "type": {
+            "default": "ANIME",
+            "description": "Browse anime or manga",
+            "type": "string",
+            "enum": [
+              "ANIME",
+              "MANGA"
+            ]
+          },
+          "year": {
+            "description": "Filter by release year",
+            "type": "integer",
+            "minimum": 1940,
+            "maximum": 2028
+          },
+          "status": {
+            "description": "Filter by airing/publishing status",
+            "type": "string",
+            "enum": [
+              "FINISHED",
+              "RELEASING",
+              "NOT_YET_RELEASED",
+              "CANCELLED",
+              "HIATUS"
+            ]
+          },
+          "format": {
+            "description": "Filter by format",
+            "type": "string",
+            "enum": [
+              "TV",
+              "MOVIE",
+              "OVA",
+              "ONA",
+              "SPECIAL",
+              "MANGA",
+              "NOVEL",
+              "ONE_SHOT"
+            ]
+          },
+          "sort": {
+            "default": "SCORE",
+            "description": "How to rank results",
+            "type": "string",
+            "enum": [
+              "SCORE",
+              "POPULARITY",
+              "TRENDING"
+            ]
+          },
+          "isAdult": {
+            "default": false,
+            "description": "Include adult (18+) content in results",
+            "type": "boolean"
+          },
+          "limit": {
+            "default": 10,
+            "description": "Number of results to return (default 10, max 25)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 25
+          },
+          "page": {
+            "default": 1,
+            "description": "Page number for pagination (default 1)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "genre"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_genre_list",
+      "description": "List all valid AniList genres and content tags. Use before genre-filtering tools to ensure valid genre names. Returns genres and content tags grouped by category with descriptions.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "includeAdultTags": {
+            "default": false,
+            "description": "Include adult/NSFW tags in the list",
+            "type": "boolean"
+          },
+          "filter": {
+            "default": "all",
+            "description": "Show only genres, only tags, or both (default all)",
+            "type": "string",
+            "enum": [
+              "all",
+              "genres",
+              "tags"
+            ]
+          },
+          "category": {
+            "description": "Filter tags to a specific category (e.g. Theme, Setting, Cast)",
+            "type": "string"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_whoami",
+      "description": "Check which AniList account is authenticated and verify the token works. Use when the user wants to confirm their setup or debug auth issues.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_staff",
+      "description": "Get staff and voice actor credits for an anime or manga. Use when the user asks who directed, wrote, or voiced characters in a title. Returns production staff with roles and characters with voice actors. Defaults to Japanese VAs but supports other languages.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "AniList media ID",
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "title": {
+            "description": "Search by title if no ID is known",
+            "type": "string"
+          },
+          "type": {
+            "default": "ANIME",
+            "description": "Media type. Defaults to ANIME.",
+            "type": "string",
+            "enum": [
+              "ANIME",
+              "MANGA"
+            ]
+          },
+          "language": {
+            "default": "JAPANESE",
+            "description": "Voice actor language (default JAPANESE)",
+            "type": "string",
+            "enum": [
+              "JAPANESE",
+              "ENGLISH",
+              "KOREAN",
+              "ITALIAN",
+              "SPANISH",
+              "PORTUGUESE",
+              "FRENCH",
+              "GERMAN",
+              "HEBREW",
+              "HUNGARIAN"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_schedule",
+      "description": "Get the airing schedule for an anime. Use when the user asks when the next episode airs, or wants to see upcoming episode dates for a currently airing show. Returns next episode date/countdown and upcoming episode schedule.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "AniList media ID for the anime",
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "title": {
+            "description": "Search by title if no ID is known",
+            "type": "string"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_airing",
+      "description": "Show upcoming episodes for all anime you're currently watching. Use when the user asks what's airing soon, what episodes are coming up, or wants a watchlist calendar. Returns titles sorted by next airing time with episode number and countdown.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "description": "AniList username. Falls back to configured default if not provided.",
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 20,
+            "pattern": "^[a-zA-Z0-9_-]+$"
+          },
+          "limit": {
+            "default": 20,
+            "description": "Max titles to show (default 20, max 50)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_characters",
+      "description": "Search for anime/manga characters by name. Use when the user asks about a specific character, wants to know which series a character appears in, or who voices them. Returns character appearances with roles and voice actors.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Character name to search for, e.g. \"Goku\", \"Levi Ackerman\""
+          },
+          "limit": {
+            "default": 5,
+            "description": "Number of results to return (default 5, max 10)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10
+          },
+          "page": {
+            "default": 1,
+            "description": "Page number for pagination (default 1)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_staff_search",
+      "description": "Search for anime/manga staff by name and see their works. Use when the user asks about a director, voice actor, animator, or writer. Returns staff occupations, works with roles, and scores.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Staff name to search for, e.g. \"Miyazaki\", \"Kana Hanazawa\""
+          },
+          "limit": {
+            "default": 3,
+            "description": "Number of staff results to return (default 3, max 10)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10
+          },
+          "mediaLimit": {
+            "default": 10,
+            "description": "Works per person to show (default 10, max 25)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 25
+          },
+          "page": {
+            "default": 1,
+            "description": "Page number for pagination (default 1)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_studio_search",
+      "description": "Search for an animation studio by name and see their productions. Use when the user asks about a studio like MAPPA, Kyoto Animation, or Bones. Returns main and supporting productions with format, score, and status.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Studio name to search for, e.g. \"MAPPA\", \"Kyoto Animation\""
+          },
+          "limit": {
+            "default": 10,
+            "description": "Number of works to show (default 10, max 25)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 25
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_update_progress",
+      "description": "Update your episode or chapter progress for an anime or manga. Use when the user says they watched an episode, finished a chapter, or wants to record progress. Requires ANILIST_TOKEN. Returns updated status, progress count, and entry ID.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "mediaId": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "description": "AniList media ID to update progress for"
+          },
+          "progress": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Episode or chapter number reached"
+          },
+          "volumeProgress": {
+            "description": "Volume number reached (manga only)",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "status": {
+            "description": "List status to set. Defaults to CURRENT if the entry is new.",
+            "type": "string",
+            "enum": [
+              "CURRENT",
+              "COMPLETED",
+              "PAUSED",
+              "DROPPED",
+              "REPEATING"
+            ]
+          }
+        },
+        "required": [
+          "mediaId",
+          "progress"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_add_to_list",
+      "description": "Add an anime or manga to your list with a status. Use when the user wants to start watching, plan to watch, or mark a title as completed. Requires ANILIST_TOKEN. Returns status, optional score, and entry ID.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "mediaId": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "description": "AniList media ID to add to the list"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "CURRENT",
+              "PLANNING",
+              "COMPLETED",
+              "DROPPED",
+              "PAUSED",
+              "REPEATING"
+            ],
+            "description": "List status to set"
+          },
+          "score": {
+            "description": "Score on a 0-10 scale (e.g. 8.5). Omit to leave unscored.",
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10
+          }
+        },
+        "required": [
+          "mediaId",
+          "status"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_rate",
+      "description": "Score an anime or manga on your list. Use when the user wants to give a rating (0-10). Scores display in the user's preferred format (3/5/10/100-point). Use 0 to remove. Requires ANILIST_TOKEN.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "mediaId": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "description": "AniList media ID to rate"
+          },
+          "score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10,
+            "description": "Score on a 0-10 scale (decimals like 7.5 are supported). Use 0 to remove a score."
+          }
+        },
+        "required": [
+          "mediaId",
+          "score"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_delete_from_list",
+      "description": "Remove an entry from your anime or manga list. Pass either a list entry ID or a media ID. Requires ANILIST_TOKEN.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "entryId": {
+            "description": "List entry ID to delete (from anilist_list)",
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "mediaId": {
+            "description": "AniList media ID to remove from your list",
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_undo",
+      "description": "Undo the last write operation (update progress, add to list, rate, delete, or batch update). Restores the previous state of the affected list entry. Requires ANILIST_TOKEN.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_favourite",
+      "description": "Toggle favourite on an anime, manga, character, staff member, or studio. Calling again on the same entity removes it from favourites. Requires ANILIST_TOKEN.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "ANIME",
+              "MANGA",
+              "CHARACTER",
+              "STAFF",
+              "STUDIO"
+            ],
+            "description": "Type of entity to favourite"
+          },
+          "id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "description": "AniList ID of the entity to toggle favourite on"
+          }
+        },
+        "required": [
+          "type",
+          "id"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_activity",
+      "description": "Post a text activity to your AniList feed. Use when the user wants to share a status update, thought, or message. Requires ANILIST_TOKEN.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "description": "Text content of the activity post"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_unscored",
+      "description": "List completed anime or manga that haven't been scored yet. Use when the user wants to catch up on scoring, find unrated titles, or do a batch scoring session. Returns titles sorted by most recently completed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "description": "AniList username. Falls back to configured default if not provided.",
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 20,
+            "pattern": "^[a-zA-Z0-9_-]+$"
+          },
+          "type": {
+            "default": "ANIME",
+            "description": "Check anime or manga list for unscored titles",
+            "type": "string",
+            "enum": [
+              "ANIME",
+              "MANGA"
+            ]
+          },
+          "limit": {
+            "default": 20,
+            "description": "Number of unscored titles to return (default 20, max 50)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_batch_update",
+      "description": "Apply a bulk action to multiple list entries matching a filter. Use when the user wants to move all low-scored titles to Dropped, add all planning titles to current, or bulk-change statuses. Defaults to dry-run mode (preview only). Requires ANILIST_TOKEN.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "description": "AniList username. Falls back to configured default if not provided.",
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 20,
+            "pattern": "^[a-zA-Z0-9_-]+$"
+          },
+          "type": {
+            "default": "ANIME",
+            "description": "Update anime or manga entries",
+            "type": "string",
+            "enum": [
+              "ANIME",
+              "MANGA"
+            ]
+          },
+          "filter": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "description": "Only match entries with this status",
+                "type": "string",
+                "enum": [
+                  "CURRENT",
+                  "COMPLETED",
+                  "PLANNING",
+                  "DROPPED",
+                  "PAUSED"
+                ]
+              },
+              "scoreBelow": {
+                "description": "Only match entries scored below this value",
+                "type": "number",
+                "minimum": 0,
+                "maximum": 10
+              },
+              "scoreAbove": {
+                "description": "Only match entries scored above this value",
+                "type": "number",
+                "minimum": 0,
+                "maximum": 10
+              },
+              "unscored": {
+                "description": "Only match entries with no score",
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false
+          },
+          "action": {
+            "type": "object",
+            "properties": {
+              "setStatus": {
+                "description": "Change status to this value",
+                "type": "string",
+                "enum": [
+                  "CURRENT",
+                  "PLANNING",
+                  "COMPLETED",
+                  "DROPPED",
+                  "PAUSED",
+                  "REPEATING"
+                ]
+              },
+              "setScore": {
+                "description": "Set score to this value (0 removes score)",
+                "type": "number",
+                "minimum": 0,
+                "maximum": 10
+              }
+            },
+            "additionalProperties": false
+          },
+          "dryRun": {
+            "default": true,
+            "description": "Preview changes without applying them. Set to false to execute.",
+            "type": "boolean"
+          },
+          "limit": {
+            "default": 50,
+            "description": "Max entries to update in one call (default 50, max 100)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "filter",
+          "action"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_feed",
+      "description": "Get recent activity from a user's AniList feed. Shows text posts and list updates (anime/manga status changes). Returns numbered entries with author, date, and content. Supports pagination and type filtering.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "description": "AniList username. Falls back to configured default if not provided.",
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 20,
+            "pattern": "^[a-zA-Z0-9_-]+$"
+          },
+          "type": {
+            "default": "ALL",
+            "description": "Filter by activity type",
+            "type": "string",
+            "enum": [
+              "TEXT",
+              "ANIME_LIST",
+              "MANGA_LIST",
+              "ALL"
+            ]
+          },
+          "limit": {
+            "default": 10,
+            "description": "Number of activities to return (default 10, max 25)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 25
+          },
+          "page": {
+            "default": 1,
+            "description": "Page number for pagination (default 1)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_profile",
+      "description": "View a user's AniList profile including bio, stats, and favourites. Returns bio, anime/manga stats summary, top favourites by category, and account age.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "description": "AniList username. Falls back to configured default if not provided.",
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 20,
+            "pattern": "^[a-zA-Z0-9_-]+$"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_reviews",
+      "description": "Get community reviews for an anime or manga. Use when the user wants to see what others think about a title. Returns sentiment summary (positive/mixed/negative), individual review scores, summaries, and helpful ratios.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "AniList media ID",
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "title": {
+            "description": "Search by title if no ID is known",
+            "type": "string"
+          },
+          "type": {
+            "default": "ANIME",
+            "description": "Media type. Defaults to ANIME.",
+            "type": "string",
+            "enum": [
+              "ANIME",
+              "MANGA"
+            ]
+          },
+          "sort": {
+            "default": "HELPFUL",
+            "description": "Sort by most helpful or newest",
+            "type": "string",
+            "enum": [
+              "HELPFUL",
+              "NEWEST"
+            ]
+          },
+          "limit": {
+            "default": 5,
+            "description": "Number of reviews to return (default 5, max 10)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10
+          },
+          "page": {
+            "default": 1,
+            "description": "Page number for pagination (default 1)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_group_pick",
+      "description": "Find anime or manga for a group to watch together. Finds titles on multiple users' planning lists (or highly rated by all). Use when friends want to pick something everyone will enjoy.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "users": {
+            "minItems": 2,
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 20,
+              "pattern": "^[a-zA-Z0-9_-]+$"
+            },
+            "description": "AniList usernames (2-10) to find group recommendations for"
+          },
+          "type": {
+            "default": "ANIME",
+            "description": "Recommend anime or manga",
+            "type": "string",
+            "enum": [
+              "ANIME",
+              "MANGA"
+            ]
+          },
+          "source": {
+            "default": "PLANNING",
+            "description": "PLANNING = overlap in plan-to-watch lists. COMPLETED = titles everyone loved.",
+            "type": "string",
+            "enum": [
+              "PLANNING",
+              "COMPLETED"
+            ]
+          },
+          "limit": {
+            "default": 10,
+            "description": "Number of recommendations to return (default 10, max 15)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 15
+          }
+        },
+        "required": [
+          "users"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_shared_planning",
+      "description": "Find titles on both users' planning lists. Use when two users want to see what they're both planning to watch or read. Shows overlap and unique titles.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "user1": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 20,
+            "pattern": "^[a-zA-Z0-9_-]+$",
+            "description": "First AniList username"
+          },
+          "user2": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 20,
+            "pattern": "^[a-zA-Z0-9_-]+$",
+            "description": "Second AniList username"
+          },
+          "type": {
+            "default": "ANIME",
+            "description": "Compare anime or manga planning lists",
+            "type": "string",
+            "enum": [
+              "ANIME",
+              "MANGA"
+            ]
+          },
+          "limit": {
+            "default": 25,
+            "description": "Max entries to show (default 25, max 50)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          }
+        },
+        "required": [
+          "user1",
+          "user2"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_follow_suggestions",
+      "description": "Find AniList users with similar taste from your following list. Ranks people you follow by taste compatibility to highlight your best matches. Requires ANILIST_TOKEN for following list access.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "description": "AniList username. Falls back to configured default if not provided.",
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 20,
+            "pattern": "^[a-zA-Z0-9_-]+$"
+          },
+          "type": {
+            "default": "ANIME",
+            "description": "Compare anime or manga taste",
+            "type": "string",
+            "enum": [
+              "ANIME",
+              "MANGA"
+            ]
+          },
+          "limit": {
+            "default": 10,
+            "description": "Number of suggestions to return (default 10, max 20)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_react",
+      "description": "Like or reply to an AniList activity. Use when the user wants to interact with an activity from their feed. Requires ANILIST_TOKEN. LIKE toggles the like state.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "activityId": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "description": "ID of the activity to react to (from anilist_feed)"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "LIKE",
+              "REPLY"
+            ],
+            "description": "LIKE = toggle like on the activity. REPLY = post a reply."
+          },
+          "text": {
+            "description": "Reply text (required when action is REPLY)",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "activityId",
+          "action"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_calibration",
+      "description": "Score calibration analysis showing how a user rates compared to community consensus. Use when the user asks if they score too high or low, which genres they're harshest or most generous on, or how their taste compares to mainstream. Returns overall bias, per-genre deviation, and scoring tendency.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "description": "AniList username. Falls back to configured default if not provided.",
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 20,
+            "pattern": "^[a-zA-Z0-9_-]+$"
+          },
+          "type": {
+            "default": "ANIME",
+            "description": "Analyze anime or manga scores",
+            "type": "string",
+            "enum": [
+              "ANIME",
+              "MANGA"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_drops",
+      "description": "Drop pattern analysis from a user's dropped list. Use when the user asks why they drop shows, what patterns their drops follow, or which genres they abandon most. Returns drop rate by genre/tag, median episode at drop, and early drop percentage.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "description": "AniList username. Falls back to configured default if not provided.",
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 20,
+            "pattern": "^[a-zA-Z0-9_-]+$"
+          },
+          "type": {
+            "default": "ANIME",
+            "description": "Analyze anime or manga drops",
+            "type": "string",
+            "enum": [
+              "ANIME",
+              "MANGA"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_evolution",
+      "description": "Genre evolution analysis showing how taste has shifted over time. Use when the user asks how their taste has changed, what they used to watch vs now, or wants a timeline of their preferences. Returns era-by-era genre rankings and shift descriptions.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "description": "AniList username. Falls back to configured default if not provided.",
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 20,
+            "pattern": "^[a-zA-Z0-9_-]+$"
+          },
+          "type": {
+            "default": "ANIME",
+            "description": "Track anime or manga taste evolution",
+            "type": "string",
+            "enum": [
+              "ANIME",
+              "MANGA"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_completionist",
+      "description": "Franchise completion tracker showing progress through series with sequels. Use when the user asks what franchises they've started but not finished, their completion rate, or what's left to watch in a series. Returns franchise groups with completed/total counts.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "description": "AniList username. Falls back to configured default if not provided.",
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 20,
+            "pattern": "^[a-zA-Z0-9_-]+$"
+          },
+          "type": {
+            "default": "ANIME",
+            "description": "Check anime or manga franchise completion",
+            "type": "string",
+            "enum": [
+              "ANIME",
+              "MANGA"
+            ]
+          },
+          "limit": {
+            "default": 10,
+            "description": "Number of franchise groups to show (default 10, max 20)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_seasonal_stats",
+      "description": "Seasonal pick-up and completion rates. Use when the user asks about their seasonal watching habits, how many shows they finish vs drop each season, or their hit rate. Returns per-season breakdown of picked, finished, dropped, and ongoing counts.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "description": "AniList username. Falls back to configured default if not provided.",
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 20,
+            "pattern": "^[a-zA-Z0-9_-]+$"
+          },
+          "season": {
+            "description": "Season to analyze. Defaults to last completed season.",
+            "type": "string",
+            "enum": [
+              "WINTER",
+              "SPRING",
+              "SUMMER",
+              "FALL"
+            ]
+          },
+          "year": {
+            "description": "Year to analyze. Defaults to current year.",
+            "type": "integer",
+            "minimum": 2000,
+            "maximum": 2028
+          },
+          "history": {
+            "default": 4,
+            "description": "Number of past seasons to show (default 4, max 8)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 8
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_pace",
+      "description": "Pace estimate for currently watching or reading titles. Use when the user asks how long it'll take to finish something, their watch rate, or wants a progress summary. Returns estimated completion date based on historical pace.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "description": "AniList username. Falls back to configured default if not provided.",
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 20,
+            "pattern": "^[a-zA-Z0-9_-]+$"
+          },
+          "mediaId": {
+            "description": "AniList media ID to estimate pace for. Omit for all current titles.",
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "type": {
+            "default": "ANIME",
+            "description": "Estimate pace for anime or manga",
+            "type": "string",
+            "enum": [
+              "ANIME",
+              "MANGA"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_mal_import",
+      "description": "Import a MyAnimeList user's completed anime list and generate personalized recommendations based on their taste. No MAL auth needed. Use when the user mentions their MAL account or wants recs from MAL history. Returns a taste profile summary and recommended titles from AniList.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "malUsername": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 20,
+            "description": "MyAnimeList username to import"
+          },
+          "limit": {
+            "default": 5,
+            "description": "Number of recommendations to return (default 5, max 15)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 15
+          }
+        },
+        "required": [
+          "malUsername"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_kitsu_import",
+      "description": "Import a Kitsu user's completed anime list and generate personalized recommendations based on their taste. No auth needed. Use when the user mentions their Kitsu account or wants recs from Kitsu history. Returns a taste profile summary and recommended titles from AniList.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "kitsuUsername": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 30,
+            "description": "Kitsu username to import"
+          },
+          "limit": {
+            "default": 5,
+            "description": "Number of recommendations to return (default 5, max 15)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 15
+          }
+        },
+        "required": [
+          "kitsuUsername"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_taste_card",
+      "description": "Generate a shareable taste profile card image for an AniList user. Returns a PNG image showing top genres, themes, score distribution, and format breakdown. Use when someone wants a visual summary of their anime taste.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "description": "AniList username. Falls back to configured default if not provided.",
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 20,
+            "pattern": "^[a-zA-Z0-9_-]+$"
+          },
+          "type": {
+            "default": "ANIME",
+            "description": "Build card from anime or manga list",
+            "type": "string",
+            "enum": [
+              "ANIME",
+              "MANGA"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_compat_card",
+      "description": "Generate a shareable compatibility card image comparing two AniList users. Returns a PNG image showing compatibility %, genre comparison, shared favorites, and key differences. Use when someone wants a visual comparison of taste.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "user1": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 20,
+            "pattern": "^[a-zA-Z0-9_-]+$",
+            "description": "First AniList username"
+          },
+          "user2": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 20,
+            "pattern": "^[a-zA-Z0-9_-]+$",
+            "description": "Second AniList username"
+          },
+          "type": {
+            "default": "ANIME",
+            "description": "Compare anime or manga taste",
+            "type": "string",
+            "enum": [
+              "ANIME",
+              "MANGA"
+            ]
+          }
+        },
+        "required": [
+          "user1",
+          "user2"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_wrapped_card",
+      "description": "Generate a shareable year-in-review card image for an AniList user. Returns a PNG image showing titles completed, top genres, score distribution, highlights, and consumption stats. Use when someone wants a visual recap of their year.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "description": "AniList username. Falls back to configured default if not provided.",
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 20,
+            "pattern": "^[a-zA-Z0-9_-]+$"
+          },
+          "year": {
+            "description": "Year to review (defaults to current year)",
+            "type": "integer",
+            "minimum": 2000,
+            "maximum": 2100
+          },
+          "type": {
+            "default": "BOTH",
+            "description": "Summarize anime, manga, or both",
+            "type": "string",
+            "enum": [
+              "ANIME",
+              "MANGA",
+              "BOTH"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "anilist_seasonal_recap_card",
+      "description": "Generate a shareable seasonal recap card image for an AniList user. Returns a PNG image showing pick/finish/drop counts, hit rate, status breakdown, and top-scored titles from a season.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "description": "AniList username. Falls back to configured default if not provided.",
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 20,
+            "pattern": "^[a-zA-Z0-9_-]+$"
+          },
+          "season": {
+            "description": "Season to recap (defaults to current or most recent season)",
+            "type": "string",
+            "enum": [
+              "WINTER",
+              "SPRING",
+              "SUMMER",
+              "FALL"
+            ]
+          },
+          "year": {
+            "description": "Year of the season (defaults to current year)",
+            "type": "integer",
+            "minimum": 2000,
+            "maximum": 2100
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    }
+  ],
+  "stderrTail": "npm warn deprecated koa-router@14.0.0: Please use @koa/router instead, starting from v9! \n[ani-mcp] ANILIST_TOKEN looks invalid (too short), ignoring.\nANILIST_USERNAME not set - tools will require a username argument.\nANILIST_TOKEN not set - authenticated features unavailable.\n",
+  "durationMs": 87239,
+  "transport": "stdio"
+}

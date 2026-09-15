@@ -1,0 +1,8 @@
+{
+  "serverId": "hedging8563__tokenlab-mcp-server__hedging8563-tokenlab-mcp-server",
+  "status": "REFUSED_NO_CREDS",
+  "tools": [],
+  "stderrTail": "file:///tmp/npm-cache/_npx/59574723cb220c22/node_modules/@tokenlabai/mcp-server/src/index.js:45\n  throw new Error(`Unknown TOKENLAB_MCP_TOOL_PROFILE '${TOOL_PROFILE}'. Expected ${manifest.profiles.join(\" or \")}.`);\n        ^\n\nError: Unknown TOKENLAB_MCP_TOOL_PROFILE 'placeholder-not-a-real-key'. Expected catalog or core or full.\n    at file:///tmp/npm-cache/_npx/59574723cb220c22/node_modules/@tokenlabai/mcp-server/src/index.js:45:9\n\nNode.js v22.23.2\nnpm notice\nnpm notice New major version of npm available! 10.9.8 -> 12.0.2\nnpm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2\nnpm notice To update run: npm install -g npm@12.0.2\nnpm notice\n",
+  "durationMs": 19142,
+  "transport": "stdio"
+}

@@ -1,0 +1,8 @@
+{
+  "serverId": "decimal-labs__decimalai-mcp__ai-decimal-registry",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "sh: 1: exec: decimalai-mcp: not found\n",
+  "durationMs": 37625,
+  "transport": "stdio"
+}

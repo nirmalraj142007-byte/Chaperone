@@ -1,0 +1,8 @@
+{
+  "serverId": "deinai__skill-service__ai-deinai-creator-skill-v2",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "sh: 1: exec: creator-skill-v2: not found\n",
+  "durationMs": 48055,
+  "transport": "stdio"
+}

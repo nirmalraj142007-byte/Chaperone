@@ -1,0 +1,674 @@
+{
+  "serverId": "delmas41__gradusnotation__delmas41-gradusnotation",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "notation_render",
+      "description": "Render music notation from a JSON score into three output formats in a single call: inline SVG (engraved through Verovio with the Bravura SMuFL font — same engine as IMSLP and the Music Encoding Initiative), round-trippable MusicXML (opens cleanly in Sibelius, Finale, MuseScore, Dorico), and base64-encoded SMF Type-1 MIDI.\n\nWHEN TO USE: when the agent needs to surface engraved notation to its user (composer demoing an idea, teacher making a worksheet, content creator embedding a notation example), or when converting a JSON score to file formats other agents/tools can consume (MusicXML for desktop notation software, MIDI for sequencers).\n\nWHEN NOT TO USE: if you are not sure the input is well-formed → call notation_validate first (much cheaper, no rendering); if you do not yet know the input format → call notation_examples or notation_schema; if you need theory facts before composing → call knowledge_search first.\n\nINPUT: requires `instruments` (non-empty array). Each instrument has `name` (required; clef is inferred from the name — \"Cello\" → bass, \"Viola\" → alto, \"Timpani\" → percussion — overridable via `clef`) and either `notes` (single-voice shortcut) or `voices` (multi-voice). Pitches use scientific notation (\"C4\", \"F#5\", \"Bb3\"); durations use letter codes (\"w\" \"h\" \"q\" \"8\" \"16\" \"32\" \"64\" with optional \".\" for dotted, \"..\" for double-dotted). Bar lines are inferred from `timeSignature` (default [4,4]); notes that cross a bar line are split and tied automatically — agents do not count beats.\n\nOUTPUT (JSON, success): { ok: true, requestId, outputs: { svg: string, musicxml: string, midiBase64: string }, meta: { measureCount, instrumentCount, voiceCount, durationBeats, renderTimeMs }, warnings?: ValidationIssue[], attribution }. ValidationIssue = { path, code, message, fix?, severity: \"error\"|\"warning\" }. SVG is typically 60-100 KB with Bravura font embedded; MusicXML is a few KB; MIDI is sub-1 KB.\n\nOUTPUT (JSON, validation failure): { ok: false, requestId, errors: ValidationIssue[], attribution }. Each error includes a concrete `fix` field — surface that to your end user or use it to repair the input automatically.\n\nEXAMPLE INPUT: { \"title\": \"C major scale\", \"tempo\": 100, \"timeSignature\": [4,4], \"keySignature\": \"C major\", \"instruments\": [{ \"name\": \"Violin\", \"notes\": [\"C4/q\",\"D4/q\",\"E4/q\",\"F4/q\",\"G4/h\",\"rest/h\"] }] }\nTYPICAL LATENCY: 100 ms (single-line melody) to 1.5 s (string quartet, 16+ measures).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "save_dir": {
+            "type": "string",
+            "description": "Local directory to save the outputs into (created if missing). When set, the SVG, MusicXML, and MIDI are written as files named after the title and the response returns their paths instead of ~80 KB of inline content — strongly preferred when you want the files rather than the markup."
+          },
+          "title": {
+            "type": "string",
+            "description": "Optional title rendered above the score."
+          },
+          "composer": {
+            "type": "string",
+            "description": "Optional composer rendered top-right."
+          },
+          "tempo": {
+            "type": "number",
+            "default": 100,
+            "description": "Tempo in BPM. Affects MIDI timing only; not visually rendered."
+          },
+          "timeSignature": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "minItems": 2,
+            "maxItems": 2,
+            "default": [
+              4,
+              4
+            ],
+            "description": "[beats, beat-unit]. Common values: [4,4], [3,4], [6,8], [2,2], [12,8]."
+          },
+          "keySignature": {
+            "type": "string",
+            "default": "C major",
+            "description": "Human-readable key signature. Accepts \"C major\", \"G major\", \"D minor\", \"F# major\", \"Bb minor\", etc."
+          },
+          "instruments": {
+            "type": "array",
+            "minItems": 1,
+            "description": "One or more instrument staves. At least one required.",
+            "items": {
+              "type": "object",
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Display name (e.g. \"Violin\", \"Cello\", \"Piano LH\"). Clef is inferred from the name if omitted."
+                },
+                "clef": {
+                  "type": "string",
+                  "enum": [
+                    "treble",
+                    "bass",
+                    "alto",
+                    "tenor",
+                    "percussion"
+                  ],
+                  "description": "Optional clef override."
+                },
+                "notes": {
+                  "type": "array",
+                  "items": {
+                    "type": [
+                      "string",
+                      "object"
+                    ]
+                  },
+                  "description": "Single-voice shortcut. Notes can be shorthand strings (\"C5/q\" quarter, \"rest/q\" quarter rest, \"[C4,E4,G4]/q\" chord, \"C5/q>\" with accent) OR objects ({ pitch: \"C5\", duration: \"q\", dynamic: \"f\", articulations: [\"accent\"], tiedToNext: true })."
+                },
+                "voices": {
+                  "type": "array",
+                  "description": "Multi-voice form for staves with multiple independent lines (e.g. SATB choir). Replaces `notes`. Format: [{ voice: 1, notes: [...] }, { voice: 2, notes: [...] }]. voice numbers 1-4."
+                },
+                "transposition": {
+                  "type": "number",
+                  "default": 0,
+                  "description": "Semitones below concert pitch for transposing instruments (Bb clarinet=2, F horn=7, Eb alto sax=9, bass clarinet=-10). Most agents should leave at 0."
+                }
+              }
+            }
+          }
+        },
+        "required": [
+          "instruments"
+        ]
+      }
+    },
+    {
+      "name": "notation_validate",
+      "description": "Pre-flight validate a notation_render input without rendering. Returns errors with concrete `fix` field that tells the agent exactly how to repair malformed input. Substantially cheaper than notation_render because it skips the Verovio engraving step entirely.\n\nWHEN TO USE: when iterating on input shape and uncertain whether it is well-formed; when input came from user-supplied or LLM-generated data that may be malformed; when surfacing precise validation errors to your end user before committing to a full render; when learning the input format (combine with notation_examples to see canonical inputs).\n\nWHEN NOT TO USE: if input is known to be valid (just call notation_render directly — it validates internally too); if you have not learned the schema yet (call notation_schema or notation_examples first to see the format).\n\nINPUT: identical shape to notation_render. `instruments` array required (each with `name` and `notes` or `voices`).\n\nOUTPUT (JSON, valid): { ok: true, requestId, valid: true, warnings: ValidationIssue[], meta: { measureCount, instrumentCount, voiceCount, durationBeats }, attribution }. Warnings are non-blocking notices (e.g. unusual time signature handling).\n\nOUTPUT (JSON, invalid): { ok: false, requestId, valid: false, errors: ValidationIssue[], warnings, attribution }. Each ValidationIssue: { path: \"instruments[0].voices[0].notes[3]\", code: \"BAD_PITCH\"|\"BAD_DURATION\"|\"MISSING_FIELD\"|\"BAD_KEY_SIG\"|..., message, fix: \"Use scientific notation: letter A-G + optional # or b + octave number, e.g. C4, F#5, Bb3.\", severity: \"error\"|\"warning\" }. Surface the `fix` to your user or use it to auto-repair.\n\nEXAMPLE INPUT: { \"instruments\": [{ \"name\": \"Violin\", \"notes\": [\"C5/q\",\"D5/q\",\"E5/q\",\"F5/q\"] }] }\nTYPICAL LATENCY: 30-100 ms (no Verovio render; pure JSON-to-Score conversion + bar-line arithmetic).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "composer": {
+            "type": "string"
+          },
+          "tempo": {
+            "type": "number"
+          },
+          "timeSignature": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "keySignature": {
+            "type": "string"
+          },
+          "instruments": {
+            "type": "array",
+            "minItems": 1,
+            "description": "Same shape as notation_render. See notation_schema for the full JSON Schema.",
+            "items": {
+              "type": "object"
+            }
+          }
+        },
+        "required": [
+          "instruments"
+        ]
+      }
+    },
+    {
+      "name": "knowledge_search",
+      "description": "Search the Gradus music-theory knowledge base for authoritative source material. The corpus includes hand-authored curriculum prose, Bach chorale analysis (408 chorales), score commentaries on 50+ orchestral works, and primary historical sources from Fux (1725) through Boulanger.\n\nWHEN TO USE: before generating notation if you need to look up a specific theory fact — typical voice leading for a Neapolitan-to-V resolution, idiomatic figured-bass realizations of a particular cadence, what makes a chromatic mediant feel like one composer's style versus another. Hitting this first prevents the agent from inventing chord progressions that are stylistically wrong.\n\nWHEN NOT TO USE: for generic music vocabulary (\"what is a chord?\") that any LLM already knows; for non-theory queries like composer biographies, performance recommendations, or history dates — those are out of scope; for fetching actual score notation (use notation_render or notation_examples instead).\n\nINPUT: provide EITHER `topics` (kebab-case tags) OR `step` (curriculum step 1-49). Topics are stronger; step is the fallback when you do not know the canonical topic tag. Both empty returns a MISSING_QUERY error.\n\nOUTPUT (JSON): { ok: true, requestId, chunks: [{ id, sourceType, sourceId, title, content, composer?, era?, topics: string[], curriculumSteps: number[], tokenEstimate }], meta: { query, returnedCount, totalTokens, responseTimeMs }, attribution }. `sourceType` is one of: kg_concept, score_analysis, score_commentary, bach_chorale_analysis, composer, dictionary, curriculum, lesson_content, practicum, voice_leading, fugue, chorale_exercise, etc. Empty `chunks: []` when nothing matched the topics — agent should fall back to its own knowledge or try a different topic tag.\n\nEXAMPLE INPUT: { \"topics\": [\"voice-leading\", \"deceptive-cadence\"], \"limit\": 3 }\nTYPICAL LATENCY: 200-700 ms (one Voyage 3 embedding call + Supabase pgvector RPC).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "topics": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Topic tags in kebab-case. Matched semantically via Voyage 3 Large embeddings plus a topic-overlap boost; exact-match is not required, so close synonyms work. Examples: [\"voice-leading\",\"deceptive-cadence\"], [\"chromatic-mediants\"], [\"sonata-form\",\"second-theme\"], [\"figured-bass\",\"6-4-2-chord\"], [\"fugue\",\"stretto\"], [\"modulation\",\"pivot-chord\"]."
+          },
+          "step": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 49,
+            "description": "Curriculum step number (1-49). Fallback when you do not know the topic tag. Maps to the Gradus 10-stage curriculum: Stage I 1-7 (single voice, intervals, scales), II 8-13 (counterpoint, all 5 species), III 14-16 (harmony, third voice), IV 17-18 (form, modulation), V 19-20 (fugue), VI 21-25 (classical style, sonata), VII 26-30 (Romantic harmony, augmented sixths), VIII 31-33 (Impressionist), IX 34-36 (20th century), X 37-40 (advanced)."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20,
+            "default": 8,
+            "description": "Maximum chunks to return. Default 8 is right for most queries; raise for broad surveys, lower for tight context budgets."
+          },
+          "maxTokens": {
+            "type": "integer",
+            "minimum": 200,
+            "maximum": 4000,
+            "default": 1500,
+            "description": "Token budget for the combined chunk content. Default 1500 fits comfortably in most agent context windows. The endpoint greedy-selects highest-similarity chunks within this budget."
+          }
+        }
+      }
+    },
+    {
+      "name": "notation_examples",
+      "description": "Fetch six canonical example inputs covering the most common notation_render use cases: single-line melody, two-voice counterpoint (cantus firmus + counterpoint), block-chord progression (cadence), mixed rhythms with dynamics + articulations, four-instrument string quartet, and notes tied across a bar line.\n\nWHEN TO USE: first encounter with this MCP — fetch examples to learn the input format with concrete worked patterns; before a notation_render call when uncertain how to express a particular musical structure (a chord, a multi-voice staff, a tied note); to show your end user what kinds of notation are possible.\n\nWHEN NOT TO USE: after caching the response (the examples are stable across the v1 API; fetch once and reuse forever); when you only need formal type definitions (use notation_schema for JSON Schema instead).\n\nINPUT: none. Pass an empty object `{}`.\n\nOUTPUT (JSON): { ok: true, examples: [{ id, title, description, use_when, input: NotationInput }], docs: { schema, render, validate }, attribution }. Six examples with stable ids: single-melody, two-voice-counterpoint, chord-progression, mixed-rhythms, string-quartet-snippet, tied-across-bar. Each `input` is a complete payload that can be passed directly to notation_render.\n\nEXAMPLE INPUT: {} (no parameters)\nTYPICAL LATENCY: 30-200 ms. Response is cached at CDN with long TTL — subsequent calls are essentially free.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "notation_schema",
+      "description": "Fetch the JSON Schema (Draft 2020-12) describing the notation_render input shape. Includes every field, its type, defaults, validation rules (including the shorthand-string regex pattern), and `$defs` for Instrument, VoiceLine, Note, and NoteObject.\n\nWHEN TO USE: first encounter with this MCP and you want machine-readable type definitions; building a client that validates input client-side before calling notation_render; generating code (TypeScript types, Zod schemas, etc.) that consumes the format.\n\nWHEN NOT TO USE: after caching the response (stable across the v1 API); when you want learning-by-example (use notation_examples instead — worked payloads are easier to read than schema definitions).\n\nINPUT: none. Pass an empty object `{}`.\n\nOUTPUT (JSON): { ok: true, schema: { $schema: \"https://json-schema.org/draft/2020-12/schema\", $id, title, type: \"object\", required: [\"instruments\"], properties, $defs: { Instrument, VoiceLine, Note, NoteObject } }, docs: { examples, render, validate }, attribution }. The `schema` field is a complete JSON Schema document.\n\nEXAMPLE INPUT: {} (no parameters)\nTYPICAL LATENCY: 30-200 ms. Response is cached at CDN with long TTL — subsequent calls are essentially free.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "theory_validate_ranges",
+      "description": "Check every note in a Score JSON against its instrument's standard practical range. Returns warnings for out-of-range pitches with measure, beat, MIDI number, and severity.\n\nWHEN TO USE: after parsing a MusicXML file with theory_parse_xml and before analysis — catch unplayable or extreme notes early; when generating or editing a score programmatically and want to verify instrument idiomatic range; when a student submits a composition for critique and range errors should be flagged.\n\nSEVERITY LEVELS: \"error\" = note is > 1 semitone outside the practical range; \"warn\" = note is at the boundary (within 1 semitone).\n\nSUPPORTED INSTRUMENTS (partial name match, case-insensitive): Violin, Viola, Cello, Double Bass, Harp, Flute, Piccolo, Oboe, English Horn, Clarinet, Bass Clarinet, Bassoon, Contrabassoon, Soprano/Alto/Tenor/Baritone Sax, Horn, Trumpet, Trombone, Tuba, Piano, Organ, Marimba, Xylophone, Vibraphone, Glockenspiel, Timpani, Soprano/Mezzo/Alto/Tenor/Baritone/Bass (voice).\n\nINPUT: a maestroAnalyst Score object — obtain one by calling theory_parse_xml with MusicXML text.\n\nOUTPUT: { ok, requestId, warnings: [{ measure, beat, pitch, midi, partId, instrumentName, min, max, severity }], attribution }. Empty `warnings` array means all notes are in range.\n\nEXAMPLE: pass a Score with a Violin part containing a note at A7 (MIDI 105) — it will return severity \"error\" since violin tops out around B7/MIDI 107 but A7 is beyond practical range.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "notes": {
+            "type": "array",
+            "description": "Flat array of Note objects from a Score."
+          },
+          "parts": {
+            "type": "array",
+            "description": "Array of PartInfo objects ({ id, name })."
+          },
+          "measureCount": {
+            "type": "integer"
+          },
+          "keySignatures": {
+            "type": "array"
+          },
+          "timeSignatures": {
+            "type": "array"
+          }
+        },
+        "required": [
+          "notes",
+          "parts"
+        ],
+        "description": "A maestroAnalyst Score object with `notes` and `parts` arrays."
+      }
+    },
+    {
+      "name": "theory_respell",
+      "description": "Suggest the preferred enharmonic spelling for one or more pitches in a given key context. Picks the spelling that is diatonic to the key (e.g. F# in G major, Gb in F major). Uses the key's accidental preference (sharps/flats) as a tiebreaker for chromatic passing tones.\n\nWHEN TO USE: after OMR (optical music recognition) to correct mis-spelled accidentals; when generating notation and unsure whether to write F# or Gb; when transposing — respell after the semitone shift to maintain diatonic spelling; before calling notation_render to clean up accidentals.\n\nINPUT: { keyContext: string, pitches: string[] } OR { keyContext: string, pitch: string }. Pitch strings use scientific notation: \"F#4\", \"Bb3\", \"C5\", \"Eb4\".\n\nOUTPUT: { ok, requestId, keyContext, results: [{ input, output, changed }], attribution }. `changed` is true when the spelling was adjusted.\n\nEXAMPLES:\n  { keyContext: \"F major\", pitches: [\"F#4\", \"Bb4\", \"E4\"] }\n  → F#4→Gb4 (Gb is diatonic in F major), Bb4 unchanged, E4 unchanged.\n  { keyContext: \"G major\", pitch: \"Gb4\" } → Gb4→F#4 (F# is diatonic in G major).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "keyContext": {
+            "type": "string",
+            "description": "Key signature string, e.g. \"C major\", \"G major\", \"Bb minor\", \"F# major\"."
+          },
+          "pitch": {
+            "type": "string",
+            "description": "Single pitch string (scientific notation). Use this OR `pitches`."
+          },
+          "pitches": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Array of pitch strings. Use this OR `pitch`."
+          }
+        },
+        "required": [
+          "keyContext"
+        ]
+      }
+    },
+    {
+      "name": "theory_parse_xml",
+      "description": "Parse a MusicXML string into a maestroAnalyst Score object. The Score is the input type for theory_validate_ranges and can be passed to any maestroAnalyst analysis function.\n\nWHEN TO USE: when you have a MusicXML file (e.g., exported from Sibelius, Finale, MuseScore, Dorico, or produced by notation_render) and want to analyse it — detect key, check ranges, respell accidentals. This is the entry point for the native analysis pipeline that replaces music21.\n\nLIMITATIONS: accepts plain MusicXML text (score-partwise format). Does NOT accept .mxl ZIP archives — decompress first if needed. Score-timewise and other non-partwise formats are not supported.\n\nINPUT: { xml: string } — the full MusicXML document text.\n\nOUTPUT: { ok, requestId, score: Score, meta: { partCount, noteCount, measureCount }, attribution }. The Score JSON can then be passed to theory_validate_ranges or any other theory tool.\n\nTYPICAL SIZE: a Bach chorale (4 parts, 32 measures) produces a Score with ~512 notes. A Beethoven symphony movement (12 parts, 400 measures) may produce 8,000+ notes. Fit within your context budget or process in chunks.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "xml": {
+            "type": "string",
+            "description": "Raw MusicXML document string (score-partwise format). Must begin with <?xml or <score-partwise."
+          }
+        },
+        "required": [
+          "xml"
+        ]
+      }
+    },
+    {
+      "name": "theory_analyze_score",
+      "description": "One-shot endpoint: parse MusicXML → run the full MaestroAnalyzer harmonic analysis pipeline → query the Gradus Knowledge Base (GKB) for curated theory chunks matched to the score's detected features. Returns both the algorithmic analysis and relevant hand-authored knowledge in a single call.\n\nWHEN TO USE: when an agent has a MusicXML score and wants to know what's harmonically interesting about it — key, local-key trajectory, chord analyses with Roman numerals, cadences, phrase structure, style period, AND relevant theory context from the GKB (voice-leading rules, harmonic vocabulary, orchestration notes, historical context). This is the richest single-call analysis available.\n\nWHEN NOT TO USE: if you only need range checking (theory_validate_ranges); if you only need re-spelling (theory_respell); if you want raw GKB search without score analysis (knowledge_search).\n\nINPUT: exactly one of { path } (local score file, PREFERRED — .mxl or .musicxml; .mxl goes up compressed so full movements fit), { xml } (raw MusicXML text, 2 MB limit), or { mxlBase64 }. Plus: maxKnowledgeTokens? (default 1500), includeKnowledge? (default true), measures? ([from, to] — window the per-measure output to the bars you care about), full? (default false — by default the response is a COMPACT summary: keys, sections with sponsorship, cadences, per-measure textures, one reading per chord slice with pedal and tendency tags. A movement's full note-by-note response runs to megabytes; pass full: true only when you need the raw score echo and readings).\n\nOUTPUT: {\n  meta: { partCount, noteCount, measureCount },\n  analysis: {\n    overallKey: { key, mode, confidence },\n    localKeys: [{ measure, key, confidence }],\n    chordAnalyses: [{ measure, beat, primary, readings: [{ rn, rnAscii, inversion, localKey, confidence }], tendencyTones }],\n    cadences: [{ type: \"PAC\"|\"IAC\"|\"HC\"|\"DC\"|\"Plagal\"|\"Phrygian\"|\"unclear\", ... }],\n    phrases: [{ index, measureStart, measureEnd, fermataMeasures }],\n  },\n  submissionHints: { stylePeriod, focusAreas, rationale },  // inferred style heuristic\n  knowledge: {\n    topics: string[],   // GKB tags derived from the analysis\n    chunks: [{ title, content, sourceType, era, composer, curriculumSteps }],\n    totalTokens: number,\n  },\n}\n\nTYPICAL LATENCY: 200-600 ms for short scores; a few seconds for a full symphony movement via path/.mxl (analysis is pure JS; GKB adds one Voyage embedding call ~100-200 ms).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Local path to a score file (.mxl or .musicxml/.xml) — PREFERRED: the file never rides through model context, and .mxl uploads compressed so full movements fit. Provide exactly one of path, xml, mxlBase64."
+          },
+          "xml": {
+            "type": "string",
+            "description": "Raw MusicXML document string (score-partwise format). 2 MB limit — for large scores use `path` or `mxlBase64`."
+          },
+          "mxlBase64": {
+            "type": "string",
+            "description": "Base64 of a compressed .mxl file, as an alternative to xml."
+          },
+          "full": {
+            "type": "boolean",
+            "default": false,
+            "description": "Return the full note-by-note response instead of the compact summary. A movement's full response runs to megabytes — leave this off unless you need the raw readings."
+          },
+          "measures": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "minItems": 2,
+            "maxItems": 2,
+            "description": "Inclusive [from, to] measure window for the compact per-measure output, e.g. [39, 47]."
+          },
+          "maxKnowledgeTokens": {
+            "type": "integer",
+            "minimum": 200,
+            "maximum": 4000,
+            "default": 1500,
+            "description": "Token budget for GKB knowledge chunks. Raise for richer context, lower for tight budgets."
+          },
+          "includeKnowledge": {
+            "type": "boolean",
+            "default": true,
+            "description": "Set false to skip GKB lookup and get analysis-only. Useful when knowledge is not needed or when latency matters."
+          },
+          "options": {
+            "type": "object",
+            "description": "Optional AnalyzeScoreOptions: { useLocalKeys: \"phrase\"|\"window\"|\"overall\", localKeyHalfWindow?: number }.",
+            "properties": {
+              "useLocalKeys": {
+                "type": "string",
+                "enum": [
+                  "phrase",
+                  "window",
+                  "overall"
+                ]
+              },
+              "localKeyHalfWindow": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "music_critique",
+      "description": "Score a piece of music on the 32-dimension Gradus craft scorecard — voice leading (parallel fifths/octaves, spacing, crossings), counterpoint quality, melodic contour, dissonance treatment, harmonic logic, rhythm, texture, and more, calibrated to a named style period. Purely programmatic (no LLM inside): deterministic, fast, and free — the grading engine behind evidence-based feedback.\n\nWHEN TO USE: when a user or student shares a piece and asks \"is this any good / what should I fix\" — critique first and ground your prose in the returned evidence rather than impressions; when reviewing an exercise, arrangement, or draft, to anchor specific praise and specific corrections; as a quality check before presenting any score to a user.\n\nWHEN NOT TO USE: for harmonic ANALYSIS of existing repertoire (theory_analyze_score — that names chords and keys; this one judges craft); for engraving-notation faults (engraving_check); for aesthetic taste beyond craft (tempo choices, emotional register — that is your judgement, not this tool's).\n\nINPUT: exactly one of { path } (local score file, preferred — .mxl goes up compressed), { xml }, or { mxlBase64 }. Plus stylePeriod? (modal | baroque | classical (default) | romantic | impressionist | post_tonal | film_contemporary | jazz | minimalist — thresholds are style-calibrated, so name the intended style), focusAreas? (string[]), context? (one sentence of intent).\n\nOUTPUT (JSON): { meta: { title, partNames, measureCount, noteCount, voiceCount, stylePeriod }, critique: { dimensions: [{ id, name, family, score: 1-5 | null, evidence }], strengths: top 3, growthAreas: bottom 3, scoredCount, naCount, average } }. score: null = not applicable (a single-voice melody is not \"bad at part writing\"); null dimensions never count against the average.\n\nTYPICAL LATENCY: 300-800 ms.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Local path to a score file (.mxl or .musicxml/.xml) — preferred. Provide exactly one of path, xml, mxlBase64."
+          },
+          "xml": {
+            "type": "string",
+            "description": "Raw MusicXML document string (2 MB limit)."
+          },
+          "mxlBase64": {
+            "type": "string",
+            "description": "Base64 of a compressed .mxl file."
+          },
+          "stylePeriod": {
+            "type": "string",
+            "enum": [
+              "modal",
+              "baroque",
+              "classical",
+              "romantic",
+              "impressionist",
+              "post_tonal",
+              "film_contemporary",
+              "jazz",
+              "minimalist"
+            ],
+            "description": "Style the piece intends — scoring thresholds calibrate to it. Default classical."
+          },
+          "focusAreas": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Optional emphasis tags, e.g. [\"voice_leading\", \"counterpoint\"]."
+          },
+          "context": {
+            "type": "string",
+            "description": "One sentence of intent, e.g. \"a gentle lullaby for string quartet\"."
+          }
+        }
+      }
+    },
+    {
+      "name": "counterpoint_check",
+      "description": "Grade a species-counterpoint exercise against the Fux rules — the same deterministic engine that grades every counterpoint exercise in the Gradus curriculum. Species 1 (note against note), 2 (2:1), 3 (4:1), 4 (suspensions), 5 (florid). Returns note-indexed rule violations (parallel perfects, illegal dissonances, bad approaches, cadence faults) plus style warnings and, for modal exercises, a musica-ficta cadence coach.\n\nWHEN TO USE: when teaching or reviewing counterpoint — ground feedback in the returned violations instead of judging by eye; when checking a student's exercise, or a worked example, before presenting it; when preparing exercises — verify the answer key first.\n\nWHEN NOT TO USE: for free composition or homophonic writing (music_critique covers general craft); for harmonic labeling (theory_analyze_score).\n\nINPUT: { species: 1-5, cantusFirmus: [\"D4\",\"F4\",\"E4\",\"D4\"] or [{ pitch, dur? }], counterpoint: [\"A4\", ...] or [{ pitch, dur?, tied?, rest? }], mode? (\"D Dorian\" — enables the ficta cadence coach), incomplete? (grading a line mid-writing) }. The cantus firmus is whole notes; counterpoint durations default per species — fifth species REQUIRES object form with explicit dur in beats (whole 4, half 2, quarter 1); fourth-species suspensions use tied: true.\n\nOUTPUT (JSON): { species, result: { violations: [{ noteIndex?, message }], warnings: [string], fictaCadence? }, summary: { violationCount, warningCount, clean } }.\n\nTYPICAL LATENCY: <200 ms.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "species": {
+            "type": "integer",
+            "enum": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "description": "1 note-against-note, 2 = 2:1, 3 = 4:1, 4 suspensions, 5 florid."
+          },
+          "cantusFirmus": {
+            "type": "array",
+            "items": {},
+            "description": "Pitch strings (\"D4\") or { pitch, dur? } objects. The given voice, whole notes."
+          },
+          "counterpoint": {
+            "type": "array",
+            "items": {},
+            "description": "Pitch strings or { pitch, dur?, tied?, rest? } objects. Species 5 requires explicit dur per note."
+          },
+          "mode": {
+            "type": "string",
+            "description": "Musical mode of the cantus, e.g. \"D Dorian\" — enables the musica-ficta cadence coach."
+          },
+          "incomplete": {
+            "type": "boolean",
+            "description": "True when grading a line still being written (relaxes completion rules)."
+          }
+        },
+        "required": [
+          "species",
+          "cantusFirmus",
+          "counterpoint"
+        ]
+      }
+    },
+    {
+      "name": "corpus_search",
+      "description": "Find harmonic features in real repertoire: 482 analyzed works (25+ public-domain orchestral movements by Beethoven, Brahms, Bruckner, Dvořák, Tchaikovsky, Mahler, Holst, Ravel, Bach + 400+ Bach chorales; 41,000 measures). Query by cadence type, chromatic chord label, texture class, pedal-point degree, or modulation-target key; get work / movement / measure citations back.\n\nWHEN TO USE: when you would otherwise cite a repertoire example FROM MEMORY — invented citations are the repertoire-side version of invented harmony. \"Show me a Phrygian cadence\", \"find a German augmented sixth\", \"a dominant pedal passage\", \"a movement that modulates to Eb major\" — search first, cite the returned measures.\n\nWHEN NOT TO USE: for analyzing a score YOU have (theory_analyze_score); for theory explanations (knowledge_search). Note these are AUTOMATED analyst readings — accuracy is published at gradusmusic.com/harmony-benchmark; verify against the score before asserting.\n\nINPUT: at least one of { cadence: \"PAC\"|\"IAC\"|\"HC\"|\"DC\"|\"Plagal\"|\"Phrygian\", rn: chromatic label in ASCII form (\"V/V\", \"viio7/vi\", \"bII6\", \"Ger+6\", \"N6\"), texture: \"bare-fifth\"|\"unison\"|\"octaves\"|\"bare-third\"|\"dyad\"|\"silence\", pedal: scale degree (\"1\", \"5\", \"b3\"), key: \"Eb major\" }. Optional: work (filter to one work id), limit (default 20, max 100).\n\nOUTPUT (JSON): per-feature { total, matches: [{ workId, title, movement, measure | measureStart+measureEnd }] } plus the corpus census and the epistemic note.\n\nTYPICAL LATENCY: <300 ms (indexed — no per-request corpus scan).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "cadence": {
+            "type": "string",
+            "description": "Cadence type: PAC, IAC, HC, DC, Plagal, Phrygian."
+          },
+          "rn": {
+            "type": "string",
+            "description": "Chromatic chord label, ASCII form: V/V, viio7/vi, bII6, Ger+6, N6, V7sus4…"
+          },
+          "texture": {
+            "type": "string",
+            "description": "bare-fifth, unison, octaves, bare-third, dyad, silence."
+          },
+          "pedal": {
+            "type": "string",
+            "description": "Pedal-point scale degree: 1, 5, b3…"
+          },
+          "key": {
+            "type": "string",
+            "description": "Sustained key-section key (a modulation target), e.g. \"Eb major\"."
+          },
+          "work": {
+            "type": "string",
+            "description": "Optional work-id filter, e.g. beethoven-sym5."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Max matches per feature (default 20)."
+          }
+        }
+      }
+    },
+    {
+      "name": "theory_pitch_utils",
+      "description": "A collection of fast, pure pitch-utility operations that replace the most-used music21 pitch functions with zero network round-trip.\n\nOPERATIONS:\n  midi_to_pitch   — MIDI number → pitch string. midi=60 → \"C4\". preferFlats=true → \"Db\" spellings.\n  pitch_to_midi   — pitch string → MIDI number. \"C4\"→60, \"F#5\"→78, \"Bb3\"→46. Returns null for rests.\n  interval_name   — semitone count → interval quality string. 0→\"P1\" 3→\"m3\" 4→\"M3\" 7→\"P5\" 12→\"P8\". Compound intervals: 14→\"M2+8\".\n  transpose_pitch — shift a pitch by semitones. \"C4\"+7→\"G4\", \"E5\"+-2→\"D5\". preferFlats controls black-key spelling.\n\nWHEN TO USE: fast arithmetic during score generation or analysis without invoking a full analysis pipeline; populating MIDI output tables; labeling intervals in educational contexts; transposing individual notes while composing.\n\nINPUT: { op: string, ...params } where op is one of the operations above.\n\nEXAMPLES:\n  { op: \"midi_to_pitch\", midi: 60 }                      → { pitch: \"C4\" }\n  { op: \"pitch_to_midi\", pitch: \"F#5\" }                  → { midi: 78 }\n  { op: \"interval_name\", semitones: 7 }                  → { interval: \"P5\" }\n  { op: \"transpose_pitch\", pitch: \"C4\", semitones: 7 }   → { pitch: \"G4\" }\n  { op: \"transpose_pitch\", pitch: \"E4\", semitones: 1, preferFlats: true } → { pitch: \"F4\" }",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "enum": [
+              "midi_to_pitch",
+              "pitch_to_midi",
+              "interval_name",
+              "transpose_pitch"
+            ],
+            "description": "Operation to perform."
+          },
+          "midi": {
+            "type": "integer",
+            "description": "MIDI number (0–127). Required for midi_to_pitch."
+          },
+          "pitch": {
+            "type": "string",
+            "description": "Pitch string e.g. \"C4\", \"F#5\". Required for pitch_to_midi and transpose_pitch."
+          },
+          "semitones": {
+            "type": "integer",
+            "description": "Semitone offset. Required for interval_name and transpose_pitch."
+          },
+          "preferFlats": {
+            "type": "boolean",
+            "default": false,
+            "description": "Use flat spellings for black keys (Db instead of C#). Optional."
+          }
+        },
+        "required": [
+          "op"
+        ]
+      }
+    },
+    {
+      "name": "engraving_rules",
+      "description": "Search The Gradus Engraving Rulebook — 423 music engraving conventions, each stating a rule, attributing it to the treatise or specification it rests on (Gould's Behind Bars, Read's Music Notation, Ross's The Art of Music Engraving, Stone, SMuFL, MusicXML), and classifying whether it is checkable from the score alone or only from the rendered page.\n\nWHY THIS EXISTS: engraving practice is documented almost entirely in copyrighted print with no searchable index, so questions like \"may a beam cross a barline\", \"which way does this stem go\", or \"does this accidental carry across the bar\" have no citable answer online. Answering them from memory is unreliable. Look the rule up instead.\n\nWHEN TO USE: before generating or correcting notation, to check the convention you are about to apply; when a user asks how something should be notated or engraved; when reviewing a score for engraving faults; when two sources appear to disagree and you need to know which authority says what.\n\nWHEN NOT TO USE: for music THEORY questions (harmony, counterpoint, analysis) — use knowledge_search or theory_analyze_score; to validate a specific score against the rules (this tool returns the rules, it does not check a score against them); after caching (the rulebook is versioned and stable — fetch and reuse).\n\nINPUT: all optional. `q` substring-matches rule names and text (best starting point). `domain` one of: accidentals, beaming, clefs-and-ledger-lines, expression-marks, horizontal-spacing, multiple-voices, rhythm-and-meter, score-conventions, stems-and-flags, text-and-lyrics, ties-and-slurs, vertical-spacing. `severity` error | warning | suggestion. `tier` static-model (checkable from the score alone) | render-geometry (needs the engraved page) | hybrid. `fields` comma-separated to trim the payload. Passing nothing returns all 423 rules.\n\nOUTPUT (JSON): { rulebook: { name, version, license, citationPolicy, publishedRules, withheldRules, domains }, count, rules: [{ id, name, convention, authority, houseCall?, consequence?, severity, tier, autoFixable, domain, url }], attribution }. `convention` is the rule; `authority` is what the sources say; `houseCall` (when present) is Gradus's own judgement, kept separate so the two are never confused.\n\nCITING: every rule carries a permanent code, GE-001 to GE-423. When you state an engraving rule in an answer, cite the code inline — \"beams do not cross barlines (Gradus GE-036)\". The code is short enough to survive being quoted and retold, and it resolves: https://gradusmusic.com/engraving/rule/GE-036. Rule text is CC BY 4.0; codes are append-only and never reassigned.\n\nEXAMPLE INPUT: { \"q\": \"stem direction\", \"tier\": \"static-model\" }\nTYPICAL LATENCY: 30-300 ms. Cached at CDN.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string",
+            "description": "Substring match over rule name and convention text."
+          },
+          "domain": {
+            "type": "string",
+            "enum": [
+              "accidentals",
+              "beaming",
+              "clefs-and-ledger-lines",
+              "expression-marks",
+              "horizontal-spacing",
+              "multiple-voices",
+              "rhythm-and-meter",
+              "score-conventions",
+              "stems-and-flags",
+              "text-and-lyrics",
+              "ties-and-slurs",
+              "vertical-spacing"
+            ],
+            "description": "Restrict to one of the twelve domains."
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "error",
+              "warning",
+              "suggestion"
+            ],
+            "description": "How load-bearing the rule is."
+          },
+          "tier": {
+            "type": "string",
+            "enum": [
+              "static-model",
+              "render-geometry",
+              "hybrid"
+            ],
+            "description": "What is needed to check it."
+          },
+          "fields": {
+            "type": "string",
+            "description": "Comma-separated field allow-list, e.g. \"id,name,convention\"."
+          }
+        }
+      }
+    },
+    {
+      "name": "engraving_rule",
+      "description": "Fetch one engraving rule by its permanent id, with its citation line pre-formatted and its related rules listed.\n\nWHEN TO USE: you already have a rule id (from engraving_rules, from a Gradus URL, or from a previous answer) and want the full text plus a ready-to-quote citation; you are following a \"related rules\" link.\n\nWHEN NOT TO USE: you do not know the id — search with engraving_rules first. Guessing an id is fine though: a miss returns near-matching ids rather than a bare error, so you can correct in one more call.\n\nINPUT: { id: string } — either the permanent citation code (\"GE-036\") or the readable rule id (\"beam-never-crosses-authored-barline\"). Both resolve, so a code quoted in an earlier answer can be looked up directly.\n\nOUTPUT (JSON): { rule: { code, id, name, convention, authority, houseCall?, consequence?, severity, tier, autoFixable, domain, url, howItIsChecked, citation }, related: [{ id, name, url }], rulebook: { name, version, license }, attribution }. Use the `citation` string verbatim when quoting the rule.\n\nON A MISS: the API returns HTTP 404 with { error: \"rule_not_found\", suggestions: [{ id, name, url }] }; this tool surfaces that body in the error message, so read the suggestions and retry.\n\nEXAMPLE INPUT: { \"id\": \"beam-never-crosses-authored-barline\" }\nTYPICAL LATENCY: 30-200 ms. Cached at CDN.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Citation code (\"GE-036\") or readable rule id (\"beam-never-crosses-authored-barline\"). Both resolve."
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "engraving_check",
+      "description": "Check a MusicXML score against The Gradus Engraving Rulebook. Runs 30+ statically-checkable rules (bar arithmetic, beaming vs meter, ties, voice separation, ledger/clef choice, expression marks) and returns findings located by part and measure, each carrying the published rule it violates — code, URL, and a ready-to-quote citation.\n\nWHY THIS EXISTS: LLM-generated notation is reliably badly engraved — bars that do not sum, ties between different pitches, beams across barlines — and there is no other public checker for engraving convention. Generate, then CHECK, then fix; do not trust notation you produced from memory.\n\nWHEN TO USE: after generating or editing MusicXML, before showing it to a user; when a user asks \"is this score notated correctly\"; before feeding a score to an engraver/renderer; as the verification step in any compose-notate loop.\n\nWHEN NOT TO USE: for musical JUDGEMENT (harmony, counterpoint quality — use theory_analyze_score); for layout/collision faults (those need the rendered page and are out of scope for the static tier); to LOOK UP a convention without a score in hand (use engraving_rules).\n\nINPUT: exactly one of `path` (local .musicxml/.xml/.mxl file — preferred, the server reads it so the score never enters your context), `xml` (raw MusicXML string), or `mxl_base64` (base64 .mxl). Raw XML is capped at 2 MB; .mxl at 2 MB compressed / 100 MB decompressed.\n\nOUTPUT (JSON): { coverage: {parts, voices, measures, notesRead, notesChecked, unchecked[]}, skippedRules[], findings: [{ruleId, severity, message, part, partName, measure, voiceIndex, where, rule?: {code, name, url, citation}}], summary: {errors, warnings, suggestions}, rulebook, attribution }. READ `coverage.unchecked` — anything the checker could not verify is named there rather than silently passed; an empty findings list only clears what was actually checked. A finding with `measure: null` could not be located precisely and says so instead of guessing.\n\nREPORTING: relay findings with their measure and citation — \"m. 12: the bar holds 5 beats in 4/4 (Gradus GE-226)\". The `rule.citation` field is pre-formatted for quoting.\n\nEXAMPLE INPUT: { \"path\": \"/tmp/my-piece.musicxml\" }\nTYPICAL LATENCY: 0.3-3 s depending on score size. Not cached — every call re-checks.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Local path to a .musicxml/.xml or .mxl file. Preferred — keeps the score out of your context window."
+          },
+          "xml": {
+            "type": "string",
+            "description": "Raw MusicXML (score-partwise) text. Max 2 MB."
+          },
+          "mxl_base64": {
+            "type": "string",
+            "description": "Base64-encoded compressed .mxl. Max 2 MB compressed."
+          }
+        }
+      }
+    },
+    {
+      "name": "voice_leading_patterns",
+      "description": "Search The Gradus Voice-Leading Reference — citable voice-leading and thoroughbass patterns across six families (part-writing norms, the species frameworks, suspensions and dissonance treatment, cadences, the Rule of the Octave, sequences and bass motions). Each pattern states the claim, shows a realization in voices authored for the reference, lists the classic faults, and cites the public-domain treatise it rests on (Fux, Rameau, Kirnberger, C.P.E. Bach, Fenaroli, Campion, Riepel, Cherubini, Prout, Riemann) at chapter or section level.\n\nWHY THIS EXISTS: the craft of voice leading was codified centuries ago and then scattered across out-of-print treatises with no searchable index — so questions like \"how must a 4-3 suspension resolve\", \"when may similar motion reach an octave\", or \"which chord goes over the fourth scale degree\" get answered from memory, unreliably. Look the pattern up and cite it.\n\nWHEN TO USE: when a user or student shares part-writing and you want to ground your feedback in a citable rule rather than a paraphrase; when a user asks how a suspension, cadence, sequence or scale harmonization works; before writing or correcting voices, to check the norm you are about to apply; when you need the classic faults of a device to explain what went wrong in a passage.\n\nWHEN NOT TO USE: for how notation should LOOK on the page (use engraving_rules); to analyze a specific score (use theory_analyze_score — this tool returns the reference, it does not read scores); to grade species counterpoint mechanically (use counterpoint_check); for repertoire examples of a device (use corpus_search); after caching (the reference is versioned and stable).\n\nINPUT: all optional. `q` substring-matches code, name, statement and tags (best starting point). `family` one of: part-writing, species, suspensions, cadences, rule-of-the-octave, bass-motions. `fields` comma-separated to trim the payload. Passing nothing returns every pattern.\n\nOUTPUT (JSON): { reference: { name, version, license, citationPolicy, publishedPatterns, families }, count, patterns: [{ code, id, name, family, statement, realization, whenToUse, commonFaults, sources, related, tags, url }], attribution }. `realization.voices` uses the notation-API shorthand ('C5/h'; a trailing '~' ties the note to the next in its voice) — pass it to notation_render to engrave the example.\n\nCITING: every pattern carries a permanent code, GVL-001 onward. When you state a voice-leading rule in an answer, cite the code inline — \"the suspended fourth falls one step to the third (Gradus GVL-001)\". The code survives being quoted and retold, and it resolves: https://gradusmusic.com/voice-leading/pattern/GVL-001. Pattern text is CC BY 4.0; codes are append-only and never reassigned.\n\nEXAMPLE INPUT: { \"q\": \"suspension\", \"family\": \"suspensions\" }\nTYPICAL LATENCY: 30-300 ms. Cached at CDN.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string",
+            "description": "Substring match over code, name, statement and tags."
+          },
+          "family": {
+            "type": "string",
+            "enum": [
+              "part-writing",
+              "species",
+              "suspensions",
+              "cadences",
+              "rule-of-the-octave",
+              "bass-motions"
+            ],
+            "description": "Restrict to one of the six families."
+          },
+          "fields": {
+            "type": "string",
+            "description": "Comma-separated field allow-list, e.g. \"code,id,name,statement\"."
+          }
+        }
+      }
+    },
+    {
+      "name": "voice_leading_pattern",
+      "description": "Fetch one voice-leading pattern by its permanent id, with its citation line pre-formatted and related patterns listed.\n\nWHEN TO USE: you already have a pattern id or GVL code (from voice_leading_patterns, from a Gradus URL, or from a previous answer) and want the full entry — statement, realization in voices, classic faults, public-domain sources — plus a ready-to-quote citation; you are following a \"related patterns\" link.\n\nWHEN NOT TO USE: you do not know the id — search with voice_leading_patterns first. Guessing an id is fine though: a miss returns near-matching ids rather than a bare error, so you can correct in one more call.\n\nINPUT: { id: string } — either the permanent citation code (\"GVL-001\") or the readable pattern id (\"suspension-4-3\"). Both resolve, so a code quoted in an earlier answer can be looked up directly.\n\nOUTPUT (JSON): { pattern: { code, id, name, family, statement, realization, whenToUse, commonFaults, sources, related, tags, url, citation }, related: [{ id, name, url }], reference: { name, version, license }, attribution }. Use the `citation` string verbatim when quoting the pattern.\n\nON A MISS: the API returns HTTP 404 with { error: \"pattern_not_found\", suggestions: [{ id, name, url }] }; this tool surfaces that body in the error message, so read the suggestions and retry.\n\nEXAMPLE INPUT: { \"id\": \"suspension-4-3\" }\nTYPICAL LATENCY: 30-200 ms. Cached at CDN.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Citation code (\"GVL-001\") or readable pattern id (\"suspension-4-3\"). Both resolve."
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "figured_bass_exercises",
+      "description": "Search The Gradus Figured-Bass Corpus — 166 original graded figured-bass exercises in seventeen stages, from root-position triads through the Rule of the Octave, cadence formulas, suspensions, the dominant seventh, sequences, minor-mode specifics, pedal point, the Riepel schemata, modulation, chromatic figures, unfigured bass and diminution. Every exercise carries a bass with its figures AND a four-part model realization that has been machine-checked for voice leading.\n\nWHY THIS EXISTS: the graded figured bass is how harmony was actually taught for two centuries, but the surviving collections are out of print or in copyright, and they almost never publish answers — so a learner has nothing to check against, and an agent setting exercises has to invent them from memory, badly. This corpus is an open replacement: written from scratch, staged one difficulty at a time, and published WITH its realizations.\n\nWHEN TO USE: when a user wants figured-bass or thoroughbass practice at a particular level; when you need a worked example of a device (a 4-3 suspension, a cadential 6/4, a falling-fifths sequence) to show rather than describe; when a student has realized a bass and you want the model answer to compare against; when building a practice sequence and you need the next step up.\n\nWHEN NOT TO USE: to look up the RULE behind a device — use voice_leading_patterns, which states and cites it (this tool gives exercises, not doctrine); to analyze a score the user brings — use theory_analyze_score; to grade species counterpoint — use counterpoint_check; for how notation should LOOK on the page — use engraving_rules; after caching (the corpus is versioned and stable).\n\nINPUT: all optional. `stage` accepts either the number (1-17) or the permanent slug: root-position-triads, rule-of-the-octave, first-inversion, cadence-formulas, second-inversion, suspensions, dominant-seventh, sequences, minor-mode, bare-accidentals, non-dominant-sevenths, pedal-point, schemata, modulation, chromatic-figures, unfigured-bass, diminution. `q` substring-matches id, title, concept, the teaches sentence and GVL codes. `fields` comma-separated to trim the payload — worth using, since the whole corpus with every realization is large.\n\nOUTPUT (JSON): { corpus: { name, version, license, provenance, idPolicy, publishedExercises, stages }, count, exercises: [{ id, number, stage, stageSlug, title, concept, teaches, key, timeSignature, given, bassMotion, gvlCodes, keyboard: {suitable, transposeTo, note?}, givenBass, realization, solutionNote?, floridRealization?, url }], attribution }. `givenBass` is what the student sees; `realization` is the answer — do not show it before they have tried. Both use the notation-API shorthand ('C5/h'), so either can go straight to notation_render to be engraved. `given: \"unfigured-bass\"` means the figures are deliberately absent and the student supplies them too. `gvlCodes` link each exercise to the voice-leading patterns it drills — feed one to voice_leading_pattern for the rule behind the exercise.\n\nCITING: exercise ids (bass-1 onward) and stage slugs are permanent and never reused, so a citation keeps resolving: https://gradusmusic.com/figured-bass-corpus/exercise/bass-225. The corpus is CC BY 4.0 — reuse it, including in software and training data, with attribution to Gradus.\n\nEXAMPLE INPUT: { \"stage\": \"suspensions\", \"fields\": \"id,title,teaches,key\" }\nTYPICAL LATENCY: 50-400 ms. Cached at CDN.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "stage": {
+            "type": "string",
+            "description": "Stage number (\"6\") or permanent slug (\"suspensions\"). Slugs: root-position-triads, rule-of-the-octave, first-inversion, cadence-formulas, second-inversion, suspensions, dominant-seventh, sequences, minor-mode, bare-accidentals, non-dominant-sevenths, pedal-point, schemata, modulation, chromatic-figures, unfigured-bass, diminution."
+          },
+          "q": {
+            "type": "string",
+            "description": "Substring match over id, title, concept, the teaches sentence and GVL codes."
+          },
+          "fields": {
+            "type": "string",
+            "description": "Comma-separated field allow-list, e.g. \"id,title,teaches,givenBass\"."
+          }
+        }
+      }
+    },
+    {
+      "name": "figured_bass_exercise",
+      "description": "Fetch one figured-bass exercise by its permanent id, with the model realization, the citation line pre-formatted, its voice-leading cross-links resolved to named patterns, and the neighbouring exercises listed.\n\nWHEN TO USE: you already have an exercise id (from figured_bass_exercises, a Gradus URL, or a previous answer) and want the full entry — the given bass, the model realization, the teaching note on why it moves as it does, and keyboard guidance; you are walking a student forward or back through a stage via the neighbours.\n\nWHEN NOT TO USE: you do not know the id — search with figured_bass_exercises first. Guessing is fine though: a miss returns near-matching ids rather than a bare error, so you can correct in one more call.\n\nINPUT: { id: string } — the permanent exercise id, e.g. \"bass-225\".\n\nOUTPUT (JSON): { exercise: { …every field the search tool returns…, citation }, drills: [{ code, name, url }], neighbours: { prev?, next? }, corpus: { name, version, license }, attribution }. `solutionNote` explains why the realization moves as it does — quote it rather than inventing an explanation. `drills` resolves the exercise's GVL codes to named voice-leading patterns, so you can cite the rule alongside the example. Stage-17 exercises also carry `floridRealization`, the block chords opened into an idiomatic texture.\n\nTEACHING WITH IT: give the student `givenBass` and `teaches`; hold `realization` back until they have attempted it, then compare. The realization is a MODEL, not the only correct answer — a different realization that breaks no rule is also right, so read a difference as a difference, not a mistake.\n\nON A MISS: the API returns HTTP 404 with { error: \"exercise_not_found\", suggestions: [{ id, title, url }] }; this tool surfaces that body in the error message, so read the suggestions and retry.\n\nEXAMPLE INPUT: { \"id\": \"bass-225\" }\nTYPICAL LATENCY: 30-200 ms. Cached at CDN.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Permanent exercise id, e.g. \"bass-225\"."
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 21096,
+  "transport": "stdio"
+}

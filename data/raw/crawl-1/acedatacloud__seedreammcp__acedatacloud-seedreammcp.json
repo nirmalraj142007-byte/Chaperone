@@ -1,0 +1,460 @@
+{
+  "serverId": "acedatacloud__seedreammcp__acedatacloud-seedreammcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "seedream_generate_image",
+      "description": "Generate an AI image from a text prompt using ByteDance's Seedream model.\n\n    This tool creates high-quality images from text descriptions using ByteDance's\n    Seedream models (powered by Doubao). Supports multiple model versions with different\n    capabilities and quality levels.\n\n    Use this when:\n    - You want to generate a new image from scratch based on a text description\n    - You need high-quality AI-generated images (photos, illustrations, art)\n    - You want to create images with specific styles, compositions, or themes\n\n    Do NOT use this when:\n    - You want to edit or modify an existing image (use seedream_edit_image instead)\n    - You need to combine multiple images (use seedream_edit_image instead)\n\n    Model selection guide:\n    - v5.0 Lite (doubao-seedream-5-0-lite-260128): Image sets, streaming, and web search\n    - v4.5 (doubao-seedream-4-5-251128): Previous flagship, great quality and detail\n    - v4.0 (doubao-seedream-4-0-250828): Stable and cost-effective, great for most tasks\n    Returns:\n        JSON with task_id, trace_id, success status, and generated image data\n        including image URLs.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "description": "Description of the image to generate. Be descriptive about subject, style, atmosphere, lighting, and composition. Supports both Chinese and English. Example: 'A photorealistic portrait of an astronaut on Mars, golden hour lighting, cinematic composition, ultra-detailed'",
+            "title": "Prompt",
+            "type": "string"
+          },
+          "model": {
+            "default": "doubao-seedream-5-0-lite-260128",
+            "description": "Model to use for generation. 'doubao-seedream-5-0-pro-260628' (v5.0 Pro, flagship single image, highest quality; no sequential generation, streaming, or web search). 'doubao-seedream-5-0-lite-260128' (v5.0 Lite, sequential generation, streaming, web search). 'doubao-seedream-4-5-251128' (v4.5, previous flagship, great quality). 'doubao-seedream-4-0-250828' (v4.0, stable, best value).",
+            "enum": [
+              "doubao-seedream-5-0-pro-260628",
+              "doubao-seedream-5-0-lite-260128",
+              "doubao-seedream-4-5-251128",
+              "doubao-seedream-4-0-250828"
+            ],
+            "title": "Model",
+            "type": "string"
+          },
+          "size": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Model-specific output size: Pro supports 1K/1.5K/2K (and auto for decomposition); Lite supports 2K/3K/4K. Explicit dimensions such as 2048x1024 are also accepted.",
+            "title": "Size"
+          },
+          "sequential_image_generation": {
+            "anyOf": [
+              {
+                "enum": [
+                  "auto",
+                  "disabled"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Generate related images based on input. 'auto' enables it, 'disabled' (default) turns it off. Supported by Seedream 5.0 Lite, 4.5, and 4.0; not Pro.",
+            "title": "Sequential Image Generation"
+          },
+          "sequential_image_generation_options": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Tunable options for grouped image generation. Only honored when `sequential_image_generation=auto`. Supports `max_images` (int, range [1, 15]). Supported by Seedream 5.0 Lite, 4.5, and 4.0; not Pro.",
+            "title": "Sequential Image Generation Options"
+          },
+          "response_format": {
+            "anyOf": [
+              {
+                "enum": [
+                  "url",
+                  "b64_json"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Response format for the generated image. 'url' (default) returns a public image URL. 'b64_json' returns base64-encoded image data.",
+            "title": "Response Format"
+          },
+          "watermark": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Whether to add an AI-generated watermark. Default is true.",
+            "title": "Watermark"
+          },
+          "output_format": {
+            "anyOf": [
+              {
+                "enum": [
+                  "jpeg",
+                  "png"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Output image format. 'jpeg' (default) or 'png'.",
+            "title": "Output Format"
+          },
+          "callback_url": {
+            "default": "",
+            "description": "Optional webhook URL to receive the result asynchronously. The API will POST the result to this URL when complete. Must be publicly accessible.",
+            "title": "Callback Url",
+            "type": "string"
+          },
+          "tools": {
+            "anyOf": [
+              {
+                "items": {
+                  "const": "web_search",
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional list of tool types for the model to use during generation. Currently only 'web_search' is supported. Only supported by doubao-seedream-5-0-lite-260128 (v5.0 Lite).",
+            "title": "Tools"
+          },
+          "optimize_prompt_options": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional prompt optimization configuration. Supports `mode` with values 'standard' (higher quality, slower) or 'fast' (quicker, lower quality). Only supported on doubao-seedream-4.5 (standard mode only) and doubao-seedream-4.0.",
+            "title": "Optimize Prompt Options"
+          }
+        },
+        "required": [
+          "prompt"
+        ],
+        "title": "seedream_generate_imageArguments"
+      }
+    },
+    {
+      "name": "seedream_edit_image",
+      "description": "Edit or modify existing images using ByteDance's Seedream/SeedEdit model.\n\n    This tool modifies existing images based on text instructions. It can change\n    styles, backgrounds, attributes, clothing, and more. Supports single or\n    multiple image inputs.\n\n    Use this when:\n    - You want to modify or transform an existing image\n    - You need to change style, background, colors, or attributes\n    - You want to apply artistic transformations (watercolor, oil painting, etc.)\n    - You need virtual try-on (clothing on person)\n    - You want to place objects in different scenes\n\n    Common use cases:\n    - Style transfer: \"Convert to anime style\", \"Make it look like a pencil sketch\"\n    - Background change: \"Replace background with a sunset beach\"\n    - Attribute edit: \"Change hair color to blonde\", \"Add sunglasses\"\n    - Virtual try-on: Provide person image + clothing image\n    - Scene composition: Place products in realistic environments\n\n    Returns:\n        JSON with task_id, trace_id, success status, and edited image data\n        including image URLs.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "description": "Description of the edit to perform on the image(s). Describe what changes you want. Example: 'Change the background to a beach scene', 'Make the person wear a red dress', 'Convert to watercolor painting style'",
+            "title": "Prompt",
+            "type": "string"
+          },
+          "image": {
+            "description": "List of image URLs or base64-encoded images to edit. Supports HTTP/HTTPS URLs (publicly accessible) or base64 format (data:image/png;base64,...). Each image must be under 10MB.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Image",
+            "type": "array"
+          },
+          "model": {
+            "default": "doubao-seedream-5-0-lite-260128",
+            "description": "Model to use for editing. Seedream 5.0 Pro, 5.0 Lite, 4.5, and 4.0 all support image editing when images are provided.",
+            "enum": [
+              "doubao-seedream-5-0-pro-260628",
+              "doubao-seedream-5-0-lite-260128",
+              "doubao-seedream-4-5-251128",
+              "doubao-seedream-4-0-250828"
+            ],
+            "title": "Model",
+            "type": "string"
+          },
+          "size": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Model-specific output size or explicit dimensions. Pro supports 1K/1.5K/2K; Lite supports 2K/3K/4K.",
+            "title": "Size"
+          },
+          "response_format": {
+            "anyOf": [
+              {
+                "enum": [
+                  "url",
+                  "b64_json"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Response format. 'url' (default) or 'b64_json'.",
+            "title": "Response Format"
+          },
+          "watermark": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Whether to add an AI-generated watermark. Default is true.",
+            "title": "Watermark"
+          },
+          "output_format": {
+            "anyOf": [
+              {
+                "enum": [
+                  "jpeg",
+                  "png"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Output image format. 'jpeg' (default) or 'png'.",
+            "title": "Output Format"
+          },
+          "sequential_image_generation": {
+            "anyOf": [
+              {
+                "enum": [
+                  "auto",
+                  "disabled"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Generate related images based on input. 'auto' enables it.",
+            "title": "Sequential Image Generation"
+          },
+          "sequential_image_generation_options": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Tunable options for grouped image generation.",
+            "title": "Sequential Image Generation Options"
+          },
+          "tools": {
+            "anyOf": [
+              {
+                "items": {
+                  "const": "web_search",
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional list of tool types for the model to use during editing.",
+            "title": "Tools"
+          },
+          "optimize_prompt_options": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Prompt optimization. Pro supports standard/fast; Lite supports standard.",
+            "title": "Optimize Prompt Options"
+          },
+          "background": {
+            "anyOf": [
+              {
+                "enum": [
+                  "transparent",
+                  "opaque"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Seedream 5.0 Pro background mode. transparent requires one PNG input and PNG output.",
+            "title": "Background"
+          },
+          "callback_url": {
+            "default": "",
+            "description": "Optional webhook URL for async result notification.",
+            "title": "Callback Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "prompt",
+          "image"
+        ],
+        "title": "seedream_edit_imageArguments"
+      }
+    },
+    {
+      "name": "seedream_decompose_image",
+      "description": "Decompose one image into a base image and up to 16 editable transparent layers.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "image": {
+            "description": "One PNG or JPEG URL/base64 image to decompose.",
+            "title": "Image",
+            "type": "string"
+          },
+          "prompt": {
+            "default": "",
+            "description": "Optional elements to decompose; omit for automatic decomposition. Supports <bbox> coordinates.",
+            "title": "Prompt",
+            "type": "string"
+          },
+          "size": {
+            "default": "auto",
+            "description": "Output size: auto, 1K, 1.5K, or 2K.",
+            "title": "Size",
+            "type": "string"
+          },
+          "output_format": {
+            "default": "jpeg",
+            "description": "Base image format; layers are always PNG.",
+            "enum": [
+              "jpeg",
+              "png"
+            ],
+            "title": "Output Format",
+            "type": "string"
+          },
+          "watermark": {
+            "default": true,
+            "description": "Whether to add an AI-generated watermark.",
+            "title": "Watermark",
+            "type": "boolean"
+          },
+          "callback_url": {
+            "default": "",
+            "description": "Optional webhook URL for async delivery.",
+            "title": "Callback Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "image"
+        ],
+        "title": "seedream_decompose_imageArguments"
+      }
+    },
+    {
+      "name": "seedream_list_models",
+      "description": "List all available Seedream models with their capabilities and pricing.\n\n    Use this when:\n    - User asks what models are available\n    - You need to help choose the right model for a task\n    - You want to compare model capabilities\n\n    Returns:\n        Formatted table of all Seedream models with descriptions.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "title": "seedream_list_modelsArguments"
+      }
+    },
+    {
+      "name": "seedream_list_sizes",
+      "description": "List all available image sizes and resolution options for Seedream.\n\n    Use this when:\n    - User asks about available image sizes\n    - You need to help choose the right resolution\n    - You want to understand size options\n\n    Returns:\n        Formatted list of all size options with descriptions.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "title": "seedream_list_sizesArguments"
+      }
+    },
+    {
+      "name": "seedream_get_task",
+      "description": "Query the status and result of a Seedream image generation or edit task.\n\n    Use this to check if a generation/edit is complete and retrieve the resulting\n    image URLs and metadata.\n\n    Use this when:\n    - You want to check if an image generation has completed\n    - You need to retrieve image URLs from a previous generation\n    - You want to get the full details of a generated/edited image\n\n    Returns:\n        Task status and image information including URLs, prompts, and metadata.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "task_id": {
+            "description": "The task ID returned from a generation or edit request. This is the 'task_id' field from any seedream_generate_image or seedream_edit_image tool response.",
+            "title": "Task Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id"
+        ],
+        "title": "seedream_get_taskArguments"
+      }
+    },
+    {
+      "name": "seedream_get_tasks_batch",
+      "description": "Query multiple Seedream image tasks at once.\n\n    Efficiently check the status of multiple tasks in a single request.\n    More efficient than calling seedream_get_task multiple times.\n\n    Use this when:\n    - You have multiple pending generations to check\n    - You want to get status of several images at once\n    - You're tracking a batch of generations\n\n    Returns:\n        Status and image information for all queried tasks.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "task_ids": {
+            "description": "List of task IDs to query. Allows querying multiple tasks at once.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Task Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "task_ids"
+        ],
+        "title": "seedream_get_tasks_batchArguments"
+      }
+    }
+  ],
+  "stderrTail": "Downloading pydantic-core (2.0MiB)\nDownloading cryptography (4.5MiB)\n Downloaded pydantic-core\n Downloaded cryptography\nInstalled 31 packages in 12ms\n2026-09-15 06:20:35.844 | INFO     | core.client:__init__:43 - SeedreamClient initialized with base_url: https://api.acedata.cloud\n2026-09-15 06:20:35.844 | DEBUG    | core.client:__init__:44 - API token configured: Yes\n2026-09-15 06:20:35.844 | DEBUG    | core.client:__init__:45 - Request timeout: 1800.0s\n2026-09-15 06:20:36,852 - core.server - INFO - Initialized MCP server: seedream\n2026-09-15 06:20:36,935 - mcp.server.lowlevel.server - INFO - Processing request of type ListToolsRequest\n",
+  "durationMs": 26571,
+  "transport": "stdio"
+}

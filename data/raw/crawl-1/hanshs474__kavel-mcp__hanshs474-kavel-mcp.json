@@ -1,0 +1,81 @@
+{
+  "serverId": "hanshs474__kavel-mcp__hanshs474-kavel-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "list_kavel_tools",
+      "description": "Browse or search Kavel's AI photo & video generators (hairstyle changer, figurine, pet portrait, wedding photo, 90s yearbook, dance video, HD photo converter, and more). Use `query` to match a goal like 'make my dog look royal' or 'turn my selfie into a figurine'. Each result includes the direct URL on www.kavel.ai to generate it.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Optional goal or keyword to match, e.g. 'wedding photo', 'dancing video'."
+          },
+          "hub": {
+            "type": "string",
+            "enum": [
+              "image",
+              "video"
+            ],
+            "description": "Optional filter: only image tools or only video tools."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "build_kavel_prompt",
+      "description": "Get a model-tuned prompt for a specific Kavel tool. Returns Kavel's proven prompt recipe for that effect (tuned for its model), optionally customized with the user's details. Paste the result into the generator on the tool's page.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tool": {
+            "type": "string",
+            "description": "The tool slug from list_kavel_tools, e.g. 'ai-figurine-generator'."
+          },
+          "customization": {
+            "type": "string",
+            "description": "Optional extra details to weave in, e.g. 'make the figurine hold a skateboard' or 'red velvet dress'."
+          }
+        },
+        "required": [
+          "tool"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "open_in_kavel",
+      "description": "Get the direct URL to a Kavel tool's generator page (on www.kavel.ai), pre-set to the right mode with a tuned prompt, so the user can generate the result. Free-tier models let users generate without paying.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tool": {
+            "type": "string",
+            "description": "The tool slug from list_kavel_tools, e.g. 'ai-wedding-photo-generator'."
+          }
+        },
+        "required": [
+          "tool"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "list_kavel_models",
+      "description": "List the AI models Kavel runs (image and video), what each is good at, and whether it has a free tier.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "kavel-mcp running on stdio\n",
+  "durationMs": 19070,
+  "transport": "stdio"
+}

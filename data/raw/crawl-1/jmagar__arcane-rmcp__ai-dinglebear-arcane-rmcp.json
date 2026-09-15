@@ -1,0 +1,8 @@
+{
+  "serverId": "jmagar__arcane-rmcp__ai-dinglebear-arcane-rmcp",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "npm error code ENOVERSIONS\nnpm error No versions available for arcane-rmcp\nnpm error A complete log of this run can be found in: /tmp/npm-cache/_logs/2026-09-15T06_36_37_881Z-debug-0.log\n",
+  "durationMs": 2163,
+  "transport": "stdio"
+}

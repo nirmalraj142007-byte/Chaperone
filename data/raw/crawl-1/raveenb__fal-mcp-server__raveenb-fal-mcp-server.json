@@ -1,0 +1,8 @@
+{
+  "serverId": "raveenb__fal-mcp-server__raveenb-fal-mcp-server",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "Downloading cryptography (4.5MiB)\nDownloading pydantic-core (2.0MiB)\nDownloading pillow (6.6MiB)\n Downloaded pydantic-core\n Downloaded cryptography\n Downloaded pillow\nInstalled 40 packages in 8ms\nAn executable named `fal-mcp-server` is not provided by package `fal-mcp-server`.\nThe following executables are available:\n- fal-mcp\n- fal-mcp-dual\n- fal-mcp-http\n\nUse `uvx --from fal-mcp-server <EXECUTABLE-NAME>` instead.\n\n",
+  "durationMs": 63475,
+  "transport": "stdio"
+}

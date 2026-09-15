@@ -1,0 +1,8 @@
+{
+  "serverId": "phungxuananh__selenium-mcp-server__phungxuananh-selenium-mcp-server",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "   Building undetected-chromedriver==3.5.5\n      Built undetected-chromedriver==3.5.5\nDownloading cryptography (4.5MiB)\nDownloading pygments (1.2MiB)\nDownloading pydantic-core (2.0MiB)\nDownloading selenium (11.2MiB)\n Downloaded pygments\n Downloaded pydantic-core\n Downloaded cryptography\n Downloaded selenium\nInstalled 53 packages in 22ms\nAn executable named `mcp-server-selenium` is not provided by package `mcp-server-selenium`.\nThe following executables are available:\n- selenium-mcp-server\n\nUse `uvx --from mcp-server-selenium selenium-mcp-server` instead.\n\n",
+  "durationMs": 71447,
+  "transport": "stdio"
+}

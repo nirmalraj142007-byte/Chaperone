@@ -1,0 +1,456 @@
+{
+  "serverId": "noteboxd__mcp__noteboxd-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "search",
+      "description": "Search across fragrances, brands, notes, perfumers, and collections in one call. Good for quick lookups. Use search_fragrances for filtered fragrance queries.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 200,
+            "description": "Search query (min 2 chars)"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "fragrance",
+              "note",
+              "brand",
+              "perfumer",
+              "collection"
+            ],
+            "description": "Restrict results to one entity type"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 25,
+            "description": "Max results (default 20)"
+          }
+        },
+        "required": [
+          "q"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "trending",
+      "description": "Trending search queries and the most-worn fragrances right now.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "description": "Max items (default 10)"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "list_charts",
+      "description": "List available chart rankings. Use get_chart with a slug for the full leaderboard.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_chart",
+      "description": "Get a chart leaderboard by slug, for example 'top-rated' or 'top-rated-brand-chanel'.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Chart slug"
+          }
+        },
+        "required": [
+          "slug"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "search_fragrances",
+      "description": "Filter fragrances with cursor pagination. Requires at least one filter (q, brand, note, family, or price_range). Use search for open keyword lookups.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Free text over fragrance and brand names"
+          },
+          "brand": {
+            "type": "string",
+            "description": "Brand slug, for example 'creed'"
+          },
+          "note": {
+            "type": "string",
+            "description": "Note slug, for example 'oud'"
+          },
+          "family": {
+            "type": "string",
+            "description": "Olfactory family, for example 'woody'"
+          },
+          "price_range": {
+            "type": "string",
+            "enum": [
+              "BUDGET",
+              "MIDRANGE",
+              "PREMIUM"
+            ],
+            "description": "BUDGET, MIDRANGE, or PREMIUM"
+          },
+          "cursor": {
+            "type": "string",
+            "description": "Cursor from a previous page's nextCursor"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "description": "Page size (default 20)"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_fragrance",
+      "description": "Get the full profile for one fragrance by id or slug (for example 'tom-ford/oud-wood'): notes, accords, perfumer, and community score.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Fragrance id or slug"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_fragrance_reviews",
+      "description": "Get paginated community reviews for a fragrance (id or slug).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Fragrance id or slug"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Page number (default 1)"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "description": "Page size (default 20)"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_similar_fragrances",
+      "description": "Find fragrances with a similar accord profile to a given fragrance (id or slug).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Fragrance id or slug"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "description": "Max results (default 12)"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_wearing_stats",
+      "description": "Aggregate wearing counts for a fragrance (id or slug) over the last day, 7 days, and 30 days.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Fragrance id or slug"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "compare_fragrances",
+      "description": "Compare two fragrances: shared and distinct notes, accords, families, and scores, plus a written synthesis of their character. Takes fragrance ids.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string",
+            "minLength": 1,
+            "description": "First fragrance id"
+          },
+          "b": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Second fragrance id (must differ from a)"
+          }
+        },
+        "required": [
+          "a",
+          "b"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_review_digest",
+      "description": "Get a short summary of a fragrance's community reviews (id or slug).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Fragrance id or slug"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "batch_get_fragrances",
+      "description": "Fetch up to 50 fragrances by id in a single call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1,
+            "maxItems": 50,
+            "description": "1 to 50 fragrance ids"
+          }
+        },
+        "required": [
+          "ids"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "enrich_fragrance",
+      "description": "Fetch a fragrance with its notes, accords, recent reviews, and similar fragrances in one call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Fragrance id or slug"
+          },
+          "similar_limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20,
+            "description": "Number of similar fragrances"
+          },
+          "review_limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20,
+            "description": "Number of reviews"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_brand",
+      "description": "Get a brand profile and its top fragrances by slug.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Brand slug, for example 'maison-francis-kurkdjian'"
+          }
+        },
+        "required": [
+          "slug"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "list_brand_fragrances",
+      "description": "Get a brand's full catalogue by slug, ordered by community score, with pagination.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Brand slug"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Page number (default 1)"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "description": "Page size (default 20)"
+          }
+        },
+        "required": [
+          "slug"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_perfumer",
+      "description": "Get a perfumer profile and their top creations by slug.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Perfumer slug, for example 'francis-kurkdjian'"
+          }
+        },
+        "required": [
+          "slug"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "list_notes",
+      "description": "Browse fragrance notes, optionally filtered by family and sorted by popularity or name.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "family": {
+            "type": "string",
+            "description": "Filter by family, for example 'woody' or 'floral'"
+          },
+          "sort": {
+            "type": "string",
+            "enum": [
+              "popular",
+              "name"
+            ],
+            "description": "Sort order (default popular)"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "description": "Max results (default 20)"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_note",
+      "description": "Get a note profile and its top fragrances by slug.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Note slug, for example 'oud', 'bergamot', or 'iris'"
+          }
+        },
+        "required": [
+          "slug"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "list_accords",
+      "description": "List all accord families.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "noteboxd-mcp v0.1.4 ready (https://api.noteboxd.com)\n",
+  "durationMs": 23715,
+  "transport": "stdio"
+}

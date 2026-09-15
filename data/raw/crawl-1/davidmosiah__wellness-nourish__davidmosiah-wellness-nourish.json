@@ -1,0 +1,2183 @@
+{
+  "serverId": "davidmosiah__wellness-nourish__davidmosiah-wellness-nourish",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "nourish_agent_manifest",
+      "description": "Return agent-facing install, safety, resource, and first-call guidance.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "client": {
+            "default": "generic",
+            "type": "string",
+            "enum": [
+              "claude",
+              "codex",
+              "cursor",
+              "windsurf",
+              "hermes",
+              "openclaw",
+              "generic"
+            ]
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_capabilities",
+      "description": "Describe supported nutrition workflows, providers, and recommended first tools.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          },
+          "privacy_mode": {
+            "default": "structured",
+            "description": "summary = high-level totals without item detail; structured = default full JSON-friendly fields; raw = same as structured for this local store (parity).",
+            "type": "string",
+            "enum": [
+              "summary",
+              "structured",
+              "raw"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_connection_status",
+      "description": "Report local storage, fixture, USDA, and Open Food Facts readiness without returning secrets.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          },
+          "privacy_mode": {
+            "default": "structured",
+            "description": "summary = high-level totals without item detail; structured = default full JSON-friendly fields; raw = same as structured for this local store (parity).",
+            "type": "string",
+            "enum": [
+              "summary",
+              "structured",
+              "raw"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_quickstart",
+      "description": "Personalized 3-step setup walkthrough for the human user. Adapts to current state (USDA key set? OFF enabled? local-dir writable?). Call this first when the user asks 'how do I use this?'",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          },
+          "privacy_mode": {
+            "default": "structured",
+            "description": "summary = high-level totals without item detail; structured = default full JSON-friendly fields; raw = same as structured for this local store (parity).",
+            "type": "string",
+            "enum": [
+              "summary",
+              "structured",
+              "raw"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_demo",
+      "description": "Returns synthetic example payloads of nourish_search_food, nourish_estimate_meal, and nourish_daily_summary so agents see the contract before any real call. Shapes are verified against the real pipelines by scripts/demo-contract-test.mjs, so they are safe to write a parser against; `inputs` shows the call that produced each sample.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          },
+          "privacy_mode": {
+            "default": "structured",
+            "description": "summary = high-level totals without item detail; structured = default full JSON-friendly fields; raw = same as structured for this local store (parity).",
+            "type": "string",
+            "enum": [
+              "summary",
+              "structured",
+              "raw"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_privacy_audit",
+      "description": "Describe local storage, secret handling, source licensing, and safety boundaries.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          },
+          "privacy_mode": {
+            "default": "structured",
+            "description": "summary = high-level totals without item detail; structured = default full JSON-friendly fields; raw = same as structured for this local store (parity).",
+            "type": "string",
+            "enum": [
+              "summary",
+              "structured",
+              "raw"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_profile_get",
+      "description": "Returns the shared Delx Wellness profile (~/.delx-wellness/profile.json). Read-only. Surfaces calorie/macro targets, dietary preferences, restrictions/allergies, and goals so nourish coach/suggest tools can personalize meals.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          },
+          "privacy_mode": {
+            "default": "structured",
+            "description": "summary = high-level totals without item detail; structured = default full JSON-friendly fields; raw = same as structured for this local store (parity).",
+            "type": "string",
+            "enum": [
+              "summary",
+              "structured",
+              "raw"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_profile_update",
+      "description": "Persist a partial patch to the shared Delx Wellness profile. Requires explicit_user_intent: true. Rejects any field containing oauth/token/secret/password/cookie/refresh/api_key/session — the profile is for non-secret wellness context only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "patch": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {},
+            "description": "Partial WellnessProfileDocument patch. Top-level keys: profile, goals, devices, training, nutrition, preferences, safety, notes."
+          },
+          "explicit_user_intent": {
+            "default": false,
+            "description": "Pass true only after the user explicitly asked to save, log, set, or delete this personal nutrition data.",
+            "type": "boolean"
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          }
+        },
+        "required": [
+          "patch"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_onboarding",
+      "description": "Returns the 11-question onboarding flow for the shared Delx Wellness profile. Read-only. The agent should ask these questions next so wellness-nourish (and the rest of the wellness stack) can personalize responses — non-secret data only, stored at ~/.delx-wellness/profile.json.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "locale": {
+            "default": "en",
+            "type": "string",
+            "enum": [
+              "en",
+              "pt-BR"
+            ]
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_search_food",
+      "description": "Search food providers by query. Use taco or br_local for Brazilian staples, open_food_facts for packaged products, usda for generic foods, or all.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1
+          },
+          "limit": {
+            "default": 10,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 25
+          },
+          "provider": {
+            "default": "usda",
+            "type": "string",
+            "enum": [
+              "usda",
+              "open_food_facts",
+              "br_local",
+              "taco",
+              "all"
+            ]
+          },
+          "privacy_mode": {
+            "default": "structured",
+            "description": "summary = high-level totals without item detail; structured = default full JSON-friendly fields; raw = same as structured for this local store (parity).",
+            "type": "string",
+            "enum": [
+              "summary",
+              "structured",
+              "raw"
+            ]
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_lookup_barcode",
+      "description": "Lookup a packaged food barcode in Open Food Facts.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "barcode": {
+            "type": "string",
+            "description": "Numeric packaged-food barcode with 6 to 18 digits."
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          }
+        },
+        "required": [
+          "barcode"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_decode_barcode_image",
+      "description": "Decode a barcode from an image path, base64 image, or data URI without logging intake.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "image_path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "image_base64": {
+            "type": "string",
+            "minLength": 1
+          },
+          "image_data_uri": {
+            "type": "string",
+            "minLength": 1
+          },
+          "image_mime_type": {
+            "type": "string",
+            "minLength": 1
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_lookup_barcode_image",
+      "description": "Decode a packaged-food barcode image, then lookup the product in Open Food Facts.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "image_path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "image_base64": {
+            "type": "string",
+            "minLength": 1
+          },
+          "image_data_uri": {
+            "type": "string",
+            "minLength": 1
+          },
+          "image_mime_type": {
+            "type": "string",
+            "minLength": 1
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_get_food",
+      "description": "Fetch a USDA food by source_id, an Open Food Facts food by barcode source_id, or a TACO food by source_id.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "usda",
+              "open_food_facts",
+              "taco"
+            ]
+          },
+          "source_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          }
+        },
+        "required": [
+          "source",
+          "source_id"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_estimate_meal",
+      "description": "Estimate nutrition for a short meal text using local deterministic defaults. Accepts text or meal_text; preserve unresolved and confidence.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "description": "Meal text to estimate, for example 'pão de queijo, café preto, banana'.",
+            "type": "string",
+            "minLength": 1
+          },
+          "meal_text": {
+            "description": "Alias for text for agents that naturally call this parameter meal_text.",
+            "type": "string",
+            "minLength": 1
+          },
+          "locale": {
+            "default": "en-US",
+            "type": "string",
+            "minLength": 2
+          },
+          "meal_type": {
+            "default": "other",
+            "type": "string",
+            "enum": [
+              "breakfast",
+              "lunch",
+              "dinner",
+              "snack",
+              "other"
+            ]
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_estimate_meal_photo",
+      "description": "Estimate meal nutrition from an agent-provided photo observation; always requires user confirmation before logging.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "image_description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "detected_items": {
+            "default": [],
+            "maxItems": 25,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "quantity": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "unit": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "grams_estimate": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "confidence": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              },
+              "required": [
+                "name"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "locale": {
+            "default": "en-US",
+            "type": "string",
+            "minLength": 2
+          },
+          "meal_type": {
+            "default": "other",
+            "type": "string",
+            "enum": [
+              "breakfast",
+              "lunch",
+              "dinner",
+              "snack",
+              "other"
+            ]
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          }
+        },
+        "required": [
+          "image_description"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_analyze_food_image",
+      "description": "Route agent-provided food image observations across barcode, nutrition label OCR, or meal-photo estimation without logging.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "image_description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "barcode_observation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "barcode": {
+            "type": "string",
+            "pattern": "^[0-9]{6,18}$"
+          },
+          "detected_barcodes": {
+            "default": [],
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[0-9]{6,18}$"
+            }
+          },
+          "detected_items": {
+            "default": [],
+            "maxItems": 25,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "quantity": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "unit": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "grams_estimate": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "confidence": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              },
+              "required": [
+                "name"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nutrition_label_text": {
+            "type": "string",
+            "minLength": 1
+          },
+          "product_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "locale": {
+            "default": "en-US",
+            "type": "string",
+            "minLength": 2
+          },
+          "meal_type": {
+            "default": "other",
+            "type": "string",
+            "enum": [
+              "breakfast",
+              "lunch",
+              "dinner",
+              "snack",
+              "other"
+            ]
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_log_intake",
+      "description": "Log an intake entry only after explicit user intent. Pass explicit_user_intent: true after the user asks to save/log/register; accepts text or meal_text plus structured food data.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "description": "Meal text to estimate and log after confirmation.",
+            "type": "string",
+            "minLength": 1
+          },
+          "meal_text": {
+            "description": "Alias for text; use when the agent planned a meal_text argument.",
+            "type": "string",
+            "minLength": 1
+          },
+          "food": {},
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "meal_type": {
+            "default": "other",
+            "type": "string",
+            "enum": [
+              "breakfast",
+              "lunch",
+              "dinner",
+              "snack",
+              "other"
+            ]
+          },
+          "food_ref": {
+            "type": "object",
+            "properties": {
+              "source": {
+                "type": "string",
+                "enum": [
+                  "usda",
+                  "open_food_facts",
+                  "manual",
+                  "estimate",
+                  "taco"
+                ]
+              },
+              "source_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "source",
+              "source_id",
+              "name"
+            ],
+            "additionalProperties": false
+          },
+          "custom_food": {
+            "type": "object",
+            "properties": {
+              "source": {
+                "type": "string",
+                "enum": [
+                  "usda",
+                  "open_food_facts",
+                  "manual",
+                  "estimate",
+                  "taco"
+                ]
+              },
+              "source_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "nutrients_per_100g": {
+                "type": "object",
+                "properties": {
+                  "calories_kcal": {
+                    "type": "number"
+                  },
+                  "protein_g": {
+                    "type": "number"
+                  },
+                  "carbohydrates_g": {
+                    "type": "number"
+                  },
+                  "fat_g": {
+                    "type": "number"
+                  },
+                  "fiber_g": {
+                    "type": "number"
+                  },
+                  "sugar_g": {
+                    "type": "number"
+                  },
+                  "saturated_fat_g": {
+                    "type": "number"
+                  },
+                  "sodium_mg": {
+                    "type": "number"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "source",
+              "source_id",
+              "name",
+              "nutrients_per_100g"
+            ],
+            "additionalProperties": {}
+          },
+          "quantity": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "unit": {
+            "type": "string",
+            "minLength": 1
+          },
+          "grams_estimate": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "nutrients": {
+            "type": "object",
+            "properties": {
+              "calories_kcal": {
+                "type": "number"
+              },
+              "protein_g": {
+                "type": "number"
+              },
+              "carbohydrates_g": {
+                "type": "number"
+              },
+              "fat_g": {
+                "type": "number"
+              },
+              "fiber_g": {
+                "type": "number"
+              },
+              "sugar_g": {
+                "type": "number"
+              },
+              "saturated_fat_g": {
+                "type": "number"
+              },
+              "sodium_mg": {
+                "type": "number"
+              }
+            },
+            "additionalProperties": false
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "explicit_user_intent": {
+            "default": false,
+            "description": "Pass true only after the user explicitly asked to save, log, set, or delete this personal nutrition data.",
+            "type": "boolean"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "tags": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "wellness_context_refs": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_daily_coach",
+      "description": "Summarize today, goal gaps, wearable context, and a safe next action for Telegram-style coaching.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "locale": {
+            "default": "en-US",
+            "type": "string",
+            "minLength": 2
+          },
+          "focus": {
+            "type": "string",
+            "enum": [
+              "balanced",
+              "protein",
+              "calories",
+              "hydration",
+              "training"
+            ]
+          },
+          "meal_type": {
+            "type": "string",
+            "enum": [
+              "breakfast",
+              "lunch",
+              "dinner",
+              "snack",
+              "other"
+            ]
+          },
+          "wearable_context": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          },
+          "auto_wearable": {
+            "default": false,
+            "description": "If true and no wearable_context is passed inline, try to read the most recent shared wellness_context from ~/.delx-wellness/ (written by a wearable connector). The coach reports whether a context was actually found; it never fabricates wearable data. Inline wearable_context always wins over the auto-pulled one.",
+            "type": "boolean"
+          },
+          "workout_context": {
+            "type": "string",
+            "minLength": 1
+          },
+          "recent_intake_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_suggest_next_meal",
+      "description": "Suggest a next meal from today's intake, goals, personal memory, and optional wearable context.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "locale": {
+            "default": "en-US",
+            "type": "string",
+            "minLength": 2
+          },
+          "focus": {
+            "type": "string",
+            "enum": [
+              "balanced",
+              "protein",
+              "calories",
+              "hydration",
+              "training"
+            ]
+          },
+          "meal_type": {
+            "type": "string",
+            "enum": [
+              "breakfast",
+              "lunch",
+              "dinner",
+              "snack",
+              "other"
+            ]
+          },
+          "wearable_context": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          },
+          "auto_wearable": {
+            "default": false,
+            "description": "If true and no wearable_context is passed inline, try to read the most recent shared wellness_context from ~/.delx-wellness/ (written by a wearable connector). The coach reports whether a context was actually found; it never fabricates wearable data. Inline wearable_context always wins over the auto-pulled one.",
+            "type": "boolean"
+          },
+          "workout_context": {
+            "type": "string",
+            "minLength": 1
+          },
+          "recent_intake_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_after_log_review",
+      "description": "Review the day after a meal log and explain what changed plus the next correction or action.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "locale": {
+            "default": "en-US",
+            "type": "string",
+            "minLength": 2
+          },
+          "focus": {
+            "type": "string",
+            "enum": [
+              "balanced",
+              "protein",
+              "calories",
+              "hydration",
+              "training"
+            ]
+          },
+          "meal_type": {
+            "type": "string",
+            "enum": [
+              "breakfast",
+              "lunch",
+              "dinner",
+              "snack",
+              "other"
+            ]
+          },
+          "wearable_context": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          },
+          "auto_wearable": {
+            "default": false,
+            "description": "If true and no wearable_context is passed inline, try to read the most recent shared wellness_context from ~/.delx-wellness/ (written by a wearable connector). The coach reports whether a context was actually found; it never fabricates wearable data. Inline wearable_context always wins over the auto-pulled one.",
+            "type": "boolean"
+          },
+          "workout_context": {
+            "type": "string",
+            "minLength": 1
+          },
+          "recent_intake_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_pre_workout_nutrition",
+      "description": "Suggest light pre-workout nutrition using goals, current intake, and optional WHOOP/Garmin context.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "locale": {
+            "default": "en-US",
+            "type": "string",
+            "minLength": 2
+          },
+          "focus": {
+            "type": "string",
+            "enum": [
+              "balanced",
+              "protein",
+              "calories",
+              "hydration",
+              "training"
+            ]
+          },
+          "meal_type": {
+            "type": "string",
+            "enum": [
+              "breakfast",
+              "lunch",
+              "dinner",
+              "snack",
+              "other"
+            ]
+          },
+          "wearable_context": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          },
+          "auto_wearable": {
+            "default": false,
+            "description": "If true and no wearable_context is passed inline, try to read the most recent shared wellness_context from ~/.delx-wellness/ (written by a wearable connector). The coach reports whether a context was actually found; it never fabricates wearable data. Inline wearable_context always wins over the auto-pulled one.",
+            "type": "boolean"
+          },
+          "workout_context": {
+            "type": "string",
+            "minLength": 1
+          },
+          "recent_intake_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_evening_checkin",
+      "description": "Check late-day protein, calories, and hydration gaps with a compact Telegram-friendly next step.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "locale": {
+            "default": "en-US",
+            "type": "string",
+            "minLength": 2
+          },
+          "focus": {
+            "type": "string",
+            "enum": [
+              "balanced",
+              "protein",
+              "calories",
+              "hydration",
+              "training"
+            ]
+          },
+          "meal_type": {
+            "type": "string",
+            "enum": [
+              "breakfast",
+              "lunch",
+              "dinner",
+              "snack",
+              "other"
+            ]
+          },
+          "wearable_context": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          },
+          "auto_wearable": {
+            "default": false,
+            "description": "If true and no wearable_context is passed inline, try to read the most recent shared wellness_context from ~/.delx-wellness/ (written by a wearable connector). The coach reports whether a context was actually found; it never fabricates wearable data. Inline wearable_context always wins over the auto-pulled one.",
+            "type": "boolean"
+          },
+          "workout_context": {
+            "type": "string",
+            "minLength": 1
+          },
+          "recent_intake_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_pull_wearable_context",
+      "description": "Read the most recent shared wellness_context (delx-wellness-context/v1) written by a wearable connector to ~/.delx-wellness/, so coach tools can be recovery/strain-aware without the agent passing it inline. Read-only; never fabricates wearable data. If no connector has persisted a context yet, returns available:false with the expected path. The returned context can be passed straight into nourish_daily_coach / nourish_suggest_next_meal / nourish_pre_workout_nutrition as wearable_context (or set auto_wearable:true on those tools to pull it automatically).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          },
+          "privacy_mode": {
+            "default": "structured",
+            "description": "summary = high-level totals without item detail; structured = default full JSON-friendly fields; raw = same as structured for this local store (parity).",
+            "type": "string",
+            "enum": [
+              "summary",
+              "structured",
+              "raw"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_remember_meal",
+      "description": "Save a personal meal shortcut locally after explicit user intent, for example 'meu cafe normal' -> '2 ovos e banana'.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Personal shortcut, for example 'meu cafe normal'."
+          },
+          "aliases": {
+            "default": [],
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "meal_text": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Canonical meal text that Nourish should estimate when this shortcut is used."
+          },
+          "default_meal_type": {
+            "type": "string",
+            "enum": [
+              "breakfast",
+              "lunch",
+              "dinner",
+              "snack",
+              "other"
+            ]
+          },
+          "notes": {
+            "type": "string"
+          },
+          "tags": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "explicit_user_intent": {
+            "default": false,
+            "description": "Pass true only after the user explicitly asked to save, log, set, or delete this personal nutrition data.",
+            "type": "boolean"
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          }
+        },
+        "required": [
+          "label",
+          "meal_text"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_list_memory",
+      "description": "Read local remembered meals and nutrition preferences for personal Telegram shortcuts.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          },
+          "privacy_mode": {
+            "default": "structured",
+            "description": "summary = high-level totals without item detail; structured = default full JSON-friendly fields; raw = same as structured for this local store (parity).",
+            "type": "string",
+            "enum": [
+              "summary",
+              "structured",
+              "raw"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_forget_memory",
+      "description": "Delete a local remembered meal by id or label after explicit user intent.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id_or_label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "explicit_user_intent": {
+            "default": false,
+            "description": "Pass true only after the user explicitly asked to save, log, set, or delete this personal nutrition data.",
+            "type": "boolean"
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          }
+        },
+        "required": [
+          "id_or_label"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_update_intake",
+      "description": "Update a local intake entry by id. Quantity or grams_estimate changes rescale nutrients to keep summaries consistent. Gated: requires explicit user intent — agents must not call this autonomously.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "meal_type": {
+            "type": "string",
+            "enum": [
+              "breakfast",
+              "lunch",
+              "dinner",
+              "snack",
+              "other"
+            ]
+          },
+          "quantity": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "unit": {
+            "type": "string",
+            "minLength": 1
+          },
+          "grams_estimate": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_list_intake",
+      "description": "List local intake entries with optional filters: date OR since/until range, meal_type, tag, source_trace, min_confidence, limit. All filters AND together. Returns most-recent-first.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "privacy_mode": {
+            "default": "structured",
+            "description": "summary = high-level totals without item detail; structured = default full JSON-friendly fields; raw = same as structured for this local store (parity).",
+            "type": "string",
+            "enum": [
+              "summary",
+              "structured",
+              "raw"
+            ]
+          },
+          "date": {
+            "description": "Single-day filter. Mutually exclusive with since/until.",
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "since": {
+            "description": "Start of date range (inclusive). Use with `until` for multi-day queries.",
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "until": {
+            "description": "End of date range (inclusive).",
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "meal_type": {
+            "description": "Filter to a single meal type.",
+            "type": "string",
+            "enum": [
+              "breakfast",
+              "lunch",
+              "dinner",
+              "snack",
+              "other"
+            ]
+          },
+          "tag": {
+            "description": "Filter to entries that have this tag (case-sensitive).",
+            "type": "string",
+            "minLength": 1
+          },
+          "source_trace": {
+            "description": "Filter by how the entry was created.",
+            "type": "string",
+            "enum": [
+              "exact_food",
+              "barcode",
+              "estimate",
+              "manual",
+              "agent_inference"
+            ]
+          },
+          "min_confidence": {
+            "description": "Only return entries whose confidence is >= this value (e.g. 0.7).",
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "limit": {
+            "description": "Max entries to return (most recent first). Defaults to all matching.",
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 500
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_delete_intake",
+      "description": "Delete a local intake entry by id. Gated: requires explicit user intent — agents must not call this autonomously.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_clear_day",
+      "description": "Delete all local intake entries for a date after explicit user intent.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "explicit_user_intent": {
+            "default": false,
+            "description": "Pass true only after the user explicitly asked to save, log, set, or delete this personal nutrition data.",
+            "type": "boolean"
+          },
+          "include_hydration": {
+            "description": "If true, also clear all hydration entries for the date in addition to intake.",
+            "type": "boolean"
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          }
+        },
+        "required": [
+          "date"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_delete_water",
+      "description": "Delete a single local hydration entry by id after explicit user intent.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Hydration entry id (e.g. water_<uuid>)."
+          },
+          "explicit_user_intent": {
+            "default": false,
+            "description": "Pass true only after the user explicitly asked to save, log, set, or delete this personal nutrition data.",
+            "type": "boolean"
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_clear_hydration_day",
+      "description": "Delete all local hydration entries for a date after explicit user intent. Does not touch intake — pair with nourish_clear_day or use nourish_clear_day { include_hydration: true } for both.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "explicit_user_intent": {
+            "default": false,
+            "description": "Pass true only after the user explicitly asked to save, log, set, or delete this personal nutrition data.",
+            "type": "boolean"
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          }
+        },
+        "required": [
+          "date"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_carbon_summary",
+      "description": "Estimate the carbon footprint (kg CO2-equivalent) of a meal, plus optional lower-carbon swap suggestions. Pass `items: [{name, grams}, ...]` for an arbitrary meal, OR `date: YYYY-MM-DD` to compute carbon over that day's logged intake. Data: Agribalyse 3.1 (Etalab Open License) + Our World in Data / Poore & Nemecek 2018 (CC-BY 4.0). Read-only; never mutates state.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "description": "Compute carbon for all logged intake entries on this date (defaults to today in the active timezone).",
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "items": {
+            "description": "Compute carbon for an explicit list of meal items. Wins over `date` when both are present.",
+            "minItems": 1,
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Food name to look up against the carbon dataset (e.g. 'beef', 'arroz')."
+                },
+                "grams": {
+                  "type": "number",
+                  "exclusiveMinimum": 0,
+                  "description": "Grams of this food."
+                }
+              },
+              "required": [
+                "name",
+                "grams"
+              ]
+            }
+          },
+          "include_swap_suggestions": {
+            "default": true,
+            "description": "If true, return up to 3 lower-carbon swap suggestions for the highest-emission items in the meal.",
+            "type": "boolean"
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_undo_last",
+      "description": "Undo the most recently logged intake or hydration entry. The most common Telegram/agent recovery move ('I logged the wrong thing'). Returns what was undone so the agent can confirm. Requires explicit_user_intent. Pass kind: 'intake' | 'hydration' | 'any' (default 'any') to scope the undo.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "default": "any",
+            "description": "Which most-recent entry to undo: 'intake' = last logged meal, 'hydration' = last logged water, 'any' = whichever was most recent across both stores. Defaults to 'any'.",
+            "type": "string",
+            "enum": [
+              "intake",
+              "hydration",
+              "any"
+            ]
+          },
+          "explicit_user_intent": {
+            "default": false,
+            "description": "Pass true only after the user explicitly asked to save, log, set, or delete this personal nutrition data.",
+            "type": "boolean"
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_log_water",
+      "description": "Log local hydration in milliliters after explicit user intent. Pass explicit_user_intent: true after the user asks to save/log water.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "amount_ml": {
+            "type": "number",
+            "description": "Water amount in milliliters. Must be greater than 0."
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "explicit_user_intent": {
+            "default": false,
+            "description": "Pass true only after the user explicitly asked to save, log, set, or delete this personal nutrition data.",
+            "type": "boolean"
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          }
+        },
+        "required": [
+          "amount_ml"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_hydration_summary",
+      "description": "Summarize local hydration for a date.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "privacy_mode": {
+            "default": "structured",
+            "description": "summary = high-level totals without item detail; structured = default full JSON-friendly fields; raw = same as structured for this local store (parity).",
+            "type": "string",
+            "enum": [
+              "summary",
+              "structured",
+              "raw"
+            ]
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_get_goals",
+      "description": "Read local calorie, macro, and hydration goals.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          },
+          "privacy_mode": {
+            "default": "structured",
+            "description": "summary = high-level totals without item detail; structured = default full JSON-friendly fields; raw = same as structured for this local store (parity).",
+            "type": "string",
+            "enum": [
+              "summary",
+              "structured",
+              "raw"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_set_goals",
+      "description": "Set local calorie, macro, and hydration goals after explicit user intent. Use daily: {...} or flat shortcuts like calories_kcal/protein_g; pass explicit_user_intent: true after confirmation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "daily": {
+            "description": "Nested daily nutrient goals, for example { calories_kcal, protein_g, carbohydrates_g, fat_g }.",
+            "type": "object",
+            "properties": {
+              "calories_kcal": {
+                "type": "number"
+              },
+              "protein_g": {
+                "type": "number"
+              },
+              "carbohydrates_g": {
+                "type": "number"
+              },
+              "fat_g": {
+                "type": "number"
+              },
+              "fiber_g": {
+                "type": "number"
+              },
+              "sugar_g": {
+                "type": "number"
+              },
+              "saturated_fat_g": {
+                "type": "number"
+              },
+              "sodium_mg": {
+                "type": "number"
+              }
+            },
+            "additionalProperties": false
+          },
+          "calories_kcal": {
+            "description": "Flat shortcut for daily.calories_kcal.",
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "protein_g": {
+            "description": "Flat shortcut for daily.protein_g.",
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "carbohydrates_g": {
+            "description": "Flat shortcut for daily.carbohydrates_g.",
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "fat_g": {
+            "description": "Flat shortcut for daily.fat_g.",
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "fiber_g": {
+            "description": "Flat shortcut for daily.fiber_g.",
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "sugar_g": {
+            "description": "Flat shortcut for daily.sugar_g.",
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "hydration_ml": {
+            "description": "Daily hydration target in milliliters.",
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "explicit_user_intent": {
+            "default": false,
+            "description": "Pass true only after the user explicitly asked to save, log, set, or delete this personal nutrition data.",
+            "type": "boolean"
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_goal_progress",
+      "description": "Compute per-day progress vs configured goals (kcal, protein, carbs, fat, water) for today / yesterday / last_7_days / last_30_days. Returns per-day breakdown (consumed, goal, pct, delta_to_goal), period totals, multi-day averages, days_on_target count, and locale-aware next-action recommendations (pt-BR if profile language is Portuguese, otherwise en). Read-only: no logging side effects, no explicit_user_intent required.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "default": "today",
+            "description": "Window to evaluate: today (default), yesterday, last_7_days, or last_30_days. All bucketed in the active timezone.",
+            "type": "string",
+            "enum": [
+              "today",
+              "yesterday",
+              "last_7_days",
+              "last_30_days"
+            ]
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_daily_summary",
+      "description": "Summarize local intake totals, confidence, and source coverage for a date. Pass `compare_to: 'yesterday'` or `compare_to: '7d_avg'` to add a `comparison` block with per-nutrient deltas — useful for trend coaching ('your protein is low again — third day in a row').",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "description": "Date to summarize (defaults to today in active timezone).",
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "compare_to": {
+            "default": "none",
+            "description": "Optional baseline to add a `comparison` block: 'yesterday' = previous day, '7d_avg' = average of the prior 7 days. 'none' (default) skips the comparison.",
+            "type": "string",
+            "enum": [
+              "yesterday",
+              "7d_avg",
+              "none"
+            ]
+          },
+          "privacy_mode": {
+            "default": "structured",
+            "description": "summary = high-level totals without item detail; structured = default full JSON-friendly fields; raw = same as structured for this local store (parity).",
+            "type": "string",
+            "enum": [
+              "summary",
+              "structured",
+              "raw"
+            ]
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_compare_days",
+      "description": "Compute a per-nutrient diff between two days' summaries. Returns deltas (date_b - date_a) for calories, protein, carbs, fat, fiber, sugar, sodium plus what changed by meal type. Useful for 'how was today vs yesterday?' coaching.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "date_a": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "description": "First date (the 'baseline' to compare against)."
+          },
+          "date_b": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "description": "Second date (the 'newer' / comparison date)."
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          }
+        },
+        "required": [
+          "date_a",
+          "date_b"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_bulk_log_intake",
+      "description": "Log multiple intake entries in a single call. Requires explicit user intent (explicit_user_intent: true). Each item is processed through the same text-estimator pipeline as `nourish_log_intake`, but the entire batch shares one intent flag — perfect for Telegram users who say 'log everything I ate today: breakfast was X, lunch was Y, dinner was Z'. Returns per-item success/failure so a partial failure doesn't lose the rest.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "minItems": 1,
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Meal text (e.g. '2 ovos e 1 banana')."
+                },
+                "meal_type": {
+                  "type": "string",
+                  "enum": [
+                    "breakfast",
+                    "lunch",
+                    "dinner",
+                    "snack",
+                    "other"
+                  ]
+                },
+                "notes": {
+                  "type": "string"
+                },
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "text"
+              ]
+            },
+            "description": "Array of meals to log atomically (1-20). Each item gets its own intake entry. The `explicit_user_intent` flag covers the entire batch."
+          },
+          "explicit_user_intent": {
+            "default": false,
+            "description": "Pass true only after the user explicitly asked to save, log, set, or delete this personal nutrition data.",
+            "type": "boolean"
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_weekly_summary",
+      "description": "Summarize seven days of local intake totals from a start date.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "start_date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "privacy_mode": {
+            "default": "structured",
+            "description": "summary = high-level totals without item detail; structured = default full JSON-friendly fields; raw = same as structured for this local store (parity).",
+            "type": "string",
+            "enum": [
+              "summary",
+              "structured",
+              "raw"
+            ]
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_export_data",
+      "description": "Export local intake data as JSONL or CSV without provider secrets or tokens. Defaults to the 500 most-recent rows; pass since/until to scope by date or max_rows to widen/narrow. Omitted rows are reported so you can refine instead of dumping months of history into chat (use the `wellness-nourish export` CLI for a full unbounded dump).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "export_format": {
+            "default": "jsonl",
+            "type": "string",
+            "enum": [
+              "jsonl",
+              "csv"
+            ]
+          },
+          "since": {
+            "description": "Only include entries on or after this date (inclusive, YYYY-MM-DD). Use to keep the response small instead of dumping months of history into chat.",
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "until": {
+            "description": "Only include entries on or before this date (inclusive, YYYY-MM-DD).",
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "max_rows": {
+            "default": 500,
+            "description": "Max data rows to return in the response (most recent first). Defaults to 500. Omitted rows are reported as a count so the agent can refine by date or fall back to the `wellness-nourish export` CLI for a full dump.",
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 5000
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "nourish_chatgpt_dashboard",
+      "description": "Open an interactive ChatGPT/MCP Apps dashboard for today's nutrition summary, safe meal estimation, and next-meal coaching. Read-only; logging still requires explicit user confirmation through existing tools.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "description": "Local date to summarize as YYYY-MM-DD. Defaults to today.",
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "locale": {
+            "default": "en",
+            "type": "string",
+            "enum": [
+              "en",
+              "pt-BR"
+            ]
+          },
+          "focus": {
+            "type": "string",
+            "enum": [
+              "balanced",
+              "protein",
+              "calories",
+              "hydration",
+              "training"
+            ]
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 32532,
+  "transport": "stdio"
+}

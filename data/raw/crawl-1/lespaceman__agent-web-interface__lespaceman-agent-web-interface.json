@@ -1,0 +1,795 @@
+{
+  "serverId": "lespaceman__agent-web-interface__lespaceman-agent-web-interface",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "ping",
+      "description": "Check if the server is responsive",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "list_pages",
+      "description": "List all open browser pages with their page_id, URL, and title.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "close_page",
+      "description": "Close a browser tab. Use list_pages first to get the page_id.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "page_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "page_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "navigate",
+      "description": "Go to a URL. Returns page snapshot with interactive elements.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Absolute URL to navigate to, including the scheme (e.g. https://example.com)."
+          },
+          "page_id": {
+            "type": "string",
+            "description": "Page ID. If omitted, operates on the most recently used page."
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "go_back",
+      "description": "Go back one page in browser history. Returns a fresh page snapshot of the resulting page with its interactive elements.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "page_id": {
+            "type": "string",
+            "description": "Page ID. If omitted, operates on the most recently used page."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "go_forward",
+      "description": "Go forward one page in browser history. Returns a fresh page snapshot of the resulting page with its interactive elements.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "page_id": {
+            "type": "string",
+            "description": "Page ID. If omitted, operates on the most recently used page."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "reload",
+      "description": "Refresh the current page. Use after a change that only takes effect on reload, or to recover from a stale page. Returns a fresh page snapshot with its interactive elements.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "page_id": {
+            "type": "string",
+            "description": "Page ID. If omitted, operates on the most recently used page."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "snapshot",
+      "description": "Re-capture the page state without performing any action. Use when the page may have changed on its own (timers, live updates, animations).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "page_id": {
+            "type": "string",
+            "description": "Page ID. If omitted, operates on the most recently used page."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "find",
+      "description": "Locate elements or read page text without acting on them. Two modes: filter by `kind`/`label`/`region` to find interactive elements (returns each match with a stable `eid` for use with click, type, select, etc.), or set `include_readable` to also get text content tagged with semantic `rd-*` ids. Best for pinpointing a target before an action or pulling specific content; use snapshot for the whole page. Returns matching elements/content as XML.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "page_id": {
+            "type": "string",
+            "description": "The ID of the page to search within."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "button",
+              "link",
+              "radio",
+              "checkbox",
+              "textbox",
+              "combobox",
+              "image",
+              "heading",
+              "canvas",
+              "alert"
+            ],
+            "description": "Filter by element type: 'button' for clickable buttons, 'link' for hyperlinks, 'textbox' for input fields, 'checkbox'/'radio' for toggles, 'combobox' for dropdowns, 'heading' for section titles, 'image' for images, 'canvas' for canvas elements, 'alert' for notifications/toasts/alerts/status messages."
+          },
+          "label": {
+            "type": "string",
+            "description": "Search text to match against element labels - uses case-insensitive substring matching. Example: label \"Sign\" matches \"Sign In\", \"Sign Up\", \"Signature\"."
+          },
+          "region": {
+            "type": "string",
+            "enum": [
+              "main",
+              "nav",
+              "header",
+              "footer"
+            ],
+            "description": "Restrict search to a specific area."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 10,
+            "description": "Number of results to return."
+          },
+          "include_readable": {
+            "type": "boolean",
+            "default": true,
+            "description": "When true (default), text content (paragraphs, headings) gets semantic IDs (rd-*) for reference. Set to true when you need to read page content. Use the `kind` parameter to filter to specific element types."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_element",
+      "description": "Get complete details for one element: exact position, size, state, and attributes. Requires an `eid` obtained from find or snapshot. Use when you need precise geometry or full attribute/state data for a single element. Returns the element details as XML.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "eid": {
+            "type": "string",
+            "description": "Element ID to inspect, obtained from find results or the page snapshot."
+          },
+          "page_id": {
+            "type": "string",
+            "description": "Page ID. If omitted, operates on the most recently used page."
+          }
+        },
+        "required": [
+          "eid"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "screenshot",
+      "description": "Capture a screenshot of the current page or a specific element. Use for visual verification or when layout/rendering matters; prefer snapshot or find for reading structure and text. Returns the image inline, or a file path when the image is large.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "page_id": {
+            "type": "string",
+            "description": "The ID of the page to screenshot."
+          },
+          "eid": {
+            "type": "string",
+            "description": "Element ID to screenshot. Requires a prior snapshot. Cannot be combined with fullPage."
+          },
+          "fullPage": {
+            "type": "boolean",
+            "default": false,
+            "description": "Capture full page height beyond the viewport. Cannot be combined with eid."
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "png",
+              "jpeg"
+            ],
+            "default": "png",
+            "description": "Image format: 'png' (lossless, default) or 'jpeg' (lossy with quality control)."
+          },
+          "quality": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "JPEG quality 0-100. Only applies when format is jpeg."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "scroll_to",
+      "description": "Scroll until a specific element (by `eid`) is visible in the viewport. Use before clicking or reading an element that find/snapshot reports as off-screen. Returns a fresh page snapshot reflecting the new scroll position.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "eid": {
+            "type": "string",
+            "description": "Element ID of the off-screen element from find results or the page snapshot."
+          },
+          "page_id": {
+            "type": "string",
+            "description": "Page ID. If omitted, operates on the most recently used page."
+          }
+        },
+        "required": [
+          "eid"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "scroll",
+      "description": "Scroll the viewport up or down by a pixel amount. Use to reveal more of a long page or trigger lazy-loaded content; use scroll_to when you know the target element. Returns a fresh page snapshot reflecting the new scroll position.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "direction": {
+            "type": "string",
+            "enum": [
+              "up",
+              "down"
+            ],
+            "description": "Direction to scroll the viewport: 'up' or 'down'."
+          },
+          "amount": {
+            "type": "number",
+            "default": 500,
+            "description": "Distance to scroll in pixels (default: 500)."
+          },
+          "page_id": {
+            "type": "string",
+            "description": "Page ID. If omitted, operates on the most recently used page."
+          }
+        },
+        "required": [
+          "direction"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "click",
+      "description": "Click an element (by `eid`) or at viewport coordinates. Prefer `eid` for reliability; use coordinates only for canvas or non-semantic targets. Returns a fresh page snapshot with the changes the click produced.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "page_id": {
+            "type": "string",
+            "description": "The ID of the page containing the element."
+          },
+          "eid": {
+            "type": "string",
+            "description": "Element ID from find results or the page snapshot. Every interactive element has a unique eid."
+          },
+          "x": {
+            "type": "number",
+            "description": "X coordinate for the click. When used with eid, relative to the element top-left corner. When used without eid, absolute viewport coordinate."
+          },
+          "y": {
+            "type": "number",
+            "description": "Y coordinate for the click. When used with eid, relative to the element top-left corner. When used without eid, absolute viewport coordinate."
+          },
+          "modifiers": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "Control",
+                "Shift",
+                "Alt",
+                "Meta"
+              ]
+            },
+            "description": "Modifier keys to hold during the click (e.g., Shift for multi-select, Control for ctrl-click)."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "type",
+      "description": "Type text into an input field or text area (by `eid`). Set `clear` to replace existing content instead of appending. Returns a fresh page snapshot reflecting the updated field and any resulting changes (validation, autocomplete, etc.).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "The text to type into the element."
+          },
+          "eid": {
+            "type": "string",
+            "description": "Element ID of the input field from find results or the page snapshot."
+          },
+          "clear": {
+            "type": "boolean",
+            "default": false,
+            "description": "If true, clear the field before typing (replaces content). If false (default), append to existing text."
+          },
+          "page_id": {
+            "type": "string",
+            "description": "Page ID. If omitted, operates on the most recently used page."
+          }
+        },
+        "required": [
+          "text",
+          "eid"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "press",
+      "description": "Press a single keyboard key with optional modifiers, dispatched to the focused element. Use for submitting with Enter, dismissing with Escape, or keyboard navigation (Tab, arrows); use type to enter text. Returns a fresh page snapshot with any resulting changes.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "enum": [
+              "Enter",
+              "Tab",
+              "Escape",
+              "Backspace",
+              "Delete",
+              "Space",
+              "ArrowUp",
+              "ArrowDown",
+              "ArrowLeft",
+              "ArrowRight",
+              "Home",
+              "End",
+              "PageUp",
+              "PageDown"
+            ],
+            "description": "Key to press on the focused element, e.g. Enter to submit, Escape to dismiss, Tab to move focus, or the arrow keys to navigate."
+          },
+          "modifiers": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "Control",
+                "Shift",
+                "Alt",
+                "Meta"
+              ]
+            },
+            "description": "Modifier keys to hold while the key is pressed (e.g. Control, Shift)."
+          },
+          "page_id": {
+            "type": "string",
+            "description": "Page ID. If omitted, operates on the most recently used page."
+          }
+        },
+        "required": [
+          "key"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "select",
+      "description": "Choose an option from a dropdown menu by value or visible text.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "eid": {
+            "type": "string",
+            "description": "Element ID of the dropdown from find results or the page snapshot."
+          },
+          "value": {
+            "type": "string",
+            "description": "The option to select - can be either the value attribute or the visible text of the option."
+          },
+          "page_id": {
+            "type": "string",
+            "description": "Page ID. If omitted, operates on the most recently used page."
+          }
+        },
+        "required": [
+          "eid",
+          "value"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "hover",
+      "description": "Move mouse over an element without clicking. Triggers hover menus and tooltips.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "eid": {
+            "type": "string",
+            "description": "Element ID from find results or the page snapshot."
+          },
+          "page_id": {
+            "type": "string",
+            "description": "Page ID. If omitted, operates on the most recently used page."
+          }
+        },
+        "required": [
+          "eid"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "drag",
+      "description": "Drag from a source point to a target point (optionally relative to an element via `eid`). Use for reordering lists, moving sliders/handles, or manipulating canvas objects. Returns a fresh page snapshot with any resulting changes.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "source_x": {
+            "type": "number",
+            "description": "X coordinate of the drag start point."
+          },
+          "source_y": {
+            "type": "number",
+            "description": "Y coordinate of the drag start point."
+          },
+          "target_x": {
+            "type": "number",
+            "description": "X coordinate of the drag end point."
+          },
+          "target_y": {
+            "type": "number",
+            "description": "Y coordinate of the drag end point."
+          },
+          "eid": {
+            "type": "string",
+            "description": "Optional element ID. When provided, coordinates are relative to the element top-left corner."
+          },
+          "modifiers": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "Control",
+                "Shift",
+                "Alt",
+                "Meta"
+              ]
+            },
+            "description": "Modifier keys to hold during the drag (e.g., Shift for constrained rotation, Control for copy-drag)."
+          },
+          "page_id": {
+            "type": "string",
+            "description": "The ID of the page."
+          }
+        },
+        "required": [
+          "source_x",
+          "source_y",
+          "target_x",
+          "target_y"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "wheel",
+      "description": "Dispatch a mouse wheel event at specific coordinates. Use for scroll-to-zoom (with Control modifier) or horizontal scrolling.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "x": {
+            "type": "number",
+            "description": "X coordinate where the wheel event is dispatched."
+          },
+          "y": {
+            "type": "number",
+            "description": "Y coordinate where the wheel event is dispatched."
+          },
+          "deltaX": {
+            "type": "number",
+            "default": 0,
+            "description": "Horizontal scroll delta in pixels. Positive scrolls right."
+          },
+          "deltaY": {
+            "type": "number",
+            "description": "Vertical scroll delta in pixels. Positive scrolls down, negative scrolls up. For zoom: negative typically zooms in, positive zooms out."
+          },
+          "eid": {
+            "type": "string",
+            "description": "Optional element ID. When provided, x/y coordinates are relative to the element top-left corner."
+          },
+          "modifiers": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "Control",
+                "Shift",
+                "Alt",
+                "Meta"
+              ]
+            },
+            "description": "Modifier keys to hold during the wheel event (e.g., Control for zoom)."
+          },
+          "page_id": {
+            "type": "string",
+            "description": "The ID of the page."
+          }
+        },
+        "required": [
+          "x",
+          "y",
+          "deltaY"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "inspect_canvas",
+      "description": "Analyze a canvas element: auto-detect the rendering library, query its scene graph, and return an annotated screenshot with coordinate grid overlay.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "eid": {
+            "type": "string",
+            "description": "Element ID of the canvas element from find results."
+          },
+          "grid_spacing": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 500,
+            "default": 50,
+            "description": "Grid line spacing in pixels (default: 50). Smaller values give finer coordinate resolution."
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "png",
+              "jpeg"
+            ],
+            "default": "png",
+            "description": "Image format: 'png' (lossless, default) or 'jpeg' (lossy with quality control)."
+          },
+          "quality": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "JPEG quality 0-100. Only applies when format is jpeg."
+          },
+          "page_id": {
+            "type": "string",
+            "description": "Page ID. If omitted, operates on the most recently used page."
+          }
+        },
+        "required": [
+          "eid"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_form",
+      "description": "Analyze all forms on the page: fields, required inputs, validation rules, and field dependencies. Call this first on any multi-field or multi-step form to plan the fill order, instead of scrolling and screenshotting. Returns each form as XML with per-field eids, state, constraints, and the suggested next field to fill.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "page_id": {
+            "type": "string",
+            "description": "Page ID. If omitted, operates on the most recently used page."
+          },
+          "form_id": {
+            "type": "string",
+            "description": "Restrict the result to a single form by its id (from a prior get_form call). If omitted, all forms on the page are returned."
+          },
+          "include_values": {
+            "type": "boolean",
+            "default": false,
+            "description": "When true, include each field's current value in the response. Defaults to false; sensitive values (passwords, tokens) remain masked even when enabled."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_field",
+      "description": "Get detailed info about one form field (by `eid`): purpose, valid input formats, dependencies, and suggested values. Use to resolve a field get_form flagged as ambiguous or invalid before typing into it. Returns the field context as XML including constraints, options, and dependencies.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "page_id": {
+            "type": "string",
+            "description": "Page ID. If omitted, operates on the most recently used page."
+          },
+          "eid": {
+            "type": "string",
+            "description": "Element ID of the form field to inspect, from get_form or the page snapshot."
+          }
+        },
+        "required": [
+          "eid"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "read_page",
+      "description": "Extract the main readable content from the page, removing navigation, ads, and clutter. Uses Mozilla Readability (Firefox Reader View engine). Best for articles, blog posts, documentation, and content-heavy pages.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "page_id": {
+            "type": "string",
+            "description": "Page ID. If omitted, operates on the most recently used page."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "list_network_calls",
+      "description": "List HTTP requests and responses made by the page. Filter by resource type, method, status code, or URL pattern; supports pagination. Use after navigate or an action to inspect API traffic, confirm a request fired, or find failing calls (e.g. status_min=400). Returns request/response summaries as XML.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "page_id": {
+            "type": "string",
+            "description": "Page ID. If omitted, operates on the most recently used page."
+          },
+          "resource_type": {
+            "type": "string",
+            "description": "Filter by resource type: xhr, fetch, document, script, stylesheet, image, font, media, other."
+          },
+          "method": {
+            "type": "string",
+            "description": "Filter by HTTP method: GET, POST, PUT, DELETE, PATCH, etc."
+          },
+          "status_min": {
+            "type": "integer",
+            "description": "Minimum HTTP status code (inclusive). Use 400 to see only errors."
+          },
+          "status_max": {
+            "type": "integer",
+            "description": "Maximum HTTP status code (inclusive). Use with status_min for ranges like 200-299."
+          },
+          "failed_only": {
+            "type": "boolean",
+            "default": false,
+            "description": "When true, only show requests that failed due to network errors."
+          },
+          "url_pattern": {
+            "type": "string",
+            "description": "Filter URLs containing this substring."
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0,
+            "description": "Pagination offset (default: 0)."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 25,
+            "description": "Number of results to return (default: 25, max: 100)."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "search_network_calls",
+      "description": "Search network calls by URL pattern (substring or regex). Use when you know part of the endpoint URL and want just those calls, optionally with headers and request body; use list_network_calls to browse all traffic. Returns matching requests as XML with optional headers and body details.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "page_id": {
+            "type": "string",
+            "description": "Page ID. If omitted, operates on the most recently used page."
+          },
+          "url_pattern": {
+            "type": "string",
+            "description": "URL pattern to search for. Substring match by default; set url_regex=true for regex."
+          },
+          "url_regex": {
+            "type": "boolean",
+            "default": false,
+            "description": "When true, url_pattern is treated as a regular expression."
+          },
+          "resource_type": {
+            "type": "string",
+            "description": "Filter by resource type."
+          },
+          "method": {
+            "type": "string",
+            "description": "Filter by HTTP method."
+          },
+          "status_min": {
+            "type": "integer",
+            "description": "Minimum HTTP status code (inclusive)."
+          },
+          "status_max": {
+            "type": "integer",
+            "description": "Maximum HTTP status code (inclusive)."
+          },
+          "include_headers": {
+            "type": "boolean",
+            "default": false,
+            "description": "When true, include request and response headers in results."
+          },
+          "include_body": {
+            "type": "boolean",
+            "default": false,
+            "description": "When true, include POST body in results."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 25,
+            "description": "Number of results to return (default: 25, max: 100)."
+          }
+        },
+        "required": [
+          "url_pattern"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "drisp-browser v4.7.0 started\n",
+  "durationMs": 71493,
+  "transport": "stdio"
+}

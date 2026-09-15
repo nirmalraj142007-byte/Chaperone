@@ -1,0 +1,178 @@
+{
+  "serverId": "gregario__astronomy-oracle__gregario-astronomy-oracle",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "lookup_object",
+      "description": "Look up a celestial object by Messier number (e.g. M31), NGC/IC designation (e.g. NGC7000), or common name (e.g. Andromeda Galaxy). Optionally compute visibility from a given location and time.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Object name, Messier number, NGC/IC designation, or common name"
+          },
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90,
+            "description": "Observer latitude in degrees (-90 to 90)"
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180,
+            "description": "Observer longitude in degrees (-180 to 180)"
+          },
+          "date": {
+            "type": "string",
+            "description": "Date/time in ISO 8601 format (defaults to now)"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "search_objects",
+      "description": "Search and filter the celestial object catalog by type, constellation, magnitude, angular size, or catalog membership. Returns a formatted table of matching objects sorted by brightness.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "*",
+              "**",
+              "*Ass",
+              "OCl",
+              "GCl",
+              "Cl+N",
+              "G",
+              "GPair",
+              "GTrpl",
+              "GGroup",
+              "PN",
+              "HII",
+              "DrkN",
+              "EmN",
+              "Neb",
+              "RfN",
+              "SNR",
+              "Nova",
+              "Other"
+            ],
+            "description": "Object type code (e.g. G=Galaxy, PN=Planetary Nebula, OCl=Open Cluster)"
+          },
+          "constellation": {
+            "type": "string",
+            "description": "IAU constellation abbreviation (e.g. Ori, And, Sgr)"
+          },
+          "maxMagnitude": {
+            "type": "number",
+            "description": "Maximum (faintest) visual magnitude to include"
+          },
+          "minMagnitude": {
+            "type": "number",
+            "description": "Minimum (brightest) visual magnitude to include"
+          },
+          "minSize": {
+            "type": "number",
+            "description": "Minimum angular size in arcminutes"
+          },
+          "catalog": {
+            "type": "string",
+            "enum": [
+              "messier",
+              "caldwell",
+              "ngc",
+              "ic"
+            ],
+            "description": "Filter by catalog membership"
+          },
+          "limit": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Maximum number of results (default 20, max 100)"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "plan_session",
+      "description": "Generate an observing session plan for a given location and date. Returns the best celestial objects to observe grouped by time window (evening, midnight, pre-dawn), scored by observability.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90,
+            "description": "Observer latitude in degrees (-90 to 90)"
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180,
+            "description": "Observer longitude in degrees (-180 to 180)"
+          },
+          "date": {
+            "type": "string",
+            "description": "Date in ISO 8601 format (defaults to today)"
+          },
+          "minAltitude": {
+            "type": "number",
+            "description": "Minimum peak altitude in degrees (default 15)"
+          },
+          "maxMagnitude": {
+            "type": "number",
+            "description": "Maximum (faintest) visual magnitude to include"
+          },
+          "types": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "*",
+                "**",
+                "*Ass",
+                "OCl",
+                "GCl",
+                "Cl+N",
+                "G",
+                "GPair",
+                "GTrpl",
+                "GGroup",
+                "PN",
+                "HII",
+                "DrkN",
+                "EmN",
+                "Neb",
+                "RfN",
+                "SNR",
+                "Nova",
+                "Other"
+              ]
+            },
+            "description": "Object type codes to include (e.g. [\"G\", \"PN\", \"OCl\"])"
+          }
+        },
+        "required": [
+          "latitude",
+          "longitude"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "Astronomy Oracle v0.1.1 — celestial object catalog & observing planner MCP server\n",
+  "durationMs": 21280,
+  "transport": "stdio"
+}

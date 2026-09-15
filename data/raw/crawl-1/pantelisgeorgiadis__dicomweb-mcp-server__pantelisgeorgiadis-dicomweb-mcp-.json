@@ -1,0 +1,270 @@
+{
+  "serverId": "pantelisgeorgiadis__dicomweb-mcp-server__pantelisgeorgiadis-dicomweb-mcp-",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "find-studies",
+      "description": "Searches DICOM studies on the configured DICOMweb server. Returns studies sorted by study date, newest first. Does not retrieve series, instances, or image data.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "Space-separated DICOM key=value search filters. Keys are DICOM keyword names or 8-digit hex tags (e.g., PatientName=Doe* StudyDate=20200101-20201231 ModalitiesInStudy=CT 00100020=12345). Special keys: fuzzymatching=true, limit=N, offset=N. Pass an empty string to return all studies."
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "find-series",
+      "description": "Searches DICOM series within a single study. Returns series sorted by series date, newest first. Does not retrieve instances or image data. Requires a Study Instance UID from find-studies.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "studyInstanceUid": {
+            "type": "string",
+            "maxLength": 64,
+            "pattern": "^[0-9]+(\\.[0-9]+)*$",
+            "description": "DICOM Study Instance UID (e.g., 1.2.840.113619.2.55.3). Obtain from find-studies."
+          },
+          "query": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "Space-separated DICOM key=value search filters. Keys are DICOM keyword names or 8-digit hex tags (e.g., Modality=MR SeriesDescription=CHEST). Special keys: limit=N, offset=N. Pass an empty string to return all series."
+          }
+        },
+        "required": [
+          "studyInstanceUid",
+          "query"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "find-instances",
+      "description": "Searches DICOM instances within a single series, sorted by Instance Number ascending. Requires Study and Series Instance UIDs from find-studies and find-series.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "studyInstanceUid": {
+            "type": "string",
+            "maxLength": 64,
+            "pattern": "^[0-9]+(\\.[0-9]+)*$",
+            "description": "DICOM Study Instance UID (e.g., 1.2.840.113619.2.55.3). Obtain from find-studies."
+          },
+          "seriesInstanceUid": {
+            "type": "string",
+            "maxLength": 64,
+            "pattern": "^[0-9]+(\\.[0-9]+)*$",
+            "description": "DICOM Series Instance UID (e.g., 1.2.840.113619.2.55.3.604688123). Obtain from find-series."
+          },
+          "query": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "Space-separated DICOM key=value search filters. Keys are DICOM keyword names or 8-digit hex tags (e.g., SOPClassUID=1.2.840.10008.5.1.4.1.1.2). Special keys: limit=N, offset=N. Pass an empty string to return all instances."
+          }
+        },
+        "required": [
+          "studyInstanceUid",
+          "seriesInstanceUid",
+          "query"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "find-structured-reports",
+      "description": "Finds all Structured Report (SR) DICOM instances in a study by searching for SR-modality series and filtering by SR SOP Class UIDs. Requires a Study Instance UID from find-studies.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "studyInstanceUid": {
+            "type": "string",
+            "maxLength": 64,
+            "pattern": "^[0-9]+(\\.[0-9]+)*$",
+            "description": "DICOM Study Instance UID (e.g., 1.2.840.113619.2.55.3). Obtain from find-studies."
+          }
+        },
+        "required": [
+          "studyInstanceUid"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "find-encapsulated-pdf-reports",
+      "description": "Finds all Encapsulated PDF DICOM instances in a study by searching for DOC-modality series and filtering by EP SOP Class UIDs. Requires a Study Instance UID from find-studies.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "studyInstanceUid": {
+            "type": "string",
+            "maxLength": 64,
+            "pattern": "^[0-9]+(\\.[0-9]+)*$",
+            "description": "DICOM Study Instance UID (e.g., 1.2.840.113619.2.55.3). Obtain from find-studies."
+          }
+        },
+        "required": [
+          "studyInstanceUid"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get-structured-report-text",
+      "description": "Retrieves and converts a Structured Report (SR) instance to human-readable text. Requires Study, Series, and SOP Instance UIDs from find-structured-reports. Does not retrieve image data.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "studyInstanceUid": {
+            "type": "string",
+            "maxLength": 64,
+            "pattern": "^[0-9]+(\\.[0-9]+)*$",
+            "description": "DICOM Study Instance UID (e.g., 1.2.840.113619.2.55.3). Obtain from find-studies or find-structured-reports."
+          },
+          "seriesInstanceUid": {
+            "type": "string",
+            "maxLength": 64,
+            "pattern": "^[0-9]+(\\.[0-9]+)*$",
+            "description": "DICOM Series Instance UID (e.g., 1.2.840.113619.2.55.3.604688123). Obtain from find-series or find-structured-reports."
+          },
+          "sopInstanceUid": {
+            "type": "string",
+            "maxLength": 64,
+            "pattern": "^[0-9]+(\\.[0-9]+)*$",
+            "description": "DICOM SOP Instance UID (e.g., 1.2.840.113619.2.55.3.604688123.123.1591781234.469). Obtain from find-instances or find-structured-reports."
+          }
+        },
+        "required": [
+          "studyInstanceUid",
+          "seriesInstanceUid",
+          "sopInstanceUid"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get-encapsulated-pdf-report-text",
+      "description": "Retrieves and converts an Encapsulated PDF instance to human-readable text. Requires Study, Series, and SOP Instance UIDs from find-encapsulated-pdf-reports. Does not retrieve image data.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "studyInstanceUid": {
+            "type": "string",
+            "maxLength": 64,
+            "pattern": "^[0-9]+(\\.[0-9]+)*$",
+            "description": "DICOM Study Instance UID (e.g., 1.2.840.113619.2.55.3). Obtain from find-studies or find-encapsulated-pdf-reports."
+          },
+          "seriesInstanceUid": {
+            "type": "string",
+            "maxLength": 64,
+            "pattern": "^[0-9]+(\\.[0-9]+)*$",
+            "description": "DICOM Series Instance UID (e.g., 1.2.840.113619.2.55.3.604688123). Obtain from find-series or find-encapsulated-pdf-reports."
+          },
+          "sopInstanceUid": {
+            "type": "string",
+            "maxLength": 64,
+            "pattern": "^[0-9]+(\\.[0-9]+)*$",
+            "description": "DICOM SOP Instance UID (e.g., 1.2.840.113619.2.55.3.604688123.123.1591781234.469). Obtain from find-instances or find-encapsulated-pdf-reports."
+          }
+        },
+        "required": [
+          "studyInstanceUid",
+          "seriesInstanceUid",
+          "sopInstanceUid"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get-instance-metadata",
+      "description": "Retrieves and converts a DICOM instance to human-readable text. Requires Study, Series, and SOP Instance UIDs from find-instances. Does not retrieve image data.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "studyInstanceUid": {
+            "type": "string",
+            "maxLength": 64,
+            "pattern": "^[0-9]+(\\.[0-9]+)*$",
+            "description": "DICOM Study Instance UID (e.g., 1.2.840.113619.2.55.3). Obtain from find-studies."
+          },
+          "seriesInstanceUid": {
+            "type": "string",
+            "maxLength": 64,
+            "pattern": "^[0-9]+(\\.[0-9]+)*$",
+            "description": "DICOM Series Instance UID (e.g., 1.2.840.113619.2.55.3.604688123). Obtain from find-series."
+          },
+          "sopInstanceUid": {
+            "type": "string",
+            "maxLength": 64,
+            "pattern": "^[0-9]+(\\.[0-9]+)*$",
+            "description": "DICOM SOP Instance UID (e.g., 1.2.840.113619.2.55.3.604688123.123.1591781234.469). Obtain from find-instances."
+          }
+        },
+        "required": [
+          "studyInstanceUid",
+          "seriesInstanceUid",
+          "sopInstanceUid"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "render-instance-frame",
+      "description": "Renders a specific frame from a DICOM instance to an image format. Requires Study, Series, and SOP Instance UIDs from find-instances, and a frame number. Returns the rendered image as a base64-encoded string.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "studyInstanceUid": {
+            "type": "string",
+            "maxLength": 64,
+            "pattern": "^[0-9]+(\\.[0-9]+)*$",
+            "description": "DICOM Study Instance UID (e.g., 1.2.840.113619.2.55.3). Obtain from find-studies."
+          },
+          "seriesInstanceUid": {
+            "type": "string",
+            "maxLength": 64,
+            "pattern": "^[0-9]+(\\.[0-9]+)*$",
+            "description": "DICOM Series Instance UID (e.g., 1.2.840.113619.2.55.3.604688123). Obtain from find-series."
+          },
+          "sopInstanceUid": {
+            "type": "string",
+            "maxLength": 64,
+            "pattern": "^[0-9]+(\\.[0-9]+)*$",
+            "description": "DICOM SOP Instance UID (e.g., 1.2.840.113619.2.55.3.604688123.123.1591781234.469). Obtain from find-instances."
+          },
+          "frame": {
+            "default": 1,
+            "description": "1-based index of the frame to render (e.g., 1 for the first frame)",
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "outputFormat": {
+            "default": "image/jpeg",
+            "description": "Desired MIME type for the rendered output (e.g., image/jpeg)",
+            "type": "string",
+            "enum": [
+              "image/jpeg",
+              "image/png"
+            ]
+          }
+        },
+        "required": [
+          "studyInstanceUid",
+          "seriesInstanceUid",
+          "sopInstanceUid"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "Warning: Cannot load \"@napi-rs/canvas\" package: \"Error: Cannot find module '@napi-rs/canvas'\nRequire stack:\n- /home/runner/work/dicomweb-mcp-server/dicomweb-mcp-server/node_modules/pdfjs-dist/legacy/build/pdf.mjs\".\nWarning: Cannot polyfill `ImageData`, rendering may be broken.\nWarning: Cannot polyfill `Path2D`, rendering may be broken.\n",
+  "durationMs": 34416,
+  "transport": "stdio"
+}

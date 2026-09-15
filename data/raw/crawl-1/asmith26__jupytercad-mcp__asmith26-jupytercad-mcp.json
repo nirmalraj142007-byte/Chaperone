@@ -1,0 +1,8 @@
+{
+  "serverId": "asmith26__jupytercad-mcp__asmith26-jupytercad-mcp",
+  "status": "FAILED_TIMEOUT",
+  "tools": [],
+  "stderrTail": "Downloading pydantic-core (2.0MiB)\nDownloading pygments (1.2MiB)\nDownloading cryptography (4.5MiB)\nDownloading debugpy (3.8MiB)\nDownloading jedi (4.7MiB)\nDownloading babel (9.7MiB)\nDownloading jupyterlab (16.4MiB)\nDownloading jupytercad-core (4.0MiB)\nDownloading pycrdt (1.0MiB)\nDownloading jupytercad-app (3.1MiB)\n Downloaded pycrdt\n Downloaded pygments\n",
+  "durationMs": 120045,
+  "transport": "stdio"
+}

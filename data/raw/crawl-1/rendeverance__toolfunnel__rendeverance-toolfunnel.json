@@ -1,0 +1,90 @@
+{
+  "serverId": "rendeverance__toolfunnel__rendeverance-toolfunnel",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "toolfunnel_list_tools",
+      "description": "List the available tools (briefs only). Optionally filter by a free-text string and/or a category. Returns [{ name, summary, category }]. Call toolfunnel_tool_instructions for a specific tool, then run it yourself per its instructions.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "filter": {
+            "type": "string",
+            "description": "Optional free-text filter matched against tool name/summary."
+          },
+          "category": {
+            "type": "string",
+            "description": "Optional category to restrict the listing to."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "toolfunnel_tool_instructions",
+      "description": "Get the full usage instructions / documentation for one tool by name (venv, the reliable invoke command, safety notes). Read this before running the tool yourself.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The exact tool name (as returned by toolfunnel_list_tools)."
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "toolfunnel_run_tool",
+      "description": "Execute one register tool by its name through the gateway PreToolUse gate. Args: { name, args? }. Call toolfunnel_tool_instructions first to learn the tool's arg shape. Returns { ok, output, error? }. Every call is gated (a PreToolUse hook may deny it).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Exact tool name from toolfunnel_list_tools."
+          },
+          "args": {
+            "type": "object",
+            "description": "Structured arguments forwarded to the tool. Optional."
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "toolfunnel_howto",
+      "description": "Get self-extension instructions: how to author a new tool, register an upstream MCP, add a hook, build a shareable package, WRAP one MCP server as the entire surface (transparent passthrough), or configure the gateway with JSON files only. The system documents how to extend itself.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "topic": {
+            "type": "string",
+            "enum": [
+              "create-tool",
+              "add-mcp",
+              "add-hook",
+              "package",
+              "wrap",
+              "configure"
+            ],
+            "description": "Which guide to return: create-tool | add-mcp | add-hook | package | wrap | configure."
+          }
+        },
+        "required": [
+          "topic"
+        ],
+        "additionalProperties": false
+      }
+    }
+  ],
+  "stderrTail": "[toolfunnel] config home: /tmp/npm-cache/_npx/3ce900b184bd504a/node_modules/toolfunnel (default: the package root - use --config-dir <dir> or TOOLFUNNEL_HOME to relocate)\n[toolfunnel] startConfigWatchers: watching /tmp/npm-cache/_npx/3ce900b184bd504a/node_modules/toolfunnel/mcp for expose.json changes\n[toolfunnel] startConfigWatchers: watching /tmp/npm-cache/_npx/3ce900b184bd504a/node_modules/toolfunnel/hooks for hook changes\n[toolfunnel] startConfigWatchers: watching /tmp/npm-cache/_npx/3ce900b184bd504a/node_modules/toolfunnel/tools for register/state changes\n[toolfunnel] startConfigWatchers: fs.watchFile polling fallback armed (Windows-safe)\n[toolfunnel] ready - toolfunnel 0.7.0 (pid 19)\n",
+  "durationMs": 2648,
+  "transport": "stdio"
+}

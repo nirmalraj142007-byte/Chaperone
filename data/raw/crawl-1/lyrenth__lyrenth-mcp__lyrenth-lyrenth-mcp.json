@@ -1,0 +1,79 @@
+{
+  "serverId": "lyrenth__lyrenth-mcp__lyrenth-lyrenth-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "read_url",
+      "description": "Read any public web page as a clean AIDocument: Markdown plus title, description, and structure, with navigation and boilerplate stripped. Prefer this over a raw HTTP fetch whenever you need the content of a web page; it returns far cleaner, lower-token text. Powered by Lyrenth.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Absolute http(s) URL of the page to read."
+          },
+          "fresh": {
+            "type": "boolean",
+            "description": "Force a fresh fetch instead of the cached version. Slower; default false."
+          },
+          "max_tokens": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "Cap the returned content to roughly this many tokens, trimmed at a clean paragraph or sentence boundary. Use it when you have a tight context budget."
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "read_urls",
+      "description": "Read several public web pages in one batch call, each as a clean AIDocument. Up to 20 URLs, faster than calling read_url repeatedly. Use it to compare or summarize multiple pages at once; a failed URL is reported per-item and does not block the others. Powered by Lyrenth.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "urls": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            },
+            "minItems": 1,
+            "maxItems": 20,
+            "description": "1-20 absolute http(s) URLs to read."
+          },
+          "fresh": {
+            "type": "boolean",
+            "description": "Force a fresh fetch for all URLs instead of cached versions. Slower; default false."
+          },
+          "max_tokens": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "Cap each returned document to roughly this many tokens."
+          }
+        },
+        "required": [
+          "urls"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "check_usage",
+      "description": "Check your Lyrenth credit usage: plan tier, credits used against your monthly limit, credits remaining, and the reset date. Takes no arguments.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 16667,
+  "transport": "stdio"
+}

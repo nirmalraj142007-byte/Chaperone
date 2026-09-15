@@ -1,0 +1,8 @@
+{
+  "serverId": "mastadoonprime__sylex-search__mastadoonprime-sylex-search",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "sylex-search: connecting...\nConnection error: getaddrinfo EAI_AGAIN mcp-server-production-38c9.up.railway.app\nnpm notice\nnpm notice New major version of npm available! 10.9.8 -> 12.0.2\nnpm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2\nnpm notice To update run: npm install -g npm@12.0.2\nnpm notice\n",
+  "durationMs": 2577,
+  "transport": "stdio"
+}

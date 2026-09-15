@@ -1,0 +1,8 @@
+{
+  "serverId": "vladimir-human__humanizer-ru__vladimir-human-humanizer-ru",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "Installed 1 package in 1ms\nAn executable named `humanizer-ru` is not provided by package `humanizer-ru`.\nThe following executables are available:\n- humanizer-clean\n- humanizer-detect\n- humanizer-facts\n- humanizer-markers\n- humanizer-mcp\n- humanizer-polish\n- humanizer-report\n- humanizer-scan\n\nUse `uvx --from humanizer-ru <EXECUTABLE-NAME>` instead.\n\n",
+  "durationMs": 3261,
+  "transport": "stdio"
+}

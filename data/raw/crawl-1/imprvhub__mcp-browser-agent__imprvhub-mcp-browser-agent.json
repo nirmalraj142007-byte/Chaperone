@@ -1,0 +1,8 @@
+{
+  "serverId": "imprvhub__mcp-browser-agent__imprvhub-mcp-browser-agent",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "Usage: mcp-browser-agent [options] [command]\n\nMCP server giving AI agents structured perception of web pages\n\nOptions:\n  -V, --version                    output the version number\n  -h, --help                       display help for command\n\nCommands:\n  connect <url>                    Connect to a running dev server or URL\n  observe [options]                Observe the current page state\n  locate [options] <query>         Find elements by semantic query (e.g.,\n                                   role=button name~=\"Submit\")\n  lint [options]                   Run UI linters/detectors on the current page\n  screenshot [options]             Capture screenshot(s) of the current page\n  serve                            Start MCP server (stdio transport)\n  act [options] <action> <target>  Execute an action on a page element\n  help [command]                   display help for command\nnpm notice\nnpm notice New major version of npm available! 10.9.8 -> 12.0.2\nnpm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2\nnpm notice To update run: npm install -g npm@12.0.2\nnpm notice\n",
+  "durationMs": 34466,
+  "transport": "stdio"
+}

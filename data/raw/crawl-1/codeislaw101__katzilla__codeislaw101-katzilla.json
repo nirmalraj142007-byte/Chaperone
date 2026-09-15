@@ -1,0 +1,74 @@
+{
+  "serverId": "codeislaw101__katzilla__codeislaw101-katzilla",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "list_agents",
+      "description": "List all available Katzilla data agents, their categories, and tag descriptions.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "search_tools",
+      "description": "Fuzzy search for specific tools/actions across all Katzilla data agents by query terms.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search term (e.g., 'earthquake', 'sec filing', 'weather')"
+          },
+          "agent": {
+            "type": "string",
+            "description": "Optional: Filter results to specific agent handle (comma-separated)"
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }
+    },
+    {
+      "name": "get_agent_details",
+      "description": "Retrieve detailed tool definitions and input schemas for all actions of a specific agent.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "agent": {
+            "type": "string",
+            "description": "The agent handle (e.g., 'hazards', 'sec')"
+          }
+        },
+        "required": [
+          "agent"
+        ]
+      }
+    },
+    {
+      "name": "execute_tool",
+      "description": "Execute any Katzilla data agent tool/action by name with arguments.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tool_name": {
+            "type": "string",
+            "description": "The compound tool name, formatted as 'agentHandle__actionId' (e.g., 'hazards__usgs-earthquakes')"
+          },
+          "arguments": {
+            "type": "object",
+            "description": "The input parameters for the tool, matching its schema"
+          }
+        },
+        "required": [
+          "tool_name",
+          "arguments"
+        ]
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 15060,
+  "transport": "stdio"
+}

@@ -1,0 +1,191 @@
+{
+  "serverId": "acedatacloud__fluxmcp__acedatacloud-fluxmcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "flux_generate_image",
+      "description": "Generate AI images from a text prompt using Flux.\n\n    Flux is a family of fast, high-quality image generation models by Black Forest Labs.\n    Different models offer different tradeoffs between speed, quality, and capabilities.\n\n    Use this when:\n    - You want to create new images from a text description\n    - You need high-quality AI-generated artwork or photos\n    - You want fast image generation with good prompt following\n\n    For editing existing images, use flux_edit_image instead.\n\n    Returns:\n        Task ID and generated image information including URLs.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "description": "Description of the image to generate. Be descriptive about style, subject, lighting, and composition. Examples: 'A majestic mountain landscape at golden hour, photorealistic', 'Cyberpunk street scene with neon lights and rain, cinematic', 'Minimalist logo design of a phoenix, vector art style'",
+            "title": "Prompt",
+            "type": "string"
+          },
+          "size": {
+            "description": "Required image size. For flux-dev: pixel dimensions like '1024x1024' (256-1440px, multiples of 32). For flux-2-flex/pro/max: pixel dimensions (x >= 64, multiples of 32). For kontext models: image ratios like '1:1', '16:9', '9:16', '4:3', '3:2', '2:3', '4:5', '5:4', '3:4', '21:9', '9:21'.",
+            "title": "Size",
+            "type": "string"
+          },
+          "model": {
+            "default": "flux-dev",
+            "description": "Flux model to use for generation. Options:\n- flux-dev: Fast development model, good balance of speed and quality (default)\n- flux-pro: Higher quality production model\n- flux-2-flex: Flux 2 flexible model, pixel sizes (x >= 64, multiple of 32)\n- flux-2-pro: Flux 2 professional model, high quality\n- flux-2-max: Flux 2 maximum-quality model\n- flux-2-klein: Flux 2 klein model, efficient generation\n- flux-kontext-pro: Context-aware model for editing and style transfer\n- flux-kontext-max: Maximum context model for complex editing tasks",
+            "enum": [
+              "flux-dev",
+              "flux-pro",
+              "flux-kontext-pro",
+              "flux-kontext-max",
+              "flux-2-flex",
+              "flux-2-pro",
+              "flux-2-max",
+              "flux-2-klein"
+            ],
+            "title": "Model",
+            "type": "string"
+          },
+          "count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Number of images to generate. Only supported for generate action. Default is 1.",
+            "title": "Count"
+          },
+          "callback_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Webhook callback URL for asynchronous notifications. When provided, the API will POST to this URL when the image is generated.",
+            "title": "Callback Url"
+          }
+        },
+        "required": [
+          "prompt",
+          "size"
+        ],
+        "title": "flux_generate_imageArguments"
+      }
+    },
+    {
+      "name": "flux_edit_image",
+      "description": "Edit an existing image using Flux with a text prompt.\n\n    This allows you to modify an existing image based on a text description.\n    The kontext models (flux-kontext-pro, flux-kontext-max) are specifically\n    designed for high-quality image editing and style transfer.\n\n    Use this when:\n    - You want to modify or transform an existing image\n    - You want to change specific elements in an image\n    - You want to apply style changes or artistic effects\n    - You want to add, remove, or replace objects in an image\n\n    For generating new images from scratch, use flux_generate_image instead.\n\n    Returns:\n        Task ID and edited image information including URLs.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "description": "Description of how to edit the image. Be specific about what changes to make. Examples: 'Change the background to a sunset beach', 'Add sunglasses to the person', 'Make it look like a watercolor painting', 'Replace the car with a bicycle'",
+            "title": "Prompt",
+            "type": "string"
+          },
+          "image_url": {
+            "description": "URL of the image to edit. Must be a direct image URL (JPEG, PNG, etc.), not a web page containing an image.",
+            "title": "Image Url",
+            "type": "string"
+          },
+          "size": {
+            "description": "Required output image size. For kontext models: aspect ratios like '1:1', '16:9'. For other models: pixel dimensions like '1024x1024'.",
+            "title": "Size",
+            "type": "string"
+          },
+          "model": {
+            "default": "flux-kontext-pro",
+            "description": "Flux model to use for editing. Recommended models for editing:\n- flux-kontext-pro: Best for context-aware editing and style transfer (recommended)\n- flux-kontext-max: Maximum context for complex edits\n- flux-dev: Basic editing support\nOther models also support editing but kontext models give best results.",
+            "enum": [
+              "flux-dev",
+              "flux-pro",
+              "flux-kontext-pro",
+              "flux-kontext-max",
+              "flux-2-flex",
+              "flux-2-pro",
+              "flux-2-max",
+              "flux-2-klein"
+            ],
+            "title": "Model",
+            "type": "string"
+          },
+          "callback_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Webhook callback URL for asynchronous notifications.",
+            "title": "Callback Url"
+          }
+        },
+        "required": [
+          "prompt",
+          "image_url",
+          "size"
+        ],
+        "title": "flux_edit_imageArguments"
+      }
+    },
+    {
+      "name": "flux_list_models",
+      "description": "List all available Flux models and their capabilities.\n\n    Reference guide for choosing the right Flux model for your use case.\n\n    Returns:\n        Detailed list of all Flux models with descriptions and recommendations.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "title": "flux_list_modelsArguments"
+      }
+    },
+    {
+      "name": "flux_list_actions",
+      "description": "List all available Flux tools and their use cases.\n\n    Reference guide for what each tool does and when to use it.\n\n    Returns:\n        Categorized list of all tools with descriptions.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "title": "flux_list_actionsArguments"
+      }
+    },
+    {
+      "name": "flux_get_task",
+      "description": "Query the status and result of a Flux image generation task.\n\n    Use this to check if a generation is complete and retrieve the resulting\n    image URLs and metadata.\n\n    Use this when:\n    - You want to check if an image generation has completed\n    - You need to retrieve image URLs from a previous generation\n    - You used async callback and want to check results later\n    - The initial generation returned a task_id without immediate results\n\n    Returns:\n        Task status and generation result including image URLs.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "task_id": {
+            "description": "The task ID returned from a generation or edit request. This is the 'task_id' field from any flux_generate_image or flux_edit_image tool response.",
+            "title": "Task Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id"
+        ],
+        "title": "flux_get_taskArguments"
+      }
+    },
+    {
+      "name": "flux_get_tasks_batch",
+      "description": "Query multiple Flux image generation tasks at once.\n\n    Efficiently check the status of multiple tasks in a single request.\n    More efficient than calling flux_get_task multiple times.\n\n    Use this when:\n    - You have multiple pending generations to check\n    - You want to get status of several images at once\n    - You're tracking a batch of generations\n\n    Returns:\n        Status and result information for all queried tasks.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "task_ids": {
+            "description": "List of task IDs to query. Maximum recommended batch size is 50 tasks.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Task Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "task_ids"
+        ],
+        "title": "flux_get_tasks_batchArguments"
+      }
+    }
+  ],
+  "stderrTail": "Downloading cryptography (4.5MiB)\nDownloading pydantic-core (2.0MiB)\n Downloaded pydantic-core\n Downloaded cryptography\nInstalled 31 packages in 17ms\n2026-09-15 06:20:30.873 | INFO     | core.client:__init__:43 - FluxClient initialized with base_url: https://api.acedata.cloud\n2026-09-15 06:20:30.874 | DEBUG    | core.client:__init__:44 - API token configured: Yes\n2026-09-15 06:20:30.874 | DEBUG    | core.client:__init__:45 - Request timeout: 1800.0s\n2026-09-15 06:20:31,890 - core.server - INFO - Initialized MCP server: flux\n2026-09-15 06:20:31,968 - mcp.server.lowlevel.server - INFO - Processing request of type ListToolsRequest\n",
+  "durationMs": 35848,
+  "transport": "stdio"
+}

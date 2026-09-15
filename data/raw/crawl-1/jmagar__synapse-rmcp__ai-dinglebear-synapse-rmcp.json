@@ -1,0 +1,8 @@
+{
+  "serverId": "jmagar__synapse-rmcp__ai-dinglebear-synapse-rmcp",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "npm error code ENOVERSIONS\nnpm error No versions available for synapse-rmcp\nnpm error A complete log of this run can be found in: /tmp/npm-cache/_logs/2026-09-15T06_36_42_048Z-debug-0.log\n",
+  "durationMs": 1732,
+  "transport": "stdio"
+}

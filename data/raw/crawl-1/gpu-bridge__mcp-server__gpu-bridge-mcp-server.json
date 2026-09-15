@@ -1,0 +1,90 @@
+{
+  "serverId": "gpu-bridge__mcp-server__gpu-bridge-mcp-server",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "gpu_run",
+      "description": "Run any GPU-Bridge AI service. 30 services available: LLM inference (sub-second), image generation (FLUX, SD3.5), video generation, video enhancement (up to 4K), speech-to-text (Whisper, <1s), TTS (40+ voices), music generation, voice cloning, embeddings, document reranking (Jina), OCR, PDF/document parsing, NSFW detection, image captioning, visual Q&A, background removal, face restoration, upscaling, stickers, and more. Use gpu_catalog to see all available services.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "service": {
+            "type": "string",
+            "description": "Service key. Common ones: llm-4090 (text), image-4090 (image), video (video), whisper-l4 (speech-to-text), tts-l4 (text-to-speech), embedding-l4 (embeddings), rembg-l4 (bg removal), upscale-l4 (upscale), ocr (text extraction), caption (image caption), face-restore, musicgen-l4, llava-4090 (visual Q&A), sticker, whisperx (diarized STT), bark (expressive TTS), voice-clone, photomaker, ad-inpaint, animate, image-variation, inpaint, controlnet, clip, segmentation, rerank (document reranking), nsfw-detect (content moderation), video-enhance (video upscaling), pdf-parse (document parsing)"
+          },
+          "input": {
+            "type": "object",
+            "description": "Service-specific input. Examples: LLM {\"prompt\":\"...\",\"max_tokens\":512,\"model\":\"llama-3.3-70b-versatile\"}, Image {\"prompt\":\"...\"}, Whisper {\"audio_url\":\"https://...\"}, TTS {\"text\":\"...\",\"voice\":\"af_alloy\"}, Embedding {\"text\":\"...\"}, OCR/Rembg/Upscale/Caption {\"image_url\":\"https://...\"}, Video {\"prompt\":\"...\"}"
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "fast",
+              "cheap"
+            ],
+            "description": "Routing priority. \"fast\" = lowest latency (default), \"cheap\" = lowest cost."
+          }
+        },
+        "required": [
+          "service",
+          "input"
+        ]
+      }
+    },
+    {
+      "name": "gpu_catalog",
+      "description": "List all available GPU-Bridge services with pricing and model info. No authentication required.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "gpu_status",
+      "description": "Check the status of a GPU-Bridge job and retrieve results.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "description": "The job ID returned by gpu_run"
+          }
+        },
+        "required": [
+          "job_id"
+        ]
+      }
+    },
+    {
+      "name": "gpu_balance",
+      "description": "Check GPU-Bridge credit balance, daily spend, volume discount tier, and job history.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "gpu_estimate",
+      "description": "Estimate the cost of a GPU-Bridge service before running it. No authentication required.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "service": {
+            "type": "string",
+            "description": "Service key (e.g. llm-4090, image-4090)"
+          },
+          "seconds": {
+            "type": "number",
+            "description": "Estimated runtime in seconds (optional)"
+          }
+        },
+        "required": [
+          "service"
+        ]
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 20668,
+  "transport": "stdio"
+}

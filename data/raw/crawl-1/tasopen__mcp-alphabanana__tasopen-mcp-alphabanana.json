@@ -1,0 +1,213 @@
+{
+  "serverId": "tasopen__mcp-alphabanana__tasopen-mcp-alphabanana",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "generate_image",
+      "description": "Generate image assets using Gemini AI with optional transparency and reference images.\n\n[Claude Desktop Guidance]\n- Prefer outputType='file' for medium or large images. base64 and combine responses can exceed Claude Desktop's context limit.\n- On Claude Desktop for Windows, use the FileSystem extension to choose reference-image paths and a writable absolute outputPath before calling this tool.\n- Use base64 only for small previews or when the client explicitly needs inline image data.\n\n[Model Guidance]\n- Flash3.1 (recommended): High quality, very fast, supports grounding and advanced features.\n- Lite3.1 (Nano Banana 2 Lite): Ultra-fast, cost-effective, 1K-only, no search grounding. Ideal for quick drafting and low-latency iteration.\n- Pro3: Higher fidelity, but more costly and slower.\n- Flash2.5: Legacy, maintained for compatibility. Does not support 0.5K, 2K, or 4K resolutions.\n\n[Aspect Ratios]\nGemini supports the following aspect ratios (model-dependent):\n- Common to all models: 1:1, 2:3, 3:2, 3:4, 4:3, 4:5, 5:4, 9:16, 16:9, 21:9\n- Flash3.1 only: 1:4, 4:1, 1:8, 8:1\n\nNormal mode: provide outputWidth/outputHeight and the server will choose the closest Gemini aspect ratio and source resolution, then resize to the requested pixel size.\nNo-resize mode: set noresize=true and provide aspectRatio plus output_resolution. The server will return Gemini's native pixel dimensions for that combination without post-generation resizing.\n\nIf you intentionally want to control resizing/cropping in normal mode, use the 'resizeMode' parameter: 'crop' (default, center crop), 'letterbox' (fit with padding), 'contain' (trim transparent margins then fit), or 'stretch' (distort to fit).\n\n[IMPORTANT]\nAlways preserve the user's prompt as-is, including language and nuance. Do not translate or summarize.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "User-provided image prompt. Preserve the original wording and detail; do not summarize or translate. Only append transparency-related hints if needed."
+          },
+          "outputFileName": {
+            "type": "string",
+            "description": "Output filename (extension auto-added if missing)"
+          },
+          "outputType": {
+            "default": "combine",
+            "description": "Output format: file=file only, base64=base64 only, combine=both. In Claude Desktop, prefer file for medium or large images to avoid context-size limits; use base64 only for small previews.",
+            "type": "string",
+            "enum": [
+              "file",
+              "base64",
+              "combine"
+            ]
+          },
+          "model": {
+            "default": "Flash3.1",
+            "description": "Model tier to use for generation (see tool description for details; \"flash\" and \"pro\" are aliases for Flash2.5 and Pro3; \"Lite3.1\" is the low-latency Nano Banana 2 Lite model, 1K-only, no grounding)",
+            "type": "string",
+            "enum": [
+              "Flash3.1",
+              "Lite3.1",
+              "Flash2.5",
+              "Pro3",
+              "flash",
+              "pro"
+            ]
+          },
+          "output_resolution": {
+            "description": "Gemini generation source resolution (optional in normal mode, required when noresize=true). In normal mode, the final image is resized to the requested pixel size after generation.",
+            "type": "string",
+            "enum": [
+              "0.5K",
+              "1K",
+              "2K",
+              "4K"
+            ]
+          },
+          "noresize": {
+            "default": false,
+            "description": "Skip post-generation resizing and return Gemini native dimensions directly. When true, provide aspectRatio and output_resolution instead of outputWidth/outputHeight.",
+            "type": "boolean"
+          },
+          "aspectRatio": {
+            "description": "Gemini aspect ratio to use directly when noresize=true. Ignored in normal resize mode.",
+            "type": "string",
+            "enum": [
+              "1:1",
+              "2:3",
+              "3:2",
+              "3:4",
+              "4:3",
+              "4:5",
+              "5:4",
+              "9:16",
+              "16:9",
+              "21:9",
+              "1:4",
+              "4:1",
+              "1:8",
+              "8:1"
+            ]
+          },
+          "outputWidth": {
+            "description": "Output image width in pixels. Required unless noresize=true. In normal mode, the image will be generated using the closest supported Gemini aspect ratio and resolution, then resized to this width.",
+            "type": "integer",
+            "minimum": 8,
+            "maximum": 4096
+          },
+          "outputHeight": {
+            "description": "Output image height in pixels. Required unless noresize=true. In normal mode, the image will be generated using the closest supported Gemini aspect ratio and resolution, then resized to this height.",
+            "type": "integer",
+            "minimum": 8,
+            "maximum": 4096
+          },
+          "output_format": {
+            "default": "png",
+            "description": "Output format",
+            "type": "string",
+            "enum": [
+              "png",
+              "jpg",
+              "webp"
+            ]
+          },
+          "outputPath": {
+            "description": "Output directory path (MUST be an absolute path when outputType is file or combine). In Claude Desktop on Windows, use the FileSystem extension to choose or prepare a writable absolute path such as C:\\temp.",
+            "type": "string"
+          },
+          "transparent": {
+            "default": false,
+            "description": "Request transparent background (PNG or WebP only). Background color is selected by histogram analysis.",
+            "type": "boolean"
+          },
+          "transparentColor": {
+            "default": null,
+            "description": "Color to make transparent. Hex (e.g. #FF00FF). null defaults to #FF00FF when transparent=true.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "colorTolerance": {
+            "default": 30,
+            "description": "Tolerance for color matching (0-255). Higher values are more permissive for transparent color selection and keying.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "fringeMode": {
+            "default": "auto",
+            "description": "Fringe reduction mode: auto (size-based), crisp (binary alpha), hd (force-clear 1px boundary for large images).",
+            "type": "string",
+            "enum": [
+              "auto",
+              "crisp",
+              "hd"
+            ]
+          },
+          "resizeMode": {
+            "default": "crop",
+            "description": "Resize mode: crop=center crop, stretch=distort, letterbox=fit with padding, contain=trim transparent margins then fit",
+            "type": "string",
+            "enum": [
+              "crop",
+              "stretch",
+              "letterbox",
+              "contain"
+            ]
+          },
+          "grounding_type": {
+            "default": "none",
+            "description": "Grounding tool usage (3.1 only)",
+            "type": "string",
+            "enum": [
+              "none",
+              "text",
+              "image",
+              "both"
+            ]
+          },
+          "thinking_mode": {
+            "default": "minimal",
+            "description": "Thinking mode (3.1 only)",
+            "type": "string",
+            "enum": [
+              "minimal",
+              "high"
+            ]
+          },
+          "include_thoughts": {
+            "default": false,
+            "description": "Optional (default: false). Request thought fields from Gemini (3.1 only). Thought content is returned in MCP response only when include_metadata=true.",
+            "type": "boolean"
+          },
+          "include_metadata": {
+            "default": false,
+            "description": "Include grounding and reasoning metadata in JSON output (optional, may increase payload size).",
+            "type": "boolean"
+          },
+          "referenceImages": {
+            "default": [],
+            "description": "Reference images for style guidance (Flash2.5: max 3, others: max 14)",
+            "maxItems": 14,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "description": {
+                  "type": "string"
+                },
+                "filePath": {
+                  "type": "string",
+                  "description": "Absolute path to reference image file (.png, .jpg, .jpeg, .webp). In Claude Desktop on Windows, use the FileSystem extension to locate the file and pass its Windows absolute path."
+                }
+              },
+              "required": [
+                "filePath"
+              ]
+            }
+          },
+          "debug": {
+            "default": false,
+            "description": "Debug mode: output intermediate processing images and prompt",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "prompt",
+          "outputFileName"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    }
+  ],
+  "stderrTail": "npm warn deprecated koa-router@14.0.0: Please use @koa/router instead, starting from v9! \nnpm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead\n[SERVER_STARTUP] Starting MCP server initialization...\n",
+  "durationMs": 67745,
+  "transport": "stdio"
+}

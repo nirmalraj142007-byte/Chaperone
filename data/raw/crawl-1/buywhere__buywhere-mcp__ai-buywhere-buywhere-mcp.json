@@ -1,0 +1,8 @@
+{
+  "serverId": "buywhere__buywhere-mcp__ai-buywhere-buywhere-mcp",
+  "status": "FAILED_START",
+  "tools": [],
+  "stderrTail": "buywhere-mcp 0.4.0 → https://api.buywhere.ai/mcp\n",
+  "durationMs": 16077,
+  "transport": "stdio"
+}

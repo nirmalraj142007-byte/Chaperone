@@ -1,0 +1,226 @@
+{
+  "serverId": "smeet666__mcp-books__smeet666-mcp-books",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "search_inside",
+      "description": "Search the machine-read text of every archive this server reads that holds any, at the same time, and get one list of where a phrase was printed. The archives behind this tool hold different material, so the list is additive: it is the places a phrase appears in each corpus, put together, rather than the same question answered twice. 'per_source' names what each corpus is. A match carries 'page_number', which is a real leaf on an archive whose index holds one and null on an archive whose index holds none. That null is the index having no leaf, never a page this server dropped, and no page is ever invented. A match also carries 'excerpt_kind'. 'passage' is the text around the words that matched. 'page_opening' is the start of the page, sent because the machine-read text that came back stops before the searched words appear, so it does not carry the match. The notes say how many excerpts are openings. Every count is that archive's own and counts something of its own: documents in one place, leaves in another. They are never added together, and there is no total across archives. Rows are interleaved one archive at a time. Nothing ranks them against each other and nothing orders them by date, because a year is measured on different things in each archive. Matches whose excerpt carries the searched words are placed before matches whose excerpt is a 'page_opening' and carries them nowhere. That rests on what each row states about its own excerpt rather than on any score, no match is ever dropped for it, and the interleaving holds inside each of the two groups. The archives read the words given in different ways, and 'per_source' says which each one does. An index that answers only where every word appears returns nothing for a question written as a sentence, even on a work it holds several copies of; an index that scores the words instead answers such a question with the pages it ranks highest, which can carry only some of them. Either way it is the words: a character that is neither a letter nor a digit is no word to an index, and 'non_word_characters' lists any the query carried. Shorter and differently spelled wordings are therefore derived from the query and asked for their union, which costs nothing extra when the words as asked already answer. Every wording sent is named in 'per_source' with what it returned, every match carries the wording that returned it in 'found_by_query', and 'fan_out' turns the derivation off. Use search_items for a work by its title, its creator or its subject: this tool reads the text on the pages and knows nothing of a catalogue, so a title given here finds every book that happens to mention it and misses the book itself. Answers take several seconds, because one of the archives publishes a request ceiling this server keeps to. A slow answer is the pacing, not a stall.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 300,
+            "description": "Words, or a phrase in double quotes such as '\"call me ishmael\"'."
+          },
+          "limit": {
+            "default": 3,
+            "description": "Matches to take from each archive, so one archive cannot fill the whole list. The text block shows about six matches; the rest of what comes back is in the structured output.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 25
+          },
+          "page": {
+            "default": 1,
+            "description": "Which page of matches, from 1. Each archive is paged separately.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "max_excerpt_chars": {
+            "default": 300,
+            "description": "Budget for one passage. Read it together with 'max_excerpts_per_match': the size of the answer is the product of the two, the limit, and the number of archives.",
+            "type": "integer",
+            "minimum": 80,
+            "maximum": 1200
+          },
+          "max_excerpts_per_match": {
+            "default": 2,
+            "description": "Passages to keep per match. A long work matches in several places, and the later ones rarely say anything the first did not.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10
+          },
+          "fan_out": {
+            "default": true,
+            "description": "Whether to derive shorter and differently spelled wordings from the query and ask each archive for the union of what they return. A question written as a sentence returns nothing where every word given has to appear, and the rows an index scores highest where it does not. An archive is asked a derived wording only when the words as asked did not return as many rows as 'limit', so a query that works costs one request. Set false to send exactly the words given. 'per_source' names every wording, sent or not, and each match names the one that returned it.",
+            "type": "boolean"
+          },
+          "sources": {
+            "description": "Archives to ask, by id. Left out, every archive that reads machine-read text is asked, which is the point of this tool.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "archive",
+                "loc",
+                "bnf"
+              ]
+            }
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "search_items",
+      "description": "Search the catalogue of every archive this server reads, at the same time, for a title, a creator or a subject, and get one merged list. Each row carries the id get_item takes, and that id names the archive it came from, so nothing has to be guessed afterwards. 'media_type' keeps one name across the archives and a vocabulary per archive, because the same word does not name the same set of things twice. An archive that files nothing under the name you give is not asked and is named as absent, with its own names listed, rather than asked under a translation. An archive that keeps one catalogue per kind of material is asked for its default when you name none, and the answer says which catalogue that was. Rows are interleaved one archive at a time. No score orders them against each other, and 'sort' is applied inside each archive rather than across them: a year is the date of an edition in one place and the date on a catalogue record in another, so there is no date order that spans the answer. 'oldest' and 'newest' order on a date field carrying a year and no era, so a date before the common era is filed there as a year of this one, and a record stating no date is placed by a stand-in rather than by its age. The first row of a date order is therefore not established as the oldest or newest thing an archive holds, the notes count the rows carrying no year, and this server orders nothing itself. Every count in 'per_source' is that archive's own and counts something of its own. They are never added together, and there is no total across archives. The catalogues read the words given in different ways, and 'per_source' says which each one does. One answers only where every word appears, so a question written as a sentence comes back empty; another scores the words and answers with the records it ranks highest, so a row of its can carry only some of them. Either way it is the words: a character that is neither a letter nor a digit is no word to an index, and 'non_word_characters' lists any the query carried. A name is also filed under more than one spelling, so further wordings are derived from the query and asked for their union. It costs nothing extra when the words as asked already answer. Every wording sent is named in 'per_source' with what it returned, every row carries the wording that returned it in 'found_by_query', and 'fan_out' turns the derivation off. A row's 'media_type' is the word that record carries for the kind of thing, which is often none of the names this argument takes: those are the divisions of a catalogue, and 'media_types' publishes them per archive. A row states no terms of reuse. Read the record with get_item for what that record itself says, and read silence as silence. Use search_inside for a phrase printed on a page: this tool reads catalogue records and knows nothing of what a book says, so a sentence given here matches only where a catalogue happens to carry it. Answers take several seconds, because one of the archives publishes a request ceiling this server keeps to.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "description": "A title, a creator, a subject, or plain words."
+          },
+          "media_type": {
+            "description": "The kind of material, in the vocabulary of whichever archive uses that name. the Internet Archive files texts, movies, audio, image, software, data, web; the Library of Congress files books, photos, maps, audio, film-and-videos, manuscripts, notated-music, newspapers; the Bibliothèque nationale de France files work. The names are the union of those vocabularies rather than a shared one, so an archive that does not use the name you give is named as absent rather than asked under another. Naming none leaves an archive that searches every kind unnarrowed and asks an archive that keeps one catalogue per kind for its own default.",
+            "type": "string",
+            "enum": [
+              "audio",
+              "books",
+              "data",
+              "film-and-videos",
+              "image",
+              "manuscripts",
+              "maps",
+              "movies",
+              "newspapers",
+              "notated-music",
+              "photos",
+              "software",
+              "texts",
+              "web",
+              "work"
+            ]
+          },
+          "year_from": {
+            "description": "Earliest year, in each archive's own reading of what a year is. Given with 'year_to', it must not be the later of the two: a range running backwards names no year and is refused rather than read differently by each archive.",
+            "type": "integer",
+            "minimum": 1000,
+            "maximum": 2100
+          },
+          "year_to": {
+            "description": "Latest year, in each archive's own reading of what a year is. It cannot be earlier than 'year_from'.",
+            "type": "integer",
+            "minimum": 1000,
+            "maximum": 2100
+          },
+          "sort": {
+            "default": "relevance",
+            "description": "Applied inside each archive. The merged list stays interleaved, because no order runs across archives. 'oldest' and 'newest' run on a date field carrying a year and no era, and a record stating no date is placed by a stand-in, so neither end of such an order is a claim about age.",
+            "type": "string",
+            "enum": [
+              "relevance",
+              "newest",
+              "oldest",
+              "title"
+            ]
+          },
+          "limit": {
+            "default": 5,
+            "description": "Rows to take from each archive, so one archive cannot fill the whole list.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 25
+          },
+          "page": {
+            "default": 1,
+            "description": "Which page of rows, from 1. Each archive is paged separately.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "fan_out": {
+            "default": true,
+            "description": "Whether to derive further wordings from the query and ask each archive for the union of what they return. A question written as a sentence returns nothing where every word given has to appear, and the records an index scores highest where it does not, and a spelling of a name is not the only one a catalogue files it under. An archive is asked a derived wording only when the words as asked did not return as many rows as 'limit', so a query that works costs one request. Set false to send exactly the words given. 'per_source' names every wording, sent or not, and each row names the one that returned it.",
+            "type": "boolean"
+          },
+          "sources": {
+            "description": "Archives to ask, by id. Left out, they are all asked, which is the point of this tool.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "archive",
+                "loc",
+                "bnf"
+              ]
+            }
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_item",
+      "description": "Read one record in full from the archive its identifier names: what it is, who made it, when, what the archive says about it, and what a reader can open. 'identifier' must come from search_inside or search_items. It names the archive, so this reads the right one without guessing; a string no archive would have minted is refused, and a shape more than one archive mints is refused rather than sent to a guess, because sending it anywhere answers about the wrong thing. Terms of reuse come back on every read and belong to that record alone. A record stating none has granted nothing, and silence is never read as permission. 'sections' decides what else comes back, and the answer names what was left out and what this archive files nothing under: a field empty because nobody asked for it is a different thing from a field the archive never fills. 'description_means' says what the archive files under the field this reads a description out of, which holds an account of the thing on one record and a line of the catalogue entry on the next. Long prose is returned one window at a time: 'text_offset' says where to resume, and a window ends at a line boundary. An offset past the end says so rather than answering with an empty description. An answer can take several seconds, because one of the archives publishes a request ceiling this server keeps to.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "identifier": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500,
+            "description": "From a search, such as 'archive:mobydickorwhale01melv' or 'loc:sn83030214/1900-01-01/ed-1/seq-1'."
+          },
+          "sections": {
+            "default": [
+              "description"
+            ],
+            "description": "Which parts to return besides the record's identity and its terms of reuse.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "description",
+                "subjects",
+                "copies",
+                "context"
+              ]
+            }
+          },
+          "max_copies": {
+            "default": 10,
+            "description": "Copies to list. The answer says how many more the record holds.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          },
+          "text_offset": {
+            "default": 0,
+            "description": "Where to resume in the record's prose, in characters from its start.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "max_text_chars": {
+            "default": 1500,
+            "description": "Characters of prose to return. The text block shows roughly the first 1400 of them and the whole window is in the structured output. The answer says where to resume.",
+            "type": "integer",
+            "minimum": 200,
+            "maximum": 8000
+          }
+        },
+        "required": [
+          "identifier"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 18479,
+  "transport": "stdio"
+}

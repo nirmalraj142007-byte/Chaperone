@@ -1,0 +1,683 @@
+{
+  "serverId": "khglynn__spotify-bulk-actions-mcp__khglynn-spotify-bulk-actions-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "check_auth_status",
+      "description": "Check if Spotify authentication is set up and working.\n\nReturns current user info if authenticated.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_top_artists",
+      "description": "Get your top artists based on listening history.\n\nGreat for understanding your music taste and finding festival lineups.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "time_range": {
+            "default": "medium_term",
+            "type": "string",
+            "description": "Time period:\n- \"short_term\": Last 4 weeks\n- \"medium_term\": Last 6 months (default)\n- \"long_term\": All time"
+          },
+          "limit": {
+            "default": 50,
+            "type": "integer",
+            "description": "Number of results (max 50)"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_top_tracks",
+      "description": "Get your top tracks based on listening history.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "time_range": {
+            "default": "medium_term",
+            "type": "string",
+            "description": "Time period:\n- \"short_term\": Last 4 weeks\n- \"medium_term\": Last 6 months (default)\n- \"long_term\": All time"
+          },
+          "limit": {
+            "default": 50,
+            "type": "integer",
+            "description": "Number of results (max 50)"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_recently_played",
+      "description": "Get your recently played tracks.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "default": 50,
+            "type": "integer",
+            "description": "Number of results (max 50)"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_followed_artists",
+      "description": "Get all artists you follow on Spotify.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "use_cache": {
+            "default": true,
+            "type": "boolean",
+            "description": "Use cached data if available (faster, default True)"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_saved_tracks",
+      "description": "Get all your liked/saved songs on Spotify.\n\nNote: This may take 1-2 minutes for large libraries (10k songs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "use_cache": {
+            "default": true,
+            "type": "boolean",
+            "description": "Use cached data if available (faster, default True)"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_library_artists",
+      "description": "Get unique artists from your saved songs, sorted by song count.\n\nThis shows artists you have saved songs from (even if not followed),\nranked by how many songs you've saved.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "use_cache": {
+            "default": true,
+            "type": "boolean",
+            "description": "Use cached data if available"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_albums_by_song_count",
+      "description": "Find albums where you have N or more saved songs.\n\nGreat for finding albums worth buying on vinyl!",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "min_songs": {
+            "default": 6,
+            "type": "integer",
+            "description": "Minimum saved songs to include album (default 6)"
+          },
+          "use_cache": {
+            "default": true,
+            "type": "boolean",
+            "description": "Use cached data if available"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "export_library_summary",
+      "description": "Export a complete summary of your Spotify library.\n\nIncludes:\n- Followed artists\n- Top artists by saved song count\n- Albums with most saved songs",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "use_cache": {
+            "default": true,
+            "type": "boolean",
+            "description": "Use cached data if available"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "follow_artists",
+      "description": "Follow artists on Spotify.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "artist_ids": {
+            "items": {},
+            "type": "array",
+            "description": "List of Spotify artist IDs to follow"
+          }
+        },
+        "required": [
+          "artist_ids"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "unfollow_artists",
+      "description": "Unfollow artists on Spotify.\n\nFor safety, returns a preview unless confirm=True.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "artist_ids": {
+            "items": {},
+            "type": "array",
+            "description": "List of Spotify artist IDs to unfollow"
+          },
+          "confirm": {
+            "default": false,
+            "type": "boolean",
+            "description": "Set to True to actually unfollow (default False for preview)"
+          }
+        },
+        "required": [
+          "artist_ids"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "save_tracks",
+      "description": "Save tracks to your Spotify library (like/heart them).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_ids": {
+            "items": {},
+            "type": "array",
+            "description": "List of Spotify track IDs to save"
+          }
+        },
+        "required": [
+          "track_ids"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "unsave_tracks",
+      "description": "Remove tracks from your Spotify library.\n\nFor safety, returns a preview unless confirm=True.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_ids": {
+            "items": {},
+            "type": "array",
+            "description": "List of Spotify track IDs to remove"
+          },
+          "confirm": {
+            "default": false,
+            "type": "boolean",
+            "description": "Set to True to actually remove (default False for preview)"
+          }
+        },
+        "required": [
+          "track_ids"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "search_track",
+      "description": "Search for a single track and get matches with confidence scores.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Track title"
+          },
+          "artist": {
+            "type": "string",
+            "description": "Artist name"
+          },
+          "limit": {
+            "default": 5,
+            "type": "integer",
+            "description": "Max results to return (default 5)"
+          }
+        },
+        "required": [
+          "title",
+          "artist"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "search_track_fuzzy",
+      "description": "Broader fuzzy search when exact match fails.\n\nTries multiple strategies:\n1. Exact title + artist\n2. Title only\n3. Simplified title (removing parentheses, etc.)",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Track title"
+          },
+          "artist": {
+            "type": "string",
+            "description": "Artist name"
+          },
+          "limit": {
+            "default": 10,
+            "type": "integer",
+            "description": "Max results per strategy"
+          }
+        },
+        "required": [
+          "title",
+          "artist"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "batch_search_tracks",
+      "description": "Search for multiple tracks with confidence scoring.\n\nCategorizes results:\n- HIGH (>= 90%): Safe to auto-add\n- MEDIUM (70-89%): Should review\n- LOW (< 70%): Needs attention\n- NOT FOUND: No results",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "songs": {
+            "items": {},
+            "type": "array",
+            "description": "List of {\"title\": \"...\", \"artist\": \"...\"} dicts"
+          },
+          "delay_seconds": {
+            "default": 0.2,
+            "type": "number",
+            "description": "Delay between API calls (default 0.2s for rate limiting)"
+          }
+        },
+        "required": [
+          "songs"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_track_preview_url",
+      "description": "Get the 30-second preview URL for a track.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track_uri": {
+            "type": "string",
+            "description": "Spotify track URI (e.g., \"spotify:track:xxx\")"
+          }
+        },
+        "required": [
+          "track_uri"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "create_playlist",
+      "description": "Create a new Spotify playlist.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Playlist name"
+          },
+          "description": {
+            "default": "",
+            "type": "string",
+            "description": "Playlist description"
+          },
+          "public": {
+            "default": false,
+            "type": "boolean",
+            "description": "Whether playlist is public (default False)"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "add_tracks_to_playlist",
+      "description": "Add tracks to an existing playlist.\n\nHandles batching automatically (Spotify max 100 per request).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "playlist_id": {
+            "type": "string",
+            "description": "Playlist ID (not URI)"
+          },
+          "track_uris": {
+            "items": {},
+            "type": "array",
+            "description": "List of Spotify track URIs"
+          }
+        },
+        "required": [
+          "playlist_id",
+          "track_uris"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "create_playlist_from_search_results",
+      "description": "Create a playlist from batch search results.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Playlist name"
+          },
+          "batch_results": {
+            "additionalProperties": true,
+            "type": "object",
+            "description": "Results from batch_search_tracks"
+          },
+          "include_confidence": {
+            "default": "high",
+            "type": "string",
+            "description": "Which confidence levels to include:\n- \"high\": Only >= 90% matches (safest)\n- \"high_medium\": >= 70% matches\n- \"all\": All matches (use with caution)"
+          },
+          "description": {
+            "default": "",
+            "type": "string",
+            "description": "Playlist description"
+          },
+          "public": {
+            "default": false,
+            "type": "boolean",
+            "description": "Whether playlist is public"
+          }
+        },
+        "required": [
+          "name",
+          "batch_results"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "import_and_create_playlist",
+      "description": "Full workflow: Parse song list CSV, search all tracks, create playlist.\n\nThis is the main tool for bulk playlist creation from a list of songs.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Playlist name"
+          },
+          "csv_content": {
+            "type": "string",
+            "description": "CSV content with columns: title, artist"
+          },
+          "include_confidence": {
+            "default": "high",
+            "type": "string",
+            "description": "\"high\", \"high_medium\", or \"all\""
+          },
+          "description": {
+            "default": "",
+            "type": "string",
+            "description": "Playlist description"
+          },
+          "public": {
+            "default": false,
+            "type": "boolean",
+            "description": "Whether playlist is public"
+          }
+        },
+        "required": [
+          "name",
+          "csv_content"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "add_reviewed_tracks",
+      "description": "Add tracks from a reviewed CSV to an existing playlist.\n\nUse this after reviewing uncertain matches from a batch search.\n\nThe CSV should have an 'action' column:\n- 'approve': Add the matched track\n- 'reject': Skip this track\n- spotify:track:xxx: Use this specific URI instead",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "playlist_id": {
+            "type": "string",
+            "description": "Existing playlist ID"
+          },
+          "reviewed_csv": {
+            "type": "string",
+            "description": "Reviewed CSV content with 'action' column"
+          }
+        },
+        "required": [
+          "playlist_id",
+          "reviewed_csv"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_playlist_info",
+      "description": "Get information about a playlist.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "playlist_id": {
+            "type": "string",
+            "description": "Playlist ID"
+          }
+        },
+        "required": [
+          "playlist_id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_playlist_tracks",
+      "description": "Get all tracks from a playlist.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "playlist_id": {
+            "type": "string",
+            "description": "Playlist ID"
+          }
+        },
+        "required": [
+          "playlist_id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "export_playlist_to_csv",
+      "description": "Export a playlist to CSV format.\n\nGreat for backing up playlists or sharing song lists.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "playlist_id": {
+            "type": "string",
+            "description": "Playlist ID"
+          }
+        },
+        "required": [
+          "playlist_id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "compare_playlists",
+      "description": "Compare two playlists to find shared and unique tracks.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "playlist_id_1": {
+            "type": "string",
+            "description": "First playlist ID"
+          },
+          "playlist_id_2": {
+            "type": "string",
+            "description": "Second playlist ID"
+          }
+        },
+        "required": [
+          "playlist_id_1",
+          "playlist_id_2"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "find_duplicate_tracks",
+      "description": "Find duplicate tracks in a playlist.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "playlist_id": {
+            "type": "string",
+            "description": "Playlist ID"
+          }
+        },
+        "required": [
+          "playlist_id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "remove_duplicate_tracks",
+      "description": "Remove duplicate tracks from a playlist, keeping the first occurrence.\n\nFor safety, returns a preview unless confirm=True.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "playlist_id": {
+            "type": "string",
+            "description": "Playlist ID"
+          },
+          "confirm": {
+            "default": false,
+            "type": "boolean",
+            "description": "Set to True to actually remove duplicates"
+          }
+        },
+        "required": [
+          "playlist_id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "remove_tracks_from_playlist",
+      "description": "Remove specific tracks from a playlist.\n\nFor safety, returns a preview unless confirm=True.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "playlist_id": {
+            "type": "string",
+            "description": "Playlist ID"
+          },
+          "track_uris": {
+            "items": {},
+            "type": "array",
+            "description": "List of Spotify track URIs to remove"
+          },
+          "confirm": {
+            "default": false,
+            "type": "boolean",
+            "description": "Set to True to actually remove"
+          }
+        },
+        "required": [
+          "playlist_id",
+          "track_uris"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "reorder_playlist_tracks",
+      "description": "Move tracks within a playlist.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "playlist_id": {
+            "type": "string",
+            "description": "Playlist ID"
+          },
+          "range_start": {
+            "type": "integer",
+            "description": "Position of first track to move (0-indexed)"
+          },
+          "insert_before": {
+            "type": "integer",
+            "description": "Position to insert before (0-indexed)"
+          },
+          "range_length": {
+            "default": 1,
+            "type": "integer",
+            "description": "Number of tracks to move (default 1)"
+          }
+        },
+        "required": [
+          "playlist_id",
+          "range_start",
+          "insert_before"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "parse_song_list_csv",
+      "description": "Parse a CSV of songs into a structured list.\n\nUse this to validate your CSV before batch searching.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "csv_content": {
+            "type": "string",
+            "description": "CSV content as string"
+          }
+        },
+        "required": [
+          "csv_content"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "export_review_csv",
+      "description": "Export medium/low confidence matches to a CSV for human review.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "batch_results": {
+            "additionalProperties": true,
+            "type": "object",
+            "description": "Results from batch_search_tracks"
+          }
+        },
+        "required": [
+          "batch_results"
+        ],
+        "additionalProperties": false
+      }
+    }
+  ],
+  "stderrTail": "Downloading rapidfuzz (3.0MiB)\nDownloading beartype (1.3MiB)\nDownloading pydantic-core (2.0MiB)\nDownloading cryptography (4.5MiB)\nDownloading pygments (1.2MiB)\n Downloaded pygments\n Downloaded beartype\n Downloaded pydantic-core\n Downloaded rapidfuzz\n Downloaded cryptography\nInstalled 81 packages in 21ms\nStarting Spotify MCP Server...\n\n\n╭──────────────────────────────────────────────────────────────────────────────╮\n│                                                                              │\n│                                                                              │\n│                         ▄▀▀ ▄▀█ █▀▀ ▀█▀ █▀▄▀█ █▀▀ █▀█                        │\n│                         █▀  █▀█ ▄▄█  █  █ ▀ █ █▄▄ █▀▀                        │\n│                                                                              │\n│                                                                              │\n│                                                                              │\n│                                FastMCP 4.0.3                                 │\n│                            https://gofastmcp.com                             │\n│                                                                              │\n│                🖥  Server:      Spotify Library Manager, 4.0.3                │\n│                🚀 Deploy free: https://horizon.prefect.io                    │\n│                                                                              │\n╰──────────────────────────────────────────────────────────────────────────────╯\n\n\n[09/15/26 06:38:28] INFO     Starting MCP server 'Spotify       transport.py:242\n                             Library Manager' with transport                    \n                             'stdio'                                            \n",
+  "durationMs": 65382,
+  "transport": "stdio"
+}

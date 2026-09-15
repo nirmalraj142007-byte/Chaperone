@@ -1,0 +1,8 @@
+{
+  "serverId": "anomalyarmor__agents__ai-anomalyarmor-armor-mcp",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "sh: 1: exec: armor-mcp: not found\n",
+  "durationMs": 67264,
+  "transport": "stdio"
+}

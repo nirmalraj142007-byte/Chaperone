@@ -1,0 +1,8 @@
+{
+  "serverId": "arturlys__ao3-mcp__arturlys-ao3-mcp",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "sh: 1: exec: ao3-mcp: not found\n",
+  "durationMs": 67667,
+  "transport": "stdio"
+}

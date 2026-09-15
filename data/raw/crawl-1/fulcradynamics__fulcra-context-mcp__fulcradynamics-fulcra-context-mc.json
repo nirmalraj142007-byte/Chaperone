@@ -1,0 +1,8 @@
+{
+  "serverId": "fulcradynamics__fulcra-context-mcp__fulcradynamics-fulcra-context-mc",
+  "status": "FAILED_TIMEOUT",
+  "tools": [],
+  "stderrTail": "Downloading pydantic-core (2.0MiB)\nDownloading burner-redis (1.3MiB)\nDownloading cryptography (4.5MiB)\nDownloading pyarrow (47.8MiB)\nDownloading pygments (1.2MiB)\nDownloading pandas (11.8MiB)\nDownloading uvloop (4.2MiB)\nDownloading beartype (1.3MiB)\nDownloading lupa (2.3MiB)\nDownloading numpy (15.9MiB)\n Downloaded pygments\n Downloaded burner-redis\n Downloaded beartype\n Downloaded pydantic-core\n Downloaded lupa\n Downloaded uvloop\n Downloaded cryptography\n",
+  "durationMs": 120067,
+  "transport": "stdio"
+}

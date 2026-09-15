@@ -1,0 +1,1690 @@
+{
+  "serverId": "rosasynthesiz__flstudio-mcp__rosasynthesiz-flstudio-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "fl_ping",
+      "description": "Check that FL Studio is running and the controller script is loaded.\n\nReturns the controller's reported FL Studio version, the age of the\nlast heartbeat in seconds, and the MIDI port names in use. Call this\nfirst when something seems wrong.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_get_tempo",
+      "description": "Return the current FL Studio project tempo in beats per minute.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_set_tempo",
+      "description": "Set the FL Studio project tempo. Range is 10-999 BPM (FL's own limits).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "bpm": {
+            "description": "Target tempo in BPM, FL accepts 10-999.",
+            "maximum": 999,
+            "minimum": 10,
+            "type": "number"
+          }
+        },
+        "required": [
+          "bpm"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_play",
+      "description": "Start playback. Idempotent — calling while already playing is a no-op.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_stop",
+      "description": "Stop playback. Idempotent.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_toggle_play",
+      "description": "Toggle between play and stop, mirroring the spacebar in FL.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_record",
+      "description": "Toggle FL Studio's record-arm state.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_get_play_state",
+      "description": "Return whether FL is currently playing and / or recording.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_get_song_position",
+      "description": "Return the current playhead position in beats from the song start.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_set_song_position",
+      "description": "Move the playhead to the given beat position.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "beats": {
+            "description": "Position in beats from song start.",
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "beats"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_get_project_state",
+      "description": "Tempo, transport state, pattern/channel/mixer counts.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_get_mixer_state",
+      "description": "All mixer tracks (index, name, volume, pan, mute, solo). Names in\nthis overview are truncated; use a single-track read for the full name.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_get_channel_state",
+      "description": "All channel-rack channels (index, name, volume, pan, mute, solo).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_set_mixer_volume",
+      "description": "Set a mixer track volume. unit='db' uses 0.8=unity (0 dB).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track": {
+            "description": "Mixer track index (0 = Master).",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "value": {
+            "description": "Volume; normalized 0..1 (0.8=unity) or dB.",
+            "type": "number"
+          },
+          "unit": {
+            "default": "normalized",
+            "description": "'normalized' or 'db'.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "track",
+          "value"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_set_mixer_pan",
+      "description": "Set a mixer track's pan position (-1 left .. +1 right).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "value": {
+            "description": "-1 left .. +1 right.",
+            "maximum": 1,
+            "minimum": -1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "track",
+          "value"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_set_mixer_mute",
+      "description": "Mute or unmute a mixer track (state=True mutes).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "state": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "track",
+          "state"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_set_mixer_solo",
+      "description": "Solo or unsolo a mixer track (state=True solos).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "state": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "track",
+          "state"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_set_mixer_name",
+      "description": "Rename a mixer track.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "track",
+          "name"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_set_channel_volume",
+      "description": "Set a channel-rack channel's volume. unit='db' uses 0.8=unity (0 dB).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "value": {
+            "description": "Normalized 0..1 (0.8=unity) or dB.",
+            "type": "number"
+          },
+          "unit": {
+            "default": "normalized",
+            "description": "'normalized' or 'db'.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "channel",
+          "value"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_set_channel_pan",
+      "description": "Set a channel-rack channel's pan position (-1 left .. +1 right).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "value": {
+            "maximum": 1,
+            "minimum": -1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "channel",
+          "value"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_set_channel_mute",
+      "description": "Mute or unmute a channel-rack channel (state=True mutes).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "state": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "channel",
+          "state"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_set_channel_solo",
+      "description": "Solo or unsolo a channel-rack channel (state=True solos).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "state": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "channel",
+          "state"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_take_snapshot",
+      "description": "Read current state for a scope (for your own before/after diffing).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "description": "'mixer_track:N' | 'channel:N' | 'mixer_all' | 'channels_all'",
+            "type": "string"
+          }
+        },
+        "required": [
+          "scope"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_rollback_last_change",
+      "description": "Undo the most recent write by replaying its pre-change snapshot.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_set_dry_run",
+      "description": "When on, write tools return a 'planned' preview without changing FL.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_write_piano_roll_notes",
+      "description": "Write notes into the currently-open FL Piano roll.\n\nEach note: {pitch (MIDI), time_bars, length_bars, velocity 0-1}. Set\nquantize (grid in bars) to snap note starts to a grid before writing.\nSetup: open the Piano roll and run 'MCP_Apply' once from its Scripting\nmenu (so Ctrl+Alt+Y targets it). mode='replace' clears first.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "notes": {
+            "items": {
+              "properties": {
+                "pitch": {
+                  "description": "MIDI note (60 = middle C; FL displays it as C5).",
+                  "maximum": 127,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "time_bars": {
+                  "default": 0,
+                  "description": "Start, in bars from the pattern start.",
+                  "minimum": 0,
+                  "type": "number"
+                },
+                "length_bars": {
+                  "default": 1,
+                  "description": "Duration in bars.",
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "velocity": {
+                  "default": 0.7874015748031497,
+                  "description": "0.0-1.0 (0.787 ~= MIDI velocity 100).",
+                  "maximum": 1,
+                  "minimum": 0,
+                  "type": "number"
+                }
+              },
+              "required": [
+                "pitch"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "mode": {
+            "default": "replace",
+            "description": "'replace' clears the pattern first; 'append' adds to it.",
+            "type": "string"
+          },
+          "quantize": {
+            "default": 0,
+            "description": "Optional grid (bars) to snap note starts to before writing: 0.0625=1/16, 0.125=1/8, 0=off.",
+            "type": "number"
+          }
+        },
+        "required": [
+          "notes"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_quantize_pattern",
+      "description": "Quantize the notes ALREADY in the open Piano roll: reads the score,\nsnaps note starts (and optionally lengths) to the grid, rewrites -- via\nthe pyscript bridge, no dialog. Needs the Piano roll open + MCP_Apply\narmed once this session (same setup as note writing).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "grid_bars": {
+            "default": 0.0625,
+            "description": "Snap grid in bars: 0.0625=1/16, 0.125=1/8, 0.25=1/4.",
+            "exclusiveMinimum": 0,
+            "type": "number"
+          },
+          "snap_ends": {
+            "default": false,
+            "description": "Also snap note lengths to the grid.",
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_plugin_list",
+      "description": "List the filled effect slots (0-9) on a mixer track, with plugin names.\n\nWe cannot load NEW plugins (FL API limit) -- this only reports plugins\nalready present in the project.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track": {
+            "description": "Mixer track index (0 = Master).",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_plugin_get_params",
+      "description": "Every named parameter of the plugin in this slot: index, name,\nnormalised value (0..1) and FL's display string (e.g. '3.6dB',\n'500Hz'). Returns {\"total\", \"params\":[{\"i\",\"name\",\"v\",\"s\"}, ...]}.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "slot": {
+            "description": "Effect slot index 0-9.",
+            "maximum": 9,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track",
+          "slot"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_plugin_set_param",
+      "description": "Set one plugin parameter (normalised 0..1). ``param`` may be an\nindex or a name; names are resolved from the live param list. The\nchange is logged and undo-able via fl_rollback_last_change. Returns\nbefore/after plus the resolved {index, name}.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "slot": {
+            "maximum": 9,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "param": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "description": "Param index (int) or name (str, e.g. 'Decay time')."
+          },
+          "value": {
+            "description": "Normalised 0..1.",
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "track",
+          "slot",
+          "param",
+          "value"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_apply_eq_intent",
+      "description": "Apply a musical EQ move on a Fruity Parametric EQ 2 using a free band.\nSets type/freq/gain/width as one undo-able group; returns the band used\nand FL's readback strings. Revert with fl_rollback_last_change.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track": {
+            "description": "Mixer track index.",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "slot": {
+            "description": "Effect slot of a Fruity Parametric EQ 2.",
+            "maximum": 9,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "intent": {
+            "description": "Which EQ move to apply.",
+            "enum": [
+              "remove_mud",
+              "add_air",
+              "remove_harshness",
+              "add_presence",
+              "high_pass"
+            ],
+            "type": "string"
+          },
+          "intensity": {
+            "default": 0.5,
+            "description": "0..1; scales gain (gain=max*intensity). Default 0.5.",
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "track",
+          "slot",
+          "intent"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_apply_reverb_intent",
+      "description": "Musical reverb moves on a Fruity Reeverb 2 (decay/wet/high-cut), as one\nundo-able group. Returns readback strings. Revert: fl_rollback_last_change.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "slot": {
+            "description": "Slot of a Fruity Reeverb 2.",
+            "maximum": 9,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "intent": {
+            "description": "Which reverb move.",
+            "enum": [
+              "more_space",
+              "tighten_reverb",
+              "darker_reverb",
+              "brighter_reverb",
+              "more_reverb",
+              "less_reverb"
+            ],
+            "type": "string"
+          },
+          "intensity": {
+            "default": 0.5,
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "track",
+          "slot",
+          "intent"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_apply_delay_intent",
+      "description": "Musical delay moves on a Fruity Delay (time division / feedback / wet /\nfeedback-cut), as one undo-able group. Feedback is clamped <=100% unless\nintensity>0.9 (warns on self-oscillation risk). Returns readback strings.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "slot": {
+            "description": "Slot of a Fruity Delay.",
+            "maximum": 9,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "intent": {
+            "description": "Which delay move.",
+            "enum": [
+              "longer_delay",
+              "shorter_delay",
+              "more_feedback",
+              "less_feedback",
+              "more_delay",
+              "less_delay",
+              "darker_delay",
+              "brighter_delay"
+            ],
+            "type": "string"
+          },
+          "intensity": {
+            "default": 0.5,
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "track",
+          "slot",
+          "intent"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_get_track_level",
+      "description": "Measure a mixer track's level by sampling meter peaks over a short\nwindow. Requires PLAYBACK -- returns playing=False (avg/peak null) when\nstopped/silent. {track, playing, avg_db, peak_db}.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "samples": {
+            "default": 20,
+            "description": "Reads over ~samples*100ms.",
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_apply_compression_intent",
+      "description": "Compress via Fruity Limiter (COMP section) or FabFilter Pro-C. ALWAYS\nsets ratio AND threshold together; ratio/attack/release/makeup (+ Pro-C\nStyle) per intent, as ONE rollback unit. When level_aware and the track\nis playing, threshold is set relative to the MEASURED peak (a smart\nstarting point, not exact gain-reduction); stopped -> preset fallback +\na note. Returns readback + the measured level / chosen threshold.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "slot": {
+            "description": "Slot of a Fruity Limiter OR FabFilter Pro-C.",
+            "maximum": 9,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "intent": {
+            "description": "Which compression move.",
+            "enum": [
+              "heavy_vocal_compression",
+              "gentle_compression",
+              "glue_drums",
+              "punch"
+            ],
+            "type": "string"
+          },
+          "intensity": {
+            "default": 0.5,
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "level_aware": {
+            "default": true,
+            "description": "Measure track level (during playback) and set threshold relative to it; falls back to the preset threshold if stopped/silent.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "track",
+          "slot",
+          "intent"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_get_routing",
+      "description": "Which destination tracks this mixer track sends to:\n{track, name, routes_to:[{dst, dst_name, level?}]}.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track": {
+            "description": "Mixer track index (0 = Master).",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_get_routing_all",
+      "description": "Routing for every mixer track (paginated under the hood, returned\nwhole): {total, routing:[{i, name, routes_to:[...]}]}.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_get_channel_routing",
+      "description": "Which mixer track each channel-rack channel is linked to:\n{total, channels:[{channel, name, target_mixer_track, target_name}]}.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_detect_cleanup_candidates",
+      "description": "Flag (do NOT touch) empty channels + unused mixer tracks, each with a\nreason. Judgement is computed server-side from cheap controller reads.\nChannel emptiness is a name heuristic; unused-track detection is reliable.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_set_route",
+      "description": "Enable/disable a send from src -> dst (calls afterRoutingChanged on the\nFL side). Snapshot + readback; undo with fl_rollback_last_change.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "src": {
+            "description": "Source mixer track.",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "dst": {
+            "description": "Destination mixer track (0 = Master).",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "enabled": {
+            "default": true,
+            "description": "True = route on, False = off.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "src",
+          "dst"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_group_tracks",
+      "description": "Group sources into a bus, EXCLUSIVELY: each source -> bus ON and its\ndirect -> Master OFF; bus -> Master ON; optional bus rename. Applied as\nONE rollback unit -- fl_rollback_last_change undoes the whole grouping.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sources": {
+            "description": "Source mixer tracks to route into the bus.",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "bus": {
+            "description": "Destination bus mixer track (not Master).",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional new name for the bus track."
+          }
+        },
+        "required": [
+          "sources",
+          "bus"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_solo_tracks",
+      "description": "Isolate a group so only it is audible -- mutes every OTHER (non-Master)\ntrack. Use category ('drums', etc.) or explicit tracks. Implemented as\nmute-the-rest (reliable; FL's multi-solo is inconsistent). Reverse with\nfl_clear_mute_solo. One rollback unit.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Role to isolate: 'drums', 'vocals', 'bass', 'synth', 'guitar' (or any track-name substring)."
+          },
+          "tracks": {
+            "anyOf": [
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Explicit track indices or name substrings to keep audible."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_mute_tracks",
+      "description": "Mute a group of tracks (leaves the others as they are). Use category or\nexplicit tracks. One rollback unit; reverse with fl_clear_mute_solo.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Role to mute (or any track-name substring)."
+          },
+          "tracks": {
+            "anyOf": [
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Explicit track indices or name substrings to mute."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_clear_mute_solo",
+      "description": "Unmute and unsolo every mixer track (reset). The universal undo for the\nbulk solo/mute tools.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_set_track_color",
+      "description": "Set the color of mixer tracks. Pick targets by category ('drums',\n'bass', ...) or an explicit tracks list; choose a color by name or hex.\nAll writes are ONE rollback unit -- fl_rollback_last_change reverts them.\n(Master is never colored.)",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "color": {
+            "description": "Color name (red, orange, amber, yellow, lime, green, teal, cyan, blue, indigo, purple, violet, magenta, pink, brown, gray, white, black) or a hex like '#33A1FF'.",
+            "type": "string"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Group to color: 'drums', 'vocals', 'bass', 'synth', 'guitar' (or any mixer-track name substring)."
+          },
+          "tracks": {
+            "anyOf": [
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Explicit mixer-track indices or name substrings."
+          }
+        },
+        "required": [
+          "color"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_set_channel_color",
+      "description": "Set the color of channel-rack channels (separate from mixer-track\ncolor). Target by index or name substring. ONE rollback unit --\nfl_rollback_last_change reverts it.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "color": {
+            "description": "Color name or hex (same set as fl_set_track_color).",
+            "type": "string"
+          },
+          "channels": {
+            "anyOf": [
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Channel-rack indices or name substrings to color."
+          }
+        },
+        "required": [
+          "color"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_arrange_new_pattern",
+      "description": "Create + select + name the next empty pattern. After this, the note\nbridge (fl_write_piano_roll_notes) writes INTO this pattern.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "description": "Pattern name, e.g. 'INTRO'.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_arrange_select_channel",
+      "description": "Make a channel the active selection so the note bridge\n(fl_write_piano_roll_notes) writes INTO it. Use before writing each\ninstrument's notes in a section (drums -> ch X, bass -> ch Y, ...).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "description": "Channel-rack channel index.",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "channel"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_arrange_clone_pattern",
+      "description": "Clone a pattern (copies its notes) and rename the clone -- e.g. for\nverse -> verse2 variations.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "src": {
+            "description": "Source pattern index.",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "new_name": {
+            "description": "Name for the clone.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "src",
+          "new_name"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_arrange_add_marker",
+      "description": "Add a named timeline marker at a bar (intro/verse/chorus/drop).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "bar": {
+            "description": "Bar number (1 = song start).",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "name": {
+            "description": "Marker name, e.g. 'Verse'.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "bar",
+          "name"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_analyze_audio",
+      "description": "Estimate tempo + key (+ duration, beats, onsets) of an audio file.\nPure offline analysis -- does NOT touch FL. Key is ESTIMATED.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "description": "Path to a WAV/MP3 file (MP3 needs ffmpeg on PATH).",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_extract_melody",
+      "description": "Transcribe a monophonic melody to quantized notes; engine-selectable\n(CREPE = accurate/heavy, pyin = light). Returns ALL notes with confidence\n+ a `kept` flag; bridge_notes holds only the confident notes, ready for\nfl_write_piano_roll_notes. Does NOT write to FL -- review first.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "description": "Path to a MONOPHONIC source (solo vocal/lead/stem).",
+            "type": "string"
+          },
+          "bpm": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Override BPM for bar quantization; auto-detected if omitted."
+          },
+          "engine": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Pitch engine: 'crepe' (accurate, needs [audio-accurate] extra), 'pyin' (light), or 'auto' (default: crepe if installed). Overrides $FLSTUDIO_MCP_PITCH_ENGINE."
+          },
+          "min_conf": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Confidence gate 0..1 deciding which notes enter bridge_notes (default 0.8 crepe / 0.0 pyin). ALL notes are still returned with voiced_prob + a kept flag."
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_write_raga_melody",
+      "description": "Write a MELODY (single-line, sequential notes) into the selected channel\nvia the piano-roll bridge. YOU (Claude) generate the swaras for the named\nraga/root -> MIDI notes (use the proper aarohana/avarohana; respect the\nraga's allowed swaras); this tool only selects the channel + writes. SHOW\nthe user the notes/swaras BEFORE calling. Needs the Piano roll open +\nMCP_Apply armed once this session (see the note-bridge setup).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "notes": {
+            "items": {
+              "properties": {
+                "pitch": {
+                  "description": "MIDI note (60 = middle C / FL C5).",
+                  "maximum": 127,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "time_bars": {
+                  "default": 0,
+                  "description": "Start in bars from pattern start.",
+                  "minimum": 0,
+                  "type": "number"
+                },
+                "length_bars": {
+                  "default": 0.25,
+                  "description": "Duration in bars.",
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "velocity": {
+                  "default": 0.787,
+                  "description": "0..1 (0.787 ~= MIDI vel 100).",
+                  "maximum": 1,
+                  "minimum": 0,
+                  "type": "number"
+                }
+              },
+              "required": [
+                "pitch"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "raga": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Raga/scale name (label only), e.g. 'Hamsadhwani'."
+          },
+          "root": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Root/tonic (label only), e.g. 'C', 'D#'."
+          },
+          "channel": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Channel-rack channel to write into (selected first)."
+          },
+          "mode": {
+            "default": "replace",
+            "description": "'replace' clears the pattern first; 'append' adds.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "notes"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_write_raga_chords",
+      "description": "Write CHORDS / a progression (stacked notes sharing start times) into\nthe selected channel via the bridge. YOU stack chord tones drawn from the\nraga/scale (give simultaneous notes the SAME time_bars). Tool selects the\nchannel + writes. SHOW the user the chords BEFORE calling.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "notes": {
+            "items": {
+              "properties": {
+                "pitch": {
+                  "description": "MIDI note (60 = middle C / FL C5).",
+                  "maximum": 127,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "time_bars": {
+                  "default": 0,
+                  "description": "Start in bars from pattern start.",
+                  "minimum": 0,
+                  "type": "number"
+                },
+                "length_bars": {
+                  "default": 0.25,
+                  "description": "Duration in bars.",
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "velocity": {
+                  "default": 0.787,
+                  "description": "0..1 (0.787 ~= MIDI vel 100).",
+                  "maximum": 1,
+                  "minimum": 0,
+                  "type": "number"
+                }
+              },
+              "required": [
+                "pitch"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "raga": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Raga/scale name (label only)."
+          },
+          "root": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Root/tonic (label only)."
+          },
+          "channel": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Channel-rack channel to write into (selected first)."
+          },
+          "mode": {
+            "default": "replace",
+            "description": "'replace' clears the pattern first; 'append' adds.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "notes"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_list_chains",
+      "description": "List the built-in genre processing-chain recipes (vocal, drum_bus,\nbass, master) and their ordered steps.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_list_installed_plugins",
+      "description": "Read FL's installed-plugin DATABASE from disk (the .fst shortcuts FL\nwrites for every scanned plugin) -> a de-duped, categorized list of what\nyou OWN. Bypasses the FL API (which only sees LOADED plugins). FL still\ncan't LOAD these -- it's for library-aware suggestions. effects_by_role is\na rough keyword grouping (Claude should apply its own plugin knowledge).\nRead-only (directory listing only).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "default": "all",
+            "description": "'all', 'effects', or 'generators'.",
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_setup_chain",
+      "description": "Plan a genre-appropriate processing chain over a track's EXISTING\nplugins. READ-ONLY plan: returns the ordered intent calls (each with the\nmatched plugin + slot) and which steps are MISSING because the needed\nplugin isn't loaded (FL can't load plugins -- add those manually). After\nthe user approves, apply each step by calling its 'apply' tool+args\n(fl_apply_eq_intent / fl_apply_compression_intent / fl_apply_reverb_intent\n-- each logged + rollback-able). e.g. vocal: HP -> comp -> presence ->\nair -> reverb.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "track": {
+            "description": "Mixer track index.",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "chain_type": {
+            "description": "Recipe: 'vocal', 'drum_bus', 'bass', 'master'.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "track",
+          "chain_type"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_export_midi",
+      "description": "Write a type-1 multi-track .mid from an arrangement spec. YOU (Claude)\ngenerate the whole arrangement -- multiple named tracks, each with notes\n{pitch, start_bars, length_bars, velocity} across all sections -- and this\nwrites ONE .mid. Bypasses the note-bridge's one-pattern + MCP_Apply limits.\n\nDoes NOT touch FL: IMPORT the file yourself (FL: File > Import > MIDI file,\nor drag it into the playlist). FL won't auto-load instruments -- assign a\nchannel to each imported track. Returns the saved file path.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tracks": {
+            "items": {
+              "properties": {
+                "name": {
+                  "description": "Track name, e.g. 'Drums', 'Bass', 'Lead'.",
+                  "type": "string"
+                },
+                "channel": {
+                  "default": 0,
+                  "description": "MIDI channel 0-15 (9 = GM drums, by convention).",
+                  "maximum": 15,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "notes": {
+                  "items": {
+                    "properties": {
+                      "pitch": {
+                        "description": "MIDI note (60 = middle C).",
+                        "maximum": 127,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "start_bars": {
+                        "description": "Start in bars from song start.",
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "length_bars": {
+                        "description": "Duration in bars.",
+                        "exclusiveMinimum": 0,
+                        "type": "number"
+                      },
+                      "velocity": {
+                        "default": 0.787,
+                        "description": "0..1 (0.787~=vel 100) or a raw 1..127 int.",
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "pitch",
+                      "start_bars",
+                      "length_bars"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array"
+                }
+              },
+              "required": [
+                "name",
+                "notes"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "bpm": {
+            "default": 120,
+            "description": "Tempo (BPM).",
+            "exclusiveMinimum": 0,
+            "type": "number"
+          },
+          "output_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Output .mid path; defaults to ~/.flstudio-mcp/exports/."
+          },
+          "beats_per_bar": {
+            "default": 4,
+            "description": "Time-signature numerator (4 = 4/4).",
+            "maximum": 16,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "tracks"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_list_presets",
+      "description": "Read preset NAMES from disk: FL Presets\\ (per-plugin 'Plugin presets',\nplus Channel/Mixer presets) + Serum 2 Presets (.serumpreset). With NO\nfilter -> a SUMMARY (which plugins have presets + counts). With\nplugin_filter -> that plugin's full preset list. Read-only. FL can't LOAD\npresets via the API -- this is for suggestions (you load the named preset,\nthen Claude can tweak it).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "plugin_filter": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Plugin to narrow to (e.g. 'Serum', 'Fruity Parametric EQ 2'); omit for a summary."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_suggest_preset",
+      "description": "Suggest presets from YOUR library matching a description, for a given\nplugin. Reads the plugin's preset NAMES from disk + ranks by name match.\nName-only (can't hear the sound) -- apply your own knowledge of preset\nnaming. FL can't LOAD presets via the API: recommend which to load in the\nplugin manually; AFTER the user loads it you can tweak its params via\nfl_plugin_set_param / fl_apply_*_intent.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "description": "The sound you want, e.g. 'vintage bass', 'bright pluck'.",
+            "type": "string"
+          },
+          "plugin": {
+            "description": "Plugin whose presets to search, e.g. 'Serum'.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "description",
+          "plugin"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_diagnose_mix",
+      "description": "Scan the WHOLE mix and report problems + proposed fixes. READ-ONLY.\n\nTransparent threshold rules (clipping, headroom, level imbalance, missing\nhigh-pass, ungrouped tracks, EQ clashes) on a thin paginated snapshot;\nreturns findings (severity + exact evidence) + concrete proposals.\n\nIMPORTANT: this samples peaks over only ~1.2s -- one MOMENT of the song,\nso it can MISS clipping in a drop/chorus that isn't playing right now. For\nfull-song-accurate levels use WATCH mode: fl_mix_watch_start -> play the\nwhole song -> fl_mix_watch_stop. If stopped, level rules are skipped\n(needs_playback). Applies nothing.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_apply_mix_fix",
+      "description": "Apply ONE Mix Doctor fix via the safety layer: snapshot -> write ->\nFRESH readback -> rollback-able with fl_rollback_last_change.\n\nCall this ONLY after the user approves the exact change in conversation\n(Mix Doctor never auto-applies). 'trim_volume' sets a mixer track's fader\nto target_db. For grouping use fl_group_tracks; for EQ use\nfl_apply_eq_intent.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "description": "Fix kind. Currently 'trim_volume' (the proven, safe one).",
+            "type": "string"
+          },
+          "track": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Mixer track index (for trim_volume)."
+          },
+          "target_db": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Absolute target fader level in dB, e.g. -3.0."
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_mix_watch_start",
+      "description": "Begin a peak-HOLD watch: continuously sample every mixer track's peak,\nkeeping a RUNNING MAX per track, until fl_mix_watch_stop. Tell the user to\nPLAY the whole song (or at least the loudest section / the drop) while this\nruns -- then stop for full-song-accurate level diagnosis. Read-only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "interval_ms": {
+            "default": 150,
+            "description": "Poll interval per round in ms (default 150).",
+            "maximum": 1000,
+            "minimum": 50,
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_mix_watch_status",
+      "description": "Is a peak watch running, and for how long / how many polls so far?",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_mix_watch_stop",
+      "description": "Stop the peak watch and diagnose on the FULL-SONG running-max peaks\ncaptured across the whole watch (accurate clipping/headroom/imbalance vs\nthe ~1.2s snapshot). Read-only -- proposes fixes, applies nothing.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_gain_stage",
+      "description": "Propose per-track fader trims so each track's peak sits in a healthy\nband (~-12..-6 dBFS, aim -9) and the Master keeps -3..-6 dB headroom.\nREAD-ONLY proposals -- apply approved ones via fl_apply_mix_fix (rollback).\n\nUses FULL-SONG peaks from a recent watch (fl_mix_watch_start -> play ->\nfl_mix_watch_stop) when available; else a ~1.2s snapshot (prefer watch).\nFL's fader is POST-chain, so this sets a track's OUTPUT level, not a true\npre-plugin input trim.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fl_reference_match",
+      "description": "Compare your mix's LEVEL + rough tonal BALANCE to a reference track.\nREAD-ONLY. Analyzes the reference FILE (overall level + low/mid/high\nspectral-band shares) and your mix (Master peak for level + a ROUGH\nname-based band estimate). HONEST: a level/balance compare, NOT a spectral\nmatch -- FL doesn't expose its output audio, so the your-mix balance is\nestimated from track names + peaks. Suggests adjustments; applies nothing.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "reference_audio_path": {
+            "description": "Path to a reference WAV/MP3 to compare against.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reference_audio_path"
+        ],
+        "additionalProperties": false
+      }
+    }
+  ],
+  "stderrTail": "   Building pyscreeze==1.0.1\n   Building pytweening==1.2.0\n   Building python3-xlib==0.15\n   Building pyautogui==0.9.54\nDownloading pydantic-core (2.0MiB)\nDownloading pygments (1.2MiB)\nDownloading cryptography (4.5MiB)\nDownloading beartype (1.3MiB)\n      Built pyscreeze==1.0.1\n      Built pytweening==1.2.0\n      Built python3-xlib==0.15\n      Built pyautogui==0.9.54\n   Building pyrect==0.2.0\n      Built pyrect==0.2.0\n   Building mouseinfo==0.1.3\n   Building pygetwindow==0.0.9\n      Built mouseinfo==0.1.3\n      Built pygetwindow==0.0.9\n Downloaded pygments\n Downloaded beartype\n Downloaded pydantic-core\n Downloaded cryptography\nInstalled 79 packages in 26ms\n2026-09-15 06:47:02,464 INFO fl_studio_mcp: fl-studio-mcp 0.3.0; ports: out='FLStudioMCP RX', in='FLStudioMCP TX'\n2026-09-15 06:47:03,380 INFO httpx2: HTTP Request: GET https://pypi.org/pypi/fastmcp/json \"HTTP/1.1 200 OK\"\n\n\n╭──────────────────────────────────────────────────────────────────────────────╮\n│                                                                              │\n│                                                                              │\n│                         ▄▀▀ ▄▀█ █▀▀ ▀█▀ █▀▄▀█ █▀▀ █▀█                        │\n│                         █▀  █▀█ ▄▄█  █  █ ▀ █ █▄▄ █▀▀                        │\n│                                                                              │\n│                                                                              │\n│                                                                              │\n│                                FastMCP 4.0.3                                 │\n│                            https://gofastmcp.com                             │\n│                                                                              │\n│                  🖥  Server:      fl-studio-mcp, 0.3.0                        │\n│                  🚀 Deploy free: https://horizon.prefect.io                  │\n│                                                                              │\n╰──────────────────────────────────────────────────────────────────────────────╯\n\n\n[09/15/26 06:47:03] INFO     Starting MCP server                transport.py:242\n                             'fl-studio-mcp' with transport                     \n                             'stdio'                                            \n",
+  "durationMs": 53522,
+  "transport": "stdio"
+}

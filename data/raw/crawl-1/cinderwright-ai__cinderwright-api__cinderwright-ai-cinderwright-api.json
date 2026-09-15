@@ -1,0 +1,8 @@
+{
+  "serverId": "cinderwright-ai__cinderwright-api__cinderwright-ai-cinderwright-api",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "npm error could not determine executable to run\nnpm error A complete log of this run can be found in: /tmp/npm-cache/_logs/2026-09-15T06_28_11_570Z-debug-0.log\n",
+  "durationMs": 1605,
+  "transport": "stdio"
+}

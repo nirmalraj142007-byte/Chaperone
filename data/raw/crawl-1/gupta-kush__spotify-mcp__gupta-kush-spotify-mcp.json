@@ -1,0 +1,8 @@
+{
+  "serverId": "gupta-kush__spotify-mcp__gupta-kush-spotify-mcp",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "Downloading pydantic-core (2.0MiB)\nDownloading cryptography (4.5MiB)\n Downloaded pydantic-core\n Downloaded cryptography\nInstalled 36 packages in 10ms\nTraceback (most recent call last):\n  File \"/tmp/uv-cache/archive-v0/V1iVjPzKD3DKeah0/bin/spotify-mcp\", line 6, in <module>\n    from spotify_mcp import main\n  File \"/tmp/uv-cache/archive-v0/V1iVjPzKD3DKeah0/lib/python3.12/site-packages/spotify_mcp/__init__.py\", line 1, in <module>\n    from . import server\n  File \"/tmp/uv-cache/archive-v0/V1iVjPzKD3DKeah0/lib/python3.12/site-packages/spotify_mcp/server.py\", line 11, in <module>\n    from mcp.server import NotificationOptions, Server, stdio_server\nImportError: cannot import name 'stdio_server' from 'mcp.server' (/tmp/uv-cache/archive-v0/V1iVjPzKD3DKeah0/lib/python3.12/site-packages/mcp/server/__init__.py)\n",
+  "durationMs": 37915,
+  "transport": "stdio"
+}

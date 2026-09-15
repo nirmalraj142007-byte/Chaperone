@@ -1,0 +1,144 @@
+{
+  "serverId": "yonlandwu__chinese-almanac-mcp__yonlandwu-chinese-almanac-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "get_daily_almanac",
+      "description": "Get the full Chinese almanac for a date 查询某日完整黄历: lunar date 农历, day pillar 干支, Day Officer 值神(建除十二神), Yellow/Black Belt 黄黑道, zodiac clash 冲煞, auspicious/avoid 宜忌, spirits 神煞, Pengzu taboos 彭祖百忌, 28 mansions 二十八宿, solar term 节气.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "description": "Date YYYY-MM-DD (default: today, New York time) 默认今天(纽约时区)",
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_hour_pillars",
+      "description": "Get the 12 two-hour pillars (子丑寅卯…) with Yellow/Black Belt deities 查询某日十二时辰黄黑道吉凶 — which hours are auspicious (青龙/明堂/金匮/天德/玉堂/司命) vs caution (天刑/朱雀/白虎/天牢/玄武/勾陈).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "description": "Date YYYY-MM-DD 日期"
+          }
+        },
+        "required": [
+          "date"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_solar_terms",
+      "description": "Get the 24 solar terms of a year with minute precision 查询某年二十四节气(分钟级, JPL DE440s) — e.g. 立秋 2026-08-07 19:42. Range: current year ±1.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "year": {
+            "type": "integer",
+            "minimum": 1900,
+            "maximum": 2100,
+            "description": "Year 年份 (current ±1 for free tier)"
+          }
+        },
+        "required": [
+          "year"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "pick_auspicious_dates",
+      "description": "Pick the best upcoming dates for a real-life event 择日 — weddings 嫁娶, moving 搬家, business openings 开业, renovations 动土, C-sections 剖腹产, contract signing / major purchases 签约买车买房, travel 出行, new jobs 入职. Engine uses four-tier spirit arbitration (協紀辨方書). Accepts natural-language synonyms (marriage, buy-a-car, 结婚, 装修…). weekend_only filters to Sat/Sun.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "activity": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Event 活动 — canonical: wedding|moving-house|grand-opening|renovation|c-section|signing-contracts|travel|starting-a-new-job; synonyms like marriage/买车/开业 all work"
+          },
+          "days": {
+            "description": "Window in days 查询窗口天数 (default 30)",
+            "type": "integer",
+            "minimum": 7,
+            "maximum": 60
+          },
+          "weekend_only": {
+            "description": "Only Saturdays/Sundays 仅周末 (default false)",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "activity"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_daily_horoscope",
+      "description": "Get the daily luck score for a Chinese zodiac sign 查询某生肖当日运势 (0-100 + tier + 8 life categories) — rat/ox/tiger/rabbit/dragon/snake/horse/goat/monkey/rooster/dog/pig 鼠牛虎兔龙蛇马羊猴鸡狗猪.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sign": {
+            "type": "string",
+            "minLength": 2,
+            "description": "Zodiac sign 生肖 slug: rat, ox, tiger, rabbit, dragon, snake, horse, goat, monkey, rooster, dog, pig"
+          },
+          "date": {
+            "description": "Date YYYY-MM-DD (default today 默认今天)",
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          }
+        },
+        "required": [
+          "sign"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_personal_lucky_hours",
+      "description": "Rank the 12 hours of a day for YOUR zodiac sign 查询个人吉时 — combines zodiac relations (三合 trine / 六合 harmony / 六冲 clash / 六害 harm) with the day's Yellow/Black Belt hours. Returns best_hours with 0-10 personal scores.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "zodiac": {
+            "type": "string",
+            "minLength": 2,
+            "description": "User's zodiac sign 生肖: rat, ox, tiger, rabbit, dragon, snake, horse, goat, monkey, rooster, dog, pig"
+          },
+          "date": {
+            "description": "Date YYYY-MM-DD (default today 默认今天)",
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          }
+        },
+        "required": [
+          "zodiac"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "list_activities",
+      "description": "List the 8 supported event types with all accepted synonyms (EN/CN) 列出支持的择日活动与全部中英同义词 — use this to validate the activity argument before calling pick_auspicious_dates.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "chinese-almanac-mcp ready (12Zodiacs engine, JPL DE440s precision)\n",
+  "durationMs": 20845,
+  "transport": "stdio"
+}

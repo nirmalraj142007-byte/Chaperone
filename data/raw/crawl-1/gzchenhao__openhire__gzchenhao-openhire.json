@@ -1,0 +1,8 @@
+{
+  "serverId": "gzchenhao__openhire__gzchenhao-openhire",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "Downloading cryptography (4.5MiB)\nDownloading pygments (1.2MiB)\nDownloading pydantic-core (2.0MiB)\nDownloading sqlalchemy (3.3MiB)\nDownloading anthropic (1.2MiB)\n Downloaded anthropic\n Downloaded pygments\n Downloaded pydantic-core\n Downloaded sqlalchemy\n Downloaded cryptography\nInstalled 48 packages in 21ms\n",
+  "durationMs": 34592,
+  "transport": "stdio"
+}

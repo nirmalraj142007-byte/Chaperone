@@ -1,0 +1,8 @@
+{
+  "serverId": "jmagar__unraid-rmcp__ai-dinglebear-unraid-rmcp",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "npm error code ENOVERSIONS\nnpm error No versions available for unraid-rmcp\nnpm notice\nnpm notice New major version of npm available! 10.9.8 -> 12.0.2\nnpm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2\nnpm notice To update run: npm install -g npm@12.0.2\nnpm notice\nnpm error A complete log of this run can be found in: /tmp/npm-cache/_logs/2026-09-15T06_36_44_484Z-debug-0.log\n",
+  "durationMs": 1673,
+  "transport": "stdio"
+}

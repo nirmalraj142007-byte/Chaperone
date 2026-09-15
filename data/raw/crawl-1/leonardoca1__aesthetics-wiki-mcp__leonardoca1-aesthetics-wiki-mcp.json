@@ -1,0 +1,8 @@
+{
+  "serverId": "leonardoca1__aesthetics-wiki-mcp__leonardoca1-aesthetics-wiki-mcp",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "Downloading pygments (1.2MiB)\nDownloading cryptography (4.5MiB)\nDownloading pydantic-core (2.0MiB)\n Downloaded pygments\n Downloaded pydantic-core\n Downloaded cryptography\nInstalled 42 packages in 11ms\nTraceback (most recent call last):\n  File \"/tmp/uv-cache/archive-v0/CZQdJIyUiPkRIJvS/bin/aesthetics-wiki-mcp\", line 6, in <module>\n    from aesthetics_wiki_mcp.server import main\n  File \"/tmp/uv-cache/archive-v0/CZQdJIyUiPkRIJvS/lib/python3.12/site-packages/aesthetics_wiki_mcp/__init__.py\", line 3, in <module>\n    from .server import main\n  File \"/tmp/uv-cache/archive-v0/CZQdJIyUiPkRIJvS/lib/python3.12/site-packages/aesthetics_wiki_mcp/server.py\", line 15, in <module>\n    from mcp.server.fastmcp import FastMCP\n  File \"/tmp/uv-cache/archive-v0/CZQdJIyUiPkRIJvS/lib/python3.12/site-packages/mcp/server/fastmcp.py\", line 16, in <module>\n    raise ModuleNotFoundError(_MESSAGE, name=__name__)\nModuleNotFoundError: No module named 'mcp.server.fastmcp'. This is mcp 2.x, where FastMCP was renamed to MCPServer (from mcp.server.mcpserver import MCPServer) and other APIs changed; see the migration guide at https://py.sdk.modelcontextprotocol.io/v2/migration/#fastmcp-renamed-to-mcpserver or pin 'mcp<2' to keep running v1 code.\n",
+  "durationMs": 44397,
+  "transport": "stdio"
+}

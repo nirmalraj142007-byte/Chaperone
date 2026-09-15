@@ -1,0 +1,323 @@
+{
+  "serverId": "doublespeed-main__mcp__ai-doublespeed-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "discover_projs",
+      "description": "Scan a directory for .xcworkspace, .xcodeproj and Package.swift (skipping node_modules, Pods, .build, DerivedData). Local; no Mac needed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "workspaceRoot": {
+            "description": "Directory to scan (default: cwd)",
+            "type": "string"
+          },
+          "maxDepth": {
+            "type": "number"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "list_schemes",
+      "description": "List shared schemes of a project or workspace by reading xcshareddata (local). Unshared schemes are not visible; if none are listed, ds infers the scheme from the app target on the Mac.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "projectPath": {
+            "type": "string"
+          },
+          "workspacePath": {
+            "type": "string"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "list_sims",
+      "description": "List simulator devices, iOS runtimes and Xcode versions available on the doublespeed fleet.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "check_project",
+      "description": "Lint-only check on a real Mac: resolves the project/workspace/package and schemes with xcodebuild -list, parses every Swift file with swiftc (syntax, file:line:col), lints plists. Does NOT compile. Works without DS_API_KEY (keyless trial: 10 per day per address, 25 MB snapshot). Use this to validate structure before asking the user for a key; use build_sim/test_sim for a real build.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "workspaceRoot": {
+            "description": "Directory to upload as the project root (default: the directory containing the project/workspace, or the current directory). Only files under it are sent.",
+            "type": "string"
+          },
+          "projectPath": {
+            "description": "Path to the .xcodeproj (omit for a workspace or a Swift package)",
+            "type": "string"
+          },
+          "workspacePath": {
+            "description": "Path to the .xcworkspace (CocoaPods / React Native projects)",
+            "type": "string"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "build_sim",
+      "description": "Compile the project for the iOS Simulator on a Mac in the doublespeed fleet. Returns file:line:col errors. Use when there is no Xcode locally.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "workspaceRoot": {
+            "description": "Directory to upload as the project root (default: the directory containing the project/workspace, or the current directory). Only files under it are sent.",
+            "type": "string"
+          },
+          "projectPath": {
+            "description": "Path to the .xcodeproj (omit for a workspace or a Swift package)",
+            "type": "string"
+          },
+          "workspacePath": {
+            "description": "Path to the .xcworkspace (CocoaPods / React Native projects)",
+            "type": "string"
+          },
+          "scheme": {
+            "description": "Scheme to build; inferred when the project has exactly one app scheme",
+            "type": "string"
+          },
+          "simulatorName": {
+            "description": "Simulator device name, e.g. 'iPhone 16 Pro' (default iPhone 16)",
+            "type": "string"
+          },
+          "configuration": {
+            "description": "Debug or Release (default: what the scheme defines)",
+            "type": "string"
+          },
+          "xcodeVersion": {
+            "description": "Required Xcode major or exact version, e.g. '16' or '16.4'",
+            "type": "string"
+          },
+          "extraArgs": {
+            "description": "Extra `ds xcode` flags, e.g. ['--setting', 'CODE_SIGNING_ALLOWED=NO', '--timeout', '3600']",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "collectApp": {
+            "description": "Also upload the built .app as an artifact",
+            "type": "boolean"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "test_sim",
+      "description": "Build and run XCTest / Swift Testing on an iOS Simulator on the doublespeed fleet. Returns per-test results and compile errors.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "workspaceRoot": {
+            "description": "Directory to upload as the project root (default: the directory containing the project/workspace, or the current directory). Only files under it are sent.",
+            "type": "string"
+          },
+          "projectPath": {
+            "description": "Path to the .xcodeproj (omit for a workspace or a Swift package)",
+            "type": "string"
+          },
+          "workspacePath": {
+            "description": "Path to the .xcworkspace (CocoaPods / React Native projects)",
+            "type": "string"
+          },
+          "scheme": {
+            "description": "Scheme to build; inferred when the project has exactly one app scheme",
+            "type": "string"
+          },
+          "simulatorName": {
+            "description": "Simulator device name, e.g. 'iPhone 16 Pro' (default iPhone 16)",
+            "type": "string"
+          },
+          "configuration": {
+            "description": "Debug or Release (default: what the scheme defines)",
+            "type": "string"
+          },
+          "xcodeVersion": {
+            "description": "Required Xcode major or exact version, e.g. '16' or '16.4'",
+            "type": "string"
+          },
+          "extraArgs": {
+            "description": "Extra `ds xcode` flags, e.g. ['--setting', 'CODE_SIGNING_ALLOWED=NO', '--timeout', '3600']",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "testPlan": {
+            "type": "string"
+          },
+          "onlyTesting": {
+            "description": "XCTest identifiers to run, e.g. ['AppTests/CounterTests']",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "skipTesting": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "build_run_sim",
+      "description": "Build, install and launch the app in an iOS Simulator on the fleet and return a browser URL where a human can see and use it (tap, type, swipe). The session stays open until stop_app_sim or the idle timeout. Billed per second while open.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "workspaceRoot": {
+            "description": "Directory to upload as the project root (default: the directory containing the project/workspace, or the current directory). Only files under it are sent.",
+            "type": "string"
+          },
+          "projectPath": {
+            "description": "Path to the .xcodeproj (omit for a workspace or a Swift package)",
+            "type": "string"
+          },
+          "workspacePath": {
+            "description": "Path to the .xcworkspace (CocoaPods / React Native projects)",
+            "type": "string"
+          },
+          "scheme": {
+            "description": "Scheme to build; inferred when the project has exactly one app scheme",
+            "type": "string"
+          },
+          "simulatorName": {
+            "description": "Simulator device name, e.g. 'iPhone 16 Pro' (default iPhone 16)",
+            "type": "string"
+          },
+          "configuration": {
+            "description": "Debug or Release (default: what the scheme defines)",
+            "type": "string"
+          },
+          "xcodeVersion": {
+            "description": "Required Xcode major or exact version, e.g. '16' or '16.4'",
+            "type": "string"
+          },
+          "extraArgs": {
+            "description": "Extra `ds xcode` flags, e.g. ['--setting', 'CODE_SIGNING_ALLOWED=NO', '--timeout', '3600']",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "idleTimeoutSeconds": {
+            "description": "End the session after this long with no viewer activity (60–7200, default 900)",
+            "type": "number"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "stop_app_sim",
+      "description": "End a live simulator session started by build_run_sim (frees the Mac; stops billing).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "description": "Job id returned by build_run_sim"
+          }
+        },
+        "required": [
+          "jobId"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "archive_app",
+      "description": "Produce an unsigned .xcarchive for the device SDK on the fleet (Release). Signing and TestFlight upload are not available yet.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "workspaceRoot": {
+            "description": "Directory to upload as the project root (default: the directory containing the project/workspace, or the current directory). Only files under it are sent.",
+            "type": "string"
+          },
+          "projectPath": {
+            "description": "Path to the .xcodeproj (omit for a workspace or a Swift package)",
+            "type": "string"
+          },
+          "workspacePath": {
+            "description": "Path to the .xcworkspace (CocoaPods / React Native projects)",
+            "type": "string"
+          },
+          "scheme": {
+            "description": "Scheme to build; inferred when the project has exactly one app scheme",
+            "type": "string"
+          },
+          "simulatorName": {
+            "description": "Simulator device name, e.g. 'iPhone 16 Pro' (default iPhone 16)",
+            "type": "string"
+          },
+          "configuration": {
+            "description": "Debug or Release (default: what the scheme defines)",
+            "type": "string"
+          },
+          "xcodeVersion": {
+            "description": "Required Xcode major or exact version, e.g. '16' or '16.4'",
+            "type": "string"
+          },
+          "extraArgs": {
+            "description": "Extra `ds xcode` flags, e.g. ['--setting', 'CODE_SIGNING_ALLOWED=NO', '--timeout', '3600']",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "job_status",
+      "description": "Fetch a previous job (status, error, diagnostics, tests) and optionally its log tail.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "type": "string"
+          },
+          "logLines": {
+            "description": "Return the last N log lines (default 0)",
+            "type": "number"
+          }
+        },
+        "required": [
+          "jobId"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "doctor",
+      "description": "Check that this machine can reach the doublespeed fleet: key present, API reachable, fleet capabilities, ds CLI version.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 17258,
+  "transport": "stdio"
+}

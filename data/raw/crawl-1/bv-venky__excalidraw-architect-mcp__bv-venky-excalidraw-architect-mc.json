@@ -1,0 +1,807 @@
+{
+  "serverId": "bv-venky__excalidraw-architect-mcp__bv-venky-excalidraw-architect-mc",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "create_diagram",
+      "description": "Create a new Excalidraw diagram of any supported type.\n\nTwo input modes:\n\n1. **Graph types** (``architecture``, ``flowchart``) - pass ``nodes`` and\n   ``connections``. The tool handles layout, styling, and rendering; no\n   coordinates needed.\n2. **Typed diagrams** (every other type) - pass ``diagram_type`` and a\n   ``spec`` object shaped for that type. Call ``list_diagram_types`` to\n   choose a type and ``get_diagram_schema`` to see its spec shape.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "output_path": {
+            "type": "string",
+            "description": "File path to save the .excalidraw file (e.g., \"./arch.excalidraw\")"
+          },
+          "diagram_type": {
+            "default": "architecture",
+            "type": "string",
+            "description": "One of the types from ``list_diagram_types``. Default\n\"architecture\". Pick the type that matches what the reader needs\nto learn, not the one that is easiest to fill in."
+          },
+          "spec": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Type-specific payload. Required for every type other than\narchitecture/flowchart. Every spec accepts optional \"title\" and\n\"subtitle\". Mark 1-2 elements ``\"focal\": true`` to earn the accent\ncolor - marking five erases the signal."
+          },
+          "nodes": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Graph types only. List of nodes. Each dict has:\n- id (str, required): Unique identifier\n- label (str, required): Display text\n- component_type (str, optional): Technology name for auto-styling\n  (e.g., \"kafka\", \"postgresql\", \"redis\", \"nginx\", \"kubernetes\").\n  If omitted, the label is used for auto-detection.\n- shape (str, optional): Override shape - \"rectangle\", \"diamond\",\n  \"ellipse\", \"circle\", \"stadium\", \"parallelogram\""
+          },
+          "connections": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Graph types only. List of connections. Each dict has:\n- from_id (str, required): Source node id\n- to_id (str, required): Target node id\n- label (str, optional): Edge label text\n- style (str, optional): \"solid\", \"dashed\", \"dotted\", \"thick\""
+          },
+          "direction": {
+            "default": "LR",
+            "type": "string",
+            "description": "Layout direction for graph types - \"LR\" (left-right),\n       \"TD\" (top-down), \"BT\" (bottom-up), \"RL\" (right-left)."
+          },
+          "theme": {
+            "default": "default",
+            "type": "string",
+            "description": "Color theme - \"default\", \"dark\", \"colorful\". Default: \"default\""
+          }
+        },
+        "required": [
+          "output_path"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "mermaid_to_excalidraw",
+      "description": "Convert Mermaid flowchart syntax into an Excalidraw diagram.\n\nSupports the mermaid flowchart subset that AI agents commonly generate:\n- Directions: graph TD, LR, BT, RL\n- Node shapes: [text], {text}, ((text)), ([text])\n- Edge types: -->, ---, -.->  ==>  with |label|\n- Subgraphs: subgraph Title ... end\n\nComponent types are auto-detected from node labels (e.g., a node labeled\n\"PostgreSQL DB\" automatically gets database styling).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "mermaid_syntax": {
+            "type": "string",
+            "description": "Mermaid flowchart source code."
+          },
+          "output_path": {
+            "type": "string",
+            "description": "File path to save the .excalidraw file."
+          },
+          "theme": {
+            "default": "default",
+            "type": "string",
+            "description": "Color theme - \"default\", \"dark\", \"colorful\". Default: \"default\""
+          }
+        },
+        "required": [
+          "mermaid_syntax",
+          "output_path"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "modify_diagram",
+      "description": "Modify an existing Excalidraw diagram created by this tool.\n\nSupports iterative editing: add components, remove nodes, update labels,\nand rewire connections - without recreating the entire diagram.\n\nIMPORTANT: Call get_diagram_info first to understand the current diagram\nstate before making modifications.\n\nFor **typed diagrams** (sequence, pyramid, bar, swimlane, ...) there is a\nsingle operation:\n\n    {\"op\": \"update_spec\", \"patch\": {\"tiers\": [...], \"title\": \"New title\"}}\n\nThe patch is deep-merged into the stored spec and the diagram re-rendered.\nLists are replaced wholesale, so send the complete list to change one\nentry. The node/connection operations below apply to architecture and\nflowchart diagrams only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "file_path": {
+            "type": "string",
+            "description": "Path to the existing .excalidraw file."
+          },
+          "operations": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "description": "Ordered list of operations. Each dict has:\n- op: \"add_node\" | \"remove_node\" | \"update_node\" |\n      \"add_connection\" | \"remove_connection\"\n\nFor add_node:\n  - id (str): New node identifier\n  - label (str): Display text\n  - component_type (str, optional): Technology for auto-styling\n  - shape (str, optional): Shape override\n  - near (str, optional): Place near this existing node id\n\nFor remove_node:\n  - id (str): Node to remove (also removes its connections)\n\nFor update_node:\n  - id (str): Node to update\n  - label (str, optional): New label\n  - component_type (str, optional): New component type\n\nFor add_connection:\n  - from_id (str): Source node id\n  - to_id (str): Target node id\n  - label (str, optional): Edge label\n\nFor remove_connection:\n  - from_id (str): Source node id\n  - to_id (str): Target node id"
+          },
+          "theme": {
+            "default": "default",
+            "type": "string",
+            "description": "Color theme for re-rendering. Default: \"default\""
+          }
+        },
+        "required": [
+          "file_path",
+          "operations"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_diagram_info",
+      "description": "Get a structured summary of an existing Excalidraw diagram.\n\nCall this BEFORE modify_diagram to understand what nodes and connections\ncurrently exist. The summary includes node ids, labels, component types,\nand the full connection topology.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "file_path": {
+            "type": "string",
+            "description": "Path to the .excalidraw file."
+          }
+        },
+        "required": [
+          "file_path"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "export_diagram",
+      "description": "Export an .excalidraw file to SVG or PNG image.\n\nConverts an existing .excalidraw diagram into a portable image file\nwithout requiring a browser or the Excalidraw application.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input_path": {
+            "type": "string",
+            "description": "Path to the source .excalidraw file."
+          },
+          "output_path": {
+            "type": "string",
+            "description": "Destination file path (e.g., \"./arch.svg\" or \"./arch.png\")."
+          },
+          "format": {
+            "default": "svg",
+            "type": "string",
+            "description": "Output format - \"svg\" (default) or \"png\".\n    PNG export requires the cairosvg package\n    (``pip install cairosvg``)."
+          },
+          "scale": {
+            "default": 2,
+            "type": "number",
+            "description": "Resolution multiplier for PNG output (default 2.0 = 2×).\n   Has no effect on SVG output."
+          }
+        },
+        "required": [
+          "input_path",
+          "output_path"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "list_diagram_types",
+      "description": "List every supported diagram type with guidance on when to use it.\n\nCall this BEFORE create_diagram when the right diagram type isn't obvious.\nPicking the wrong type is the most common way a diagram fails - a\nswimlane drawn as a flowchart loses the handoffs that were the point.\n\nTwo rules worth applying whatever you pick:\n  - Target density ~4/10. Above 9 nodes it is probably two diagrams.\n  - Mark only 1-2 elements \"focal\": true. The accent color is a signal,\n    and using it everywhere destroys it.\n\nReturns:\n    A table of type -> family, when to use it, and when not to.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_diagram_schema",
+      "description": "Get the JSON schema and selection guidance for one diagram type.\n\nCall this before passing a `spec` to create_diagram for a type you have\nnot used yet, so the payload matches on the first attempt.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "diagram_type": {
+            "type": "string",
+            "description": "A type name from list_diagram_types (e.g. \"sequence\",\n\"pyramid\", \"bar\", \"swimlane\")."
+          }
+        },
+        "required": [
+          "diagram_type"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "kg_init",
+      "description": "Create a new architecture knowledge graph file (markdown).\n\nThe knowledge graph is the persistent source of truth for your system's\nservices and dependencies. Diagrams are rendered *from* it.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "graph_path": {
+            "default": ".claude/architecture.md",
+            "type": "string",
+            "description": "Where to store the knowledge file. Default ``.claude/architecture.md``."
+          },
+          "title": {
+            "default": "System Architecture",
+            "type": "string",
+            "description": "Human title for the architecture."
+          },
+          "direction": {
+            "default": "LR",
+            "type": "string",
+            "description": "Default layout direction for rendered views (LR/TD/BT/RL)."
+          },
+          "overwrite": {
+            "default": false,
+            "type": "boolean",
+            "description": "Replace an existing file if present."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "kg_add_service",
+      "description": "Add or update a service in the knowledge graph.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique service identifier (stable; reused across diagrams)."
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Display name (defaults to id)."
+          },
+          "component_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Technology for auto-styling (e.g. \"postgresql\", \"kafka\")."
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Free-text description."
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Bounded-context / team / tier this service belongs to."
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Owning team or person (e.g. \"@payments\")."
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Arbitrary tags."
+          },
+          "links": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Related URLs (ADRs, runbooks, dashboards)."
+          },
+          "shape": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Shape override (rectangle/diamond/ellipse/circle/stadium/parallelogram)."
+          },
+          "graph_path": {
+            "default": ".claude/architecture.md",
+            "type": "string",
+            "description": "Knowledge file path."
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "kg_remove_service",
+      "description": "Remove a service and all dependencies touching it.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "graph_path": {
+            "default": ".claude/architecture.md",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "kg_link",
+      "description": "Add a directed dependency: ``from_id`` depends on / calls ``to_id``.\n\nBoth services must already exist (add them with kg_add_service first).\n``style`` is one of solid/dashed/dotted/thick.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "from_id": {
+            "type": "string"
+          },
+          "to_id": {
+            "type": "string"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "style": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "graph_path": {
+            "default": ".claude/architecture.md",
+            "type": "string"
+          }
+        },
+        "required": [
+          "from_id",
+          "to_id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "kg_unlink",
+      "description": "Remove the dependency ``from_id`` -> ``to_id``.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "from_id": {
+            "type": "string"
+          },
+          "to_id": {
+            "type": "string"
+          },
+          "graph_path": {
+            "default": ".claude/architecture.md",
+            "type": "string"
+          }
+        },
+        "required": [
+          "from_id",
+          "to_id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "kg_set_domain",
+      "description": "Assign a service to a domain (optionally set the domain's display label).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "service_id": {
+            "type": "string"
+          },
+          "domain": {
+            "type": "string"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "graph_path": {
+            "default": ".claude/architecture.md",
+            "type": "string"
+          }
+        },
+        "required": [
+          "service_id",
+          "domain"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "kg_info",
+      "description": "Summarize the whole knowledge graph: services, domains, and topology.\n\nCall this before mutating the graph to reason about current state.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "graph_path": {
+            "default": ".claude/architecture.md",
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "kg_render",
+      "description": "Render the entire architecture to an .excalidraw file.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "output_path": {
+            "type": "string"
+          },
+          "theme": {
+            "default": "default",
+            "type": "string"
+          },
+          "graph_path": {
+            "default": ".claude/architecture.md",
+            "type": "string"
+          }
+        },
+        "required": [
+          "output_path"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "kg_render_view",
+      "description": "Render a focused diagram of just the given services (induced subgraph).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "node_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "theme": {
+            "default": "default",
+            "type": "string"
+          },
+          "graph_path": {
+            "default": ".claude/architecture.md",
+            "type": "string"
+          }
+        },
+        "required": [
+          "node_ids",
+          "output_path"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "kg_render_around",
+      "description": "Render a service plus everything within ``depth`` hops of it.\n\n``direction``: \"downstream\" (its dependencies), \"upstream\" (its\ndependents), or \"both\".",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "service_id": {
+            "type": "string"
+          },
+          "depth": {
+            "type": "integer"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "direction": {
+            "default": "both",
+            "type": "string"
+          },
+          "theme": {
+            "default": "default",
+            "type": "string"
+          },
+          "graph_path": {
+            "default": ".claude/architecture.md",
+            "type": "string"
+          }
+        },
+        "required": [
+          "service_id",
+          "depth",
+          "output_path"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "kg_render_domain",
+      "description": "Render only the services belonging to one domain.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "domain": {
+            "type": "string"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "theme": {
+            "default": "default",
+            "type": "string"
+          },
+          "graph_path": {
+            "default": ".claude/architecture.md",
+            "type": "string"
+          }
+        },
+        "required": [
+          "domain",
+          "output_path"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "kg_import",
+      "description": "Import an existing .excalidraw diagram's services into the knowledge graph.\n\nBootstraps the graph from diagrams you already created with this tool.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "excalidraw_path": {
+            "type": "string"
+          },
+          "graph_path": {
+            "default": ".claude/architecture.md",
+            "type": "string"
+          }
+        },
+        "required": [
+          "excalidraw_path"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "whats_connected_to",
+      "description": "Impact analysis: what breaks if ``service_id`` fails?\n\nReports direct dependents, the full transitive upstream blast radius,\nand what the service itself depends on.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "service_id": {
+            "type": "string"
+          },
+          "graph_path": {
+            "default": ".claude/architecture.md",
+            "type": "string"
+          }
+        },
+        "required": [
+          "service_id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "kg_path",
+      "description": "Trace the shortest dependency path between two services.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "from_id": {
+            "type": "string"
+          },
+          "to_id": {
+            "type": "string"
+          },
+          "graph_path": {
+            "default": ".claude/architecture.md",
+            "type": "string"
+          }
+        },
+        "required": [
+          "from_id",
+          "to_id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "kg_lint",
+      "description": "Architecture health check: cycles, single points of failure, orphans,\ndangling references, and (optionally) unowned services.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "check_owners": {
+            "default": false,
+            "type": "boolean"
+          },
+          "graph_path": {
+            "default": ".claude/architecture.md",
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "kg_export",
+      "description": "Export the knowledge graph to another format.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "format": {
+            "default": "mermaid",
+            "type": "string",
+            "description": "\"mermaid\", \"dot\" (Graphviz), or \"json\"."
+          },
+          "output_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "If given, write to this file; otherwise return the text."
+          },
+          "graph_path": {
+            "default": ".claude/architecture.md",
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "kg_diff",
+      "description": "Show how the architecture changed since a git ref (default HEAD).\n\nCompares the current knowledge file against its version at ``ref``.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "default": "HEAD",
+            "type": "string"
+          },
+          "graph_path": {
+            "default": ".claude/architecture.md",
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "kg_onboarding_doc",
+      "description": "Generate a human onboarding guide (entry points, hubs, domains) from the graph.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "output_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "graph_path": {
+            "default": ".claude/architecture.md",
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "kg_drift",
+      "description": "Detect drift between the declared architecture and Python imports under ``code_root``.\n\nBest-effort: treats each top-level package as a service and infers edges\nfrom imports. Reports undocumented and possibly-stale dependencies.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "code_root": {
+            "type": "string"
+          },
+          "graph_path": {
+            "default": ".claude/architecture.md",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code_root"
+        ],
+        "additionalProperties": false
+      }
+    }
+  ],
+  "stderrTail": "Downloading cryptography (4.5MiB)\nDownloading pydantic-core (2.0MiB)\nDownloading beartype (1.3MiB)\nDownloading pygments (1.2MiB)\n Downloaded pygments\n Downloaded beartype\n Downloaded pydantic-core\n Downloaded cryptography\nInstalled 71 packages in 23ms\n\n\n╭──────────────────────────────────────────────────────────────────────────────╮\n│                                                                              │\n│                                                                              │\n│                         ▄▀▀ ▄▀█ █▀▀ ▀█▀ █▀▄▀█ █▀▀ █▀█                        │\n│                         █▀  █▀█ ▄▄█  █  █ ▀ █ █▄▄ █▀▀                        │\n│                                                                              │\n│                                                                              │\n│                                                                              │\n│                                FastMCP 4.0.3                                 │\n│                            https://gofastmcp.com                             │\n│                                                                              │\n│                 🖥  Server:      Excalidraw Architect, 4.0.3                  │\n│                 🚀 Deploy free: https://horizon.prefect.io                   │\n│                                                                              │\n╰──────────────────────────────────────────────────────────────────────────────╯\n\n\n[09/15/26 06:27:41] INFO     Starting MCP server 'Excalidraw    transport.py:242\n                             Architect' with transport 'stdio'                  \n",
+  "durationMs": 49096,
+  "transport": "stdio"
+}

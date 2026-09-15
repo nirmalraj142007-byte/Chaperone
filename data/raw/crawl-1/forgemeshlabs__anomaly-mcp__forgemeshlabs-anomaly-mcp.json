@@ -1,0 +1,344 @@
+{
+  "serverId": "forgemeshlabs__anomaly-mcp__forgemeshlabs-anomaly-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "health_check",
+      "description": "Check ForgeMesh Anomaly Tracker API health and uptime.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "anomaly_scan",
+      "description": "Scan a blockchain for sequence anomalies — unusual patterns of whale movements, exchange flows, bridge activity, and stablecoin mints/burns. Returns a story label, anomaly score (0-100), novelty level, and the peak anomalous symbol window. Costs $0.05 USDC on Base mainnet.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "chain": {
+            "type": "string",
+            "enum": [
+              "ethereum",
+              "base",
+              "arbitrum"
+            ],
+            "description": "Blockchain to analyze (default: ethereum)"
+          },
+          "window": {
+            "type": "string",
+            "enum": [
+              "1h",
+              "4h",
+              "24h",
+              "168h"
+            ],
+            "description": "Lookback window (default: 24h)"
+          }
+        }
+      }
+    },
+    {
+      "name": "token_scan",
+      "description": "Best-effort anomaly scan for a single token — scores recent transfer patterns for unusual activity and returns source status plus coverage notes. Pass a contract address or well-known symbol. Costs $0.03 USDC on Base mainnet.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "Token contract address (0x...) or symbol: usdt, usdc, weth, wbtc, link, uni, aave, steth, pepe, dai, cbeth, arb"
+          },
+          "chain": {
+            "type": "string",
+            "enum": [
+              "ethereum",
+              "base",
+              "arbitrum"
+            ],
+            "description": "Blockchain to analyze (default: ethereum)"
+          },
+          "window": {
+            "type": "string",
+            "enum": [
+              "1h",
+              "4h",
+              "24h",
+              "168h"
+            ],
+            "description": "Lookback window (default: 24h)"
+          }
+        },
+        "required": [
+          "token"
+        ]
+      }
+    },
+    {
+      "name": "whale_alerts",
+      "description": "Get recent whale movements, CEX inflows/outflows, bridge activity, and stablecoin mints/burns from monitored addresses (Binance, Coinbase, Kraken, OKX, Bybit, major bridges, Tether, Circle). Costs $0.02 USDC on Base mainnet.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "chain": {
+            "type": "string",
+            "enum": [
+              "ethereum",
+              "base",
+              "arbitrum"
+            ],
+            "description": "Blockchain to monitor (default: ethereum)"
+          },
+          "hours": {
+            "type": "integer",
+            "description": "Lookback window in hours, 1-168 (default: 4)"
+          }
+        }
+      }
+    },
+    {
+      "name": "address_scan",
+      "description": "Scan any wallet address for anomalous transaction patterns. Classifies each transaction by checking counterparties against known CEX wallets, bridges, and stablecoin issuers. Costs $0.03 USDC on Base mainnet.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "Wallet address to scan (0x...)"
+          },
+          "chain": {
+            "type": "string",
+            "enum": [
+              "ethereum",
+              "base",
+              "arbitrum"
+            ],
+            "description": "Blockchain to scan (default: ethereum)"
+          },
+          "window": {
+            "type": "string",
+            "enum": [
+              "1h",
+              "4h",
+              "24h",
+              "168h"
+            ],
+            "description": "Lookback window (default: 24h)"
+          }
+        },
+        "required": [
+          "address"
+        ]
+      }
+    },
+    {
+      "name": "model_status",
+      "description": "Get SequenceMiner model health and training stats per chain — training sequence count and last retrain time. Costs $0.01 USDC on Base mainnet.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "nft_scan",
+      "description": "Best-effort anomaly scan for an NFT collection — detects sweep accumulation, wash trading patterns, and mint surges, then returns source status plus coverage notes. Pass a contract address. Costs $0.03 USDC on Base mainnet.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "NFT contract address (ERC-721 or ERC-1155), e.g. 0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d"
+          },
+          "chain": {
+            "type": "string",
+            "enum": [
+              "ethereum",
+              "base",
+              "arbitrum"
+            ],
+            "description": "Blockchain (default: ethereum)"
+          },
+          "window": {
+            "type": "string",
+            "enum": [
+              "1h",
+              "4h",
+              "24h",
+              "168h"
+            ],
+            "description": "Lookback window (default: 24h)"
+          }
+        },
+        "required": [
+          "token"
+        ]
+      }
+    },
+    {
+      "name": "defi_scan",
+      "description": "Anomaly scan for a DeFi protocol — detects unusual flows through major lending and DEX contracts (Uniswap, Aave, Curve, Compound). Pass a protocol name or contract address. Returns a story label and anomaly score. Costs $0.03 USDC on Base mainnet.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "protocol": {
+            "type": "string",
+            "description": "Protocol name (uniswap_v3, uniswap_v3_r2, aave_v3, aave_v2, curve_3pool, compound_v3) or a 0x contract address"
+          },
+          "chain": {
+            "type": "string",
+            "enum": [
+              "ethereum",
+              "base",
+              "arbitrum"
+            ],
+            "description": "Blockchain (default: ethereum)"
+          },
+          "window": {
+            "type": "string",
+            "enum": [
+              "1h",
+              "4h",
+              "24h",
+              "168h"
+            ],
+            "description": "Lookback window (default: 24h)"
+          }
+        },
+        "required": [
+          "protocol"
+        ]
+      }
+    },
+    {
+      "name": "squawk_alerts",
+      "description": "Best-effort live global sweep of active aviation emergency squawk codes via OpenSky Network. Returns aircraft currently squawking 7700, 7600, or 7500 with source status and coverage notes. Costs $0.02 USDC on Base mainnet.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "flight_scan",
+      "description": "Sequence anomaly analysis for a named airspace region — detects unusual clustering of emergency squawks, rapid descents, or speed anomalies using the SequenceMiner engine. Costs $0.03 USDC on Base mainnet.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "region": {
+            "type": "string",
+            "enum": [
+              "north_atlantic",
+              "europe",
+              "north_america",
+              "asia_pacific",
+              "middle_east",
+              "africa",
+              "global"
+            ],
+            "description": "Airspace region to analyze (default: global)"
+          }
+        }
+      }
+    },
+    {
+      "name": "trending_signal",
+      "description": "GitHub repos with anomalous star velocity right now — early signals before mainstream discovery. Detects repos going viral (200+ stars/day), overnight explosions, fork surges, and issue floods. Useful for trend hunting, VC scouting, developer tool discovery. Costs $0.02 USDC on Base mainnet.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "string",
+            "enum": [
+              "3",
+              "7",
+              "14",
+              "30"
+            ],
+            "description": "Search repos created in the last N days (default: 7)"
+          }
+        }
+      }
+    },
+    {
+      "name": "repo_scan",
+      "description": "Deep anomaly scan for a single GitHub repository — scores star velocity, fork ratio, overnight explosion signals, and issue flood patterns. Returns a story label (e.g. 'Breakout Signal', 'Viral Activity') and anomaly score. Costs $0.03 USDC on Base mainnet.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "repo": {
+            "type": "string",
+            "description": "GitHub repo in owner/repo format, e.g. vercel/ai or microsoft/vscode"
+          }
+        },
+        "required": [
+          "repo"
+        ]
+      }
+    },
+    {
+      "name": "github_watch",
+      "description": "Watch a GitHub repo's activity stream for anomalous development patterns — commit bursts, force pushes, issue floods, merge rushes, bot takeovers. Returns a story label (e.g. 'History Rewrite', 'Merge Sprint', 'Bot Takeover') and anomaly score. Costs $0.03 USDC on Base mainnet.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "repo": {
+            "type": "string",
+            "description": "GitHub repo in owner/repo format, e.g. vercel/ai"
+          }
+        },
+        "required": [
+          "repo"
+        ]
+      }
+    },
+    {
+      "name": "claude_feature_watch",
+      "description": "Watch Anthropic/Claude repos for recently merged features — SDK changes, Claude Code updates, new capabilities. Scans anthropic-sdk-python, anthropic-sdk-typescript, claude-code, courses, and anthropic-cookbook. Costs $0.02 USDC on Base mainnet.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "integer",
+            "description": "Lookback window in days, 1-30 (default: 7)"
+          }
+        }
+      }
+    },
+    {
+      "name": "mempool_anomaly",
+      "description": "Real-time mempool anomaly score — detects gas spikes, MEV signals, pending whale swaps, contract deploy bursts, and priority fee wars. Designed for 5-second polling. Returns a story label (e.g. 'MEV Attack', 'Gas Surge', 'Priority Fee War') and anomaly score. Costs $0.01 USDC on Base mainnet.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "chain": {
+            "type": "string",
+            "enum": [
+              "ethereum",
+              "base"
+            ],
+            "description": "Blockchain (default: ethereum). Only Ethereum and Base have RPC mempool access."
+          }
+        }
+      }
+    },
+    {
+      "name": "depeg_monitor",
+      "description": "Real-time stablecoin depeg detector — monitors USDC, USDT, DAI prices for micro-deviations from $1.00 peg, spread between stables, and volume spikes. Catches depegs before they become crises. Designed for 1-minute polling. Returns a story label (e.g. 'Single Coin Drift', 'Multi-Stablecoin Crisis', 'Depeg Event') and anomaly score. Costs $0.01 USDC on Base mainnet.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "chain": {
+            "type": "string",
+            "enum": [
+              "ethereum",
+              "base",
+              "arbitrum"
+            ],
+            "description": "Blockchain (default: ethereum)"
+          }
+        }
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 16825,
+  "transport": "stdio"
+}

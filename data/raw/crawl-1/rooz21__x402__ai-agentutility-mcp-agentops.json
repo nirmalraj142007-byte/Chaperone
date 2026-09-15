@@ -1,0 +1,8 @@
+{
+  "serverId": "rooz21__x402__ai-agentutility-mcp-agentops",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "[@agentutility/mcp-agentops] FATAL: X402_PRIVATE_KEY env var is required.\nSet it to a hex-encoded EVM private key with USDC balance on Base (chain 8453).\nUSDC on Base: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913\nnpm notice\nnpm notice New major version of npm available! 10.9.8 -> 12.0.2\nnpm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2\nnpm notice To update run: npm install -g npm@12.0.2\nnpm notice\n",
+  "durationMs": 36081,
+  "transport": "stdio"
+}

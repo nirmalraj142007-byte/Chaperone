@@ -1,0 +1,8 @@
+{
+  "serverId": "ninjabeam20__sportiq-mcp__utkarshgupta885-sportiq",
+  "status": "FAILED_TIMEOUT",
+  "tools": [],
+  "stderrTail": "Downloading pandas (10.5MiB)\nDownloading cryptography (4.5MiB)\nDownloading pydantic-core (2.0MiB)\nDownloading scipy (33.7MiB)\nDownloading pulp (15.6MiB)\nDownloading numpy (15.9MiB)\n Downloaded pydantic-core\n Downloaded cryptography\n",
+  "durationMs": 120082,
+  "transport": "stdio"
+}

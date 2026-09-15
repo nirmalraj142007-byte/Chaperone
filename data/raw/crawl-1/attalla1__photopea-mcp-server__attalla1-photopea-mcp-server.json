@@ -1,0 +1,1077 @@
+{
+  "serverId": "attalla1__photopea-mcp-server__attalla1-photopea-mcp-server",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "photopea_create_document",
+      "description": "Create a new blank document and make it the active document. This is typically the first step in a workflow. The document opens with a Background layer. Use open_file instead to edit an existing image.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "width": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "Document width in pixels (e.g. 1920 for full HD)"
+          },
+          "height": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "Document height in pixels (e.g. 1080 for full HD)"
+          },
+          "resolution": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "default": 72,
+            "description": "Resolution in DPI (72 for screen, 300 for print)"
+          },
+          "name": {
+            "type": "string",
+            "default": "Untitled",
+            "description": "Document name shown in the title bar"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "RGB",
+              "CMYK",
+              "Grayscale",
+              "Lab",
+              "Bitmap"
+            ],
+            "default": "RGB",
+            "description": "Color mode (use RGB for most workflows)"
+          },
+          "fillColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "description": "Background fill color as hex (e.g. #ffffff for white, #000000 for black). Defaults to white if omitted."
+          }
+        },
+        "required": [
+          "width",
+          "height"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "photopea_open_file",
+      "description": "Open an existing image file in Photopea as a new document. Supports PSD, PNG, JPG, WebP, SVG, and other common formats. The opened file becomes the active document. Use create_document instead to start with a blank canvas.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "description": "URL or absolute local file path of the image to open (e.g. /Users/me/photo.psd or https://example.com/image.png)"
+          }
+        },
+        "required": [
+          "source"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "photopea_get_document_info",
+      "description": "Get metadata about the active document including name, width, height, resolution (DPI), layer count, and color mode. Returns JSON. Use this to check document dimensions before positioning layers or making selections.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "photopea_resize_document",
+      "description": "Resize the active document canvas to new pixel dimensions, resampling all layer content to fit. This is a destructive operation — all layers are scaled proportionally. Use undo to revert if needed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "width": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "New document width in pixels"
+          },
+          "height": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "New document height in pixels"
+          }
+        },
+        "required": [
+          "width",
+          "height"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "photopea_close_document",
+      "description": "Close the active document. Set save to true to save changes before closing. Unsaved changes are discarded if save is false. The next open document becomes active, if any.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "save": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether to save changes before closing (true = save first, false = discard unsaved changes)"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "photopea_add_layer",
+      "description": "Add a new empty layer to the active document. The new layer becomes the active layer. Use this before operations that draw onto a layer, such as fill_selection or add_gradient.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Display name for the new layer in the layers panel"
+          },
+          "opacity": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Layer opacity percentage (0 = fully transparent, 100 = fully opaque, default 100)"
+          },
+          "blendMode": {
+            "type": "string",
+            "description": "Blend mode (e.g. normal, multiply, screen, overlay, darken, lighten). Defaults to normal."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "photopea_add_fill_layer",
+      "description": "Add a non-destructive solid color fill layer that covers the entire canvas. Unlike fill_selection, this creates a separate adjustment-style layer that can be toggled, recolored, or deleted without affecting other layers. Use set_layer_properties to change its opacity or blend mode.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "solid"
+            ],
+            "description": "Fill layer type (currently only 'solid' is supported)"
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "description": "Fill color as hex string (e.g. #ff0000)"
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name for the fill layer in the layers panel"
+          }
+        },
+        "required": [
+          "type",
+          "color"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "photopea_delete_layer",
+      "description": "Permanently remove a layer from the active document by name or index. The next layer in the stack becomes active after deletion. Use get_layers to see available layers before deleting.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": [
+              "string",
+              "number"
+            ],
+            "description": "Layer name (string) or index (number)"
+          }
+        },
+        "required": [
+          "target"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "photopea_select_layer",
+      "description": "Set a layer as the active layer by name or index. Many tools (apply_filter, apply_adjustment, fill_selection) operate on the active layer — use this to target a specific layer first. Use get_layers to find layer names and indices.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": [
+              "string",
+              "number"
+            ],
+            "description": "Layer name (string) or index (number)"
+          }
+        },
+        "required": [
+          "target"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "photopea_set_layer_properties",
+      "description": "Update one or more properties on a layer. Only specified properties are changed; others remain at their current values. Use get_layers to inspect current property values before modifying.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": [
+              "string",
+              "number"
+            ],
+            "description": "Layer name (string) or index (number)"
+          },
+          "opacity": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Layer opacity percentage (0 = fully transparent, 100 = fully opaque)"
+          },
+          "blendMode": {
+            "type": "string",
+            "description": "Blend mode (e.g. normal, multiply, screen, overlay, darken, lighten, color-dodge, color-burn)"
+          },
+          "visible": {
+            "type": "boolean",
+            "description": "Layer visibility (true = visible, false = hidden)"
+          },
+          "name": {
+            "type": "string",
+            "description": "New display name for the layer"
+          },
+          "locked": {
+            "type": "boolean",
+            "description": "Whether the layer is locked (true = prevent edits, false = allow edits)"
+          }
+        },
+        "required": [
+          "target"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "photopea_move_layer",
+      "description": "Translate a layer by a relative x/y offset in pixels from its current position. Positive x moves right, positive y moves down. Use get_layers to check current layer bounds, or transform_layer for scaling and rotation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": [
+              "string",
+              "number"
+            ],
+            "description": "Layer name (string) or index (number)"
+          },
+          "x": {
+            "type": "number",
+            "description": "Horizontal offset in pixels (positive = right, negative = left)"
+          },
+          "y": {
+            "type": "number",
+            "description": "Vertical offset in pixels (positive = down, negative = up)"
+          }
+        },
+        "required": [
+          "target",
+          "x",
+          "y"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "photopea_duplicate_layer",
+      "description": "Create a copy of a layer in the active document. The duplicate becomes the active layer and is placed above the original. Use newName to distinguish the copy from the original.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": [
+              "string",
+              "number"
+            ],
+            "description": "Layer name (string) or index (number)"
+          },
+          "newName": {
+            "type": "string",
+            "description": "Display name for the duplicated layer (defaults to 'original name copy')"
+          }
+        },
+        "required": [
+          "target"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "photopea_reorder_layer",
+      "description": "Move a layer to a new position in the layer stack. Use 'top' or 'bottom' to move to the ends of the stack, or 'above'/'below' to shift one position relative to the current index. Use get_layers to see the current layer order.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": [
+              "string",
+              "number"
+            ],
+            "description": "Layer name (string) or index (number)"
+          },
+          "position": {
+            "type": "string",
+            "enum": [
+              "above",
+              "below",
+              "top",
+              "bottom"
+            ],
+            "description": "Target position: 'top' = front of stack, 'bottom' = back of stack, 'above' = one position up, 'below' = one position down"
+          }
+        },
+        "required": [
+          "target",
+          "position"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "photopea_group_layers",
+      "description": "Group multiple layers into a layer group (folder). Layers are specified by name — use get_layers to find layer names. Grouped layers can be ungrouped later with ungroup_layers.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "layers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Array of layer names to include in the group (use get_layers to find names)"
+          },
+          "groupName": {
+            "type": "string",
+            "description": "Display name for the group folder in the layers panel"
+          }
+        },
+        "required": [
+          "layers"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "photopea_ungroup_layers",
+      "description": "Dissolve a layer group, moving all child layers to the document root. The group folder is removed but its contents are preserved. Use get_layers to find group names.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": "string",
+            "description": "Name of the layer group to ungroup (use get_layers to find group names)"
+          }
+        },
+        "required": [
+          "target"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "photopea_get_layers",
+      "description": "Get the full layer tree of the active document as JSON. Returns an array of layer objects with name, type, index, visible, opacity, blendMode, and bounds properties. Groups contain nested children arrays. Use this to discover layer names and indices for other layer operations.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "photopea_add_text",
+      "description": "Add a new text layer to the active document at the specified position. The text layer becomes the active layer. Use paragraphBounds to create a text box with word wrapping, or omit for point text. Use load_font to add custom fonts, and list_fonts to find available font names.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "Text content to display on the layer"
+          },
+          "x": {
+            "type": "number",
+            "description": "X position in pixels from the left edge of the document"
+          },
+          "y": {
+            "type": "number",
+            "description": "Y position in pixels from the top edge of the document"
+          },
+          "font": {
+            "type": "string",
+            "description": "Font PostScript name (e.g. ArialMT, Helvetica-Bold). Use list_fonts to find available names."
+          },
+          "size": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "Font size in points (default varies by document resolution)"
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "description": "Color as hex string (e.g. #ff0000)"
+          },
+          "alignment": {
+            "type": "string",
+            "enum": [
+              "left",
+              "center",
+              "right"
+            ],
+            "description": "Text alignment"
+          },
+          "bold": {
+            "type": "boolean",
+            "description": "Apply faux bold"
+          },
+          "italic": {
+            "type": "boolean",
+            "description": "Apply faux italic"
+          },
+          "letterSpacing": {
+            "type": "number",
+            "description": "Letter tracking/spacing"
+          },
+          "lineHeight": {
+            "type": "number",
+            "description": "Line height (leading)"
+          },
+          "paragraphBounds": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "width": {
+                    "type": "number",
+                    "description": "Bounds width in pixels"
+                  },
+                  "height": {
+                    "type": "number",
+                    "description": "Bounds height in pixels"
+                  }
+                },
+                "required": [
+                  "width",
+                  "height"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Paragraph text box bounds"
+          }
+        },
+        "required": [
+          "content",
+          "x",
+          "y"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "photopea_edit_text",
+      "description": "Modify the content or style of an existing text layer. Only specified properties are changed — omit parameters to keep their current values. Use get_layers to find text layer names if needed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": [
+              "string",
+              "number"
+            ],
+            "description": "Layer name (string) or index (number)"
+          },
+          "content": {
+            "type": "string",
+            "description": "New text content to replace existing text"
+          },
+          "font": {
+            "type": "string",
+            "description": "New font PostScript name (use list_fonts to find available names)"
+          },
+          "size": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "New font size in points"
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "description": "Color as hex string (e.g. #ff0000)"
+          },
+          "alignment": {
+            "type": "string",
+            "enum": [
+              "left",
+              "center",
+              "right"
+            ],
+            "description": "Text alignment"
+          },
+          "letterSpacing": {
+            "type": "number",
+            "description": "Letter tracking/spacing"
+          },
+          "lineHeight": {
+            "type": "number",
+            "description": "Line height (leading)"
+          }
+        },
+        "required": [
+          "target"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "photopea_add_shape",
+      "description": "Add a vector shape layer (rectangle or ellipse) to the active document. The shape layer becomes the active layer. Shapes are non-destructive and can be resized with transform_layer without quality loss.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "rectangle",
+              "ellipse"
+            ],
+            "description": "Shape type to create"
+          },
+          "bounds": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number",
+                "description": "Left edge X position in pixels"
+              },
+              "y": {
+                "type": "number",
+                "description": "Top edge Y position in pixels"
+              },
+              "width": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "description": "Shape width in pixels"
+              },
+              "height": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "description": "Shape height in pixels"
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "width",
+              "height"
+            ],
+            "additionalProperties": false,
+            "description": "Shape bounds"
+          },
+          "fillColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "description": "Color as hex string (e.g. #ff0000)"
+          },
+          "strokeColor": {
+            "$ref": "#/properties/fillColor",
+            "description": "Color as hex string (e.g. #ff0000)"
+          },
+          "strokeWidth": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "Stroke width in pixels"
+          },
+          "name": {
+            "type": "string",
+            "description": "Name for the shape layer"
+          }
+        },
+        "required": [
+          "type",
+          "bounds"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "photopea_place_image",
+      "description": "Place an image into the active document from a URL or local file path. Creates a new layer with the placed image as the active layer. Use width/height to resize while preserving aspect ratio, or x/y to position the layer.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "description": "URL or absolute local file path of the image to place"
+          },
+          "x": {
+            "type": "number",
+            "description": "X position offset in pixels from the left edge"
+          },
+          "y": {
+            "type": "number",
+            "description": "Y position offset in pixels from the top edge"
+          },
+          "width": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "Resize to this width in pixels (preserves aspect ratio if only one dimension is set)"
+          },
+          "height": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "Resize to this height in pixels (preserves aspect ratio if only one dimension is set)"
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name for the placed layer in the layers panel"
+          }
+        },
+        "required": [
+          "source"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "photopea_apply_adjustment",
+      "description": "Apply a destructive image adjustment to the active layer's pixel data. Use select_layer to target a specific layer first. Modifies pixels directly — use undo to revert if needed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "brightness",
+              "hue_sat",
+              "levels",
+              "curves"
+            ],
+            "description": "Adjustment type: 'brightness' for brightness/contrast, 'hue_sat' for hue/saturation/lightness, 'levels' for input levels, 'curves' for tone curves"
+          },
+          "settings": {
+            "type": "object",
+            "additionalProperties": {
+              "type": [
+                "number",
+                "string",
+                "boolean"
+              ]
+            },
+            "description": "Key-value settings for the adjustment. For brightness: { brightness: -100..100, contrast: -100..100 }. For hue_sat: { hue: -180..180, saturation: -100..100, lightness: -100..100 }. For levels: { inputBlack: 0..255, inputWhite: 0..255 }"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "photopea_apply_filter",
+      "description": "Apply a destructive filter effect to the active layer's pixel data. Use select_layer to target a specific layer first. Modifies pixels directly — use undo to revert if needed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "gaussian_blur",
+              "sharpen",
+              "unsharp_mask",
+              "noise",
+              "motion_blur"
+            ],
+            "description": "Filter type to apply to the active layer"
+          },
+          "settings": {
+            "type": "object",
+            "additionalProperties": {
+              "type": [
+                "number",
+                "string",
+                "boolean"
+              ]
+            },
+            "description": "Key-value settings for the filter. For gaussian_blur: { radius: pixels }. For unsharp_mask: { amount: 1-500, radius: 0.1-250, threshold: 0-255 }. For motion_blur: { angle: degrees, distance: pixels }. For noise: { amount: 1-100 }"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "photopea_transform_layer",
+      "description": "Scale, rotate, or flip a layer in-place. Modifies the layer's pixel data destructively. Use get_layers to check current layer bounds before transforming, and undo to revert if needed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": [
+              "string",
+              "number"
+            ],
+            "description": "Layer name (string) or index (number)"
+          },
+          "scaleX": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "Horizontal scale factor (1.0 = no change, 0.5 = half size, 2.0 = double size)"
+          },
+          "scaleY": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "Vertical scale factor (1.0 = no change, 0.5 = half size, 2.0 = double size)"
+          },
+          "rotation": {
+            "type": "number",
+            "description": "Rotation angle in degrees (positive = clockwise, negative = counter-clockwise)"
+          },
+          "flipH": {
+            "type": "boolean",
+            "description": "Flip the layer horizontally (mirror left-right)"
+          },
+          "flipV": {
+            "type": "boolean",
+            "description": "Flip the layer vertically (mirror top-bottom)"
+          }
+        },
+        "required": [
+          "target"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "photopea_add_gradient",
+      "description": "Apply a linear gradient fill to a layer, replacing its current pixel content. The target layer must already exist — use add_layer to create one first. Colors are distributed evenly across the gradient.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": [
+              "string",
+              "number"
+            ],
+            "description": "Layer name (string) or index (number)"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "linear"
+            ],
+            "description": "Gradient type (currently only 'linear' is supported)"
+          },
+          "colors": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "description": "Color as hex string (e.g. #ff0000)"
+            },
+            "minItems": 2,
+            "description": "Array of hex color stops distributed evenly along the gradient (minimum 2, e.g. ['#ff0000', '#0000ff'])"
+          },
+          "angle": {
+            "type": "number",
+            "description": "Gradient angle in degrees (0 = left-to-right, 90 = top-to-bottom, default 0)"
+          }
+        },
+        "required": [
+          "target",
+          "type",
+          "colors"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "photopea_make_selection",
+      "description": "Create a pixel selection region in the active document. After creating a selection, use fill_selection to fill it with color, or clear_selection to deselect. Use type 'all' to select the entire canvas, or 'rect'/'ellipse' with bounds for a specific region.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "all",
+              "rect",
+              "ellipse"
+            ],
+            "description": "Selection shape: 'all' selects the entire canvas, 'rect' creates a rectangle, 'ellipse' creates an ellipse"
+          },
+          "bounds": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number",
+                "description": "Left edge X position in pixels"
+              },
+              "y": {
+                "type": "number",
+                "description": "Top edge Y position in pixels"
+              },
+              "width": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "description": "Selection width in pixels"
+              },
+              "height": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "description": "Selection height in pixels"
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "width",
+              "height"
+            ],
+            "additionalProperties": false,
+            "description": "Selection region bounds in pixels. Required for 'rect' and 'ellipse' types, ignored for 'all'."
+          },
+          "feather": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Soft edge radius in pixels for anti-aliased selection edges (0 = hard edge)"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "photopea_modify_selection",
+      "description": "Modify the current active selection. Requires an existing selection created by make_selection. For expand, contract, and feather, the amount parameter specifies pixels. Invert swaps selected and unselected areas.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "expand",
+              "contract",
+              "feather",
+              "invert"
+            ],
+            "description": "How to modify the selection: 'expand' grows it, 'contract' shrinks it, 'feather' softens edges, 'invert' swaps selected/unselected"
+          },
+          "amount": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Modification amount in pixels (required for expand, contract, feather; ignored for invert)"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "photopea_fill_selection",
+      "description": "Fill the current selection with a solid color on the active layer. Requires an active selection — use make_selection to create one first. Modifies pixel data on the active layer directly. Use clear_selection afterward to deselect.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "description": "Color as hex string (e.g. #ff0000)"
+          },
+          "opacity": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Fill opacity percentage (0 = fully transparent, 100 = fully opaque, default 100)"
+          },
+          "blendMode": {
+            "type": "string",
+            "description": "Blend mode for the fill (e.g. normal, multiply, screen, overlay, darken, lighten). Defaults to normal."
+          }
+        },
+        "required": [
+          "color"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "photopea_clear_selection",
+      "description": "Deselect the current selection in the active document, removing the marching ants. Does not modify any pixel data. Use after fill_selection or other selection-based operations are complete.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "photopea_export_image",
+      "description": "Export the active document to a file and save it to the local filesystem. The entire document is flattened and exported in the chosen format. Use create_document or open_file to set up the document before exporting.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "format": {
+            "type": "string",
+            "enum": [
+              "png",
+              "jpg",
+              "webp",
+              "psd",
+              "svg"
+            ],
+            "description": "Output format: 'png' for lossless, 'jpg' for compressed photos, 'webp' for web, 'psd' for Photoshop, 'svg' for vector"
+          },
+          "quality": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Compression quality for JPG format only (1 = smallest file, 100 = best quality). Ignored for other formats."
+          },
+          "outputPath": {
+            "type": "string",
+            "description": "Absolute local file path where the exported file will be saved (e.g. /Users/me/output.png)"
+          }
+        },
+        "required": [
+          "format",
+          "outputPath"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "photopea_load_font",
+      "description": "Load a custom font from a URL (TTF, OTF, or WOFF2) into Photopea. The font becomes available for add_text and edit_text. Use list_fonts to find the PostScript name after loading.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "URL to a font file (.ttf, .otf, or .woff2)"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "photopea_list_fonts",
+      "description": "List available fonts in Photopea. Returns font PostScript names that can be used with add_text and edit_text.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "search": {
+            "type": "string",
+            "description": "Optional search string to filter fonts by name"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "photopea_run_script",
+      "description": "Execute arbitrary Photopea/ExtendScript JavaScript in the Photopea environment. Use this for advanced operations not covered by other tools. Has full access to the Photopea DOM (app, activeDocument, layers). Use with caution — scripts can modify or delete any document data.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "script": {
+            "type": "string",
+            "description": "Photopea JavaScript code to execute. Must call app.echoToOE(result) to return data. Has access to the full Photopea scripting API (app, activeDocument, etc.)."
+          }
+        },
+        "required": [
+          "script"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "photopea_undo",
+      "description": "Undo one or more recent actions in the active document. Each step reverses one operation from the history. Use after destructive operations (apply_filter, apply_adjustment, fill_selection) to revert changes.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "steps": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "default": 1,
+            "description": "Number of history steps to undo (default 1)"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "photopea_redo",
+      "description": "Redo one or more previously undone actions in the active document. Only available after using undo — the redo history is cleared when new actions are performed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "steps": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "default": 1,
+            "description": "Number of history steps to redo (default 1)"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "Photopea MCP bridge running on http://127.0.0.1:4117\nPhotopea MCP server ready.\n",
+  "durationMs": 21083,
+  "transport": "stdio"
+}

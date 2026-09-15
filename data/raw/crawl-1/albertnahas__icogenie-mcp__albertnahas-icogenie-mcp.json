@@ -1,0 +1,410 @@
+{
+  "serverId": "albertnahas__icogenie-mcp__albertnahas-icogenie-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "generate_icon",
+      "description": "Generate an AI-powered icon preview. Costs 1 credit. Keep prompts minimal - the system normalizes them internally. Verbose descriptions create cluttered icons. Returns generationId for download. Note: previews are watermarked and low-resolution — for display/evaluation only, not production use. Use download_icon to get the final unwatermarked assets.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "Icon concept to generate. Keep it minimal - the system normalizes and enhances prompts internally. Verbose descriptions create cluttered icons."
+          },
+          "style": {
+            "type": "string",
+            "enum": [
+              "solid",
+              "outline",
+              "illustration"
+            ],
+            "default": "solid",
+            "description": "Icon style: solid (filled shapes), outline (stroked lines), or illustration (colorful, detailed)"
+          },
+          "variations": {
+            "type": "number",
+            "enum": [
+              1,
+              2,
+              4
+            ],
+            "default": 1,
+            "description": "Number of variations (1, 2, or 4)"
+          },
+          "referenceImagePath": {
+            "type": "string",
+            "description": "Local file path to reference image for style extraction"
+          },
+          "referenceImage": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "string",
+                "description": "Base64-encoded image data"
+              },
+              "mimeType": {
+                "type": "string",
+                "enum": [
+                  "image/png",
+                  "image/jpeg",
+                  "image/webp"
+                ]
+              }
+            },
+            "required": [
+              "data",
+              "mimeType"
+            ],
+            "additionalProperties": false,
+            "description": "Base64-encoded reference image"
+          },
+          "force": {
+            "type": "boolean",
+            "description": "Proceed even when the AI detects style conflicts with the prompt"
+          }
+        },
+        "required": [
+          "prompt"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "regenerate_icon",
+      "description": "Regenerate a specific icon variation. Costs 1 credit. Returns 4 candidate previews + regenToken. Use confirm_regeneration with regenToken and selectedIndex (0-3) to finalize.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "description": "For single icon variations"
+          },
+          "bundleId": {
+            "type": "string",
+            "description": "For bundle icons"
+          },
+          "index": {
+            "type": "number",
+            "description": "Which variation/icon to regenerate (0-based)"
+          },
+          "prompt": {
+            "type": "string",
+            "description": "Custom refinement prompt"
+          }
+        },
+        "required": [
+          "index"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "confirm_regeneration",
+      "description": "Finalize a regeneration by selecting one of the 4 candidates. Free — credit was charged during regenerate_icon.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "regenToken": {
+            "type": "string",
+            "description": "Token from regenerate_icon result"
+          },
+          "selectedIndex": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 3,
+            "description": "Which candidate to finalize (0-3)"
+          }
+        },
+        "required": [
+          "regenToken",
+          "selectedIndex"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "check_credits",
+      "description": "Check the current credit balance and account information. Free to use.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "download_icon",
+      "description": "Download the final SVG + PNG package for an icon. Costs 5 credits (single) or 4 credits/icon (bundle). Provide outputPath to save to file. Always save to the user's working directory with a descriptive filename.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "generationId": {
+            "type": "string",
+            "description": "ID from generate_icon result (for single icons)"
+          },
+          "bundleId": {
+            "type": "string",
+            "description": "ID from generate_bundle result (for bundles)"
+          },
+          "outputPath": {
+            "type": "string",
+            "description": "Where to save the ZIP file"
+          },
+          "removeBackground": {
+            "type": "boolean",
+            "default": false,
+            "description": "Remove background from illustrations (transparent)"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "normalize_bundle",
+      "description": "Plan an icon bundle from a description. Free but rate-limited. Returns bundleId — pass it to generate_bundle for traceability.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "description": "Bundle theme. The system generates an optimized icon list from this."
+          },
+          "targetCount": {
+            "type": "number",
+            "description": "Target number of icons (2-20)"
+          },
+          "style": {
+            "type": "string",
+            "enum": [
+              "solid",
+              "outline",
+              "illustration"
+            ],
+            "description": "Preferred icon style"
+          }
+        },
+        "required": [
+          "description"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "generate_bundle",
+      "description": "Generate a bundle of icons. Costs 1 credit per icon. Keep descriptions minimal - verbose prompts create cluttered icons. Use normalize_bundle first or provide icons directly. Note: previews are watermarked and low-resolution — for display/evaluation only, not production use. Use download_icon to get the final unwatermarked assets.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "icons": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9-]+$",
+                  "description": "Icon name in kebab-case"
+                },
+                "description": {
+                  "type": "string",
+                  "description": "Icon concept. Keep minimal - verbose descriptions create cluttered icons."
+                }
+              },
+              "required": [
+                "name",
+                "description"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Icon list from normalize_bundle or custom"
+          },
+          "description": {
+            "type": "string",
+            "description": "Bundle theme. The system normalizes this into an icon list."
+          },
+          "targetCount": {
+            "type": "number",
+            "description": "Target icon count when using description"
+          },
+          "style": {
+            "type": "string",
+            "enum": [
+              "solid",
+              "outline",
+              "illustration"
+            ],
+            "default": "solid",
+            "description": "Icon style: solid (filled shapes), outline (stroked lines), or illustration (colorful, detailed)"
+          },
+          "referenceImagePath": {
+            "type": "string",
+            "description": "Local file path to reference image"
+          },
+          "bundleId": {
+            "type": "string",
+            "description": "Bundle ID from normalize_bundle for traceability"
+          },
+          "referenceImage": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "string"
+              },
+              "mimeType": {
+                "type": "string",
+                "enum": [
+                  "image/png",
+                  "image/jpeg",
+                  "image/webp"
+                ]
+              }
+            },
+            "required": [
+              "data",
+              "mimeType"
+            ],
+            "additionalProperties": false,
+            "description": "Base64-encoded reference image"
+          },
+          "force": {
+            "type": "boolean",
+            "description": "Proceed even when the AI detects style conflicts"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "save_to_library",
+      "description": "Save a generated icon to your library for free re-downloads. Free. Use generationId from generate_icon or bundleId from generate_bundle.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "generationId": {
+            "type": "string",
+            "description": "Generation ID from generate_icon or bundleId from generate_bundle"
+          },
+          "prompt": {
+            "type": "string",
+            "description": "The prompt used to generate the icon"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "single",
+              "bundle"
+            ],
+            "default": "single",
+            "description": "Icon type"
+          },
+          "variations": {
+            "type": "number",
+            "default": 1,
+            "description": "Number of variations"
+          },
+          "style": {
+            "type": "string",
+            "enum": [
+              "solid",
+              "outline",
+              "illustration"
+            ],
+            "default": "solid",
+            "description": "Icon style"
+          },
+          "name": {
+            "type": "string",
+            "description": "Optional name for the library entry"
+          }
+        },
+        "required": [
+          "generationId",
+          "prompt"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "list_library",
+      "description": "Browse your saved icons. Free. Use download_from_library with a library item's id.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "all",
+              "saved",
+              "exported"
+            ],
+            "default": "all",
+            "description": "Filter by status"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "all",
+              "single",
+              "bundle"
+            ],
+            "default": "all",
+            "description": "Filter by type"
+          },
+          "limit": {
+            "type": "number",
+            "default": 20,
+            "description": "Maximum items to return"
+          },
+          "offset": {
+            "type": "number",
+            "default": 0,
+            "description": "Pagination offset"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "download_from_library",
+      "description": "Re-download from library. Free for previously exported items. Provide outputPath to save to file.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "libraryId": {
+            "type": "string",
+            "description": "Library item ID from list_library"
+          },
+          "outputPath": {
+            "type": "string",
+            "description": "Where to save the ZIP file"
+          }
+        },
+        "required": [
+          "libraryId"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "claim_daily_credits",
+      "description": "Claim 2 free daily credits. Once per day.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 27830,
+  "transport": "stdio"
+}
