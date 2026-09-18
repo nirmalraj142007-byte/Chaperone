@@ -173,6 +173,21 @@ should parse `corpus/candidates.json` once, build an in-memory
 against that map — never `getCorpusServer`.** The same note is on
 `checkChangelog`'s own doc comment in `packages/advisory/src/changelog.ts`.
 
+**Follow-up confirmed the same day: the empty `corpus-server` table is not a
+crawl-2 blocker.** `runCrawl`'s `getCorpusServer`/`putCorpusServer` block is
+the *only* place in that function touching the corpus-server table, and
+it's already `if (existing)`-guarded — an empty table just makes it no-op
+for every candidate. Traced the surrounding control flow line by line: the
+boot-status tally that becomes `data/crawl-N-report.json`'s
+`bootSuccessRate`/`booted`/`noInstallPath`/etc. runs *before* that block and
+reads only `result.status` (from the fresh boot or the crawl-scoped
+`data/raw/{crawlId}/{serverId}.json` archive); `bootedServerIds` and every
+`putToolSnapshot` call run *after* that block but read only `record` (from
+`corpus/candidates.json`) and `result` — never `existing`. None of the
+three depend on the corpus-server table being populated. Commented in
+`crawl.ts` at the exact block, so nobody tries to "fix" the empty table in
+October by re-running `crawl:assemble`.
+
 ---
 
 ## What's left (explicit TODOs, not silently deferred)

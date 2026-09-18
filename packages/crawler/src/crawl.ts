@@ -287,6 +287,24 @@ export async function runCrawl(crawlId: string, opts: RunCrawlOptions = {}): Pro
     tally(counts, result.status);
 
     // Always runs, resumed or not — see the docstring above on why that matters for resume safety.
+    //
+    // Verified 2026-09-19 (see docs/AWS-BUILDER.md): this block is the ONLY
+    // place in runCrawl that reads or writes the corpus-server table, and it
+    // is best-effort — `if (existing)` means it silently no-ops, for every
+    // candidate, whenever that table is empty (as it currently is: a
+    // `docker compose down -v` during Phase 10 dropped the local volume, and
+    // nothing since has refilled it — crawl runs only ever *update* an
+    // existing corpus-server row here, never create one). This no-op does
+    // NOT affect anything crawl 2's report depends on: `tally()` above
+    // already recorded this candidate's boot status into the in-memory
+    // `counts` used for `report.bootSuccessRate`/`booted`/etc.;
+    // `bootedServerIds` and `putToolSnapshot` below read only `record` (from
+    // corpus/candidates.json) and `result` (from this boot or its
+    // data/raw/{crawlId}/{serverId}.json archive) — never `existing`. If the
+    // corpus-server table is still empty on 2026-10-20, crawl 2 remains
+    // fully valid; do NOT "fix" it by re-running `crawl:assemble` — that is
+    // the one thing the corpus freeze forbids (CLAUDE.md: "The corpus was
+    // frozen at crawl 1. Never re-assemble it.").
     const existing = await getCorpusServer(record.serverId);
     if (existing) {
       await putCorpusServer({
