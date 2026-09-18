@@ -1748,3 +1748,54 @@ bug that only exists because the real dependency is async — worth a
 standing note next to any `vi.mock("@chaperone/ledger", ...)` block that
 the mock's speed is itself a test-coverage gap for exactly this class of
 defect, not just a convenience.
+
+## Entry 031 — 2026-09-18
+
+**Task attempted:** Scaffold `packages/advisory` (Phase 12) by adding
+`@aws-sdk/client-bedrock-runtime` as that new package's dependency before
+its `package.json` existed yet, via `pnpm add -w @aws-sdk/client-bedrock-runtime
+--filter @chaperone/advisory`.
+
+**Steps taken:** Ran the command expecting either a clear "no such
+workspace package" error or, if pnpm resolves `--filter` before scaffolding
+matters, a helpful failure. Checked `git status` immediately after as a
+habit, not because anything looked wrong yet.
+
+**Expected versus actual:** Expected the install to fail loudly (no
+package named `@chaperone/advisory` exists in the workspace yet — nothing
+in `pnpm-workspace.yaml` could match that filter). Actual: pnpm printed a
+plain, unflagged "Done in 5s" and silently added the dependency to the
+**root** `package.json`'s `devDependencies` instead, because `-w` + a
+non-matching `--filter` degrades to "install at the workspace root" rather
+than erroring — with `-w` present, an unmatched filter is treated as
+"nothing selected, fall back to the root," not "selector produced zero
+packages." `git status --short` was the only thing that caught it (`M
+package.json`, `M pnpm-lock.yaml`) — nothing about pnpm's own output
+flagged the fallback.
+
+**Severity:** minor. Caught before anything was committed, via the same
+`git status` habit this repo's own CLAUDE.md already asks for before any
+state-changing operation. Would have been a real problem if the resulting
+root `devDependency` had been committed: it would have put a Bedrock
+runtime client in scope for `pnpm depcruise`'s `no-llm-in-policy` check's
+*import graph* reachability from every package including `packages/policy`
+in principle, even though nothing would actually import it — a false
+sense that the boundary was still clean while the dependency itself had
+quietly leaked to a scope wider than intended.
+
+**Workaround:** `git checkout -- package.json pnpm-lock.yaml` to discard
+the accidental root-level change, then scaffolded `packages/advisory`'s
+own `package.json` with the dependency declared there directly, and ran a
+plain `pnpm install` (no `--filter`) to link it — which is the actually-
+correct order for adding a new workspace package's first dependency:
+create the package.json first, install second, never the reverse with
+`--filter` racing the scaffold.
+
+**Actionable suggestion:** When creating a brand-new workspace package,
+never use `pnpm add --filter <not-yet-existing-package>` to seed its first
+dependency — write the `package.json` by hand (or via `pnpm init` inside
+the new package directory) first, then run a filter-less `pnpm install` to
+link it. If a `--filter` selector is ever needed against a package that
+might not exist yet, drop `-w`/`--workspace-root` from the same command so
+an unmatched filter fails closed instead of silently retargeting the
+workspace root.

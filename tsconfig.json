@@ -6,6 +6,7 @@
     { "path": "packages/config" },
     { "path": "packages/policy" },
     { "path": "packages/ledger" },
+    { "path": "packages/advisory" },
     { "path": "packages/upstream" },
     { "path": "packages/crawler" },
     { "path": "packages/mcp-app" },

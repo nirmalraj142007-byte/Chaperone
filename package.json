@@ -18,7 +18,7 @@
     "lint": "eslint .",
     "depcruise": "dependency-cruiser packages",
     "check-claims": "tsx scripts/check-claims.ts",
-    "typecheck": "tsc -b && tsc --noEmit -p packages/ledger/scripts && tsc --noEmit -p packages/crawler/scripts && tsc --noEmit -p packages/gateway/scripts && tsc --noEmit -p spec && tsc --noEmit -p scripts",
+    "typecheck": "tsc -b && tsc --noEmit -p packages/ledger/scripts && tsc --noEmit -p packages/crawler/scripts && tsc --noEmit -p packages/gateway/scripts && tsc --noEmit -p packages/advisory/scripts && tsc --noEmit -p spec && tsc --noEmit -p scripts",
     "ddb:migrate": "tsx packages/ledger/scripts/migrate.ts",
     "ddb:seed": "tsx packages/ledger/scripts/seed.ts",
     "ddb:dump": "tsx packages/ledger/scripts/dump.ts",
@@ -29,7 +29,8 @@
     "crawl:run": "tsx packages/crawler/scripts/crawl.ts",
     "crawl:commit-recency": "node --env-file-if-exists=.env --import tsx packages/crawler/scripts/commit-recency.ts",
     "crawl:capability-report": "tsx packages/crawler/scripts/capability-report.ts",
-    "crawl:boot-rate": "tsx packages/crawler/scripts/boot-rate.ts"
+    "crawl:boot-rate": "tsx packages/crawler/scripts/boot-rate.ts",
+    "advisory:run-local": "tsx packages/advisory/scripts/run-local.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",
