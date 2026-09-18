@@ -143,12 +143,35 @@ cross-check yet for the gateway's own connected upstreams.
 
 `checkChangelog`'s actual intended caller is the corpus-wide drift analysis
 (`packages/analysis` in `CLAUDE.md`'s repo layout, not built as of this
-phase) — every `CorpusServer` row already carries `repoOwner`/`repoName`
-(`packages/ledger/src/repos/corpusServer.ts`), which is exactly what this
-function needs. This is a flagged assumption, not a silent gap: the
-proposal's metric C ("of the servers that changed, how many said so
-anywhere") is a corpus-level finding, and `checkChangelog` was built to
-answer it once `packages/analysis` exists to call it.
+phase, targeted for Phase 19 against crawl 2 on 2026-10-20). This is a
+flagged assumption, not a silent gap: the proposal's metric C ("of the
+servers that changed, how many said so anywhere") is a corpus-level
+finding, and `checkChangelog` was built to answer it once `packages/analysis`
+exists to call it.
+
+**The data path Phase 19 needs — verified 2026-09-19, so Phase 19 doesn't
+have to rediscover it:** a `DriftRecord` row (`packages/ledger/src/repos/driftRecord.ts`)
+only carries `serverId`, not a GitHub `owner`/`repo`. Resolving that
+`serverId` to `repoOwner`/`repoName` must go through **`corpus/candidates.json`**
+(the frozen, git-committed corpus — every entry already carries `serverId`,
+`repoOwner`, `repoName`), **not** the DynamoDB `corpus-server` table via
+`@chaperone/ledger`'s `getCorpusServer`, even though `CorpusServer` has the
+same fields and looks like the obvious join target. Checked directly
+against the running local stack: `pnpm run ddb:dump` shows `dumped
+corpus-server: 0 item(s)` — a `docker compose down -v` during Phase 10
+dropped the volume, and nothing since has refilled it. Read
+`packages/crawler/src/crawl.ts`'s `runCrawl` to confirm crawl 2 (Oct 20)
+won't refill it either: its one `putCorpusServer` call is gated behind `if
+(existing)` (line ~290) — a crawl run only *updates* a corpus-server row
+that's already there, it never creates one from scratch. `assemble.ts` is
+the only code path that ever creates a fresh `corpus-server` row
+(`putCorpusServer` unconditionally, `src/assemble.ts` line ~159), and
+re-running it is exactly what the freeze rule forbids (CLAUDE.md: "The
+corpus was frozen at crawl 1. Never re-assemble it."). So: **Phase 19
+should parse `corpus/candidates.json` once, build an in-memory
+`serverId → {repoOwner, repoName}` map from it, and join `DriftRecord` rows
+against that map — never `getCorpusServer`.** The same note is on
+`checkChangelog`'s own doc comment in `packages/advisory/src/changelog.ts`.
 
 ---
 

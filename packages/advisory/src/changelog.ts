@@ -49,9 +49,26 @@ function repoPath(owner: string, repo: string): string {
  * row records only `upstreamId` (an id into `CHAPERONE_UPSTREAMS`), never a
  * GitHub owner/repo — there is nothing to cross-check yet for the gateway's
  * own connected upstreams. This function exists for the corpus-wide drift
- * analysis (`packages/analysis`, not yet built — CLAUDE.md's repo layout),
- * which already has `repoOwner`/`repoName` on every `CorpusServer` row and
- * is this function's intended caller. See docs/AWS-BUILDER.md.
+ * analysis (`packages/analysis`, not yet built — CLAUDE.md's repo layout,
+ * targeted for Phase 19 against crawl 2 on 2026-10-20), which will need to
+ * resolve a `DriftRecord.serverId` to a `repoOwner`/`repoName` before it can
+ * call this function.
+ *
+ * That join must read `corpus/candidates.json` (the frozen, git-committed
+ * corpus — every entry already carries `serverId`, `repoOwner`, `repoName`),
+ * NOT the DynamoDB `corpus-server` table via `@chaperone/ledger`'s
+ * `getCorpusServer`. Verified 2026-09-19: the local `corpus-server` table is
+ * currently empty (a `docker compose down -v` during Phase 10 dropped the
+ * volume), and nothing re-populates it short of re-running
+ * `crawl:assemble` — forbidden post-freeze (CLAUDE.md: "The corpus was
+ * frozen at crawl 1. Never re-assemble it."). Confirmed by reading
+ * `packages/crawler/src/crawl.ts`'s own `runCrawl`: its one `putCorpusServer`
+ * call is gated behind `if (existing)` — a crawl 2 run only *updates* a
+ * corpus-server row that's already there, it never creates one from
+ * scratch, so simply re-running the crawler won't refill the table either.
+ * `assemble.ts` is the only code path that ever creates a fresh
+ * corpus-server row, and that path is exactly what the freeze rule forbids
+ * running again. See docs/AWS-BUILDER.md.
  */
 export async function checkChangelog(
   owner: string,
