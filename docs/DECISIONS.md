@@ -397,3 +397,50 @@ events, exit 0. A `type` edit on the fresh chain made `verify-ledger` exit
 refused as `unhashed` at index 6. `ddb:seed` imports `../src` and wasn't
 affected. After changing a package's source, run `pnpm build` before any
 script that reaches it by package name.
+
+## A refused change is not re-asked — 2026-09-20
+
+**What was wrong.** `gate.ts` only looked for an open (*pending*)
+quarantine before opening one. After a resident chose "Keep blocked", the
+next `tools/list` found no pending row for the transition and opened a
+fresh quarantine with a fresh token for the identical change. The tool
+stayed withheld, but the household got asked again about something it had
+already answered. Found in the Phase 14 console session, and reproduced
+against real DynamoDB Local with the old gate (`spec/refusal-final.test.ts`:
+2 quarantines where there should be 1).
+
+**Decision.** A refusal is final for the exact transition it was shown:
+same household, upstream and tool, same pinned hash (`fromHash`), same
+current hash (`toHash`). Before opening a new quarantine, the gate now
+looks for a refused quarantine matching that tuple. If it finds one, it
+withholds the tool exactly as before: excluded from `tools/list`, and on a
+direct call the same frozen `REFUSAL_TOOL_CHANGED` plus the consent card in
+its existing `refused` state. It creates no new quarantine, mints no token,
+and appends no ledger event. The chain records the one refusal, not a
+refusal per poll. A genuinely new change still opens a review: a different
+`toHash` (the upstream changed again) or a different `fromHash` (the
+household has since pinned another version). A failed refusal lookup fails
+closed, withheld with nothing written, like every other storage error in
+the gate.
+
+**How a resident revisits a past refusal: read-only, in the console.**
+`/queue` → **Blocked** lists every refused change. Its detail page shows
+the verbatim before/after text and a ledger trail ending in the `REFUSED`
+event, with who refused it and when. `/ledger` shows the same event in
+chain order. Revisiting never reopens the question.
+
+**No un-block, deliberately.** `chaperone/approve_change` already rejects a
+resolved quarantine (`QuarantineAlreadyResolvedError`), and the console has
+no approval path of its own (see the Phase 14 console entry above). A
+console-side "reconsider" button would be exactly the second approval
+mechanism this product exists to prevent. If a household later wants a
+refused text after all, the honest path today is a new review, triggered by
+the tool changing again. A resident-initiated "reconsider" would have to be
+a first-party MCP tool that turns a refused quarantine into a *new* pending
+one, with a newly minted token and its own ledger event. That's recorded
+here as the shape it would take, not built.
+
+**Local data note.** DynamoDB Local's demo household still holds one
+pending quarantine (`01M2X4PQ…`) that the bug created after the refusal
+of `01M2X4CX…` for the same transition. The gate finds the open pending
+row first and keeps reusing it. That's pre-fix residue, not new behaviour.

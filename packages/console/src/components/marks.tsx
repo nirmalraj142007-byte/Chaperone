@@ -38,7 +38,11 @@ const STATE: Record<ReviewState, { label: string; tone: string; note: string }> 
   pending: { label: "Awaiting review", tone: "border-warn bg-warn-wash text-warn-ink", note: "Withheld from the assistant until a resident decides." },
   expired: { label: "Token expired", tone: "border-n-400 bg-n-100 text-n-600", note: "Still withheld. The approval token has passed its 24h window." },
   approved: { label: "Approved", tone: "border-ok bg-ok-wash text-ok", note: "Re-pinned under the new hash." },
-  refused: { label: "Blocked", tone: "border-blocked bg-blocked-wash text-blocked", note: "Withheld permanently for this hash." },
+  refused: {
+    label: "Blocked",
+    tone: "border-blocked bg-blocked-wash text-blocked",
+    note: "Withheld for good for this exact change. The gateway won't ask about it again. If the tool changes again, that opens a new review.",
+  },
 };
 
 export function StateMark({ state }: { state: ReviewState }) {

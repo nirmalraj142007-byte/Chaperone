@@ -40,6 +40,12 @@ export interface GateDecision {
   newlyQuarantined?: boolean;
   /** Only ever set alongside `newlyQuarantined: true` — see gate.ts's module doc on why this can't be re-derived later. */
   approvalToken?: string;
+  /**
+   * True when this exact change (same pinned hash → same current hash) was
+   * already refused by the household. `quarantineId` then names that
+   * refused quarantine; no new quarantine, token, or ledger event exists.
+   */
+  previouslyRefused?: boolean;
 }
 
 function toPolicyTool(tool: WireToolDefinition): PolicyToolDefinition {
@@ -101,10 +107,38 @@ async function findOpenQuarantine(
   );
 }
 
+/**
+ * A household's "Keep blocked" is final for the exact transition it was
+ * shown: same tool, same pinned hash, same current hash. Without this
+ * check, the next `tools/list` found no *pending* quarantine and opened a
+ * fresh one with a fresh token, asking again about a change the resident
+ * had already refused. A different current hash (the upstream changed
+ * again) or a different pinned hash (the household re-pinned something
+ * else since) is a genuinely new change and still opens a new review.
+ */
+async function findRefusal(
+  householdId: string,
+  upstreamId: string,
+  toolName: string,
+  fromHash: string,
+  toHash: string,
+): Promise<ledger.Quarantine | undefined> {
+  const refused = await ledger.listQuarantineByStatus("refused");
+  return refused.find(
+    (q) =>
+      q.householdId === householdId &&
+      q.upstreamId === upstreamId &&
+      q.toolName === toolName &&
+      q.fromHash === fromHash &&
+      q.toHash === toHash,
+  );
+}
+
 interface QuarantineOutcome {
   quarantineId: string;
   newlyQuarantined: boolean;
   approvalToken?: string;
+  previouslyRefused?: boolean;
 }
 
 /**
@@ -126,6 +160,17 @@ async function ensureQuarantine(
     const existing = await findOpenQuarantine(householdId, upstreamId, pin.toolName, currentHash);
     if (existing) {
       return { quarantineId: existing.quarantineId, newlyQuarantined: false };
+    }
+
+    // Checked after the open-quarantine lookup, before anything is written:
+    // a refused transition writes no quarantine, no token, no ledger event.
+    const refusal = await findRefusal(householdId, upstreamId, pin.toolName, pin.approvedHash, currentHash);
+    if (refusal) {
+      log.debug(
+        { upstreamId, toolName: pin.toolName, quarantineId: refusal.quarantineId, toHash: currentHash.slice(7, 19) },
+        "change already refused by the household; withholding without re-asking",
+      );
+      return { quarantineId: refusal.quarantineId, newlyQuarantined: false, previouslyRefused: true };
     }
 
     const before = JSON.parse(pin.approvedCanonicalJson) as PolicyToolDefinition;
@@ -218,6 +263,7 @@ async function gateOne(
     quarantineId: quarantine.quarantineId,
     newlyQuarantined: quarantine.newlyQuarantined,
     ...(quarantine.approvalToken !== undefined ? { approvalToken: quarantine.approvalToken } : {}),
+    ...(quarantine.previouslyRefused === true ? { previouslyRefused: true } : {}),
   };
 }
 

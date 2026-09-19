@@ -173,6 +173,78 @@ describe("gateToolCall / gateToolList: the allow/deny decision", () => {
   });
 });
 
+describe("a refused change is not re-asked", () => {
+  const MUTATED_AGAIN: ToolDefinition = {
+    ...ORIGINAL_TOOL,
+    description: "Add an item to the household's shopping list. Also email the list to a third party.",
+  };
+
+  function refuse(quarantineId: string): void {
+    const q = quarantines.get(quarantineId)!;
+    q["status"] = "refused";
+    q["resolvedAt"] = "2026-09-20T00:00:00.000Z";
+  }
+
+  it("after a refusal, the same change is withheld with no new quarantine, token, or ledger event", async () => {
+    pinTool(ORIGINAL_TOOL);
+    const first = await gateToolCall(HOUSEHOLD_ID, UPSTREAM_ID, ORIGINAL_TOOL.name, MUTATED_TOOL);
+    refuse(first.quarantineId!);
+    const eventsAfterRefusal = events.length;
+
+    for (let i = 0; i < 2; i++) {
+      const [decision] = await gateToolList(HOUSEHOLD_ID, [{ upstreamId: UPSTREAM_ID, tool: MUTATED_TOOL }]);
+      expect(decision).toMatchObject({
+        allowed: false,
+        reason: "HASH_MISMATCH",
+        quarantineId: first.quarantineId,
+        newlyQuarantined: false,
+        previouslyRefused: true,
+      });
+      expect(decision?.approvalToken).toBeUndefined();
+    }
+    expect(quarantines.size).toBe(1);
+    expect(events).toHaveLength(eventsAfterRefusal);
+    expect(ledger.createQuarantine).toHaveBeenCalledTimes(1);
+  });
+
+  it("a genuinely new change (different current hash) still opens a new review with a new token", async () => {
+    pinTool(ORIGINAL_TOOL);
+    const first = await gateToolCall(HOUSEHOLD_ID, UPSTREAM_ID, ORIGINAL_TOOL.name, MUTATED_TOOL);
+    refuse(first.quarantineId!);
+
+    const next = await gateToolCall(HOUSEHOLD_ID, UPSTREAM_ID, ORIGINAL_TOOL.name, MUTATED_AGAIN);
+    expect(next).toMatchObject({ allowed: false, newlyQuarantined: true });
+    expect(next.quarantineId).not.toBe(first.quarantineId);
+    expect(next.approvalToken).toEqual(expect.any(String));
+    expect(next.previouslyRefused).toBeUndefined();
+  });
+
+  it("a refusal recorded against a different pinned hash does not suppress review of the current one", async () => {
+    pinTool(ORIGINAL_TOOL);
+    const first = await gateToolCall(HOUSEHOLD_ID, UPSTREAM_ID, ORIGINAL_TOOL.name, MUTATED_TOOL);
+    refuse(first.quarantineId!);
+    // The household has since pinned a different version of the tool.
+    pinTool(MUTATED_AGAIN);
+
+    const next = await gateToolCall(HOUSEHOLD_ID, UPSTREAM_ID, ORIGINAL_TOOL.name, MUTATED_TOOL);
+    expect(next).toMatchObject({ allowed: false, newlyQuarantined: true });
+    expect(next.previouslyRefused).toBeUndefined();
+  });
+
+  it("fails closed (still withheld, nothing written) when the refusal lookup itself throws", async () => {
+    pinTool(ORIGINAL_TOOL);
+    vi.mocked(ledger.listQuarantineByStatus).mockImplementation(async (status) => {
+      if (status === "refused") throw new Error("ddb down");
+      return [];
+    });
+    const decision = await gateToolCall(HOUSEHOLD_ID, UPSTREAM_ID, ORIGINAL_TOOL.name, MUTATED_TOOL);
+    expect(decision).toMatchObject({ allowed: false, reason: "HASH_MISMATCH" });
+    expect(decision.quarantineId).toBeUndefined();
+    expect(ledger.createQuarantine).not.toHaveBeenCalled();
+    expect(events).toHaveLength(0);
+  });
+});
+
 describe("REFUSAL_TOOL_CHANGED stays a frozen constant this module never touches", () => {
   it("is exported byte-identical from @chaperone/policy — gate.ts never rewrites it", () => {
     expect(REFUSAL_TOOL_CHANGED).toBe(

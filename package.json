@@ -15,6 +15,7 @@
     "spec": "vitest run --config spec/vitest.config.ts",
     "test:resume": "vitest run --config spec/stack.vitest.config.ts spec/resumption.test.ts",
     "test:tamper": "vitest run --config spec/stack.vitest.config.ts spec/ledger-tamper.test.ts",
+    "test:refusal": "vitest run --config spec/stack.vitest.config.ts spec/refusal-final.test.ts",
     "resume-demo": "tsx scripts/resume-demo.ts",
     "lint": "eslint .",
     "depcruise": "dependency-cruiser packages",

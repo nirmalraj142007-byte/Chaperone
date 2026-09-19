@@ -12,9 +12,11 @@
  * stack it was built specifically to avoid needing.
  *
  * resumption and long-stream import no `@chaperone/*` package — they talk
- * to the stack purely over raw HTTP/the MCP SDK client. ledger-tamper does:
- * it calls the real appendEvent/verifyChain against DynamoDB Local, so the
- * alias block below points those imports at source, same as the root config.
+ * to the stack purely over raw HTTP/the MCP SDK client. ledger-tamper and
+ * refusal-final do: they run real repo code (the ledger, and for
+ * refusal-final an in-process gateway and demo upstream) against DynamoDB
+ * Local, so the alias block below points those imports at source, same as
+ * the root config.
  */
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -32,11 +34,15 @@ export default defineConfig({
       "@chaperone/logger": pkg("logger"),
       "@chaperone/policy": pkg("policy"),
       "@chaperone/ledger": pkg("ledger"),
+      "@chaperone/advisory": pkg("advisory"),
+      "@chaperone/upstream": pkg("upstream"),
+      "@chaperone/demo-upstream": pkg("demo-upstream", "lib.ts"),
+      "@chaperone/gateway": pkg("gateway", "app.ts"),
     },
   },
   test: {
     root: rootDir,
-    include: ["spec/resumption.test.ts", "spec/long-stream.test.ts", "spec/ledger-tamper.test.ts"],
+    include: ["spec/resumption.test.ts", "spec/long-stream.test.ts", "spec/ledger-tamper.test.ts", "spec/refusal-final.test.ts"],
     reporters: ["verbose"],
   },
 });
