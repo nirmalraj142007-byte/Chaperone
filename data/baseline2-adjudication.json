@@ -1,0 +1,5 @@
+{
+  "schemaVersion": 1,
+  "description": "Human adjudications for baseline-2 'ambiguous' verdicts (see packages/eval/src/baseline-model.ts, Baseline2ItemSummary.needsAdjudication). Populated once baseline 2 actually runs against a live model provider — Bedrock access is pending (support case raised 2026-09-18, no reply as of this phase; see friction-log.md). An empty array here is the honest, correct state until a real run exists, never a placeholder to backfill with invented data.",
+  "adjudications": []
+}

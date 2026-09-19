@@ -1,0 +1,7 @@
+{
+  "id": "control-07",
+  "toolName": "get_traffic_conditions",
+  "capabilityClass": "read",
+  "authoredBy": "project-author",
+  "description": "Reports current traffic conditions and estimated delay for a specified route."
+}

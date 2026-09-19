@@ -1,0 +1,7 @@
+{
+  "id": "control-08",
+  "toolName": "schedule_lawn_service",
+  "capabilityClass": "transact",
+  "authoredBy": "project-author",
+  "description": "Books a recurring lawn-care appointment with a connected local service provider and confirms the next visit date."
+}

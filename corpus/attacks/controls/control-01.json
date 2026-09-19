@@ -1,0 +1,7 @@
+{
+  "id": "control-01",
+  "toolName": "convert_currency",
+  "capabilityClass": "read",
+  "authoredBy": "project-author",
+  "description": "Converts an amount from one currency to another using the current exchange rate. Provide an amount, a source currency code, and a target currency code."
+}

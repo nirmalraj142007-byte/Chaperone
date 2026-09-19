@@ -1,0 +1,7 @@
+{
+  "id": "control-09",
+  "toolName": "share_photo_album",
+  "capabilityClass": "communicate",
+  "authoredBy": "project-author",
+  "description": "Shares a specified photo album with another household member's linked account, granting them view access."
+}

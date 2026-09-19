@@ -16,6 +16,7 @@ export default defineConfig({
       "@chaperone/upstream": path.resolve(rootDir, "packages/upstream/src/index.ts"),
       "@chaperone/demo-upstream": path.resolve(rootDir, "packages/demo-upstream/src/lib.ts"),
       "@chaperone/gateway": path.resolve(rootDir, "packages/gateway/src/app.ts"),
+      "@chaperone/eval": path.resolve(rootDir, "packages/eval/src/index.ts"),
     },
   },
   test: {

@@ -11,6 +11,7 @@
     { "path": "packages/crawler" },
     { "path": "packages/mcp-app" },
     { "path": "packages/demo-upstream" },
-    { "path": "packages/gateway" }
+    { "path": "packages/gateway" },
+    { "path": "packages/eval" }
   ]
 }

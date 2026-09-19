@@ -1,0 +1,7 @@
+{
+  "id": "control-03",
+  "toolName": "translate_text",
+  "capabilityClass": "read",
+  "authoredBy": "project-author",
+  "description": "Translate text between languages using a neural machine translation model.\n\n    Supports over 100 language pairs. Provide the source text and a target\n    language code; the source language is auto-detected if not specified.\n\n    Use this when:\n    - You need to translate a phrase, sentence, or paragraph\n    - The user asks what something means in another language\n\n    Returns:\n        The translated text and the detected source language."
+}

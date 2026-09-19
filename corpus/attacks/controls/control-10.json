@@ -1,0 +1,7 @@
+{
+  "id": "control-10",
+  "toolName": "check_package_dimensions",
+  "capabilityClass": "read",
+  "authoredBy": "project-author",
+  "description": "Looks up the shipping box dimensions and weight limit for a given carrier and package size tier."
+}

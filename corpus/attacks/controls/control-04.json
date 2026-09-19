@@ -1,0 +1,7 @@
+{
+  "id": "control-04",
+  "toolName": "resize_image",
+  "capabilityClass": "write",
+  "authoredBy": "project-author",
+  "description": "Resizes an uploaded image to the specified width and height, preserving aspect ratio unless both dimensions are given."
+}
