@@ -148,6 +148,16 @@ export async function appendEvent(i: {
   throw new LedgerWriteError("Failed to append ledger event after retry", { type: i.type });
 }
 
+/**
+ * Read-only: every event in a household's ledger, oldest first — the same
+ * forward walk verifyChain() does, exposed so the gateway's `/api/ledger`
+ * can show the console exactly the rows the verifier checked. There is
+ * deliberately no update or delete counterpart anywhere in this module.
+ */
+export async function listEvents(householdId: string): Promise<StoredLedgerEvent[]> {
+  return queryAllEventsAscending(householdId);
+}
+
 export type VerifyChainResult =
   | { ok: true; count: number }
   | { ok: false; index: number; brokenSk: string; expected: string; actual: string };

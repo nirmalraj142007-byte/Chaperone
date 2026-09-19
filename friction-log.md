@@ -1799,3 +1799,37 @@ link it. If a `--filter` selector is ever needed against a package that
 might not exist yet, drop `-w`/`--workspace-root` from the same command so
 an unmatched filter fails closed instead of silently retargeting the
 workspace root.
+
+## Entry 032 — 2026-09-19
+
+**Task attempted:** Log every HTTP hop of the console's
+`chaperone/approve_change` call to an on-screen request log by passing a
+custom `fetch` to `@modelcontextprotocol/sdk` 1.30.0's
+`StreamableHTTPClientTransport` (`packages/console/src/mcp.ts`), then
+ending the session with `transport.terminateSession()`.
+
+**Steps taken:** Wrapped `fetch` to record method, JSON-RPC method, status,
+latency and `X-Request-Id`, and ran a real approve attempt against the
+docker-compose gateway from the browser.
+
+**Expected versus actual:** Expected one entry per request, all resolved.
+Actually, after `connect()` the SDK opens its own standalone `GET /mcp` SSE
+stream without being asked. When `terminateSession()` runs, that stream's
+fetch rejects with an `AbortError` inside the custom `fetch`. The wrapper
+has no way to tell the SDK aborting on purpose apart from a real network
+failure, so the log showed a red "network error" on every successful
+approval. `client/streamableHttp.d.ts` doesn't mention either the automatic
+GET or its abort on termination.
+
+**Severity:** minor. It only mislabels a log line. No request actually
+failed.
+
+**Workaround:** Treat a `DOMException` named `AbortError` in the wrapper as
+"closed" and render it neutral rather than as an error.
+
+**Actionable suggestion:** Document on `StreamableHTTPClientTransportOptions.fetch`
+that the transport issues its own standalone GET after initialization and
+aborts it on `terminateSession()`/`close()`. Better still, pass a
+distinguishable abort `reason` (for example `"session terminated"`) so a
+custom `fetch` can separate an intentional close from a failure without
+guessing from the error name.

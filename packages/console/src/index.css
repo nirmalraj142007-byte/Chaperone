@@ -1,0 +1,251 @@
+@import "tailwindcss";
+@import "./tokens.css";
+
+/*
+ * Tailwind's default palette, type scale, fonts and radii are cleared and
+ * replaced with references to tokens.css. `--spacing: var(--space-unit)`
+ * makes every spacing utility a multiple of the 4px unit (p-4 = 16px).
+ */
+@theme inline {
+  --color-*: initial;
+  --font-*: initial;
+  --text-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+
+  --spacing: var(--space-unit);
+
+  --color-n-0: var(--n-0);
+  --color-n-50: var(--n-50);
+  --color-n-100: var(--n-100);
+  --color-n-200: var(--n-200);
+  --color-n-400: var(--n-400);
+  --color-n-600: var(--n-600);
+  --color-n-800: var(--n-800);
+  --color-n-900: var(--n-900);
+  --color-accent: var(--accent);
+  --color-accent-wash: var(--accent-wash);
+  --color-ok: var(--ok);
+  --color-ok-wash: var(--ok-wash);
+  --color-warn: var(--warn);
+  --color-warn-wash: var(--warn-wash);
+  --color-warn-ink: var(--warn-ink);
+  --color-blocked: var(--blocked);
+  --color-blocked-wash: var(--blocked-wash);
+  --color-transparent: transparent;
+
+  --font-ui: var(--font-ui);
+  --font-num: var(--font-num);
+  --font-hash: var(--font-hash);
+
+  --text-1: var(--text-1);
+  --text-1--line-height: var(--text-1-lh);
+  --text-2: var(--text-2);
+  --text-2--line-height: var(--text-2-lh);
+  --text-3: var(--text-3);
+  --text-3--line-height: var(--text-3-lh);
+  --text-4: var(--text-4);
+  --text-4--line-height: var(--text-4-lh);
+  --text-5: var(--text-5);
+  --text-5--line-height: var(--text-5-lh);
+
+  --radius-form: var(--radius);
+}
+
+@layer base {
+  html {
+    background: var(--n-50);
+    color: var(--n-900);
+    font-family: var(--font-ui);
+    font-size: 100%;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    margin: 0;
+    background: var(--n-50);
+    font-size: var(--text-2);
+    line-height: var(--text-2-lh);
+  }
+  :focus-visible {
+    outline: var(--rule-heavy) solid var(--accent);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: var(--warn-wash);
+  }
+}
+
+@layer components {
+  /* A printed field label: small caps in carbon ink. */
+  .label {
+    font-size: var(--text-1);
+    line-height: var(--text-1-lh);
+    font-weight: var(--weight-label);
+    letter-spacing: var(--track-label);
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  /* A ruled form box: carbon-ink rule, label printed into the top-left corner. */
+  .box {
+    border: var(--rule) solid var(--accent);
+    background: var(--n-0);
+    border-radius: var(--radius);
+  }
+  .num {
+    font-family: var(--font-num);
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+  .hash {
+    font-family: var(--font-hash);
+    font-size: var(--text-1);
+    letter-spacing: 0;
+  }
+  .title {
+    font-size: var(--text-4);
+    line-height: var(--text-4-lh);
+    font-weight: var(--weight-title);
+    letter-spacing: var(--track-title);
+  }
+  .micro {
+    transition:
+      color var(--dur-micro) var(--ease-ink),
+      background-color var(--dur-micro) var(--ease-ink),
+      border-color var(--dur-micro) var(--ease-ink),
+      box-shadow var(--dur-micro) var(--ease-ink);
+  }
+}
+
+/* ─────────────────────────── the chain (signature) ─────────────────────────── */
+
+.chain {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap);
+  --size: var(--link-sm);
+  --gap: var(--link-gap-sm);
+}
+.chain[data-size="lg"] {
+  --size: var(--link-lg);
+  --gap: var(--link-gap-lg);
+}
+.chain[data-size="lg"][data-dense] {
+  --size: var(--link-md);
+  --gap: var(--link-gap-md);
+}
+.chain-link {
+  position: relative;
+  width: var(--size);
+  height: var(--size);
+  border: var(--rule) solid var(--accent);
+  background: var(--n-0);
+  flex: none;
+}
+/* the connecting bar between links — the chain */
+.chain-link + .chain-link::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 100%;
+  width: calc(var(--gap) + var(--rule));
+  height: var(--rule);
+  background: var(--accent);
+  transform: translateY(-50%);
+}
+.chain-link[data-state="pending"] {
+  border-style: dashed;
+  border-color: var(--n-400);
+}
+.chain-link[data-state="unverified"] {
+  border-color: var(--n-200);
+  background: var(--n-50);
+}
+.chain-link[data-state="unverified"] + .chain-link::before,
+.chain-link[data-state="pending"] + .chain-link::before {
+  background: var(--n-200);
+}
+.chain-link[data-state="verified"] {
+  background: var(--accent);
+  animation: ink var(--dur-ink-link) var(--ease-ink) both;
+  animation-delay: calc(var(--i) * var(--dur-step));
+}
+.chain-link[data-state="broken"] {
+  border-color: var(--blocked);
+  background: var(--blocked);
+  animation: ink var(--dur-ink-link) var(--ease-ink) both;
+  animation-delay: calc(var(--i) * var(--dur-step));
+  outline: var(--rule) solid var(--blocked);
+  outline-offset: 2px;
+}
+@keyframes ink {
+  from {
+    background: var(--n-0);
+    transform: scale(0.6);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+/* The stamp lands once the ink has run. */
+.stamp {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border: var(--rule-heavy) double currentColor;
+  border-radius: var(--radius);
+  font-weight: 800;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  transform: rotate(-2.5deg);
+  animation: stamp var(--dur-stamp) var(--ease-ink) both;
+  animation-delay: var(--stamp-delay, 0ms);
+  white-space: nowrap;
+}
+.stamp[data-tone="ok"] {
+  color: var(--ok);
+  background: var(--ok-wash);
+}
+.stamp[data-tone="blocked"] {
+  color: var(--blocked);
+  background: var(--blocked-wash);
+}
+.stamp[data-tone="neutral"] {
+  color: var(--n-600);
+  background: var(--n-100);
+}
+@keyframes stamp {
+  from {
+    opacity: 0;
+    transform: rotate(-2.5deg) scale(1.5);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(-2.5deg) scale(1);
+  }
+}
+
+/* ─────────────────────────── the diff marks ─────────────────────────── */
+
+mark.add {
+  background: var(--warn-wash);
+  color: var(--n-900);
+  box-shadow: inset 0 calc(-1 * var(--rule-heavy)) 0 var(--warn);
+  padding: 0 1px;
+}
+del.remove {
+  color: var(--blocked);
+  text-decoration-thickness: var(--rule);
+  background: var(--blocked-wash);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chain-link,
+  .stamp {
+    animation: none !important;
+  }
+  .micro {
+    transition: none;
+  }
+}

@@ -1,0 +1,92 @@
+/*
+ * Chaperone console design tokens. The single source of every colour,
+ * size, and space value in this package; Tailwind's theme (index.css) is
+ * reset and re-pointed at these, so a utility class that isn't derived from
+ * a token doesn't exist.
+ *
+ * Concept: a carbonless triplicate form. Chrome is printed in one ink
+ * (carbon blue); data is typed in graphite; state is marked the way a
+ * clerk would mark a form — a canary copy for "awaiting", a ledger-green
+ * tick for "verified", a crimson VOID stamp for "broken / refused".
+ * Light only: the form metaphor is paper, and paper projects better.
+ */
+:root {
+  /* ── neutral scale: graphite on cool form stock (deliberately not cream) ── */
+  --n-0: #ffffff; /* the sheet itself */
+  --n-50: #f3f5f8; /* form stock, page background */
+  --n-100: #e6e9ef;
+  --n-200: #cdd2dc;
+  --n-400: #8a92a3;
+  --n-600: #525b6e;
+  --n-800: #262c3a;
+  --n-900: #0f1320; /* typed data */
+
+  /* ── the one accent: carbon-paper blue, the ink every rule and label is printed in ── */
+  --accent: #23308f;
+
+  /* ── exactly three semantic colours ── */
+  --ok: #17714a; /* ledger green: chain verified, pinned */
+  --warn: #c99a00; /* the canary copy: awaiting a decision; highlighter on the added clause */
+  --blocked: #b0103a; /* the VOID stamp: chain broken, change refused */
+
+  /* Washes are mixes of the tokens above, never new hues. */
+  --accent-wash: color-mix(in oklab, var(--accent) 9%, var(--n-0));
+  --ok-wash: color-mix(in oklab, var(--ok) 10%, var(--n-0));
+  --warn-wash: color-mix(in oklab, var(--warn) 30%, var(--n-0));
+  --blocked-wash: color-mix(in oklab, var(--blocked) 9%, var(--n-0));
+  /* --warn is a fill, not a text colour (2.4:1 on white); canary-marked text uses this */
+  --warn-ink: color-mix(in oklab, var(--warn) 45%, var(--n-900));
+
+  /* ── type: one sans for UI, one serif for numerals, one mono for hashes only ── */
+  --font-ui: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-num: "Iowan Old Style", Charter, "Bitstream Charter", "Sitka Text", Cambria, Georgia, serif;
+  --font-hash: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
+
+  /* five steps; each pairs a size with its line height */
+  --text-1: 0.75rem; /* 12 — printed field labels, captions */
+  --text-1-lh: 1rem;
+  --text-2: 0.875rem; /* 14 — body, table cells */
+  --text-2-lh: 1.25rem;
+  --text-3: 1rem; /* 16 — the verbatim tool text */
+  --text-3-lh: 1.6rem;
+  --text-4: 1.375rem; /* 22 — screen titles, tool names */
+  --text-4-lh: 1.75rem;
+  --text-5: 2.5rem; /* 40 — serif numerals only */
+  --text-5-lh: 1;
+
+  --weight-body: 400;
+  --weight-label: 600;
+  --weight-title: 650;
+  --track-label: 0.1em; /* printed-form caps */
+  --track-title: -0.01em;
+
+  /* ── 4px spacing scale ── */
+  --space-unit: 4px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  /* ── rules and shape: printed forms are square and ruled in ink, not hairline grey ── */
+  --rule: 1.5px;
+  --rule-heavy: 3px;
+  --radius: 2px;
+
+  /* ── the chain (signature): link geometry at two sizes ── */
+  --link-sm: 8px;
+  --link-md: 14px; /* lg chain, once it's long enough to wrap */
+  --link-lg: 28px;
+  --link-gap-sm: 3px;
+  --link-gap-md: 5px;
+  --link-gap-lg: 10px;
+
+  /* ── motion: one orchestrated sequence, everything else is 120ms ── */
+  --ease-ink: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --dur-micro: 120ms;
+  --dur-ink-total: 700ms; /* the stagger across the whole chain, however long it is */
+  --dur-ink-link: 240ms; /* each link's own fill, overlapping its neighbours so the run reads as one wave */
+  --dur-stamp: 260ms;
+}

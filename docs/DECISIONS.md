@@ -308,3 +308,35 @@ approved/refused) against a mocked ledger. `packages/gateway/test/gateway.test.t
 covers the `_meta` linkage, the resource template, the embedded resource
 block, the `MCP_APP_ENABLED=false` fallback, and a 404 on an unknown
 quarantine id, all against a real in-process gateway + demo-upstream.
+
+## Console read path and approve path — Phase 14 (2026-09-19)
+
+**Decision.** The console reads through five GET-only routes under the
+gateway's `/api/*` (`packages/gateway/src/api.ts`). Its single write goes
+through `chaperone/approve_change` over `/mcp`: the same `approveChange()`
+the consent card reaches, called by the console as an ordinary MCP client
+(`packages/console/src/mcp.ts`).
+
+**Why not a console-only approve endpoint.** A second endpoint would be a
+second approval mechanism, and the rest of the product exists to make sure
+there is only one. A resident approving from the console proves possession
+of the one-time token exactly as they would from the card.
+
+**Why `/api` never serves the token.** Gate.ts still holds the plaintext
+in memory for the consent card's benefit, so `/api/quarantine/:id` could
+return it. Doing that would turn a read endpoint into an approval
+capability for anyone who can issue a GET. The route exposes only
+`tokenHeld: boolean`. The tests assert that neither the token nor its hash
+appears in the response body.
+
+**Why the queue sort lives server-side.** "Unscored first" is a policy
+statement (an unscored item is not a safe item), and it should be testable
+in one place (`sortQueue`, `packages/gateway/test/api.test.ts`), not
+re-implemented per client. An advisory read failure sorts the row as
+unscored, which pushes it toward more attention, not less.
+
+**Why `listEvents` was added to the ledger package.** `verifyChain` already
+walked the partition privately. `listEvents` exposes the same forward walk
+read-only, so the rows the console shows are the rows the verifier checked.
+No update or delete function was added, and `appendEvent` is still the only
+write.

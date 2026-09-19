@@ -18,6 +18,7 @@ import { childLogger, requestLogger } from "@chaperone/logger";
 import { originAllowlistMiddleware } from "./security.js";
 import { handleInitialize, handleSessionRequest, isInitialize } from "./session.js";
 import { buildPassthroughServer } from "./upstreamProxy.js";
+import { buildApiRouter } from "./api.js";
 
 const log = childLogger({ component: "gateway" });
 
@@ -70,6 +71,10 @@ export function buildApp(
     });
     next();
   });
+
+  // Read-only JSON for packages/console. The console's approve control does
+  // not live here — it calls `chaperone/approve_change` over /mcp below.
+  app.use("/api", buildApiRouter(householdId, upstreams));
 
   app.post("/mcp", (req: Request, res: Response, next: NextFunction) => {
     void (async () => {
