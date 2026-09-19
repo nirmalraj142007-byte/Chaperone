@@ -51,7 +51,7 @@ export interface ApiLedgerEvent {
   ts: string;
   type: ledger.LedgerEventType;
   actor: string;
-  payloadHash: string;
+  eventHash: string;
   prevEventHash: string;
   payload: Record<string, unknown>;
 }
@@ -99,7 +99,7 @@ export function toApiEvents(events: readonly ledger.StoredLedgerEvent[]): ApiLed
     ts: e.ts,
     type: e.type,
     actor: e.actor,
-    payloadHash: e.payloadHash,
+    eventHash: e.eventHash,
     prevEventHash: e.prevEventHash,
     payload: e.payload,
   }));

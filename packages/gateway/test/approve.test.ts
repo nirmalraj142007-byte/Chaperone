@@ -56,7 +56,7 @@ beforeEach(() => {
   });
   vi.mocked(ledger.appendEvent).mockImplementation(async ({ type, actor, payload }) => {
     events.push({ type, actor, payload });
-    return { eventId: `evt-${events.length}`, payloadHash: "hash", prevEventHash: "prev" };
+    return { eventId: `evt-${events.length}`, eventHash: "hash", prevEventHash: "prev" };
   });
   vi.mocked(ledger.resolveQuarantine).mockImplementation(async (householdId, quarantineId, status, resolvedAt) => {
     resolveCalls.push([householdId, quarantineId, status, resolvedAt]);

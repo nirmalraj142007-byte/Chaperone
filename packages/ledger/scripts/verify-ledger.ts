@@ -11,7 +11,12 @@ async function main(): Promise<void> {
     return;
   }
 
-  console.error(`chain BROKEN at index ${result.index} (sk=${result.brokenSk})`);
+  const why = {
+    hash: "event edited after it was written",
+    link: "link to the previous event broken (event removed, reordered or inserted)",
+    unhashed: "event has no eventHash (written under the old payload-only rule)",
+  }[result.reason];
+  console.error(`chain BROKEN at index ${result.index} (sk=${result.brokenSk}) — ${why}`);
   console.error(`  expected: ${result.expected}`);
   console.error(`  actual:   ${result.actual}`);
   process.exitCode = 1;

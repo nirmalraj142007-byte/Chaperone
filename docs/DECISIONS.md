@@ -340,3 +340,60 @@ walked the partition privately. `listEvents` exposes the same forward walk
 read-only, so the rows the console shows are the rows the verifier checked.
 No update or delete function was added, and `appendEvent` is still the only
 write.
+
+## Ledger hash covers the full event, not the payload — 2026-09-19
+
+**What was wrong.** Since Phase 3, `appendEvent` stored `payloadHash =
+sha256(canonical(payload))` and chained `prevEventHash` onto the previous
+event's `payloadHash`. `type`, `actor`, `ts` and `prevEventHash` were
+covered by no hash. Found while building the console (Phase 14), and
+reproduced against real DynamoDB Local before the fix
+(`spec/ledger-tamper.test.ts`, run on the old code: 3 of 4 failed):
+
+- Editing an event's `type` → `verifyChain` returned `ok: true`.
+- Editing an event's `actor` → `ok: true`.
+- Deleting an event whose payload matched its neighbour's (gate.ts writes
+  TOOL_QUARANTINED and CONSENT_SHOWN with byte-identical payloads) →
+  `{ ok: true, count: 3 }`. The chain silently shrank and still verified,
+  because both events had the same `payloadHash`.
+
+**Decision.** The stored hash is now `eventHash = sha256(canonical({schema:
+"chaperone/ledger-event@2", type, actor, ts, payload, prevEventHash}))`.
+Folding in `prevEventHash` commits each event to its position, so identical
+payloads no longer produce identical hashes, and a deletion, reorder or
+splice breaks the successor's link. `verifyChain` checks both properties
+and reports which one failed: `hash` (a field was edited), `link` (an event
+was removed, reordered or inserted), or `unhashed` (the event predates this
+rule). `sk` isn't hashed. Position is committed through `prevEventHash`,
+and time through `ts`.
+
+**Why the field was renamed.** `payloadHash` → `eventHash`, across the
+ledger, the gateway's `/api/ledger`, and the console. Keeping the old name
+on a hash that now covers five fields would invite a future reader to
+reason from the old, weaker property.
+
+**Legacy events are not re-hashed, and not skipped.** Re-hashing existing
+items in place would mean rewriting them, which non-negotiable 6 forbids,
+and it would launder exactly the evidence the chain exists to protect. An
+event with no `eventHash` fails verification as `unhashed`: a chain that
+can't be fully checked isn't reported as verified. DynamoDB Local's
+`chaperone-ledger-event` table was dropped and re-migrated for a fresh chain
+(the prior 19 events were snapshotted first with `pnpm ddb:dump`). No
+deployed environment has ledger data yet, so this needs no migration there.
+
+**Evidence.** `pnpm test:tamper` (real DynamoDB Local via the `aws` CLI,
+Phase 3's tamper-and-restore pattern): 4/4 on the new code. The in-memory
+unit tests add edited `ts`, a swapped pair, distinct hashes for
+payload-identical neighbours, a legacy event, and per-field sensitivity of
+`hashEvent`. On the fresh chain: `pnpm ddb:seed` → `pnpm verify-ledger`
+"chain OK — 6 events verified", exit 0. After `pnpm pin:bootstrap`: 10
+events, exit 0. A `type` edit on the fresh chain made `verify-ledger` exit
+1 at index 3, and restoring it returned to OK.
+
+**Gotcha found on the way.** Scripts under `packages/*/scripts` that import
+`@chaperone/ledger` by package name resolve to its built `dist/`, not
+`src/`. The first fresh-chain attempt ran `pnpm pin:bootstrap` before
+`tsc -b`, so it appended 4 old-format events, which the new verifier
+refused as `unhashed` at index 6. `ddb:seed` imports `../src` and wasn't
+affected. After changing a package's source, run `pnpm build` before any
+script that reaches it by package name.

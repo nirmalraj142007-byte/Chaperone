@@ -38,7 +38,7 @@ export interface LedgerEvent {
   ts: string;
   type: string;
   actor: string;
-  payloadHash: string;
+  eventHash: string;
   prevEventHash: string;
   payload: Record<string, unknown>;
 }
@@ -78,7 +78,7 @@ export interface LedgerResponse {
 
 export type VerifyResponse =
   | { ok: true; count: number }
-  | { ok: false; index: number; brokenSk: string; expected: string; actual: string };
+  | { ok: false; index: number; brokenSk: string; reason: "hash" | "link" | "unhashed"; expected: string; actual: string };
 
 export interface UpstreamsResponse {
   householdId: string;

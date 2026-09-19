@@ -182,7 +182,7 @@ beforeEach(async () => {
     void type;
     void actor;
     void payload;
-    return { eventId: "evt", payloadHash: "hash", prevEventHash: "prev" };
+    return { eventId: "evt", eventHash: "hash", prevEventHash: "prev" };
   });
 
   pool = await getPool([upstream]);

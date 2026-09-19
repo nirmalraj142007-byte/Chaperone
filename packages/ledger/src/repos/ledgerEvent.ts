@@ -21,7 +21,14 @@ export interface StoredLedgerEvent {
   type: LedgerEventType;
   actor: string;
   payload: Record<string, unknown>;
-  payloadHash: string;
+  /**
+   * sha256 over the canonical form of this event's full identity — `type`,
+   * `actor`, `ts`, `payload`, and `prevEventHash` (see `hashEvent`). Folding
+   * in `prevEventHash` commits each event to its position in the chain, so
+   * a deleted, reordered, or spliced-in event breaks the next link even
+   * when payloads repeat.
+   */
+  eventHash: string;
   prevEventHash: string;
   ts: string;
 }
@@ -33,12 +40,36 @@ function partitionKey(householdId: string): string {
   return `HOUSEHOLD#${householdId}`;
 }
 
-function hashPayload(payload: Record<string, unknown>): string {
-  const canonical = canonicalizeJson(payload);
+/**
+ * Domain tag inside the hashed form: a hash computed under any other
+ * field set (including Phase 3's payload-only rule) can never collide with
+ * one computed here.
+ */
+const EVENT_HASH_SCHEMA = "chaperone/ledger-event@2";
+
+type HashedFields = Pick<StoredLedgerEvent, "type" | "actor" | "ts" | "payload" | "prevEventHash">;
+
+/**
+ * The stored hash, over the event's full identity rather than its payload
+ * alone. Phase 3's rule hashed only `payload`, which let an attacker with
+ * raw table access edit `type` or `actor`, or delete an event whose
+ * payload matched its neighbour's, without verifyChain noticing (found in
+ * Phase 14; see spec/ledger-tamper.test.ts). `sk` is not hashed: position
+ * is already committed through `prevEventHash`, and `ts` carries the time.
+ */
+export function hashEvent(fields: HashedFields): string {
+  const canonical = canonicalizeJson({
+    schema: EVENT_HASH_SCHEMA,
+    type: fields.type,
+    actor: fields.actor,
+    ts: fields.ts,
+    payload: fields.payload,
+    prevEventHash: fields.prevEventHash,
+  });
   // canonicalize() only returns undefined for a top-level undefined/function
-  // input; a Record<string, unknown> payload is always a plain object.
+  // input; this is always a plain object.
   if (canonical === undefined) {
-    throw new PolicyViolationError("Ledger event payload could not be canonicalized");
+    throw new PolicyViolationError("Ledger event could not be canonicalized");
   }
   return hashCanonicalJson(canonical);
 }
@@ -81,8 +112,8 @@ async function queryAllEventsAscending(householdId: string): Promise<StoredLedge
 
 /**
  * Appends one event to a household's hash-chained ledger. Reads the current
- * tail, chains onto its payloadHash (or the genesis hash if the partition is
- * empty), and writes with `attribute_not_exists(sk)` so a concurrent append
+ * tail, chains onto its eventHash (or the genesis hash if the partition is
+ * empty), hashes the new event's full identity including that link, and writes with `attribute_not_exists(sk)` so a concurrent append
  * can never silently overwrite another. A lost race is retried exactly once
  * against a freshly-read tail and a fresh ULID; a second collision, or any
  * other write failure, surfaces as `LedgerWriteError` — callers must treat
@@ -93,15 +124,13 @@ export async function appendEvent(i: {
   type: LedgerEventType;
   actor: string;
   payload: Record<string, unknown>;
-}): Promise<{ eventId: string; payloadHash: string; prevEventHash: string }> {
+}): Promise<{ eventId: string; eventHash: string; prevEventHash: string }> {
   if (i.actor === "model") {
     throw new PolicyViolationError(
       'Ledger event actor must never be the string "model" — an advisory model is never the actor of record for a ledger event.',
       { type: i.type },
     );
   }
-
-  const payloadHash = hashPayload(i.payload);
 
   for (let attempt = 0; attempt < 2; attempt++) {
     let tail: StoredLedgerEvent | undefined;
@@ -113,8 +142,11 @@ export async function appendEvent(i: {
         type: i.type,
       });
     }
-    const prevEventHash = tail?.payloadHash ?? GENESIS_EVENT_HASH;
+    const prevEventHash = tail?.eventHash ?? GENESIS_EVENT_HASH;
     const eventId = ulid();
+    // Per attempt: a retry chains onto a freshly-read tail, so both the link and the time change.
+    const ts = new Date().toISOString();
+    const eventHash = hashEvent({ type: i.type, actor: i.actor, ts, payload: i.payload, prevEventHash });
 
     try {
       await withDynamoErrors(() =>
@@ -127,15 +159,15 @@ export async function appendEvent(i: {
               type: i.type,
               actor: i.actor,
               payload: i.payload,
-              payloadHash,
+              eventHash,
               prevEventHash,
-              ts: new Date().toISOString(),
+              ts,
             } satisfies StoredLedgerEvent,
             ConditionExpression: "attribute_not_exists(sk)",
           }),
         ),
       );
-      return { eventId, payloadHash, prevEventHash };
+      return { eventId, eventHash, prevEventHash };
     } catch (e) {
       const isRace = e instanceof Error && e.name === "ConditionalCheckFailedException";
       if (isRace && attempt === 0) {
@@ -160,39 +192,55 @@ export async function listEvents(householdId: string): Promise<StoredLedgerEvent
 
 export type VerifyChainResult =
   | { ok: true; count: number }
-  | { ok: false; index: number; brokenSk: string; expected: string; actual: string };
+  | {
+      ok: false;
+      index: number;
+      brokenSk: string;
+      /**
+       * `hash`: the event's stored fields no longer hash to its stored
+       * eventHash (a field was edited). `link`: its prevEventHash doesn't
+       * match the eventHash of the event before it (an event was deleted,
+       * reordered, or spliced in). `unhashed`: the event carries no eventHash
+       * at all — written under Phase 3's payload-only rule, so it cannot be
+       * checked and is not vouched for.
+       */
+      reason: "hash" | "link" | "unhashed";
+      expected: string;
+      actual: string;
+    };
 
 /**
- * Walks a household's entire ledger partition forward, recomputing each
- * event's payloadHash from its stored payload and checking that it matches
- * both the stored payloadHash (self-integrity) and the next event's
- * prevEventHash (chain linkage). Returns the first break found, if any.
+ * Walks a household's entire ledger partition forward. For each event,
+ * recomputes eventHash from its stored type/actor/ts/payload/prevEventHash
+ * and compares it to the stored eventHash (self-integrity), then checks its
+ * prevEventHash against the previous event's eventHash (chain linkage).
+ * Returns the first break found, if any. An event with no eventHash at all
+ * — written under Phase 3's payload-only rule — fails as `unhashed`: a
+ * chain this function cannot fully check is not reported as verified.
  */
 export async function verifyChain(householdId: string): Promise<VerifyChainResult> {
   const events = await queryAllEventsAscending(householdId);
 
   let expectedPrev = GENESIS_EVENT_HASH;
   for (const [index, event] of events.entries()) {
-    const recomputedPayloadHash = hashPayload(event.payload);
-    if (recomputedPayloadHash !== event.payloadHash) {
-      return {
-        ok: false,
-        index,
-        brokenSk: event.sk,
-        expected: recomputedPayloadHash,
-        actual: event.payloadHash,
-      };
+    const recomputed = hashEvent(event);
+    if (typeof event.eventHash !== "string") {
+      return { ok: false, index, brokenSk: event.sk, reason: "unhashed", expected: recomputed, actual: "(missing)" };
+    }
+    if (recomputed !== event.eventHash) {
+      return { ok: false, index, brokenSk: event.sk, reason: "hash", expected: recomputed, actual: event.eventHash };
     }
     if (event.prevEventHash !== expectedPrev) {
       return {
         ok: false,
         index,
         brokenSk: event.sk,
+        reason: "link",
         expected: expectedPrev,
         actual: event.prevEventHash,
       };
     }
-    expectedPrev = event.payloadHash;
+    expectedPrev = event.eventHash;
   }
 
   return { ok: true, count: events.length };

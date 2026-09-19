@@ -45,7 +45,7 @@ describe("linkStates", () => {
     expect(linkStates(2, { ok: true, count: 2 })).toEqual(["verified", "verified"]);
   });
   it("vouches for nothing past the first break", () => {
-    expect(linkStates(5, { ok: false, index: 2, brokenSk: "x", expected: "a", actual: "b" })).toEqual([
+    expect(linkStates(5, { ok: false, index: 2, brokenSk: "x", reason: "hash", expected: "a", actual: "b" })).toEqual([
       "verified",
       "verified",
       "broken",

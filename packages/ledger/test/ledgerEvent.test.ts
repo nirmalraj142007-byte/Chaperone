@@ -4,7 +4,7 @@ import { PutCommand, QueryCommand, DynamoDBDocumentClient } from "@aws-sdk/lib-d
 import { LedgerWriteError, PolicyViolationError } from "@chaperone/errors";
 import { resetConfigForTests } from "@chaperone/config";
 import { resetDdbClientForTests } from "../src/client.js";
-import { appendEvent, GENESIS_EVENT_HASH, verifyChain, type StoredLedgerEvent } from "../src/repos/ledgerEvent.js";
+import { appendEvent, GENESIS_EVENT_HASH, hashEvent, verifyChain, type StoredLedgerEvent } from "../src/repos/ledgerEvent.js";
 
 const ddbMock = mockClient(DynamoDBDocumentClient);
 
@@ -75,7 +75,7 @@ describe("appendEvent", () => {
     expect(store).toHaveLength(1);
   });
 
-  it("chains a second event onto the first event's payloadHash", async () => {
+  it("chains a second event onto the first event's eventHash", async () => {
     const first = await appendEvent({
       householdId: "household-test",
       type: "CONSENT_SHOWN",
@@ -88,7 +88,7 @@ describe("appendEvent", () => {
       actor: "resident:demo",
       payload: { toolName: "list_shopping_list" },
     });
-    expect(second.prevEventHash).toBe(first.payloadHash);
+    expect(second.prevEventHash).toBe(first.eventHash);
     expect(store).toHaveLength(2);
   });
 
@@ -194,7 +194,7 @@ describe("verifyChain", () => {
 
     const target = store.find((e) => e.sk === second.eventId);
     expect(target).toBeDefined();
-    // simulate `aws dynamodb update-item` mutating the payload directly, without touching payloadHash
+    // simulate `aws dynamodb update-item` mutating the payload directly, without touching eventHash
     target!.payload = { b: "tampered" };
 
     const result = await verifyChain("household-test");
@@ -202,8 +202,9 @@ describe("verifyChain", () => {
       ok: false,
       index: 1,
       brokenSk: second.eventId,
+      reason: "hash",
       expected: expect.stringMatching(/^sha256:[0-9a-f]{64}$/),
-      actual: second.payloadHash,
+      actual: second.eventHash,
     });
   });
 
@@ -229,6 +230,93 @@ describe("verifyChain", () => {
     if (!result.ok) {
       expect(result.index).toBe(1);
       expect(result.brokenSk).toBe(second.eventId);
+      // prevEventHash is itself hashed, so editing it is caught as a self-integrity break first.
+      expect(result.reason).toBe("hash");
     }
+  });
+
+  // The three vectors found in Phase 14. spec/ledger-tamper.test.ts runs the
+  // same three against real DynamoDB Local; these are the fast in-memory guard.
+  describe("full-identity hash (Phase 14 regressions)", () => {
+    const colliding = { upstreamId: "grocery", toolName: "add_item", quarantineId: "Q1" };
+
+    async function fourEventChain() {
+      const ids: string[] = [];
+      for (const [type, actor, payload] of [
+        ["PIN_CREATED", "resident:demo", { hash: "sha256:aa" }],
+        ["TOOL_QUARANTINED", "system:gateway", colliding],
+        ["CONSENT_SHOWN", "system:gateway", colliding],
+        ["APPROVED", "resident:demo", { ...colliding, decision: "approve" }],
+      ] as const) {
+        const { eventId } = await appendEvent({ householdId: "household-test", type, actor, payload: { ...payload } });
+        ids.push(eventId);
+      }
+      return ids;
+    }
+
+    it("detects an edited type as a hash break at that index", async () => {
+      const ids = await fourEventChain();
+      store[3]!.type = "REFUSED";
+      await expect(verifyChain("household-test")).resolves.toMatchObject({ ok: false, index: 3, brokenSk: ids[3], reason: "hash" });
+    });
+
+    it("detects an edited actor as a hash break at that index", async () => {
+      const ids = await fourEventChain();
+      store[1]!.actor = "resident:someone-else";
+      await expect(verifyChain("household-test")).resolves.toMatchObject({ ok: false, index: 1, brokenSk: ids[1], reason: "hash" });
+    });
+
+    it("detects an edited ts as a hash break at that index", async () => {
+      const ids = await fourEventChain();
+      store[2]!.ts = "2020-01-01T00:00:00.000Z";
+      await expect(verifyChain("household-test")).resolves.toMatchObject({ ok: false, index: 2, brokenSk: ids[2], reason: "hash" });
+    });
+
+    it("gives payload-identical neighbours distinct hashes, because each commits to its predecessor", async () => {
+      await fourEventChain();
+      expect(store[1]!.payload).toEqual(store[2]!.payload);
+      expect(store[1]!.eventHash).not.toBe(store[2]!.eventHash);
+    });
+
+    it("detects deleting an event whose payload collides with its neighbour's, as a link break at the successor", async () => {
+      const ids = await fourEventChain();
+      store.splice(2, 1);
+      await expect(verifyChain("household-test")).resolves.toMatchObject({ ok: false, index: 2, brokenSk: ids[3], reason: "link" });
+    });
+
+    it("detects two events swapped in place as a link break", async () => {
+      await fourEventChain();
+      [store[1], store[2]] = [store[2]!, store[1]!];
+      await expect(verifyChain("household-test")).resolves.toMatchObject({ ok: false, index: 1, reason: "link" });
+    });
+
+    it("fails an event written under the old payload-only rule rather than skipping it", async () => {
+      store.push({
+        pk: "HOUSEHOLD#household-test",
+        sk: "01LEGACY",
+        type: "PIN_CREATED",
+        actor: "resident:demo",
+        payload: { a: 1 },
+        prevEventHash: GENESIS_EVENT_HASH,
+        ts: "2026-09-12T00:00:00.000Z",
+        payloadHash: "sha256:" + "a".repeat(64),
+      } as unknown as StoredLedgerEvent);
+      await expect(verifyChain("household-test")).resolves.toMatchObject({ ok: false, index: 0, reason: "unhashed", actual: "(missing)" });
+    });
+
+    it("hashEvent is stable under payload key order and changes with every hashed field", () => {
+      const base = { type: "APPROVED" as const, actor: "resident:demo", ts: "2026-09-19T00:00:00.000Z", payload: { a: 1, b: 2 }, prevEventHash: GENESIS_EVENT_HASH };
+      const h = hashEvent(base);
+      expect(hashEvent({ ...base, payload: { b: 2, a: 1 } })).toBe(h);
+      for (const variant of [
+        { ...base, type: "REFUSED" as const },
+        { ...base, actor: "resident:other" },
+        { ...base, ts: "2026-09-19T00:00:00.001Z" },
+        { ...base, payload: { a: 1, b: 3 } },
+        { ...base, prevEventHash: "sha256:" + "f".repeat(64) },
+      ]) {
+        expect(hashEvent(variant)).not.toBe(h);
+      }
+    });
   });
 });

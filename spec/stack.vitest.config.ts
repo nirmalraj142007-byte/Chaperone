@@ -11,9 +11,10 @@
  * down) or `pnpm spec`'s fast in-process suite starts depending on a live
  * stack it was built specifically to avoid needing.
  *
- * Neither file imports any `@chaperone/*` package — both talk to the
- * stack purely over raw HTTP/the MCP SDK client — so no alias block is
- * needed here, unlike the other two configs.
+ * resumption and long-stream import no `@chaperone/*` package — they talk
+ * to the stack purely over raw HTTP/the MCP SDK client. ledger-tamper does:
+ * it calls the real appendEvent/verifyChain against DynamoDB Local, so the
+ * alias block below points those imports at source, same as the root config.
  */
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -21,10 +22,21 @@ import { defineConfig } from "vitest/config";
 
 const rootDir = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 
+const pkg = (name: string, entry = "index.ts"): string => path.resolve(rootDir, "packages", name, "src", entry);
+
 export default defineConfig({
+  resolve: {
+    alias: {
+      "@chaperone/errors": pkg("errors"),
+      "@chaperone/config": pkg("config"),
+      "@chaperone/logger": pkg("logger"),
+      "@chaperone/policy": pkg("policy"),
+      "@chaperone/ledger": pkg("ledger"),
+    },
+  },
   test: {
     root: rootDir,
-    include: ["spec/resumption.test.ts", "spec/long-stream.test.ts"],
+    include: ["spec/resumption.test.ts", "spec/long-stream.test.ts", "spec/ledger-tamper.test.ts"],
     reporters: ["verbose"],
   },
 });

@@ -311,8 +311,8 @@ function Trail({ events }: { events: LedgerEvent[] }) {
                 <span className="block text-1 text-n-600">
                   <span className="num text-2 text-n-800">{formatTime(e.ts)}</span> · <span className="hash">{e.actor}</span>
                 </span>
-                <span className="hash block truncate text-n-400" title={e.payloadHash}>
-                  payload {short(e.payloadHash)}
+                <span className="hash block truncate text-n-400" title={e.eventHash}>
+                  event {short(e.eventHash)}
                 </span>
               </span>
             </li>

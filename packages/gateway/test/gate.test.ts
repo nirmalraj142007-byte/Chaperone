@@ -79,7 +79,7 @@ beforeEach(() => {
   vi.mocked(ledger.appendEvent).mockImplementation(async ({ type, actor, payload }) => {
     events.push({ type, actor, payload });
     eventCounter += 1;
-    return { eventId: `evt-${eventCounter}`, payloadHash: "hash", prevEventHash: "prev" };
+    return { eventId: `evt-${eventCounter}`, eventHash: "hash", prevEventHash: "prev" };
   });
 });
 

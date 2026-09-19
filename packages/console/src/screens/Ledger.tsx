@@ -49,8 +49,8 @@ function EventRow({ e, verify }: { e: LedgerEvent; verify: VerifyResponse | unde
           {state === "unverified" && <span className="label ml-2 text-n-400">unverified</span>}
         </span>
         <span className="hash order-4 col-span-3 truncate text-n-600 md:order-none md:col-span-1">{e.actor}</span>
-        <span className="hash hidden text-n-800 md:inline" title={e.payloadHash}>
-          {short(e.payloadHash)}
+        <span className="hash hidden text-n-800 md:inline" title={e.eventHash}>
+          {short(e.eventHash)}
         </span>
         <span className="hash hidden text-n-400 md:inline" title={e.prevEventHash}>
           {short(e.prevEventHash)}
@@ -61,8 +61,8 @@ function EventRow({ e, verify }: { e: LedgerEvent; verify: VerifyResponse | unde
           <div className="grid gap-1 text-1 sm:grid-cols-[6rem_minmax(0,1fr)]">
             <span className="label">sort key</span>
             <span className="hash break-all">{e.sk}</span>
-            <span className="label">payload</span>
-            <span className="hash break-all">{e.payloadHash}</span>
+            <span className="label">event hash</span>
+            <span className="hash break-all">{e.eventHash}</span>
             <span className="label">prev</span>
             <span className="hash break-all">{e.prevEventHash}</span>
           </div>
@@ -89,7 +89,7 @@ export function Ledger() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div id="chain-h" className="label">
-              Hash chain · append-only · each event records the previous event's payload hash
+              Hash chain · append-only · each event's hash covers its type, actor, time, payload and the previous event's hash
             </div>
             <h1 className="title mt-1">Ledger</h1>
           </div>
@@ -100,12 +100,17 @@ export function Ledger() {
         </div>
         <p className="mt-4 max-w-[60rem] text-1 text-n-600">
           Verified by <span className="hash text-n-800">GET /api/ledger/verify</span>: the gateway recomputes every
-          event's payload hash from its stored payload and checks it against the next event's{" "}
-          <span className="hash">prevEventHash</span>.{" "}
+          event's hash from its stored type, actor, time, payload and <span className="hash">prevEventHash</span>, then
+          checks that each <span className="hash">prevEventHash</span> matches the hash of the event before it.{" "}
           {broken && verify && !verify.ok && (
             <span className="text-blocked">
-              Event #{verify.index} ({verify.brokenSk}) does not hash to what the chain recorded — expected{" "}
-              <span className="hash">{short(verify.expected)}</span>, found <span className="hash">{short(verify.actual)}</span>.
+              {verify.reason === "link"
+                ? `Event #${verify.index} (${verify.brokenSk}) no longer links to the event before it — an event was removed, reordered or inserted`
+                : verify.reason === "unhashed"
+                  ? `Event #${verify.index} (${verify.brokenSk}) has no event hash — written under the old payload-only rule, so it can't be vouched for`
+                  : `Event #${verify.index} (${verify.brokenSk}) was edited after it was written`}{" "}
+              — expected <span className="hash">{short(verify.expected)}</span>, found{" "}
+              <span className="hash">{short(verify.actual)}</span>.
             </span>
           )}
         </p>
@@ -135,7 +140,7 @@ export function Ledger() {
       </div>
 
       <div className={`hidden gap-x-3 px-4 md:grid ${COLS}`} aria-hidden>
-        {["#", "Time", "Type", "Actor", "Payload", "Prev"].map((h) => (
+        {["#", "Time", "Type", "Actor", "Event hash", "Prev"].map((h) => (
           <span key={h} className="label">
             {h}
           </span>

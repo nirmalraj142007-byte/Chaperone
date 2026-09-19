@@ -175,7 +175,7 @@ beforeEach(async () => {
   });
   vi.mocked(ledger.appendEvent).mockImplementation(async ({ type, actor, payload }) => {
     ledgerEvents.push({ type, actor, payload });
-    return { eventId: `evt-${ledgerEvents.length}`, payloadHash: "hash", prevEventHash: "prev" };
+    return { eventId: `evt-${ledgerEvents.length}`, eventHash: "hash", prevEventHash: "prev" };
   });
 
   pool = await getPool([upstream]);

@@ -140,6 +140,15 @@ jobs:
 
       - run: pnpm test:stack
 
+      # Everything the stack wrote above (pin:bootstrap, the gateway, the
+      # tamper suite's restore steps) must leave a chain that verifies under
+      # the full-event hash; exits 1 on any hash, link, or unhashed break.
+      - name: Verify the ledger hash chain
+        env:
+          DDB_ENDPOINT: "http://localhost:8000"
+          CHAPERONE_UPSTREAMS: '[{"id":"grocery","url":"http://localhost:4000/mcp","label":"Household Grocery"}]'
+        run: pnpm verify-ledger
+
       - name: Compose logs (only on failure)
         if: failure()
         run: docker compose logs

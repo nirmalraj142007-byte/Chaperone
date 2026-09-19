@@ -55,7 +55,7 @@ function row(id: string, score: number | null, detectedAt: string): QueueRow {
 }
 
 function storedEvent(sk: string, type: string, payload: Record<string, unknown>) {
-  return { pk: `HOUSEHOLD#${HOUSEHOLD}`, sk, type, actor: "system:gateway", payload, payloadHash: sk.repeat(4), prevEventHash: "0".repeat(64), ts: `2026-09-19T00:00:0${sk}Z` } as import("@chaperone/ledger").StoredLedgerEvent;
+  return { pk: `HOUSEHOLD#${HOUSEHOLD}`, sk, type, actor: "system:gateway", payload, eventHash: sk.repeat(4), prevEventHash: "0".repeat(64), ts: `2026-09-19T00:00:0${sk}Z` } as import("@chaperone/ledger").StoredLedgerEvent;
 }
 
 describe("sortQueue", () => {
@@ -215,8 +215,8 @@ describe("/api routes", () => {
   });
 
   it("GET /ledger/verify passes a break through verbatim", async () => {
-    vi.mocked(ledger.verifyChain).mockResolvedValue({ ok: false, index: 4, brokenSk: "01K", expected: "x", actual: "y" });
-    expect(await (await fetch(`${base}/ledger/verify`)).json()).toEqual({ ok: false, index: 4, brokenSk: "01K", expected: "x", actual: "y" });
+    vi.mocked(ledger.verifyChain).mockResolvedValue({ ok: false, index: 4, brokenSk: "01K", reason: "link", expected: "x", actual: "y" });
+    expect(await (await fetch(`${base}/ledger/verify`)).json()).toEqual({ ok: false, index: 4, brokenSk: "01K", reason: "link", expected: "x", actual: "y" });
   });
 
   it("storage failures are 503 — and verify reports ok:false, never ok:true", async () => {
