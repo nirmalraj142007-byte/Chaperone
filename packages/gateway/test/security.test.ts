@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import { originAllowed, originAllowlistMiddleware, resolveBindHost } from "../src/security.js";
+import {
+  apiCorsMiddleware,
+  originAllowed,
+  originAllowlistMiddleware,
+  resolveBindHost,
+  securityHeadersMiddleware,
+} from "../src/security.js";
 
 describe("originAllowed", () => {
   const allowlist = ["http://localhost:*", "https://deployed.example.com"];
@@ -67,5 +73,84 @@ describe("resolveBindHost", () => {
 
   it("binds all interfaces when bindAll is true", () => {
     expect(resolveBindHost(true)).toBe("0.0.0.0");
+  });
+});
+
+function fakeSecurityRes() {
+  const headers: Record<string, string> = {};
+  const setHeader = vi.fn((name: string, value: string) => {
+    headers[name] = value;
+  });
+  const json = vi.fn();
+  const end = vi.fn();
+  const status = vi.fn().mockReturnValue({ json, end });
+  return { setHeader, headers, status, json, end } as unknown as Parameters<
+    ReturnType<typeof securityHeadersMiddleware>
+  >[1] & { headers: Record<string, string> };
+}
+
+describe("securityHeadersMiddleware", () => {
+  it("sets CSP, nosniff, and no-referrer on every response, but never HSTS in development", () => {
+    const middleware = securityHeadersMiddleware("development");
+    const res = fakeSecurityRes();
+    const next = vi.fn();
+    middleware({} as never, res, next);
+    expect(res.headers["Content-Security-Policy"]).toContain("default-src 'none'");
+    expect(res.headers["X-Content-Type-Options"]).toBe("nosniff");
+    expect(res.headers["Referrer-Policy"]).toBe("no-referrer");
+    expect(res.headers["Strict-Transport-Security"]).toBeUndefined();
+    expect(next).toHaveBeenCalledOnce();
+  });
+
+  it("adds Strict-Transport-Security only in production", () => {
+    const res = fakeSecurityRes();
+    securityHeadersMiddleware("production")({} as never, res, vi.fn());
+    expect(res.headers["Strict-Transport-Security"]).toContain("max-age=");
+  });
+});
+
+describe("apiCorsMiddleware", () => {
+  const allowlist = ["http://localhost:*"];
+
+  it("reflects an allowed origin with Vary: Origin", () => {
+    const middleware = apiCorsMiddleware(allowlist);
+    const req = { header: () => "http://localhost:5173", method: "GET" } as unknown as Parameters<
+      typeof middleware
+    >[0];
+    const res = fakeSecurityRes();
+    const next = vi.fn();
+    middleware(req, res, next);
+    expect(res.headers["Access-Control-Allow-Origin"]).toBe("http://localhost:5173");
+    expect(res.headers["Vary"]).toBe("Origin");
+    expect(next).toHaveBeenCalledOnce();
+  });
+
+  it("never reflects a disallowed origin", () => {
+    const middleware = apiCorsMiddleware(allowlist);
+    const req = { header: () => "https://evil.example", method: "GET" } as unknown as Parameters<typeof middleware>[0];
+    const res = fakeSecurityRes();
+    middleware(req, res, vi.fn());
+    expect(res.headers["Access-Control-Allow-Origin"]).toBeUndefined();
+  });
+
+  it("never sets Access-Control-Allow-Origin to '*'", () => {
+    const middleware = apiCorsMiddleware(allowlist);
+    const req = { header: () => "http://localhost:3000", method: "GET" } as unknown as Parameters<typeof middleware>[0];
+    const res = fakeSecurityRes();
+    middleware(req, res, vi.fn());
+    expect(res.headers["Access-Control-Allow-Origin"]).not.toBe("*");
+  });
+
+  it("answers an OPTIONS preflight directly, without calling next()", () => {
+    const middleware = apiCorsMiddleware(allowlist);
+    const req = { header: () => "http://localhost:3000", method: "OPTIONS" } as unknown as Parameters<
+      typeof middleware
+    >[0];
+    const res = fakeSecurityRes();
+    const next = vi.fn();
+    middleware(req, res, next);
+    expect(next).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(204);
+    expect(res.headers["Access-Control-Allow-Methods"]).toContain("GET");
   });
 });

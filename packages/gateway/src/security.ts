@@ -58,3 +58,61 @@ export function originAllowlistMiddleware(allowlist: readonly string[]) {
 export function resolveBindHost(bindAll: boolean): string {
   return bindAll ? "0.0.0.0" : "127.0.0.1";
 }
+
+/**
+ * Applied to every response. The gateway never serves third-party HTML (it
+ * serves JSON-RPC, JSON, and an SSE event stream — the one place upstream-
+ * controlled HTML is ever produced is packages/mcp-app's consent card,
+ * which travels inside an MCP resource, not as an HTTP response from this
+ * server), so the CSP is maximally strict rather than tuned for a page that
+ * doesn't exist here: nothing may load, nothing may frame this origin,
+ * there is no base URI to rewrite. `X-Content-Type-Options: nosniff` stops
+ * a browser from executing a JSON response as anything else if it's ever
+ * loaded outside a `fetch()` call; `Referrer-Policy: no-referrer` keeps a
+ * quarantineId or approvalToken that leaked into a URL (it shouldn't, but
+ * see docs/SECURITY.md) from also leaking into a Referer header on the next
+ * cross-origin navigation.
+ *
+ * HSTS only fires when `env === "production"`: on a plain-HTTP local or
+ * demo deployment, telling a browser to upgrade every future request to
+ * this host to HTTPS is actively wrong, not just unnecessary — the host may
+ * not terminate TLS at all.
+ */
+export function securityHeadersMiddleware(env: "development" | "production") {
+  return (_req: Request, res: Response, next: NextFunction): void => {
+    res.setHeader("Content-Security-Policy", "default-src 'none'; base-uri 'none'; frame-ancestors 'none'");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Referrer-Policy", "no-referrer");
+    if (env === "production") {
+      res.setHeader("Strict-Transport-Security", "max-age=63072000; includeSubDomains");
+    }
+    next();
+  };
+}
+
+/**
+ * Real CORS for /api/* — the console is a browser client reading this
+ * origin cross-origin in local dev (its own Vite dev server, a different
+ * port). `originAllowlistMiddleware` above only ever *rejects*; it never
+ * echoes back `Access-Control-Allow-Origin`, so a browser would still
+ * refuse to let console JS read an otherwise-200 response. This mirrors
+ * the same allowlist (never `*`) and only ever reflects an origin already
+ * on it, with `Vary: Origin` so an intermediate cache can't serve one
+ * origin's preflight response to another's.
+ */
+export function apiCorsMiddleware(allowlist: readonly string[]) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const origin = req.header("origin");
+    if (origin !== undefined && originAllowed(origin, allowlist)) {
+      res.setHeader("Access-Control-Allow-Origin", origin);
+      res.setHeader("Vary", "Origin");
+    }
+    if (req.method === "OPTIONS") {
+      res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+      res.status(204).end();
+      return;
+    }
+    next();
+  };
+}

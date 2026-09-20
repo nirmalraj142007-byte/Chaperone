@@ -15,7 +15,8 @@ import { getUiCapability } from "@modelcontextprotocol/ext-apps/server";
 import type { UpstreamConfig, UpstreamPool } from "@chaperone/upstream";
 import { MCP_APP_RESOURCE_MIME_TYPE } from "@chaperone/mcp-app";
 import { childLogger, requestLogger, runWithRequestContext } from "@chaperone/logger";
-import { originAllowlistMiddleware } from "./security.js";
+import { apiCorsMiddleware, originAllowlistMiddleware, securityHeadersMiddleware } from "./security.js";
+import { apiRateLimitMiddleware, mcpRateLimitMiddleware, TokenBucketLimiter, API_RATE_LIMIT, MCP_RATE_LIMIT } from "./rateLimit.js";
 import { buildHealthReport, healthStatusCode, type StorageBackend } from "./health.js";
 import { METRICS_CONTENT_TYPE, normaliseMcpMethod, renderMetrics, requestDurationSeconds, requestsTotal } from "./metrics.js";
 import { handleInitialize, handleSessionRequest, isInitialize } from "./session.js";
@@ -58,7 +59,12 @@ export function buildApp(
    * values from config. See health.ts on why these are resolved once here
    * instead of re-read per request.
    */
-  build: { version?: string; commit?: string; storageBackend?: StorageBackend } = {},
+  build: {
+    version?: string;
+    commit?: string;
+    storageBackend?: StorageBackend;
+    env?: "development" | "production";
+  } = {},
 ): Express {
   const identity = {
     householdId,
@@ -70,6 +76,18 @@ export function buildApp(
     storageBackend: build.storageBackend ?? "dynamodb-local",
   };
   const app = express();
+  // Trust exactly one hop: the deployed topology is ECS Fargate behind a
+  // single ALB (CLAUDE.md — "not App Runner"), so `req.ip` should be the
+  // first address in X-Forwarded-For, not the ALB's own. Without this,
+  // every request behind the ALB reports the same IP and per-IP rate
+  // limiting below buckets all real clients together. Trusting exactly one
+  // hop (not `true`, which trusts the whole chain) means a client still
+  // can't spoof its way past the limiter by forging its own X-Forwarded-For
+  // — the ALB overwrites that header with the real edge before this app
+  // ever sees it.
+  app.set("trust proxy", 1);
+  const mcpRateLimiter = new TokenBucketLimiter(MCP_RATE_LIMIT);
+  const apiRateLimiter = new TokenBucketLimiter(API_RATE_LIMIT);
 
   // Ahead of every other middleware, including the body parser and the
   // Origin check, so that a request rejected by one of those still carries
@@ -113,6 +131,10 @@ export function buildApp(
     runWithRequestContext({ requestId, sessionId }, next);
   });
 
+  // Ahead of body parsing and the Origin check: even a request that's about
+  // to be rejected by one of those got a response, and every response
+  // carries these.
+  app.use(securityHeadersMiddleware(build.env ?? "development"));
   app.use(express.json());
   app.use(originAllowlistMiddleware(originAllowlist));
 
@@ -150,7 +172,16 @@ export function buildApp(
 
   // Read-only JSON for packages/console. The console's approve control does
   // not live here — it calls `chaperone/approve_change` over /mcp below.
-  app.use("/api", buildApiRouter(householdId, upstreams, pool));
+  // CORS ahead of the rate limiter: a browser preflight (OPTIONS) should
+  // never consume a token from a budget meant for actual reads.
+  app.use(
+    "/api",
+    apiCorsMiddleware(originAllowlist),
+    apiRateLimitMiddleware(apiRateLimiter),
+    buildApiRouter(householdId, upstreams, pool),
+  );
+
+  app.use("/mcp", mcpRateLimitMiddleware(mcpRateLimiter));
 
   app.post("/mcp", (req: Request, res: Response, next: NextFunction) => {
     void (async () => {

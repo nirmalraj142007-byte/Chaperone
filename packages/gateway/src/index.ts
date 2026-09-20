@@ -30,6 +30,7 @@ const app = buildApp(pool, config.upstreams, config.originAllowlist, config.hous
   version: config.version,
   commit: config.commit,
   storageBackend: storageBackendFor(config.ddbEndpoint),
+  env: config.env,
 });
 
 const host = resolveBindHost(config.bindAll);

@@ -86,6 +86,11 @@ const envSchema = z.object({
   // not know. "unknown" is the honest default and /healthz prints it.
   CHAPERONE_VERSION: z.string().min(1).default("0.0.0"),
   CHAPERONE_COMMIT: z.string().min(1).default("unknown"),
+  // Phase 17: gates HSTS (Strict-Transport-Security is a lie on a plain-HTTP
+  // local/demo deployment — sending it there would tell a browser to
+  // upgrade every future request to a host that may not even terminate
+  // TLS) and nothing else. Not a general feature-flag switch.
+  CHAPERONE_ENV: z.enum(["development", "production"]).default("development"),
 });
 
 export interface Config {
@@ -103,6 +108,7 @@ export interface Config {
   mcpAppEnabled: boolean;
   version: string;
   commit: string;
+  env: "development" | "production";
 }
 
 const EXPECTED_SHAPE: Record<string, string> = {
@@ -120,6 +126,7 @@ const EXPECTED_SHAPE: Record<string, string> = {
   MCP_APP_ENABLED: 'one of "true" | "false" (default "true")',
   CHAPERONE_VERSION: 'string (default "0.0.0")',
   CHAPERONE_COMMIT: 'string, the full git sha of the running build (default "unknown")',
+  CHAPERONE_ENV: 'one of "development" | "production" (default "development")',
 };
 
 function formatIssues(error: z.ZodError): string {
@@ -157,6 +164,7 @@ export function loadConfig(): Config {
     mcpAppEnabled: env.MCP_APP_ENABLED,
     version: env.CHAPERONE_VERSION,
     commit: env.CHAPERONE_COMMIT,
+    env: env.CHAPERONE_ENV,
     ...(env.DDB_ENDPOINT !== undefined ? { ddbEndpoint: env.DDB_ENDPOINT } : {}),
     ...(env.BEDROCK_MODEL_ID !== undefined ? { bedrockModelId: env.BEDROCK_MODEL_ID } : {}),
     ...(env.GITHUB_TOKEN !== undefined ? { githubToken: env.GITHUB_TOKEN } : {}),

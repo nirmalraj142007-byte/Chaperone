@@ -139,4 +139,34 @@ describe("the pino mixin", () => {
     expect(line["approvalToken"]).toBe("[redacted]");
     expect(line["requestId"]).toBe(CONTEXT.requestId);
   });
+
+  it("redacts approvalToken, GITHUB_TOKEN, and AWS credentials together in one real pino line, none surviving in the serialized output", () => {
+    const { logger, lines } = capturingLogger();
+    const secret = {
+      approvalToken: "approval-secret-value",
+      GITHUB_TOKEN: "ghp_realLookingSecretValue123456",
+      AWS_ACCESS_KEY_ID: "AKIAABCDEFGHIJKLMNOP",
+      AWS_SECRET_ACCESS_KEY: "wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY",
+      AWS_SESSION_TOKEN: "session-token-secret-value",
+      upstreamId: "grocery", // control: not sensitive, must survive
+    };
+    logger.info(secret, "config loaded");
+    const raw = JSON.stringify(lines()[0]);
+    const [line] = lines();
+
+    for (const key of [
+      "approvalToken",
+      "GITHUB_TOKEN",
+      "AWS_ACCESS_KEY_ID",
+      "AWS_SECRET_ACCESS_KEY",
+      "AWS_SESSION_TOKEN",
+    ] as const) {
+      expect(line[key]).toBe("[redacted]");
+    }
+    // None of the actual secret values leak anywhere in the serialized line.
+    for (const value of Object.values(secret).slice(0, 5)) {
+      expect(raw).not.toContain(value);
+    }
+    expect(line["upstreamId"]).toBe("grocery");
+  });
 });

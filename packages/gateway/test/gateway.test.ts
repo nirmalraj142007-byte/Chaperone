@@ -556,3 +556,50 @@ describe("gateway: MCP App consent card (Phase 11)", () => {
     }
   });
 });
+
+/**
+ * End-to-end against the real, fully-wired app (not the isolated
+ * middleware-unit tests in security.test.ts / rateLimit.test.ts) — proves
+ * the headers, CORS, and rate-limit middleware are actually mounted in
+ * app.ts's route order, not just correct in isolation.
+ */
+describe("HTTP surface: security headers, CORS, and rate limiting", () => {
+  it("/healthz carries CSP, nosniff, and no-referrer, and no HSTS outside production", async () => {
+    const res = await fetch(`${gatewayUrl}/healthz`);
+    expect(res.headers.get("content-security-policy")).toContain("default-src 'none'");
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(res.headers.get("referrer-policy")).toBe("no-referrer");
+    expect(res.headers.get("strict-transport-security")).toBeNull();
+  });
+
+  it("/api/quarantine reflects an allowed console origin, not '*', and answers a preflight", async () => {
+    const res = await fetch(`${gatewayUrl}/api/quarantine`, { headers: { Origin: "http://localhost:5173" } });
+    expect(res.headers.get("access-control-allow-origin")).toBe("http://localhost:5173");
+    expect(res.headers.get("vary")).toBe("Origin");
+
+    const preflight = await fetch(`${gatewayUrl}/api/quarantine`, {
+      method: "OPTIONS",
+      headers: { Origin: "http://localhost:5173" },
+    });
+    expect(preflight.status).toBe(204);
+    expect(preflight.headers.get("access-control-allow-methods")).toContain("GET");
+  });
+
+  it("/api/quarantine never reflects a disallowed origin", async () => {
+    const res = await fetch(`${gatewayUrl}/api/quarantine`, { headers: { Origin: "https://evil.example" } });
+    expect(res.headers.get("access-control-allow-origin")).toBeNull();
+  });
+
+  it("/api/* rate-limits per IP: past the bucket's capacity, further requests get 429 with Retry-After", async () => {
+    // Every request in this test comes from the same loopback client, so
+    // they all share one bucket (API_RATE_LIMIT.capacity = 60).
+    let last: Response | undefined;
+    for (let i = 0; i < 61; i++) {
+      last = await fetch(`${gatewayUrl}/api/quarantine`);
+    }
+    expect(last?.status).toBe(429);
+    expect(last?.headers.get("retry-after")).not.toBeNull();
+    const body = (await last?.json()) as { jsonrpc: string; error: { message: string } };
+    expect(body.jsonrpc).toBe("2.0");
+  });
+});

@@ -98,6 +98,43 @@ describe("approveChange: the only path that ever re-pins", () => {
     expect(ledger.putPin).not.toHaveBeenCalled();
   });
 
+  it("a token minted for quarantine A is rejected against quarantine B, even for the same household", async () => {
+    const QUARANTINE_A = "01JQUARANTINEAAAAAAAAAAAA";
+    const QUARANTINE_B = "01JQUARANTINEBBBBBBBBBBBB";
+    const TOKEN_A = "token-for-quarantine-a";
+    const TOKEN_A_HASH = createHash("sha256").update(TOKEN_A, "utf8").digest("hex");
+    const TOKEN_B_HASH = createHash("sha256").update("token-for-quarantine-b", "utf8").digest("hex");
+
+    vi.mocked(ledger.getQuarantine).mockImplementation(async (_householdId, quarantineId) => {
+      if (quarantineId === QUARANTINE_A) {
+        return baseQuarantine({ quarantineId: QUARANTINE_A, approvalTokenHash: TOKEN_A_HASH }) as never;
+      }
+      if (quarantineId === QUARANTINE_B) {
+        return baseQuarantine({ quarantineId: QUARANTINE_B, approvalTokenHash: TOKEN_B_HASH }) as never;
+      }
+      return undefined;
+    });
+
+    // The plaintext that hashes correctly for A, submitted against B.
+    await expect(approveChange(HOUSEHOLD_ID, QUARANTINE_B, TOKEN_A, "approve")).rejects.toBeInstanceOf(
+      InvalidApprovalTokenError,
+    );
+    expect(ledger.putPin).not.toHaveBeenCalled();
+
+    // The same plaintext against the quarantine it actually belongs to still works.
+    await expect(approveChange(HOUSEHOLD_ID, QUARANTINE_A, TOKEN_A, "approve")).resolves.toMatchObject({
+      quarantineId: QUARANTINE_A,
+      decision: "approve",
+    });
+  });
+
+  it("ApproveResult never carries the plaintext token — only a hash prefix is exposed downstream", async () => {
+    vi.mocked(ledger.getQuarantine).mockResolvedValue(baseQuarantine() as never);
+    const result = await approveChange(HOUSEHOLD_ID, QUARANTINE_ID, TOKEN, "approve");
+    expect(Object.keys(result).sort()).toEqual(["decision", "newHash", "quarantineId", "status"].sort());
+    expect(JSON.stringify(result)).not.toContain(TOKEN);
+  });
+
   it("on approve: writes the new pin, appends APPROVED then REPIN, and resolves the quarantine", async () => {
     const quarantine = baseQuarantine();
     vi.mocked(ledger.getQuarantine).mockResolvedValue(quarantine as never);
