@@ -1,12 +1,20 @@
 /**
- * Derives data/boot-rate.json from an existing crawl report — the shape
- * Phase 16's bench package will read this project's single most
- * externally-verifiable ecosystem finding from. Never hand-edit
- * data/boot-rate.json; regenerate it from the crawl report this way
- * instead, so it can never drift from the report it's derived from.
+ * Derives data/boot-rate.json from an existing crawl report.
+ *
+ * The derivation itself lives in `@chaperone/bench`'s `deriveBootRate` —
+ * not here — because two files publish this finding: this one, next to the
+ * crawl evidence, and `benchmarks/boot-rate.json`, written by `pnpm bench`
+ * next to the other reproducible number. Two independent implementations
+ * of one published percentage is the same failure mode as the crawler and
+ * the gateway hashing tools differently, so there is one function and this
+ * script is a thin writer over it.
+ *
+ * Never hand-edit data/boot-rate.json; regenerate it from the crawl report
+ * this way instead, so it can never drift from the report it came from.
  */
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { deriveBootRate } from "@chaperone/bench";
 import type { CrawlReport } from "../src/crawl.js";
 
 function parseArgs(argv: string[]): { crawlId: string } {
@@ -28,36 +36,11 @@ async function main(): Promise<void> {
   const reportPath = path.join("data", `${crawlId}-report.json`);
   const report = JSON.parse(await readFile(reportPath, "utf8")) as CrawlReport;
 
-  // report.bootSuccessRate is booted/attempted — a SUCCESS rate. This
-  // project's headline is the failure framing ("did not start"), so the
-  // reported percentage is 100 minus that, never the success-rate number
-  // relabelled with failure language (see friction-log.md for the entry
-  // recording exactly this bug, caught before it shipped further).
-  const didNotStartRate = 100 - report.bootSuccessRate;
-  const findingSentence =
-    `${didNotStartRate.toFixed(1)}% of public MCP servers with a discoverable install command did not start ` +
-    `from their own documented setup instructions (${report.booted} booted of ${report.attempted} attempted; ` +
-    `${report.noInstallPath} had no discoverable install path at all).`;
-
-  const bootRate = {
-    source: reportPath.split(path.sep).join("/"),
-    crawlId,
-    candidatesConsidered: report.candidatesConsidered,
-    noInstallPath: report.noInstallPath,
-    attempted: report.attempted,
-    booted: report.booted,
-    refusedNoCreds: report.refusedNoCreds,
-    failedInstall: report.failedInstall,
-    failedStart: report.failedStart,
-    failedTimeout: report.failedTimeout,
-    bootSuccessRate: report.bootSuccessRate,
-    didNotStartRate,
-    findingSentence,
-  };
+  const bootRate = deriveBootRate(report, reportPath.split(path.sep).join("/"));
 
   await writeFile(path.join("data", "boot-rate.json"), `${JSON.stringify(bootRate, null, 2)}\n`, "utf8");
   console.log(`wrote data/boot-rate.json from ${reportPath}`);
-  console.log(findingSentence);
+  console.log(bootRate.findingSentence);
 }
 
 main().catch((e: unknown) => {

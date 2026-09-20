@@ -44,6 +44,7 @@ import {
   parseConsentResourceUri,
 } from "@chaperone/mcp-app";
 import { childLogger } from "@chaperone/logger";
+import { upstreamErrorsTotal } from "./metrics.js";
 import { createCallRegistry } from "./call-registry.js";
 import { gateToolCall, gateToolList, type GateDecision } from "./gate.js";
 import { loadConsentCardModel } from "./consentCard.js";
@@ -251,6 +252,7 @@ export function buildPassthroughServer(
     );
     if (currentEntry === undefined) {
       log.warn({ upstreamId: resolved.upstreamId, tool: resolved.toolName }, "tool not currently listed by upstream; returning frozen refusal");
+      upstreamErrorsTotal.inc({ upstream: resolved.upstreamId, operation: "tools/list" });
       return { content: [{ type: "text" as const, text: REFUSAL_UPSTREAM_UNAVAILABLE }], isError: true };
     }
 
@@ -312,6 +314,7 @@ export function buildPassthroughServer(
           { error, upstreamId: resolved.upstreamId, tool: resolved.toolName },
           "upstream unavailable for tools/call; returning frozen refusal",
         );
+        upstreamErrorsTotal.inc({ upstream: resolved.upstreamId, operation: "tools/call" });
         return { content: [{ type: "text" as const, text: REFUSAL_UPSTREAM_UNAVAILABLE }], isError: true };
       }
       throw error;

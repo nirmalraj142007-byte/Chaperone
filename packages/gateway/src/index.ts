@@ -19,13 +19,18 @@ import { loadConfig } from "@chaperone/config";
 import { getPool } from "@chaperone/upstream";
 import { childLogger } from "@chaperone/logger";
 import { buildApp } from "./app.js";
+import { storageBackendFor } from "./health.js";
 import { resolveBindHost } from "./security.js";
 
 const log = childLogger({ component: "gateway" });
 const config = loadConfig();
 
 const pool = await getPool(config.upstreams);
-const app = buildApp(pool, config.upstreams, config.originAllowlist, config.householdId, config.mcpAppEnabled);
+const app = buildApp(pool, config.upstreams, config.originAllowlist, config.householdId, config.mcpAppEnabled, {
+  version: config.version,
+  commit: config.commit,
+  storageBackend: storageBackendFor(config.ddbEndpoint),
+});
 
 const host = resolveBindHost(config.bindAll);
 const httpServer = app.listen(config.port, host, () => {

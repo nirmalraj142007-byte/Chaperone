@@ -41,6 +41,7 @@ import type { EventStore, EventId, StreamId } from "@modelcontextprotocol/sdk/se
 import type { JSONRPCMessage } from "@modelcontextprotocol/sdk/types.js";
 import * as ledger from "@chaperone/ledger";
 import { childLogger } from "@chaperone/logger";
+import { eventStoreWritesTotal } from "./metrics.js";
 
 const log = childLogger({ component: "gateway-event-store" });
 const SEPARATOR = ":";
@@ -70,18 +71,29 @@ function parseEventId(eventId: EventId): { streamId: StreamId; seq: number } | u
 export function createSessionEventStore(sessionId: string): EventStore {
   return {
     async storeEvent(streamId, message) {
-      const seq = await ledger.nextSseSeq(sessionId, streamId);
-      const eventId = makeEventId(streamId, seq);
-      await ledger.putSseEvent({
-        sessionId,
-        streamId,
-        seq,
-        eventId,
-        message: JSON.stringify(message),
-        ts: new Date().toISOString(),
-        ttl: ledger.sseEventTtl(),
-      });
-      return eventId;
+      // Counted, then rethrown unchanged. The transport owns what a failed
+      // store means for the stream; this only records that the event was
+      // not persisted, which is the same as saying it can never be
+      // replayed after a reconnect — the one number that says whether the
+      // resumability claim is actually holding in production.
+      try {
+        const seq = await ledger.nextSseSeq(sessionId, streamId);
+        const eventId = makeEventId(streamId, seq);
+        await ledger.putSseEvent({
+          sessionId,
+          streamId,
+          seq,
+          eventId,
+          message: JSON.stringify(message),
+          ts: new Date().toISOString(),
+          ttl: ledger.sseEventTtl(),
+        });
+        eventStoreWritesTotal.inc({ outcome: "ok" });
+        return eventId;
+      } catch (error) {
+        eventStoreWritesTotal.inc({ outcome: "failed" });
+        throw error;
+      }
     },
 
     async replayEventsAfter(lastEventId, { send }) {

@@ -18,8 +18,24 @@ import {
 import type { ToolDefinition as WireToolDefinition } from "@chaperone/upstream";
 import * as ledger from "@chaperone/ledger";
 import { childLogger } from "@chaperone/logger";
+import { gateDecisionsTotal, quarantineEventsTotal } from "./metrics.js";
 
 const log = childLogger({ component: "gateway-gate" });
+
+/**
+ * The first 12 hex characters of a `sha256:`-prefixed hash — the prefix
+ * dropped, because twelve characters of the literal string "sha256:1234f"
+ * would compare every hash as equal on camera. 12 hex chars is 48 bits:
+ * long enough that two different tool definitions matching by accident is
+ * not a thing that happens, short enough to read off a terminal.
+ *
+ * `null` renders as "unpinned" rather than an empty column, so the log
+ * line for a never-approved tool says which of the two denial reasons it
+ * was without the reader having to cross-reference the `reason` field.
+ */
+function shortHash(hash: string | null): string {
+  return hash === null ? "unpinned" : hash.replace(/^sha256:/, "").slice(0, 12);
+}
 
 /** Never "model" — CLAUDE.md: an advisory model is never the actor of record for a ledger event. */
 const GATE_ACTOR = "system:gateway";
@@ -159,6 +175,7 @@ async function ensureQuarantine(
   try {
     const existing = await findOpenQuarantine(householdId, upstreamId, pin.toolName, currentHash);
     if (existing) {
+      quarantineEventsTotal.inc({ outcome: "reused", upstream: upstreamId });
       return { quarantineId: existing.quarantineId, newlyQuarantined: false };
     }
 
@@ -167,9 +184,10 @@ async function ensureQuarantine(
     const refusal = await findRefusal(householdId, upstreamId, pin.toolName, pin.approvedHash, currentHash);
     if (refusal) {
       log.debug(
-        { upstreamId, toolName: pin.toolName, quarantineId: refusal.quarantineId, toHash: currentHash.slice(7, 19) },
+        { upstreamId, toolName: pin.toolName, quarantineId: refusal.quarantineId, toHash: shortHash(currentHash) },
         "change already refused by the household; withholding without re-asking",
       );
+      quarantineEventsTotal.inc({ outcome: "already_refused", upstream: upstreamId });
       return { quarantineId: refusal.quarantineId, newlyQuarantined: false, previouslyRefused: true };
     }
 
@@ -217,12 +235,14 @@ async function ensureQuarantine(
     });
 
     revealedTokens.set(quarantineId, token);
+    quarantineEventsTotal.inc({ outcome: "opened", upstream: upstreamId });
     return { quarantineId, newlyQuarantined: true, approvalToken: token };
   } catch (error) {
     log.error(
       { error, upstreamId, toolName: pin.toolName },
       "failed to record quarantine; tool stays withheld but no reviewable token could be issued",
     );
+    quarantineEventsTotal.inc({ outcome: "write_failed", upstream: upstreamId });
     return undefined;
   }
 }
@@ -238,14 +258,35 @@ async function gateOne(
     pin = await ledger.getPin(householdId, upstreamId, toolName);
   } catch (error) {
     log.error({ error, upstreamId, toolName }, "pin read failed; failing closed");
+    gateDecisionsTotal.inc({ decision: "deny", reason: "PIN_READ_FAILED", upstream: upstreamId });
     return { tool, upstreamId, allowed: false };
   }
 
   const verdict = allow(toPolicyTool(tool), pin?.approvedHash ?? null);
 
+  // Every gated tool, allowed or not, logs the comparison that decided it,
+  // with both hashes truncated to 12 characters. This is the line that
+  // makes the mechanism legible when the terminal is on camera: two
+  // hashes, equal or not equal, and nothing else consulted. Debug level,
+  // because at `tools/list` scale it is one line per tool per list.
+  log.debug(
+    {
+      upstreamId,
+      toolName,
+      pinnedHash: shortHash(pin?.approvedHash ?? null),
+      currentHash: shortHash(verdict.allowed ? verdict.hash : verdict.currentHash),
+      decision: verdict.allowed ? "allow" : "deny",
+      ...(verdict.allowed ? {} : { reason: verdict.reason }),
+    },
+    verdict.allowed ? "allow: current definition hashes to the pinned hash" : "deny: hash comparison failed",
+  );
+
   if (verdict.allowed) {
+    gateDecisionsTotal.inc({ decision: "allow", reason: "HASH_MATCH", upstream: upstreamId });
     return { tool, upstreamId, allowed: true };
   }
+
+  gateDecisionsTotal.inc({ decision: "deny", reason: verdict.reason, upstream: upstreamId });
 
   if (verdict.reason === "UNPINNED" || pin === undefined) {
     return { tool, upstreamId, allowed: false, reason: "UNPINNED" };

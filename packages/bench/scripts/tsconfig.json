@@ -2,8 +2,9 @@
   "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
     "composite": false,
-    "noEmit": true
+    "noEmit": true,
+    "rootDir": "."
   },
   "include": ["."],
-  "references": [{ "path": "../" }, { "path": "../../bench" }]
+  "references": [{ "path": "../" }]
 }

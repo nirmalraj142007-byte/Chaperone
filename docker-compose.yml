@@ -31,6 +31,13 @@ services:
     build:
       context: .
       dockerfile: docker/gateway.Dockerfile
+      args:
+        # Populated from the shell so /healthz can report the commit it is
+        # actually running. `docker compose build` with these unset leaves
+        # the Dockerfile's "unknown" default, which is the honest answer
+        # rather than a wrong one. `pnpm stack:up` sets them.
+        CHAPERONE_COMMIT: ${CHAPERONE_COMMIT:-unknown}
+        CHAPERONE_VERSION: ${CHAPERONE_VERSION:-0.0.0}
     container_name: chaperone-gateway
     depends_on:
       - ddb

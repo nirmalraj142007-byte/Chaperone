@@ -79,6 +79,13 @@ const envSchema = z.object({
     .enum(["true", "false"])
     .default("true")
     .transform((v) => v === "true"),
+  // Phase 16: what /healthz reports about the running build. Both are
+  // baked into the image at build time (docker/gateway.Dockerfile) rather
+  // than discovered at runtime — a container has no .git directory, and a
+  // commit the process guessed would be worse than one it admits it does
+  // not know. "unknown" is the honest default and /healthz prints it.
+  CHAPERONE_VERSION: z.string().min(1).default("0.0.0"),
+  CHAPERONE_COMMIT: z.string().min(1).default("unknown"),
 });
 
 export interface Config {
@@ -94,6 +101,8 @@ export interface Config {
   originAllowlist: string[];
   bindAll: boolean;
   mcpAppEnabled: boolean;
+  version: string;
+  commit: string;
 }
 
 const EXPECTED_SHAPE: Record<string, string> = {
@@ -109,6 +118,8 @@ const EXPECTED_SHAPE: Record<string, string> = {
   GATEWAY_ORIGIN_ALLOWLIST: 'comma-separated origins, e.g. "http://localhost:*,https://app.example.com" (default "http://localhost:*")',
   BIND_ALL: 'one of "true" | "false" (default "false")',
   MCP_APP_ENABLED: 'one of "true" | "false" (default "true")',
+  CHAPERONE_VERSION: 'string (default "0.0.0")',
+  CHAPERONE_COMMIT: 'string, the full git sha of the running build (default "unknown")',
 };
 
 function formatIssues(error: z.ZodError): string {
@@ -144,6 +155,8 @@ export function loadConfig(): Config {
     originAllowlist: env.GATEWAY_ORIGIN_ALLOWLIST,
     bindAll: env.BIND_ALL,
     mcpAppEnabled: env.MCP_APP_ENABLED,
+    version: env.CHAPERONE_VERSION,
+    commit: env.CHAPERONE_COMMIT,
     ...(env.DDB_ENDPOINT !== undefined ? { ddbEndpoint: env.DDB_ENDPOINT } : {}),
     ...(env.BEDROCK_MODEL_ID !== undefined ? { bedrockModelId: env.BEDROCK_MODEL_ID } : {}),
     ...(env.GITHUB_TOKEN !== undefined ? { githubToken: env.GITHUB_TOKEN } : {}),

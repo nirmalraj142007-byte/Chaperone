@@ -177,9 +177,27 @@ describe("bandVerdict", () => {
 });
 
 describe("benchState and staleness", () => {
-  it("is empty until a bench run writes benchmarks/latency.json", () => {
-    expect(real.latency).toBeNull();
-    expect(benchState(real)).toBe("empty");
+  it("reads the committed latency file a bench run wrote", () => {
+    // Phase 15 asserted this file was absent, because the harness did not
+    // exist yet. Phase 16 built it, so the assertion is now the opposite
+    // one: the screen has real numbers to render.
+    expect(real.latency).not.toBeNull();
+    expect(benchState(real)).toBe("ready");
+  });
+
+  it("carries the fields /bench renders, from a real run", () => {
+    expect(real.latency?.samples).toBe(1000);
+    expect(real.latency?.budgetP95Ms).toBe(30);
+    expect(real.latency?.commitSha).toMatch(/^[0-9a-f]{40}$/);
+    for (const value of [real.latency?.addedP50Ms, real.latency?.addedP95Ms, real.latency?.addedP99Ms]) {
+      expect(typeof value).toBe("number");
+    }
+  });
+
+  it("still reports empty when no run has been recorded", () => {
+    // The designed empty state has to keep working — a fresh clone that
+    // has never run the harness must not render a zero.
+    expect(benchState({ ...real, latency: null })).toBe("empty");
   });
 
   const latency = {

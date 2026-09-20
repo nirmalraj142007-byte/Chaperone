@@ -12,6 +12,7 @@
     { "path": "packages/mcp-app" },
     { "path": "packages/demo-upstream" },
     { "path": "packages/gateway" },
-    { "path": "packages/eval" }
+    { "path": "packages/eval" },
+    { "path": "packages/bench" }
   ]
 }

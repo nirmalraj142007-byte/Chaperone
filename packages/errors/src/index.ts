@@ -17,7 +17,8 @@ export type ErrorCode =
   | "QUARANTINE_NOT_FOUND_ERROR"
   | "QUARANTINE_ALREADY_RESOLVED_ERROR"
   | "APPROVAL_TOKEN_EXPIRED_ERROR"
-  | "INVALID_APPROVAL_TOKEN_ERROR";
+  | "INVALID_APPROVAL_TOKEN_ERROR"
+  | "BENCH_ERROR";
 
 export abstract class ChaperoneError extends Error {
   abstract readonly code: ErrorCode;
@@ -99,6 +100,19 @@ export class ApprovalTokenExpiredError extends ChaperoneError {
 /** The provided token's hash does not match the quarantine's stored `approvalTokenHash`. */
 export class InvalidApprovalTokenError extends ChaperoneError {
   readonly code = "INVALID_APPROVAL_TOKEN_ERROR" as const;
+  readonly retryable = false;
+}
+
+/**
+ * A benchmark run produced something that cannot honestly be reported: an
+ * empty sample, a measured call that came back a refusal rather than a
+ * real result, an upstream that never answered. Never retryable — a bench
+ * harness that silently retried past a bad measurement would be reporting
+ * the runs that happened to work, which is the one thing a reproducible
+ * number cannot be.
+ */
+export class BenchError extends ChaperoneError {
+  readonly code = "BENCH_ERROR" as const;
   readonly retryable = false;
 }
 

@@ -1880,3 +1880,156 @@ explicitly in the "Env Variables and Modes" docs next to the production
 example — the page currently demonstrates the dotted form without ever
 stating that it is the only form that is replaced, so a reader has no way
 to learn this except by disassembling their own bundle.
+
+---
+
+## Entry 034 — 2026-09-20
+
+**Task attempted:** Verify the fail-closed property from the outside, as a
+judge would: stop DynamoDB (`docker compose stop ddb`), then make a real
+`tools/call` against the gateway and confirm it refuses rather than allows
+(@modelcontextprotocol/sdk 1.30.0, Streamable HTTP).
+
+**Steps taken:** Stopped the `ddb` container, confirmed `/healthz` returned
+503, then drove a full MCP session against `/mcp` over plain `fetch` —
+`initialize`, `notifications/initialized`, `tools/call` — and read the
+response body.
+
+**Expected versus actual:** Expected either a frozen refusal result or a
+JSON-RPC error whose code and message named a storage or internal failure.
+Actually `initialize` came back `400` with
+`{"code":-32700,"message":"Parse error","data":"TimeoutError: ... did not
+establish a connection with the server within the configured timeout of
+3000 ms."}`. The request body was valid JSON and valid JSON-RPC; nothing was
+parsed incorrectly. The cause is the catch-all at the end of
+`handlePostRequest` in `dist/esm/server/webStandardStreamableHttp.js`, which
+wraps every throw from the POST path — including one from a user-supplied
+`EventStore.storeEvent`, which is where a storage outage surfaces — as
+`-32700 Parse error` with the stringified error in `data`.
+
+**Severity:** major. The security property itself holds, and that is the
+part that matters: nothing was allowed, no tool ran, and a session could not
+even be established. But `-32700` is the one JSON-RPC code reserved for
+malformed input, so the wire response actively misattributes a backend
+outage to the client's request. An operator debugging this reads "Parse
+error", checks their payload, finds it valid, and has to get to the `data`
+string before learning the truth. For this project it is also the exact
+conflation CLAUDE.md's fourth non-negotiable exists to prevent — "this
+server is down" and "your request was malformed" must not be the same
+answer.
+
+**Workaround:** None available at the gateway layer, because the throw is
+caught inside the SDK above any code this repo controls; the `EventStore`
+contract gives no way to signal "storage failed" distinctly, and swallowing
+the error there would be worse — the transport would believe the event was
+persisted and resumability would silently break. The acceptance check in
+`packages/gateway/test/health.test.ts` therefore asserts the property that
+is actually guaranteed, that the call does not succeed, and a second test
+drives the gate's own path by failing only the pin read, to assert the
+frozen refusal text.
+
+**Actionable suggestion:** Do not reuse `-32700` for non-parse failures. In
+`handlePostRequest`'s final catch, return `-32603` (Internal error) for any
+throw that did not come from JSON parsing or JSON-RPC message validation —
+those two sites already have their own `-32700` returns a few hundred lines
+above and are correctly labelled. An `EventStore` failure in particular is a
+server-side internal error by definition. Alternatively, document that a
+throw from a user-supplied `EventStore` is surfaced this way, so implementers
+know the wire code will not describe their failure.
+
+---
+
+## Entry 035 — 2026-09-20
+
+**Task attempted:** Produce a reproducible added-latency number for
+`pnpm bench` against the local stack — the same MCP `tools/call` through the
+gateway and direct to the upstream, 1000 samples per mode, reported as the
+difference (DynamoDB Local via `amazon/dynamodb-local:latest`, docker
+compose).
+
+**Steps taken:** Ran the harness repeatedly at the same commit with no code
+change between runs, then bisected the cost: timed `getPin`, `nextSseSeq`
+and `putSseEvent` individually, then ran a concurrency sweep against
+`putSseEvent` alone, then counted rows in each table.
+
+**Expected versus actual:** Expected repeated runs at one commit to agree
+within noise. Actually they drifted monotonically upward — added p50 of
+64ms, then 174ms, then higher, at the same commit. Two compounding causes,
+neither documented where a reader would look. First, DynamoDB Local does not
+implement TTL at all: the `sse-event` rows that back resumable SSE carry a
+TTL and are evicted in production, but locally they accumulate forever —
+about 750 rows per bench run, 11,924 by the time I measured. Second, its
+SQLite backend is a single writer whose throughput is flat at roughly 60
+writes per second regardless of client concurrency (measured: per-operation
+p50 of 20.7ms at concurrency 1, 54.7ms at 4, 127.3ms at 8, while throughput
+stayed between 42 and 70 ops/s), and it slows further as the table grows.
+Since each gated `tools/call` costs four DynamoDB writes, the benchmark was
+measuring the container's accumulated state rather than the gateway.
+
+**Severity:** major. Not a correctness bug — it is a dev dependency — but a
+benchmark whose result depends on how many times it has been run before is
+not a measurement, and nothing surfaces this. The TTL gap is a one-line
+mention in the DynamoDB Local docs' feature-differences section and says
+nothing about unbounded growth; the single-writer throughput ceiling is not
+stated anywhere I could find. A team that graphs local latency over a sprint
+and watches it climb has no way to learn the cause is their test fixture.
+
+**Workaround:** `packages/ledger/scripts/reset-sse.ts`, run by `pnpm bench`
+before measuring, so every run starts from a defined storage state. It
+deletes only `sse-event`, never `ledger-event`, and refuses to run unless
+`DDB_ENDPOINT` is set so it can never be pointed at real DynamoDB. After it,
+consecutive runs agreed within about 15% (added p50 of 144ms then 123ms)
+instead of drifting, which was enough to detect a deliberately injected 50ms
+delay as a 53 to 76ms shift.
+
+**Actionable suggestion:** Two things, both cheap. Log a warning from
+DynamoDB Local on startup when a table has a TTL attribute defined, saying
+TTL is not enforced and rows will accumulate — the process already parses the
+schema, and that is the moment the user's mental model diverges from reality.
+And state the write-throughput characteristic in the "Differences"
+documentation page: that the backend is a single writer, that concurrency
+raises per-operation latency without raising throughput, and that it is
+therefore unsuitable for latency or load measurement. The page currently
+frames the differences as feature gaps, which leads readers to assume
+performance is merely slower rather than differently shaped.
+
+---
+
+## Entry 036 — 2026-09-20
+
+**Task attempted:** Run the repo's own `verify-ledger` entry point as a
+subprocess from `packages/bench/scripts/bench.ts`, so the consolidated bench
+block reports exactly what `pnpm verify-ledger` reports (Node 24.14.1,
+Windows, pnpm 12.4.1).
+
+**Steps taken:** Spawned the `node_modules/.bin/tsx` shim with
+`spawnSync(tsx, [script], { shell: process.platform === "win32" })` — the
+shim is a `.cmd` on Windows, which `CreateProcess` cannot execute directly,
+so a shell is required.
+
+**Expected versus actual:** Expected a clean run. Actually every invocation
+printed `[DEP0190] DeprecationWarning: Passing args to a child process with
+shell option true can lead to security vulnerabilities, as the arguments are
+not escaped, only concatenated.` The warning is correct and the concern is
+real, but the combination it deprecates — an args array plus `shell: true` —
+is precisely what running any `.bin` shim on Windows requires, and the
+warning text offers no replacement. It lands on stderr in the middle of
+output intended to be filmed.
+
+**Severity:** minor. Cosmetic, with a clean fix once you know it, but the
+warning points at no alternative and the obvious workaround — concatenating
+the command into a single string — is strictly worse, since it is the actual
+injection risk the deprecation is warning about.
+
+**Workaround:** Skip the shim.
+`createRequire(import.meta.url).resolve("tsx/cli")` gives the real JS entry
+point, which `spawnSync(process.execPath, [cli, script])` runs with no shell
+and no concatenation, identically on every platform.
+
+**Actionable suggestion:** Name the alternative in the deprecation message
+and in the `child_process` documentation: resolve the package's JS entry and
+spawn it with `process.execPath`, rather than spawning the platform shim
+through a shell. The warning currently tells developers that a common and
+necessary pattern is dangerous without telling them what to do instead,
+which pushes some fraction of them toward string concatenation — the more
+dangerous of the two options.

@@ -229,7 +229,29 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^2.1.4
-        version: 2.1.9(@types/node@22.20.2)(lightningcss@1.32.0)(supports-color@7.2.0)
+        version: 2.1.9(@types/node@22.20.2)(jsdom@30.1.0)(lightningcss@1.32.0)(supports-color@7.2.0)
+
+  packages/bench:
+    dependencies:
+      '@chaperone/errors':
+        specifier: workspace:*
+        version: link:../errors
+      '@chaperone/logger':
+        specifier: workspace:*
+        version: link:../logger
+      '@chaperone/policy':
+        specifier: workspace:*
+        version: link:../policy
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.17.0
+        version: 1.30.0(supports-color@7.2.0)(zod@3.25.76)
+    devDependencies:
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.4
+        version: 2.1.9(@types/node@22.20.2)(jsdom@30.1.0)(lightningcss@1.32.0)(supports-color@7.2.0)
 
   packages/config:
     dependencies:
@@ -245,7 +267,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^2.1.4
-        version: 2.1.9(@types/node@22.20.2)(lightningcss@1.32.0)(supports-color@7.2.0)
+        version: 2.1.9(@types/node@22.20.2)(jsdom@30.1.0)(lightningcss@1.32.0)(supports-color@7.2.0)
 
   packages/console:
     dependencies:
@@ -295,6 +317,9 @@ importers:
 
   packages/crawler:
     dependencies:
+      '@chaperone/bench':
+        specifier: workspace:*
+        version: link:../bench
       '@chaperone/errors':
         specifier: workspace:*
         version: link:../errors
@@ -322,7 +347,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^2.1.4
-        version: 2.1.9(@types/node@22.20.2)(lightningcss@1.32.0)(supports-color@7.2.0)
+        version: 2.1.9(@types/node@22.20.2)(jsdom@30.1.0)(lightningcss@1.32.0)(supports-color@7.2.0)
 
   packages/demo-upstream:
     dependencies:
@@ -350,7 +375,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^2.1.4
-        version: 2.1.9(@types/node@22.20.2)(lightningcss@1.32.0)(supports-color@7.2.0)
+        version: 2.1.9(@types/node@22.20.2)(jsdom@30.1.0)(lightningcss@1.32.0)(supports-color@7.2.0)
 
   packages/errors:
     devDependencies:
@@ -359,7 +384,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^2.1.4
-        version: 2.1.9(@types/node@22.20.2)(lightningcss@1.32.0)(supports-color@7.2.0)
+        version: 2.1.9(@types/node@22.20.2)(jsdom@30.1.0)(lightningcss@1.32.0)(supports-color@7.2.0)
 
   packages/eval:
     dependencies:
@@ -384,7 +409,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^2.1.4
-        version: 2.1.9(@types/node@22.20.2)(lightningcss@1.32.0)(supports-color@7.2.0)
+        version: 2.1.9(@types/node@22.20.2)(jsdom@30.1.0)(lightningcss@1.32.0)(supports-color@7.2.0)
 
   packages/gateway:
     dependencies:
@@ -439,7 +464,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^2.1.4
-        version: 2.1.9(@types/node@22.20.2)(lightningcss@1.32.0)(supports-color@7.2.0)
+        version: 2.1.9(@types/node@22.20.2)(jsdom@30.1.0)(lightningcss@1.32.0)(supports-color@7.2.0)
 
   packages/ledger:
     dependencies:
@@ -473,7 +498,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^2.1.4
-        version: 2.1.9(@types/node@22.20.2)(lightningcss@1.32.0)(supports-color@7.2.0)
+        version: 2.1.9(@types/node@22.20.2)(jsdom@30.1.0)(lightningcss@1.32.0)(supports-color@7.2.0)
 
   packages/logger:
     dependencies:
@@ -486,7 +511,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^2.1.4
-        version: 2.1.9(@types/node@22.20.2)(lightningcss@1.32.0)(supports-color@7.2.0)
+        version: 2.1.9(@types/node@22.20.2)(jsdom@30.1.0)(lightningcss@1.32.0)(supports-color@7.2.0)
 
   packages/mcp-app:
     dependencies:
@@ -517,7 +542,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^2.1.4
-        version: 2.1.9(@types/node@22.20.2)(lightningcss@1.32.0)(supports-color@7.2.0)
+        version: 2.1.9(@types/node@22.20.2)(jsdom@30.1.0)(lightningcss@1.32.0)(supports-color@7.2.0)
 
   packages/policy:
     dependencies:
@@ -530,7 +555,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^2.1.4
-        version: 2.1.9(@types/node@22.20.2)(lightningcss@1.32.0)(supports-color@7.2.0)
+        version: 2.1.9(@types/node@22.20.2)(jsdom@30.1.0)(lightningcss@1.32.0)(supports-color@7.2.0)
 
   packages/upstream:
     dependencies:
@@ -558,7 +583,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^2.1.4
-        version: 2.1.9(@types/node@22.20.2)(lightningcss@1.32.0)(supports-color@7.2.0)
+        version: 2.1.9(@types/node@22.20.2)(jsdom@30.1.0)(lightningcss@1.32.0)(supports-color@7.2.0)
 
 packages:
 
@@ -5911,41 +5936,6 @@ snapshots:
     optionalDependencies:
       '@types/node': 22.20.2
       jsdom: 30.1.0
-    transitivePeerDependencies:
-      - less
-      - lightningcss
-      - msw
-      - sass
-      - sass-embedded
-      - stylus
-      - sugarss
-      - supports-color
-      - terser
-
-  vitest@2.1.9(@types/node@22.20.2)(lightningcss@1.32.0)(supports-color@7.2.0):
-    dependencies:
-      '@vitest/expect': 2.1.9
-      '@vitest/mocker': 2.1.9(vite@5.4.21(@types/node@22.20.2)(lightningcss@1.32.0))
-      '@vitest/pretty-format': 2.1.9
-      '@vitest/runner': 2.1.9
-      '@vitest/snapshot': 2.1.9
-      '@vitest/spy': 2.1.9
-      '@vitest/utils': 2.1.9
-      chai: 5.3.3
-      debug: 4.4.3(supports-color@7.2.0)
-      expect-type: 1.4.0
-      magic-string: 0.30.21
-      pathe: 1.1.2
-      std-env: 3.10.0
-      tinybench: 2.9.0
-      tinyexec: 0.3.2
-      tinypool: 1.1.1
-      tinyrainbow: 1.2.0
-      vite: 5.4.21(@types/node@22.20.2)(lightningcss@1.32.0)
-      vite-node: 2.1.9(@types/node@22.20.2)(lightningcss@1.32.0)(supports-color@7.2.0)
-      why-is-node-running: 2.3.0
-    optionalDependencies:
-      '@types/node': 22.20.2
     transitivePeerDependencies:
       - less
       - lightningcss

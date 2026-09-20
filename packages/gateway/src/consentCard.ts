@@ -12,6 +12,7 @@ import type { CapabilityClass } from "@chaperone/policy";
 import * as ledger from "@chaperone/ledger";
 import type { ConsentCardItem, ConsentCardModel } from "@chaperone/mcp-app";
 import { childLogger } from "@chaperone/logger";
+import { advisoryUnavailableTotal } from "./metrics.js";
 import { APPROVAL_TOKEN_TTL_MS } from "./approve.js";
 import { peekRevealedToken } from "./gate.js";
 
@@ -39,9 +40,17 @@ function isExpired(quarantine: ledger.Quarantine): boolean {
 async function loadAdvisorySummary(quarantineId: string): Promise<string | undefined> {
   try {
     const advisory = await ledger.getAdvisory(quarantineId);
+    if (advisory?.summary === undefined) {
+      // No row yet (still scoring), or a row with no summary. Counted the
+      // same as a read failure below: from the card's point of view both
+      // are "this card renders without an advisory", which is what the
+      // metric is named for. It is never a gate outcome.
+      advisoryUnavailableTotal.inc({ reason: "absent" });
+    }
     return advisory?.summary;
   } catch (error) {
     log.warn({ error, quarantineId }, "advisory read failed; rendering the card without one");
+    advisoryUnavailableTotal.inc({ reason: "read_failed" });
     return undefined;
   }
 }

@@ -1,5 +1,9 @@
 import pino from "pino";
 import type { Logger } from "pino";
+import { currentRequestContext } from "./context.js";
+
+export { runWithRequestContext, currentRequestContext } from "./context.js";
+export type { RequestContext } from "./context.js";
 
 const SENSITIVE_KEY_PATTERN = /token|secret|key|authorization/i;
 
@@ -24,6 +28,24 @@ export function redactSensitive(value: unknown): unknown {
 
 export const logger: Logger = pino({
   level: process.env.LOG_LEVEL ?? "info",
+  /**
+   * Evaluated by pino on every log call, so a line emitted deep inside a
+   * request (the upstream pool, the gate, the event store) carries that
+   * request's ID without any module between here and there knowing the
+   * request exists. Bindings passed explicitly to `requestLogger` win over
+   * the ambient context, which only ever fills a gap.
+   */
+  mixin(_mergeObject, _level, loggerInstance: Logger) {
+    const context = currentRequestContext();
+    if (context === undefined) {
+      return {};
+    }
+    const bindings = loggerInstance.bindings();
+    return {
+      ...(bindings["requestId"] === undefined ? { requestId: context.requestId } : {}),
+      ...(bindings["sessionId"] === undefined ? { sessionId: context.sessionId } : {}),
+    };
+  },
   formatters: {
     log(object) {
       return redactSensitive(object) as Record<string, unknown>;

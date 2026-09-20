@@ -1,0 +1,59 @@
+{
+  "recordedAt": "2026-09-20T06:57:06.852Z",
+  "commitSha": "e7a453bdf33613c7bcec0851976449c3d1d90622",
+  "commit": "e7a453bdf33613c7bcec0851976449c3d1d90622",
+  "dirty": true,
+  "samples": 1000,
+  "n": 1000,
+  "concurrency": 4,
+  "warmupDiscarded": 200,
+  "addedP50Ms": 480.53,
+  "addedP95Ms": 591.89,
+  "addedP99Ms": 635.63,
+  "budgetP95Ms": 30,
+  "budgetP99Ms": 60,
+  "addedLatency": {
+    "n": 1000,
+    "p50": 480.53,
+    "p95": 591.89,
+    "p99": 635.63,
+    "mean": 485.46,
+    "max": 689.3
+  },
+  "proxied": {
+    "n": 1000,
+    "p50": 482.38,
+    "p95": 596.28,
+    "p99": 641.38,
+    "mean": 487.66,
+    "max": 696.65,
+    "commit": "e7a453bdf33613c7bcec0851976449c3d1d90622",
+    "startedAt": "2026-09-20T06:57:06.852Z",
+    "upstream": "demo-upstream",
+    "mode": "proxied"
+  },
+  "direct": {
+    "n": 1000,
+    "p50": 1.85,
+    "p95": 4.38,
+    "p99": 5.76,
+    "mean": 2.2,
+    "max": 7.36,
+    "commit": "e7a453bdf33613c7bcec0851976449c3d1d90622",
+    "startedAt": "2026-09-20T06:57:06.028Z",
+    "upstream": "demo-upstream",
+    "mode": "direct"
+  },
+  "budgetOk": false,
+  "method": "addedLatency is the proxied percentile minus the direct-to-upstream percentile, measured back to back on one machine in a single run. The samples are unpaired, so this is a difference of percentiles, not a percentile of differences: it says the p95 call through Chaperone took this much longer than the p95 call straight to the upstream, not that 95% of calls were slowed by at most this much.",
+  "environment": {
+    "backend": "dynamodb-local",
+    "storageWritesPerToolCall": 4,
+    "gatewayUrl": "http://localhost:3000/mcp",
+    "directUrl": "http://localhost:4000/mcp",
+    "nodeVersion": "v24.14.1",
+    "platform": "win32-x64",
+    "cpus": 16,
+    "storageNote": "Every gated tools/call performs one pin read plus two resumable-SSE event-store events, each of which is a sequence UpdateItem and a PutItem — four DynamoDB write operations per tool call. That count is the property of Chaperone and transfers between environments; the millisecond cost of those four writes does not, because it belongs to the backend. Against DynamoDB Local, whose SQLite backend is a single writer saturating at roughly 60 writes/second regardless of client concurrency, those four writes dominate added latency entirely and dominate it more as concurrency rises. Read the backend field before comparing this number to anything."
+  }
+}

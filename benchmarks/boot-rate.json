@@ -1,0 +1,15 @@
+{
+  "source": "data/crawl-1-report.json",
+  "crawlId": "crawl-1",
+  "candidatesConsidered": 947,
+  "noInstallPath": 656,
+  "attempted": 291,
+  "booted": 152,
+  "refusedNoCreds": 10,
+  "failedInstall": 100,
+  "failedStart": 8,
+  "failedTimeout": 21,
+  "bootSuccessRate": 52.23367697594502,
+  "didNotStartRate": 47.76632302405498,
+  "findingSentence": "47.8% of public MCP servers with a discoverable install command did not start from their own documented setup instructions (152 booted of 291 attempted; 656 had no discoverable install path at all)."
+}

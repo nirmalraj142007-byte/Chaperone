@@ -14,8 +14,10 @@ import { ulid } from "ulid";
 import { getUiCapability } from "@modelcontextprotocol/ext-apps/server";
 import type { UpstreamConfig, UpstreamPool } from "@chaperone/upstream";
 import { MCP_APP_RESOURCE_MIME_TYPE } from "@chaperone/mcp-app";
-import { childLogger, requestLogger } from "@chaperone/logger";
+import { childLogger, requestLogger, runWithRequestContext } from "@chaperone/logger";
 import { originAllowlistMiddleware } from "./security.js";
+import { buildHealthReport, healthStatusCode, type StorageBackend } from "./health.js";
+import { METRICS_CONTENT_TYPE, normaliseMcpMethod, renderMetrics, requestDurationSeconds, requestsTotal } from "./metrics.js";
 import { handleInitialize, handleSessionRequest, isInitialize } from "./session.js";
 import { buildPassthroughServer } from "./upstreamProxy.js";
 import { buildApiRouter } from "./api.js";
@@ -49,27 +51,101 @@ export function buildApp(
   originAllowlist: readonly string[],
   householdId: string,
   mcpAppEnabled: boolean,
+  /**
+   * What /healthz reports about the running build. Defaulted rather than
+   * required so every existing caller — and every test that only cares
+   * about the protocol surface — keeps working; index.ts passes the real
+   * values from config. See health.ts on why these are resolved once here
+   * instead of re-read per request.
+   */
+  build: { version?: string; commit?: string; storageBackend?: StorageBackend } = {},
 ): Express {
+  const identity = {
+    householdId,
+    version: build.version ?? "0.0.0",
+    commit: build.commit ?? "unknown",
+    // Defaults to the local backend, because every caller that passes
+    // nothing here is a test or an embedded app talking to a mocked or
+    // local store — never a deployed gateway, which goes through index.ts.
+    storageBackend: build.storageBackend ?? "dynamodb-local",
+  };
   const app = express();
-  app.use(express.json());
-  app.use(originAllowlistMiddleware(originAllowlist));
 
-  // Every request gets its own ID, bound into a child logger and echoed
-  // back on the response header, so a single request's log lines and its
-  // client side (the header) can be correlated with each other.
+  // Ahead of every other middleware, including the body parser and the
+  // Origin check, so that a request rejected by one of those still carries
+  // an ID on its log line and its response header. A request that failed
+  // before it was identified is the one hardest to ask about later.
   app.use((req: Request, res: Response, next: NextFunction) => {
-    const start = Date.now();
+    const start = process.hrtime.bigint();
     const requestId = ulid();
+    // The session ID off the wire on the way in. On `initialize` there
+    // isn't one yet — the transport mints it during the handler — so those
+    // lines read "none", which is accurate rather than backfilled.
     const sessionId = req.header("mcp-session-id") ?? "none";
     const reqLog = requestLogger(sessionId, requestId);
     res.setHeader("X-Request-Id", requestId);
+
     res.on("finish", () => {
+      const durationSeconds = Number(process.hrtime.bigint() - start) / 1e9;
+      // `req.body` is parsed by the time the response finishes, so the MCP
+      // method is available here even though it was not when this
+      // middleware ran. Normalised to a fixed label set — see metrics.ts.
+      const mcpMethod = normaliseMcpMethod((req.body as { method?: unknown } | undefined)?.method);
+      const labels = { http_method: req.method, mcp_method: mcpMethod };
+      requestsTotal.inc({ ...labels, status: String(res.statusCode) });
+      requestDurationSeconds.observe(labels, durationSeconds);
       reqLog.info(
-        { method: req.method, path: req.path, status: res.statusCode, durationMs: Date.now() - start },
+        {
+          method: req.method,
+          path: req.path,
+          mcpMethod,
+          status: res.statusCode,
+          durationMs: Math.round(durationSeconds * 1000),
+        },
         "request handled",
       );
     });
-    next();
+
+    // Everything downstream of here — the route handler, the gate, the
+    // upstream pool, the event store — runs inside this context, so every
+    // log line those modules emit carries this request's ID without their
+    // having been handed it. See @chaperone/logger's context.ts.
+    runWithRequestContext({ requestId, sessionId }, next);
+  });
+
+  app.use(express.json());
+  app.use(originAllowlistMiddleware(originAllowlist));
+
+  /**
+   * Liveness and readiness, and the Prometheus scrape.
+   *
+   * Both sit *behind* the Origin allowlist, which costs a health check
+   * nothing — `originAllowed` returns true when there is no Origin header
+   * at all, which is every ALB probe and every `curl` — while keeping a
+   * browser on a disallowed origin from scraping `/metrics` through a
+   * rebinding attack. Deliberately outside `/api`: that is the console's
+   * surface and its 503 means "this view is unavailable", which is a
+   * different claim from the one `/healthz` makes.
+   */
+  app.get("/healthz", (_req: Request, res: Response, next: NextFunction) => {
+    void (async () => {
+      const report = await buildHealthReport(pool, identity);
+      // No caching anywhere between here and the load balancer: a cached
+      // 200 outliving the outage it was measured before is the one way a
+      // health endpoint can actively mislead.
+      res.setHeader("Cache-Control", "no-store");
+      res.status(healthStatusCode(report)).json(report);
+    })().catch(next);
+  });
+
+  app.get("/metrics", (_req: Request, res: Response) => {
+    res.setHeader("Content-Type", METRICS_CONTENT_TYPE);
+    res.setHeader("Cache-Control", "no-store");
+    // `res.end`, not `res.send`: Express rewrites a text/* Content-Type to
+    // insert its own charset parameter ahead of the others, turning the
+    // exact `text/plain; version=0.0.4; charset=utf-8` that the exposition
+    // format specifies into a reordered variant.
+    res.end(renderMetrics());
   });
 
   // Read-only JSON for packages/console. The console's approve control does
