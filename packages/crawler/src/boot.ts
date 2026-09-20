@@ -178,7 +178,8 @@ async function buildPlaceholderEnv(candidate: BootCandidate): Promise<Record<str
   return Object.fromEntries([...names].map((name) => [name, PLACEHOLDER_VALUE]));
 }
 
-function buildDockerArgs(containerName: string, shellCommand: string, placeholderEnv: Record<string, string>, network: "none" | "allowlist"): string[] {
+/** Exported for packages/crawler/test/boot.test.ts's isolation assertions — see "the boot container cannot reach an arbitrary external host" there. Not called by anything outside this module in production. */
+export function buildDockerArgs(containerName: string, shellCommand: string, placeholderEnv: Record<string, string>, network: "none" | "allowlist"): string[] {
   const args = [
     "run",
     "--rm",

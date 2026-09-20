@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bootAndList, buildShellCommand } from "../src/boot.js";
+import { bootAndList, buildDockerArgs, buildShellCommand } from "../src/boot.js";
 
 describe("buildShellCommand", () => {
   it("builds an npx command from a bare package identifier, adding -y", () => {
@@ -44,6 +44,66 @@ describe("buildShellCommand", () => {
 
   it("single-quotes an argument containing a single quote safely", () => {
     expect(buildShellCommand("npx", "it's-a-pkg")).toBe(`exec npx '-y' 'it'\\''s-a-pkg'`);
+  });
+});
+
+/**
+ * Phase 5 built the isolation topology (docker/README.md, tinyproxy
+ * allowlist, `--internal` network) but no test ever asserted the actual
+ * per-container flags this function produces — `buildDockerArgs` wasn't
+ * even exported. Booting a real Docker daemon in this suite to prove
+ * network reachability end-to-end would need Docker available wherever
+ * `pnpm test` runs (it is, in CI's `stack` job, but not in every dev
+ * environment), so this asserts the mechanism that enforces "the boot
+ * container cannot reach an arbitrary external host": with `network: "none"`
+ * there is no network device in the container at all — not a firewall rule
+ * that could be misconfigured, an absence — and with `network: "allowlist"`
+ * the container joins an `--internal` Docker network (docker/README.md)
+ * that has no route to the internet by construction, reachable only
+ * through the tinyproxy container's own allowlist. Both are asserted here
+ * directly off the real argument list `bootAndList` passes to `docker run`.
+ */
+describe("buildDockerArgs — container isolation flags", () => {
+  const args = (network: "none" | "allowlist") =>
+    buildDockerArgs("chaperone-boot-test", "exec npx '-y' 'foo'", { API_KEY: "placeholder-not-a-real-key" }, network);
+
+  it("network: none gives the container no network device at all, not a permissive default", () => {
+    const a = args("none");
+    const idx = a.indexOf("--network");
+    expect(idx).toBeGreaterThan(-1);
+    expect(a[idx + 1]).toBe("none");
+  });
+
+  it("network: allowlist joins the internal, routeless Docker network — never the host network or a bridge with internet access", () => {
+    const a = args("allowlist");
+    const idx = a.indexOf("--network");
+    expect(a[idx + 1]).toBe("chaperone-crawl-internal");
+    expect(a).not.toContain("host");
+    expect(a).not.toContain("bridge");
+  });
+
+  it("always sets memory, cpu, and pid limits, and a read-only root filesystem", () => {
+    for (const network of ["none", "allowlist"] as const) {
+      const a = args(network);
+      expect(a).toContain("--memory=512m");
+      expect(a).toContain("--cpus=1");
+      expect(a).toContain("--pids-limit=256");
+      expect(a).toContain("--read-only");
+    }
+  });
+
+  it("never receives real credentials — only whatever placeholder env the caller built", () => {
+    const a = buildDockerArgs("c", "exec npx foo", { GITHUB_TOKEN: "placeholder-not-a-real-key" }, "none");
+    const envArgs = a.filter((_, i) => a[i - 1] === "-e");
+    expect(envArgs).toContain("GITHUB_TOKEN=placeholder-not-a-real-key");
+    expect(envArgs.some((e) => e.startsWith("GITHUB_TOKEN=") && !e.includes("placeholder"))).toBe(false);
+  });
+
+  it("only network: allowlist gets a proxy env var pointed at the tinyproxy container — network: none gets none", () => {
+    const withAllowlist = args("allowlist");
+    const withNone = args("none");
+    expect(withAllowlist).toContain("HTTP_PROXY=http://proxy:3128");
+    expect(withNone).not.toContain("HTTP_PROXY=http://proxy:3128");
   });
 });
 

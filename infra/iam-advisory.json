@@ -1,0 +1,63 @@
+{
+  "$comment": "A POLICY DOCUMENT, not a deployed role. Deployment (Phase 18) has not started — there is no AWS account, no CDK stack, and nothing here has ever been applied. This file is what infra/ (CDK v2, per CLAUDE.md's repo layout) is expected to synthesize when that phase runs, and what this phase's tests audit against instead of a live role. Resource ARNs use a wildcard account/region segment (':*:*:') because no account exists yet to fill them in; the table name segment is exact and is cross-checked against packages/ledger/src/tables.ts's TABLE_LOGICAL_NAMES by packages/ledger/test/iam-advisory.test.ts, along with a table prefix of 'chaperone' (packages/config's DDB_TABLE_PREFIX default) so a rename of either drifts loudly instead of silently.",
+  "roles": [
+    {
+      "name": "chaperone-gateway-task-role",
+      "description": "The ECS Fargate task role for the gateway process itself (docker/gateway.Dockerfile, infra's future Fargate service). This is the identity that runs gate.ts, approve.ts, and api.ts, and — until an isolated advisory worker exists (see the bedrock role below) — packages/advisory/src/localRunner.ts's putAdvisory/setQuarantineAdvisoryScore calls also execute under this role, not a separate Bedrock-scoped one. CLAUDE.md's append-only rule is enforced here at the table-statement level, not just in packages/ledger's client code: the ledger-event statement grants PutItem and read verbs only — no UpdateItem, no DeleteItem, no BatchWriteItem — so a bug in application code cannot become a write IAM would have allowed anyway.",
+      "statements": [
+        {
+          "sid": "LedgerEventAppendOnly",
+          "effect": "Allow",
+          "actions": ["dynamodb:PutItem", "dynamodb:GetItem", "dynamodb:Query"],
+          "resources": [
+            "arn:aws:dynamodb:*:*:table/chaperone-ledger-event",
+            "arn:aws:dynamodb:*:*:table/chaperone-ledger-event/index/*"
+          ]
+        },
+        {
+          "sid": "OperationalTablesReadWrite",
+          "effect": "Allow",
+          "actions": ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:Query"],
+          "resources": [
+            "arn:aws:dynamodb:*:*:table/chaperone-pin",
+            "arn:aws:dynamodb:*:*:table/chaperone-quarantine",
+            "arn:aws:dynamodb:*:*:table/chaperone-quarantine/index/*",
+            "arn:aws:dynamodb:*:*:table/chaperone-session",
+            "arn:aws:dynamodb:*:*:table/chaperone-sse-event",
+            "arn:aws:dynamodb:*:*:table/chaperone-advisory",
+            "arn:aws:dynamodb:*:*:table/chaperone-corpus-server",
+            "arn:aws:dynamodb:*:*:table/chaperone-tool-snapshot",
+            "arn:aws:dynamodb:*:*:table/chaperone-drift-record"
+          ]
+        },
+        {
+          "sid": "BedrockInvoke",
+          "effect": "Allow",
+          "actions": ["bedrock:InvokeModel", "bedrock:Converse"],
+          "resources": ["arn:aws:bedrock:*::foundation-model/*"]
+        }
+      ]
+    },
+    {
+      "name": "chaperone-bedrock-advisory-role",
+      "description": "The scoped role for an isolated advisory-scoring worker — the deployment target this table of permissions is designed for, even though packages/advisory/src/localRunner.ts does not yet run as a separate worker (see the gateway role above for what actually executes today; splitting the two is tracked as deployment work, not done in this phase). This is 'the Bedrock role' this phase's tests mean: it may call Bedrock, and it may read a quarantine row to build the prompt for it, and it may do nothing else. No statement here names ledger-event or pin at all, and the one statement that names quarantine grants only GetItem/Query. There is no PutItem, UpdateItem, DeleteItem, or BatchWriteItem anywhere in this role — a compromised or misbehaving model call cannot alter the record a resident is being asked to trust, cannot touch the append-only ledger, and cannot re-pin anything.",
+      "statements": [
+        {
+          "sid": "BedrockInvoke",
+          "effect": "Allow",
+          "actions": ["bedrock:InvokeModel", "bedrock:Converse"],
+          "resources": ["arn:aws:bedrock:*::foundation-model/*"]
+        },
+        {
+          "sid": "ReadOnlyQuarantineForDiffContext",
+          "effect": "Allow",
+          "actions": ["dynamodb:GetItem", "dynamodb:Query"],
+          "resources": [
+            "arn:aws:dynamodb:*:*:table/chaperone-quarantine",
+            "arn:aws:dynamodb:*:*:table/chaperone-quarantine/index/*"
+          ]
+        }
+      ]
+    }
+  ]
+}
