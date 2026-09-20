@@ -32,5 +32,20 @@ export default defineConfig({
     // .tsx as well as .ts: packages/console's state snapshots render real
     // components, so its suite is TSX. Phase 15.
     include: ["packages/*/test/**/*.test.{ts,tsx}"],
+    // packages/console/src/lib.ts's formatDate/formatTime use
+    // Intl.DateTimeFormat with no explicit timeZone — correct for
+    // production (a resident's browser should show their own local time),
+    // but that means the snapshotted HTML in packages/console's state
+    // suite bakes in whatever timezone the machine running the test
+    // happens to be in. Pinning TZ here (not in lib.ts itself, which would
+    // be a real product regression) makes the snapshots deterministic
+    // across every machine and CI runner. Discovered 2026-09-20: local runs
+    // on a non-UTC machine were green while GitHub Actions' UTC runners
+    // failed 5 of packages/console's state snapshots on exactly this — a
+    // real environment-dependence the local-only workflow had never
+    // surfaced. Fixed at the source (test-environment determinism) rather
+    // than by regenerating snapshots against whichever machine happens to
+    // run them next.
+    env: { TZ: "UTC" },
   },
 });
