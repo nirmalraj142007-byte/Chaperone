@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { mockClient } from "aws-sdk-client-mock";
 import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { resetConfigForTests } from "@chaperone/config";
+import { QuarantineAlreadyResolvedError } from "@chaperone/errors";
 import { resetDdbClientForTests } from "../src/client.js";
 import {
   createQuarantine,
@@ -105,7 +106,7 @@ describe("quarantine repo", () => {
     });
   });
 
-  it("resolveQuarantine sets status and resolvedAt", async () => {
+  it("resolveQuarantine sets status and resolvedAt via a conditional update guarding against a non-pending row", async () => {
     ddbMock.on(UpdateCommand).resolves({});
     await resolveQuarantine("household-demo", sampleQuarantine.quarantineId, "approved", "2026-09-13T01:00:00.000Z");
 
@@ -113,8 +114,25 @@ describe("quarantine repo", () => {
     expect(calls[0]?.args[0].input).toMatchObject({
       TableName: "chaperone-quarantine",
       Key: { pk: "HOUSEHOLD#household-demo", sk: "QUAR#01JQUARANTINE00000000000" },
-      ExpressionAttributeValues: { ":status": "approved", ":resolvedAt": "2026-09-13T01:00:00.000Z" },
+      ConditionExpression: "attribute_exists(pk) AND #status = :pending",
+      ExpressionAttributeNames: { "#status": "status" },
+      ExpressionAttributeValues: {
+        ":status": "approved",
+        ":resolvedAt": "2026-09-13T01:00:00.000Z",
+        ":pending": "pending",
+      },
     });
+  });
+
+  it("resolveQuarantine throws QuarantineAlreadyResolvedError, not a raw AWS error, when the conditional write loses the race", async () => {
+    const conditionalFailure = Object.assign(new Error("The conditional request failed"), {
+      name: "ConditionalCheckFailedException",
+    });
+    ddbMock.on(UpdateCommand).rejects(conditionalFailure);
+
+    await expect(
+      resolveQuarantine("household-demo", sampleQuarantine.quarantineId, "approved", "2026-09-13T01:00:00.000Z"),
+    ).rejects.toBeInstanceOf(QuarantineAlreadyResolvedError);
   });
 
   it("setQuarantineAdvisoryScore zero-pads into the sortable GSI range attribute", async () => {

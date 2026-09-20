@@ -1,5 +1,6 @@
 import { GetCommand, PutCommand, QueryCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import type { DiffSpan } from "@chaperone/policy";
+import { QuarantineAlreadyResolvedError } from "@chaperone/errors";
 import { getDdbDocClient } from "../client.js";
 import { tableName } from "../tables.js";
 import { withDynamoErrors } from "../errors.js";
@@ -120,21 +121,49 @@ export async function setQuarantineAdvisoryScore(
   );
 }
 
+/**
+ * The single-use enforcement point. `ConditionExpression` makes the
+ * pending -> resolved transition an atomic compare-and-swap inside
+ * DynamoDB itself: two concurrent callers racing on the same quarantine
+ * both pass an application-level "is this still pending?" read, but only
+ * one of them can win this conditional write. The loser gets
+ * `ConditionalCheckFailedException`, translated here into the same typed
+ * error a stale read would produce, so callers (approve.ts) don't need to
+ * distinguish "I read stale data" from "I lost the race" — both mean the
+ * token has already been redeemed. Callers must call this *before* any
+ * side-effecting write (pin, ledger events) so a losing racer never
+ * produces a duplicate one.
+ */
 export async function resolveQuarantine(
   householdId: string,
   quarantineId: string,
   status: Extract<QuarantineStatus, "approved" | "refused">,
   resolvedAt: string,
 ): Promise<void> {
-  await withDynamoErrors(() =>
-    getDdbDocClient().send(
-      new UpdateCommand({
-        TableName: tableName("quarantine"),
-        Key: { pk: partitionKey(householdId), sk: sortKey(quarantineId) },
-        UpdateExpression: "SET #status = :status, resolvedAt = :resolvedAt",
-        ExpressionAttributeNames: { "#status": "status" },
-        ExpressionAttributeValues: { ":status": status, ":resolvedAt": resolvedAt },
-      }),
-    ),
-  );
+  try {
+    await withDynamoErrors(() =>
+      getDdbDocClient().send(
+        new UpdateCommand({
+          TableName: tableName("quarantine"),
+          Key: { pk: partitionKey(householdId), sk: sortKey(quarantineId) },
+          UpdateExpression: "SET #status = :status, resolvedAt = :resolvedAt",
+          ConditionExpression: "attribute_exists(pk) AND #status = :pending",
+          ExpressionAttributeNames: { "#status": "status" },
+          ExpressionAttributeValues: {
+            ":status": status,
+            ":resolvedAt": resolvedAt,
+            ":pending": "pending" satisfies QuarantineStatus,
+          },
+        }),
+      ),
+    );
+  } catch (e) {
+    if (e instanceof Error && e.name === "ConditionalCheckFailedException") {
+      throw new QuarantineAlreadyResolvedError(
+        `quarantine "${quarantineId}" was already resolved or does not exist`,
+        { quarantineId },
+      );
+    }
+    throw e;
+  }
 }

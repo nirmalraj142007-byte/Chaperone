@@ -67,6 +67,8 @@ h2 {
   margin: 16px 0 4px;
 }
 .desc { font-size: 15px; line-height: 1.5; margin: 0; white-space: pre-wrap; }
+.truncated { font-size: 12px; font-style: italic; color: light-dark(#6B6862, #A39E93); }
+.truncated a { color: inherit; }
 ins.clause-add {
   text-decoration: underline;
   text-decoration-thickness: 2px;
@@ -328,6 +330,8 @@ h2 {
   margin: 16px 0 4px;
 }
 .desc { font-size: 15px; line-height: 1.5; margin: 0; white-space: pre-wrap; }
+.truncated { font-size: 12px; font-style: italic; color: light-dark(#6B6862, #A39E93); }
+.truncated a { color: inherit; }
 ins.clause-add {
   text-decoration: underline;
   text-decoration-thickness: 2px;
@@ -575,6 +579,8 @@ h2 {
   margin: 16px 0 4px;
 }
 .desc { font-size: 15px; line-height: 1.5; margin: 0; white-space: pre-wrap; }
+.truncated { font-size: 12px; font-style: italic; color: light-dark(#6B6862, #A39E93); }
+.truncated a { color: inherit; }
 ins.clause-add {
   text-decoration: underline;
   text-decoration-thickness: 2px;
@@ -849,6 +855,8 @@ h2 {
   margin: 16px 0 4px;
 }
 .desc { font-size: 15px; line-height: 1.5; margin: 0; white-space: pre-wrap; }
+.truncated { font-size: 12px; font-style: italic; color: light-dark(#6B6862, #A39E93); }
+.truncated a { color: inherit; }
 ins.clause-add {
   text-decoration: underline;
   text-decoration-thickness: 2px;
@@ -1096,6 +1104,8 @@ h2 {
   margin: 16px 0 4px;
 }
 .desc { font-size: 15px; line-height: 1.5; margin: 0; white-space: pre-wrap; }
+.truncated { font-size: 12px; font-style: italic; color: light-dark(#6B6862, #A39E93); }
+.truncated a { color: inherit; }
 ins.clause-add {
   text-decoration: underline;
   text-decoration-thickness: 2px;
@@ -1357,6 +1367,8 @@ h2 {
   margin: 16px 0 4px;
 }
 .desc { font-size: 15px; line-height: 1.5; margin: 0; white-space: pre-wrap; }
+.truncated { font-size: 12px; font-style: italic; color: light-dark(#6B6862, #A39E93); }
+.truncated a { color: inherit; }
 ins.clause-add {
   text-decoration: underline;
   text-decoration-thickness: 2px;
@@ -1618,6 +1630,8 @@ h2 {
   margin: 16px 0 4px;
 }
 .desc { font-size: 15px; line-height: 1.5; margin: 0; white-space: pre-wrap; }
+.truncated { font-size: 12px; font-style: italic; color: light-dark(#6B6862, #A39E93); }
+.truncated a { color: inherit; }
 ins.clause-add {
   text-decoration: underline;
   text-decoration-thickness: 2px;

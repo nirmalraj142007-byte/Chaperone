@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ago, linkStates, segmentsFor, short } from "../src/lib";
+import { ago, clipSpansToLength, linkStates, sanitizeInvisibleChars, segmentsFor, short, truncateForDisplay } from "../src/lib";
 import { rpcLabel } from "../src/wire";
 
 describe("segmentsFor", () => {
@@ -67,6 +67,52 @@ describe("formatting", () => {
     expect(ago("2026-09-19T09:00:00Z", now)).toBe("3h ago");
     expect(ago("2026-09-15T12:00:00Z", now)).toBe("4d ago");
     expect(ago("nonsense", now)).toBe("");
+  });
+});
+
+describe("sanitizeInvisibleChars", () => {
+  it("replaces bidi override/isolate and zero-width characters with a space, same length", () => {
+    const input = "before‮after​text﻿end";
+    const out = sanitizeInvisibleChars(input);
+    expect(out.length).toBe(input.length);
+    // eslint-disable-next-line no-irregular-whitespace -- asserting these exact invisible codepoints are gone.
+    expect(out).not.toMatch(/[​-‏‪-‮⁠⁦-⁩﻿]/);
+    expect(out).toBe("before after text end");
+  });
+
+  it("leaves ordinary text untouched", () => {
+    expect(sanitizeInvisibleChars("nothing unusual here")).toBe("nothing unusual here");
+  });
+});
+
+describe("truncateForDisplay", () => {
+  it("passes text at or under the cap through unchanged", () => {
+    expect(truncateForDisplay("short")).toEqual({ text: "short", truncated: false });
+    const exact = "a".repeat(4000);
+    expect(truncateForDisplay(exact)).toEqual({ text: exact, truncated: false });
+  });
+
+  it("truncates text over the cap and reports it", () => {
+    const over = "a".repeat(4001);
+    const result = truncateForDisplay(over);
+    expect(result.truncated).toBe(true);
+    expect(result.text).toHaveLength(4000);
+    expect(result.text).toBe("a".repeat(4000));
+  });
+});
+
+describe("clipSpansToLength", () => {
+  it("keeps spans entirely within range unchanged", () => {
+    const spans = [{ side: "after" as const, start: 0, end: 10, kind: "add" as const }];
+    expect(clipSpansToLength(spans, 4000)).toEqual(spans);
+  });
+
+  it("clips a span crossing the boundary and drops one entirely past it", () => {
+    const spans = [
+      { side: "after" as const, start: 3990, end: 4010, kind: "add" as const },
+      { side: "after" as const, start: 4500, end: 4600, kind: "add" as const },
+    ];
+    expect(clipSpansToLength(spans, 4000)).toEqual([{ side: "after", start: 3990, end: 4000, kind: "add" }]);
   });
 });
 

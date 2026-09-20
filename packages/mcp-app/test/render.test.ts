@@ -329,4 +329,93 @@ describe("XSS and hostile-input containment — every upstream-controlled field 
     expect(html).not.toContain("\u202E");
     expect(html).not.toContain("\u200F");
   });
+
+  it("zero-width characters are neutralized so they cannot split a flagged word or bloat rendered content invisibly", () => {
+    // U+200B ZERO WIDTH SPACE inserted mid-word, plus a leading U+FEFF BOM.
+    const ZWSP = "\u200B";
+    const BOM = "\uFEFF";
+    const after = `${BOM}Adds an item and forwards it to the${ZWSP}pharmacy.`;
+    const html = renderConsentCardHtml({
+      state: "pending",
+      item: item({ afterDescription: after, spans: [] }),
+    });
+    expect(html).not.toContain(ZWSP);
+    expect(html).not.toContain(BOM);
+    // The word is still legible, just with the zero-width char now a real space.
+    expect(html).toContain("the pharmacy");
+
+    const text = renderConsentCardText({ state: "refused", toolName: `add_item${ZWSP}evil`, upstreamLabel: "Grocery" });
+    expect(text).not.toContain(ZWSP);
+  });
+});
+
+describe("description truncation \u2014 an upstream cannot force an unbounded render", () => {
+  it("a description at exactly the 4,000-char cap is rendered in full, no marker", () => {
+    const exact = "a".repeat(4000);
+    const html = renderConsentCardHtml({ state: "pending", item: item({ afterDescription: exact, spans: [] }) });
+    expect(html).not.toContain("truncated at 4,000 characters");
+    expect(html).toContain(exact);
+  });
+
+  it("a 100KB description is capped at 4,000 characters with an explicit marker and a link to the full text", () => {
+    const huge = "x".repeat(100_000);
+    const html = renderConsentCardHtml({
+      state: "pending",
+      item: item({ quarantineId: "q-huge", afterDescription: huge, spans: [] }),
+    });
+    expect(html).not.toContain(huge);
+    expect(html).toContain("x".repeat(4000));
+    expect(html).not.toContain("x".repeat(4001));
+    expect(html).toContain("truncated at 4,000 characters");
+    expect(html).toContain('<a href="/queue/q-huge">full text</a>');
+    // The whole card stays small even though the upstream sent 100KB.
+    expect(Buffer.byteLength(html, "utf8")).toBeLessThan(20 * 1024);
+
+    const text = renderConsentCardText({
+      state: "refused",
+      toolName: "add_item",
+      upstreamLabel: "Grocery",
+    });
+    expect(text.length).toBeLessThan(1000);
+
+    const pendingText = renderConsentCardText({
+      state: "pending",
+      item: item({ quarantineId: "q-huge", afterDescription: huge, spans: [] }),
+    });
+    expect(pendingText).not.toContain(huge);
+    expect(pendingText).toContain("truncated at 4,000 characters \u2014 full text: /queue/q-huge");
+  });
+
+  it("a span that starts inside the truncated tail is dropped instead of corrupting the render", () => {
+    const before = "b".repeat(10);
+    const after = "a".repeat(5000);
+    const html = renderConsentCardHtml({
+      state: "pending",
+      item: item({
+        beforeDescription: before,
+        afterDescription: after,
+        spans: [{ side: "after", start: 4500, end: 4600, kind: "add" }],
+      }),
+    });
+    // No crash, no <ins> for a span entirely past the cut, and the visible text is still well-formed.
+    expect(html).not.toContain("<ins");
+    expect(html).toContain("truncated at 4,000 characters");
+  });
+
+  it("a span crossing the truncation boundary is clipped, not left dangling", () => {
+    const tail = "ADDED-CLAUSE-HERE-AND-MORE";
+    const after = "a".repeat(3990) + tail;
+    const expectedClipped = after.slice(3990, 4000); // what should survive inside <ins>
+    const html = renderConsentCardHtml({
+      state: "pending",
+      item: item({
+        afterDescription: after,
+        spans: [{ side: "after", start: 3990, end: after.length, kind: "add" }],
+      }),
+    });
+    expect(html).toContain('<ins class="clause-add">');
+    expect(html).toContain(`<ins class="clause-add">${expectedClipped}</ins>`);
+    // The part of the clause past the 4,000-char cut never appears at all.
+    expect(html).not.toContain(tail.slice(tail.length - 5));
+  });
 });

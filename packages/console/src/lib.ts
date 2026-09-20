@@ -35,6 +35,48 @@ export function segmentsFor(text: string, spans: readonly DiffSpan[], side: Diff
   return out;
 }
 
+/**
+ * Same neutralization packages/mcp-app/src/render.ts applies to the consent
+ * card, duplicated here rather than imported: the console is a separate
+ * Vite/browser bundle with no dependency on mcp-app's server-side render
+ * module, and this is ~1 line of regex, not a shared abstraction worth a
+ * new package boundary for. Every occurrence is replaced with a single
+ * space (never deleted) so string length — and therefore every DiffSpan
+ * offset computed against the untouched original — is preserved. This
+ * screen is where a resident reads the raw, untrusted upstream text to
+ * decide whether to approve a change; a direction-override character here
+ * could visually reorder the diff to hide what was actually added, and a
+ * zero-width character could split a word invisibly.
+ */
+// eslint-disable-next-line no-irregular-whitespace -- the character class itself is the point: these are the invisible/reordering codepoints being neutralized.
+const INVISIBLE_CONTROL_CHARS = /[​-‏‪-‮⁠⁦-⁩﻿]/g;
+
+export function sanitizeInvisibleChars(text: string): string {
+  return text.replace(INVISIBLE_CONTROL_CHARS, " ");
+}
+
+/** Resident-facing cap on the verbatim description panel — see truncateForDisplay. */
+export const MAX_DESCRIPTION_CHARS = 4000;
+
+/**
+ * Caps an upstream-controlled description before it reaches segmentsFor or
+ * the DOM, mirroring packages/mcp-app/src/render.ts's truncateForRender. An
+ * upstream can return an arbitrarily large description; without a cap here
+ * this screen — whose whole purpose is to render that text in full for a
+ * human to read — would render however much the upstream chose to send.
+ */
+export function truncateForDisplay(text: string, max = MAX_DESCRIPTION_CHARS): { text: string; truncated: boolean } {
+  if (text.length <= max) {
+    return { text, truncated: false };
+  }
+  return { text: text.slice(0, max), truncated: true };
+}
+
+/** Drops or clips spans that fall partly or wholly past a truncation cut, so segmentsFor is never asked to read past the text it was given. */
+export function clipSpansToLength(spans: readonly DiffSpan[], maxLen: number): DiffSpan[] {
+  return spans.filter((span) => span.start < maxLen).map((span) => (span.end > maxLen ? { ...span, end: maxLen } : span));
+}
+
 export type LinkState = "verified" | "broken" | "unverified" | "pending";
 
 /**

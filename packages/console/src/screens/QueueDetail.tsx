@@ -10,7 +10,16 @@ import { useState, type FormEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys, useQuarantine } from "../api";
 import { approveChange, type ApproveStep, type Decision } from "../mcp";
-import { formatDate, formatTime, segmentsFor, short } from "../lib";
+import {
+  clipSpansToLength,
+  formatDate,
+  formatTime,
+  MAX_DESCRIPTION_CHARS,
+  sanitizeInvisibleChars,
+  segmentsFor,
+  short,
+  truncateForDisplay,
+} from "../lib";
 import { Link } from "../router";
 import { applyOverride, viewOf } from "../state";
 import { useOverride } from "../screenState";
@@ -18,26 +27,45 @@ import { DETAIL_EMPTY, detailFixture } from "../fixtures";
 import type { DiffSpan, LedgerEvent, QuarantineDetail, ToolText } from "../types";
 import { CapabilityBadge, EmptyState, ErrorBox, Field, SkeletonBlock, SkeletonRows, StateMark, stateNote } from "../components/marks";
 
-function Verbatim({ text, spans, side }: { text: string; spans: DiffSpan[]; side: DiffSpan["side"] }) {
+export function Verbatim({ text, spans, side }: { text: string; spans: DiffSpan[]; side: DiffSpan["side"] }) {
+  const [expanded, setExpanded] = useState(false);
   if (text.length === 0) {
     return <p className="text-n-400 italic">(no description)</p>;
   }
+  const sanitized = sanitizeInvisibleChars(text);
+  const { text: shown, truncated } = expanded ? { text: sanitized, truncated: false } : truncateForDisplay(sanitized);
+  const shownSpans = expanded ? spans : clipSpansToLength(spans, shown.length);
   return (
-    <p className="text-3 leading-[var(--text-3-lh)] text-n-900 whitespace-pre-wrap break-words">
-      {segmentsFor(text, spans, side).map((seg, i) =>
-        seg.mark === "add" ? (
-          <mark key={i} className="add">
-            {seg.text}
-          </mark>
-        ) : seg.mark === "remove" ? (
-          <del key={i} className="remove">
-            {seg.text}
-          </del>
-        ) : (
-          <span key={i}>{seg.text}</span>
-        ),
+    <>
+      <p className="text-3 leading-[var(--text-3-lh)] text-n-900 whitespace-pre-wrap break-words">
+        {segmentsFor(shown, shownSpans, side).map((seg, i) =>
+          seg.mark === "add" ? (
+            <mark key={i} className="add">
+              {seg.text}
+            </mark>
+          ) : seg.mark === "remove" ? (
+            <del key={i} className="remove">
+              {seg.text}
+            </del>
+          ) : (
+            <span key={i}>{seg.text}</span>
+          ),
+        )}
+      </p>
+      {truncated && (
+        <p className="mt-1 text-1 text-n-600">
+          truncated at {MAX_DESCRIPTION_CHARS.toLocaleString("en-US")} characters ({text.length.toLocaleString("en-US")} total)
+          {" — "}
+          <button
+            type="button"
+            onClick={() => setExpanded(true)}
+            className="underline decoration-n-200 underline-offset-4 hover:text-accent hover:decoration-accent"
+          >
+            show full text
+          </button>
+        </p>
       )}
-    </p>
+    </>
   );
 }
 

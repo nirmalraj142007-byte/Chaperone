@@ -49,25 +49,68 @@ const CAPABILITY_BADGES: Record<CapabilityClass, string> = {
 };
 
 /**
- * Unicode bidi control characters (RTL/LTR overrides and isolates). Each is
- * exactly one UTF-16 code unit, so replacing every occurrence with a space
- * preserves string length and therefore every `DiffSpan` offset computed
- * against the untouched original in packages/policy/src/diff.ts — stripping
- * them outright (rather than substituting a same-width character) would
- * shift every span after the first occurrence and misalign the highlight
- * from the text it's meant to cover. An upstream tool description is
- * untrusted third-party input; an override character embedded in it can
- * visually reorder the rendered text enough to hide an added clause inside
- * what still *looks* like the original sentence.
+ * Unicode control characters that are invisible or reorder text without
+ * changing what characters are visibly present: RTL/LTR direction marks and
+ * overrides (U+200E/U+200F, U+202A-U+202E), directional isolates
+ * (U+2066-U+2069), and zero-width characters (U+200B zero-width space,
+ * U+200C/U+200D joiners, U+2060 word joiner, U+FEFF zero-width no-break
+ * space / BOM). Each is exactly one UTF-16 code unit, so replacing every
+ * occurrence with a space preserves string length and therefore every
+ * `DiffSpan` offset computed against the untouched original in
+ * packages/policy/src/diff.ts — stripping them outright (rather than
+ * substituting a same-width character) would shift every span after the
+ * first occurrence and misalign the highlight from the text it's meant to
+ * cover. An upstream tool description is untrusted third-party input: a
+ * direction-override character can visually reorder rendered text enough to
+ * hide an added clause inside what still *looks* like the original
+ * sentence, and a zero-width character can split a word to defeat a naive
+ * keyword match on the raw string.
  */
-const BIDI_CONTROL_CHARS = /[‎‏‪-‮⁦-⁩]/g;
+// eslint-disable-next-line no-irregular-whitespace -- the character class itself is the point: these are the invisible/reordering codepoints being neutralized.
+const INVISIBLE_CONTROL_CHARS = /[​-‏‪-‮⁠⁦-⁩﻿]/g;
 
 function sanitizeUpstreamText(text: string): string {
-  return text.replace(BIDI_CONTROL_CHARS, " ");
+  return text.replace(INVISIBLE_CONTROL_CHARS, " ");
 }
 
 function truncateHash(hash: string): string {
   return hash.slice(0, 12);
+}
+
+/** Resident-facing cap on a rendered description — see truncateForRender. */
+const MAX_DESCRIPTION_CHARS = 4000;
+
+/**
+ * Caps an upstream-controlled description before it reaches span-wrapping
+ * or the DOM. A hostile or merely careless upstream can return an
+ * arbitrarily large description — the 12KB whole-card budget asserted in
+ * render.test.ts has no enforcement behind it without this — and an
+ * unbounded string embedded in an MCP App resource or a plain-text tool
+ * result is a real resource-exhaustion vector on whatever renders it.
+ * Truncating (not rejecting) keeps the card informative: the resident still
+ * sees the start of both sides of the diff, and the truncation marker names
+ * exactly where to find the rest.
+ */
+function truncateForRender(text: string): { text: string; truncated: boolean } {
+  if (text.length <= MAX_DESCRIPTION_CHARS) {
+    return { text, truncated: false };
+  }
+  return { text: text.slice(0, MAX_DESCRIPTION_CHARS), truncated: true };
+}
+
+/** Drops or clips spans that fall partly or wholly past a truncation cut, so wrapSpansText/wrapSpansHtml is never asked to read past the text it was given. */
+function clipSpansToLength(spans: readonly DiffSpan[], maxLen: number): DiffSpan[] {
+  return spans.filter((span) => span.start < maxLen).map((span) => (span.end > maxLen ? { ...span, end: maxLen } : span));
+}
+
+function truncationNoteText(truncated: boolean, quarantineId: string): string {
+  return truncated ? `\n[... truncated at 4,000 characters — full text: /queue/${quarantineId}]` : "";
+}
+
+function truncationNoteHtml(truncated: boolean, quarantineId: string): string {
+  return truncated
+    ? ` <span class="truncated">[truncated at 4,000 characters — <a href="/queue/${escapeHtml(quarantineId)}">full text</a>]</span>`
+    : "";
 }
 
 function spansForSide(spans: readonly DiffSpan[], side: DiffSpan["side"]): DiffSpan[] {
@@ -92,14 +135,16 @@ function wrapSpansText(text: string, spans: readonly DiffSpan[]): string {
 }
 
 function textBeforeAfter(item: ConsentCardItem): string[] {
-  const before = sanitizeUpstreamText(item.beforeDescription);
-  const after = sanitizeUpstreamText(item.afterDescription);
+  const beforeT = truncateForRender(sanitizeUpstreamText(item.beforeDescription));
+  const afterT = truncateForRender(sanitizeUpstreamText(item.afterDescription));
+  const beforeSpans = clipSpansToLength(spansForSide(item.spans, "before"), beforeT.text.length);
+  const afterSpans = clipSpansToLength(spansForSide(item.spans, "after"), afterT.text.length);
   return [
     "Before:",
-    wrapSpansText(before, spansForSide(item.spans, "before")),
+    wrapSpansText(beforeT.text, beforeSpans) + truncationNoteText(beforeT.truncated, item.quarantineId),
     "",
     "After:",
-    wrapSpansText(after, spansForSide(item.spans, "after")),
+    wrapSpansText(afterT.text, afterSpans) + truncationNoteText(afterT.truncated, item.quarantineId),
   ];
 }
 
@@ -297,6 +342,8 @@ h2 {
   margin: 16px 0 4px;
 }
 .desc { font-size: 15px; line-height: 1.5; margin: 0; white-space: pre-wrap; }
+.truncated { font-size: 12px; font-style: italic; color: light-dark(#6B6862, #A39E93); }
+.truncated a { color: inherit; }
 ins.clause-add {
   text-decoration: underline;
   text-decoration-thickness: 2px;
@@ -501,10 +548,12 @@ function batchStripHtml(count: number): string {
 }
 
 function beforeAfterHtml(item: ConsentCardItem): string {
-  const before = sanitizeUpstreamText(item.beforeDescription);
-  const after = sanitizeUpstreamText(item.afterDescription);
-  const beforeHtml = wrapSpansHtml(before, spansForSide(item.spans, "before"));
-  const afterHtml = wrapSpansHtml(after, spansForSide(item.spans, "after"));
+  const beforeT = truncateForRender(sanitizeUpstreamText(item.beforeDescription));
+  const afterT = truncateForRender(sanitizeUpstreamText(item.afterDescription));
+  const beforeSpans = clipSpansToLength(spansForSide(item.spans, "before"), beforeT.text.length);
+  const afterSpans = clipSpansToLength(spansForSide(item.spans, "after"), afterT.text.length);
+  const beforeHtml = wrapSpansHtml(beforeT.text, beforeSpans) + truncationNoteHtml(beforeT.truncated, item.quarantineId);
+  const afterHtml = wrapSpansHtml(afterT.text, afterSpans) + truncationNoteHtml(afterT.truncated, item.quarantineId);
   return `<h2>Before</h2><p class="desc">${beforeHtml}</p><h2>After</h2><p class="desc">${afterHtml}</p>`;
 }
 

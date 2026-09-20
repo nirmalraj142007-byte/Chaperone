@@ -92,6 +92,17 @@ export async function approveChange(
   const actor = `resident:${householdId}`;
   const status: ledger.QuarantineStatus = decision === "approve" ? "approved" : "refused";
 
+  // The actual single-use gate: ledger.resolveQuarantine is a DynamoDB
+  // conditional update (pending -> resolved) that only one concurrent
+  // caller can win. The `quarantine.status !== "pending"` check above is
+  // just a fast, cheap rejection for the common sequential case — it reads
+  // stale data under a race, so it cannot be the enforcement point itself.
+  // This call must happen before any side-effecting write below: a caller
+  // that loses the race throws here and never reaches putPin/appendEvent,
+  // so a replayed or concurrently-redeemed token can never produce a
+  // second pin or a second ledger event.
+  await ledger.resolveQuarantine(householdId, quarantineId, status, resolvedAt);
+
   if (decision === "approve") {
     await ledger.putPin({
       householdId,
@@ -130,7 +141,6 @@ export async function approveChange(
     });
   }
 
-  await ledger.resolveQuarantine(householdId, quarantineId, status, resolvedAt);
   clearRevealedToken(quarantineId);
 
   return { quarantineId, decision, status, ...(decision === "approve" ? { newHash: quarantine.toHash } : {}) };

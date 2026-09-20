@@ -142,6 +142,40 @@ describe("approveChange: the only path that ever re-pins", () => {
     // Still exactly one pin from the original, successful redemption.
     expect(pins).toHaveLength(1);
   });
+
+  it("two concurrent redemptions racing on a stale 'pending' read: only the conditional-write winner writes a pin or ledger event", async () => {
+    // Both racers' getQuarantine call returns "pending" — neither sees the
+    // other's write, exactly like two requests that both read before either
+    // writes. The only thing that can tell them apart is the real
+    // ledger.resolveQuarantine's DynamoDB ConditionExpression, so here the
+    // mock plays that role directly: first call wins, second call throws
+    // the same error the real conditional check would produce.
+    vi.mocked(ledger.getQuarantine).mockResolvedValue(baseQuarantine() as never);
+    vi.mocked(ledger.resolveQuarantine)
+      .mockImplementationOnce(async (householdId, quarantineId, status, resolvedAt) => {
+        resolveCalls.push([householdId, quarantineId, status, resolvedAt]);
+      })
+      .mockImplementationOnce(() => {
+        throw new QuarantineAlreadyResolvedError(`quarantine "${QUARANTINE_ID}" was already resolved`, {
+          quarantineId: QUARANTINE_ID,
+        });
+      });
+
+    const [first, second] = await Promise.allSettled([
+      approveChange(HOUSEHOLD_ID, QUARANTINE_ID, TOKEN, "approve"),
+      approveChange(HOUSEHOLD_ID, QUARANTINE_ID, TOKEN, "approve"),
+    ]);
+
+    expect(first.status).toBe("fulfilled");
+    expect(second.status).toBe("rejected");
+    if (second.status === "rejected") {
+      expect(second.reason).toBeInstanceOf(QuarantineAlreadyResolvedError);
+    }
+    // The loser must never have reached putPin or appendEvent: exactly one
+    // pin and one APPROVED/REPIN pair, not two.
+    expect(pins).toHaveLength(1);
+    expect(events.map((e) => e.type)).toEqual(["APPROVED", "REPIN"]);
+  });
 });
 
 describe("listPendingChanges", () => {
