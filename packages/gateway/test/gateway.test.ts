@@ -591,17 +591,26 @@ describe("HTTP surface: security headers, CORS, and rate limiting", () => {
   });
 
   it("/api/* rate-limits per IP: past the bucket's capacity, further requests get 429 with Retry-After", async () => {
-    // Every request in this test comes from the same loopback client, so
-    // they all share one bucket (API_RATE_LIMIT.capacity = 20). In-process
-    // fetch() calls run far faster than the 2/sec refill, so this loop
-    // reliably outruns it.
-    let last: Response | undefined;
-    for (let i = 0; i < 21; i++) {
-      last = await fetch(`${gatewayUrl}/api/quarantine`);
+    // Fired concurrently, not in a sequential await-loop: a sequential
+    // loop's total wall-clock time depends on how fast this machine (or CI
+    // runner) happens to be, and API_RATE_LIMIT's 2/sec refill can keep
+    // pace with a slow enough loop — exactly the bug the real /api/* limit
+    // itself had against a plain sequential curl loop (see rateLimit.ts's
+    // comment). A CI run of this test failed for precisely that reason: it
+    // passed locally on a fast machine and failed on a slower runner.
+    // Firing all 40 requests in one burst keeps the whole thing's
+    // wall-clock time low regardless of runner speed, so refill during the
+    // burst stays negligible against a capacity of 20 either way.
+    const responses = await Promise.all(Array.from({ length: 40 }, () => fetch(`${gatewayUrl}/api/quarantine`)));
+    const statuses = responses.map((r) => r.status);
+    const limited = responses.filter((r) => r.status === 429);
+
+    expect(statuses.filter((s) => s === 200).length).toBeGreaterThan(0);
+    expect(limited.length).toBeGreaterThan(0);
+    for (const r of limited) {
+      expect(r.headers.get("retry-after")).not.toBeNull();
     }
-    expect(last?.status).toBe(429);
-    expect(last?.headers.get("retry-after")).not.toBeNull();
-    const body = (await last?.json()) as { jsonrpc: string; error: { message: string } };
+    const body = (await limited[0]?.json()) as { jsonrpc: string; error: { message: string } };
     expect(body.jsonrpc).toBe("2.0");
   });
 });
