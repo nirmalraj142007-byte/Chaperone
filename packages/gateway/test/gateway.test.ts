@@ -592,9 +592,11 @@ describe("HTTP surface: security headers, CORS, and rate limiting", () => {
 
   it("/api/* rate-limits per IP: past the bucket's capacity, further requests get 429 with Retry-After", async () => {
     // Every request in this test comes from the same loopback client, so
-    // they all share one bucket (API_RATE_LIMIT.capacity = 60).
+    // they all share one bucket (API_RATE_LIMIT.capacity = 20). In-process
+    // fetch() calls run far faster than the 2/sec refill, so this loop
+    // reliably outruns it.
     let last: Response | undefined;
-    for (let i = 0; i < 61; i++) {
+    for (let i = 0; i < 21; i++) {
       last = await fetch(`${gatewayUrl}/api/quarantine`);
     }
     expect(last?.status).toBe(429);

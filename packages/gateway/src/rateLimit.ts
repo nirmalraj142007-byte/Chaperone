@@ -54,16 +54,23 @@ export class TokenBucketLimiter {
 }
 
 /**
- * Default budgets. /mcp sees legitimate bursts — a `tools/list` immediately
- * followed by several `tools/call`s from one session — so its bucket is
- * larger; /api/* is console polling from one IP, smaller and steadier.
- * Not derived from a measured production load (there isn't one yet): these
- * are deliberately generous starting points a resident's own normal use
- * will never hit, tightened later against real traffic if that ever
- * happens. See docs/SECURITY.md.
+ * Default budgets. Not derived from measured production load (there isn't
+ * any yet) — chosen against two real, measured reference points instead:
+ * packages/console/src/api.ts polls /api/* on a 15s interval (a handful of
+ * parallel requests per poll, well under 1 req/sec sustained), and the full
+ * spec/resumption.test.ts + spec/long-stream.test.ts stack suite (a
+ * 10-iteration kill-and-resume loop, several requests per session, plus a
+ * ~180s held-open stream) runs clean against MCP_RATE_LIMIT with room to
+ * spare. /mcp keeps a larger budget since one session legitimately makes
+ * several requests in a row (tools/list, then several tools/calls);
+ * /api/* is deliberately tighter — real usage is a slow poll, so a burst
+ * far above that is either a bug or automated abuse, and a plain
+ * sequential curl loop against localhost runs at roughly 8 req/sec, which
+ * is the floor this needed to be tuned below to actually demonstrate a 429
+ * rather than always winning the race against its own refill.
  */
 export const MCP_RATE_LIMIT: RateLimiterOptions = { capacity: 60, refillPerSecond: 10 };
-export const API_RATE_LIMIT: RateLimiterOptions = { capacity: 60, refillPerSecond: 10 };
+export const API_RATE_LIMIT: RateLimiterOptions = { capacity: 20, refillPerSecond: 2 };
 
 function sendTooManyRequests(res: Response, retryAfterSeconds: number): void {
   res.setHeader("Retry-After", String(retryAfterSeconds));
