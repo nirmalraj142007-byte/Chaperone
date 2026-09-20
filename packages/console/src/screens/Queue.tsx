@@ -7,9 +7,12 @@
 import { useState } from "react";
 import { useQueue, type QueueFilter } from "../api";
 import { ago, formatDate, formatTime } from "../lib";
-import { Link } from "../router";
+import { Link, replaceQuery, useSearch } from "../router";
+import { applyOverride, viewOf, withOverride } from "../state";
+import { useOverride } from "../screenState";
+import { QUEUE_EMPTY, QUEUE_PARTIAL } from "../fixtures";
 import type { QueueRow } from "../types";
-import { CapabilityBadge, ErrorBox, SkeletonRows, StateMark } from "../components/marks";
+import { CapabilityBadge, EmptyState, ErrorBox, SkeletonRows, StateMark } from "../components/marks";
 
 const FILTERS: Array<{ value: QueueFilter; label: string }> = [
   { value: "all", label: "All" },
@@ -19,8 +22,8 @@ const FILTERS: Array<{ value: QueueFilter; label: string }> = [
   { value: "refused", label: "Blocked" },
 ];
 
-function readFilter(): QueueFilter {
-  const s = new URLSearchParams(window.location.search).get("status");
+function readFilter(search: string): QueueFilter {
+  const s = new URLSearchParams(search).get("status");
   return FILTERS.some((f) => f.value === s) ? (s as QueueFilter) : "all";
 }
 
@@ -46,6 +49,7 @@ function Row({ row }: { row: QueueRow }) {
       <Link
         href={`/queue/${encodeURIComponent(row.quarantineId)}`}
         className="micro box group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 px-4 py-3 hover:bg-accent-wash active:bg-n-100 lg:grid-cols-[minmax(0,2.2fr)_minmax(0,1.4fr)_8rem_7rem_6rem_10rem]"
+        style={{ minHeight: "var(--row-queue)" }}
       >
         <span className="min-w-0">
           <span className="block truncate text-3 font-semibold text-n-900 group-hover:underline decoration-accent underline-offset-4">
@@ -78,18 +82,26 @@ function Row({ row }: { row: QueueRow }) {
 }
 
 export function Queue() {
-  const [filter, setFilter] = useState<QueueFilter>(readFilter);
+  const search = useSearch();
+  const override = useOverride();
+  const [filter, setFilter] = useState<QueueFilter>(() => readFilter(search));
   const all = useQueue("all");
   const list = useQueue(filter);
 
   const choose = (value: QueueFilter): void => {
     setFilter(value);
-    const url = value === "all" ? "/queue" : `/queue?status=${value}`;
-    window.history.replaceState(null, "", url);
+    // withOverride keeps ?state= on the URL, so a filter click during a
+    // screenshot run does not silently drop back to live data.
+    replaceQuery(withOverride(value === "all" ? "/queue" : `/queue?status=${value}`, override));
   };
 
-  const counts = new Map<QueueFilter, number>([["all", all.data?.total ?? 0]]);
-  for (const row of all.data?.items ?? []) {
+  const fixtures = { empty: QUEUE_EMPTY, partial: QUEUE_PARTIAL, what: "the review queue" };
+  const view = applyOverride(viewOf(list), override, fixtures);
+  const allView = applyOverride(viewOf(all), override, fixtures);
+  const summary = allView.status === "ready" ? allView.data : undefined;
+
+  const counts = new Map<QueueFilter, number>([["all", summary?.total ?? 0]]);
+  for (const row of summary?.items ?? []) {
     counts.set(row.reviewState, (counts.get(row.reviewState) ?? 0) + 1);
   }
   const awaiting = counts.get("pending") ?? 0;
@@ -103,11 +115,11 @@ export function Queue() {
         </div>
         <div className="flex items-end gap-6">
           <div className="text-right">
-            <div className={`num text-5 ${awaiting > 0 ? "text-warn-ink" : "text-n-900"}`}>{all.data ? awaiting : "–"}</div>
+            <div className={`num text-5 ${awaiting > 0 ? "text-warn-ink" : "text-n-900"}`}>{summary ? awaiting : "–"}</div>
             <div className="label mt-1">Awaiting a resident</div>
           </div>
           <div className="text-right">
-            <div className="num text-5 text-n-900">{all.data ? all.data.total : "–"}</div>
+            <div className="num text-5 text-n-900">{summary ? summary.total : "–"}</div>
             <div className="label mt-1">Held, all time</div>
           </div>
         </div>
@@ -129,7 +141,7 @@ export function Queue() {
             >
               {f.label}
               <span className={`num text-2 normal-case tracking-normal ${on ? "text-n-0" : "text-n-600"}`}>
-                {all.data ? (counts.get(f.value) ?? 0) : "·"}
+                {summary ? (counts.get(f.value) ?? 0) : "·"}
               </span>
             </button>
           );
@@ -144,22 +156,35 @@ export function Queue() {
         ))}
       </div>
 
-      {list.isPending ? (
+      {view.status === "loading" ? (
         <SkeletonRows label="Reading quarantine table…" />
-      ) : list.isError ? (
-        <ErrorBox error={list.error} what="the review queue" />
-      ) : list.data.items.length === 0 ? (
-        <div className="box border-dashed p-6 text-n-600">
-          <div className="label text-ok">Nothing held</div>
-          <p className="mt-1">
-            {filter === "all"
-              ? "No tool has changed since the household approved it."
-              : "No changes in this state. Try another filter."}
-          </p>
-        </div>
+      ) : view.status === "error" ? (
+        <ErrorBox error={view.error} what="the review queue" onRetry={() => void list.refetch()} />
+      ) : view.data.items.length === 0 ? (
+        // An empty queue is the healthy outcome, not a failure to load, and
+        // it is what a household sees on most days. It reads calm on
+        // purpose: ledger green, a plain sentence, and the reason it is
+        // empty rather than an exhortation to do something.
+        filter === "all" ? (
+          <EmptyState label="Nothing held" tone="ok" height="var(--row-queue)">
+            <p className="text-3">Nothing has changed since you approved it.</p>
+            <p className="mt-2">
+              Every tool the assistant can reach still matches, byte for byte, the version this household approved. A tool
+              only appears here when its description or schema stops matching its pinned hash — and until someone decides,
+              it is withheld rather than shown to the assistant.
+            </p>
+          </EmptyState>
+        ) : (
+          <EmptyState label={`No changes in this state`} height="var(--row-queue)">
+            <p>
+              Nothing is currently {FILTERS.find((f) => f.value === filter)?.label.toLowerCase()}. The other filters may
+              have rows — the counts above are over the whole queue, not this filter.
+            </p>
+          </EmptyState>
+        )
       ) : (
         <ul className="grid gap-2" aria-label="Quarantined tool changes">
-          {list.data.items.map((row) => (
+          {view.data.items.map((row) => (
             <Row key={row.quarantineId} row={row} />
           ))}
         </ul>

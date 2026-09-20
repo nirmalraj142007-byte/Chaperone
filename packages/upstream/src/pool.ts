@@ -25,7 +25,7 @@ import { CallToolResultSchema } from "@modelcontextprotocol/sdk/types.js";
 import type { CallToolRequest, CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { UpstreamError } from "@chaperone/errors";
 import { childLogger } from "@chaperone/logger";
-import type { CallContext, ToolDefinition, UpstreamConfig, UpstreamConnectionState, UpstreamPool } from "./types.js";
+import type { CallContext, ToolDefinition, UpstreamConfig, UpstreamConnectionState, UpstreamPool, UpstreamStatus } from "./types.js";
 
 const log = childLogger({ component: "upstream-pool" });
 
@@ -65,6 +65,8 @@ interface InternalHandle {
   consecutiveFailures: number;
   /** Epoch ms before which a new connect attempt is refused outright (fail-fast backoff window), rather than re-dialing a server that just failed. */
   nextAttemptAt: number;
+  /** ISO time of the last completed handshake, or null if this process has never connected. Survives a later failure — it records history, not current health. */
+  connectedAt: string | null;
 }
 
 function backoffMs(consecutiveFailures: number): number {
@@ -110,6 +112,7 @@ async function attemptConnect(handle: InternalHandle, callerSignal: AbortSignal)
     await connectTransport(handle.client, transport, attemptSignal);
     handle.sessionId = transport.sessionId ?? null;
     handle.state = "ready";
+    handle.connectedAt = new Date().toISOString();
     handle.consecutiveFailures = 0;
     handle.nextAttemptAt = 0;
     log.info({ upstreamId: handle.id, upstreamUrl: handle.url }, "connected to upstream");
@@ -257,6 +260,24 @@ class UpstreamPoolImpl implements UpstreamPool {
     }
   }
 
+  /**
+   * What the pool already knows, for the console. Synchronous and
+   * side-effect free by design: a status screen that dials every upstream
+   * to render itself would turn opening a tab into traffic against other
+   * people's servers, and would make a dead upstream slow instead of
+   * visibly dead.
+   */
+  describe(): UpstreamStatus[] {
+    return [...this.handles.values()].map((h) => ({
+      id: h.id,
+      label: h.label,
+      state: h.state,
+      connectedAt: h.connectedAt,
+      sessionOpen: h.sessionId !== null,
+      consecutiveFailures: h.consecutiveFailures,
+    }));
+  }
+
   async close(): Promise<void> {
     await Promise.allSettled(
       [...this.handles.values()].map(async (handle) => {
@@ -289,6 +310,7 @@ export async function getPool(cfgs: UpstreamConfig[]): Promise<UpstreamPool> {
       connecting: null,
       consecutiveFailures: 0,
       nextAttemptAt: 0,
+      connectedAt: null,
     });
   }
   return new UpstreamPoolImpl(handles);

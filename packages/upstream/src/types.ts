@@ -36,8 +36,27 @@ export interface CallContext {
   onProgress?: (p: ProgressNotification) => void;
 }
 
+/**
+ * A read-only snapshot of one upstream's connection, for the console's
+ * /upstreams screen. Deliberately carries no URL and no session ID: the
+ * console is a browser surface and neither is its business. `connectedAt`
+ * is when this process last completed an MCP handshake with the upstream,
+ * not when it was configured.
+ */
+export interface UpstreamStatus {
+  id: string;
+  label: string;
+  state: UpstreamConnectionState;
+  connectedAt: string | null;
+  /** True while a session ID from that handshake is still held. */
+  sessionOpen: boolean;
+  consecutiveFailures: number;
+}
+
 export interface UpstreamPool {
   listAllTools(): Promise<Array<{ upstreamId: string; tool: ToolDefinition }>>;
+  /** Synchronous: reports what the pool already knows, and never dials an upstream to find out. */
+  describe(): UpstreamStatus[];
   callTool(upstreamId: string, name: string, args: unknown, ctx: CallContext): Promise<CallToolResult>;
   close(): Promise<void>;
 }

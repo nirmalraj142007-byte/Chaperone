@@ -48,6 +48,39 @@ function abortableContext(overrides: Partial<Parameters<UpstreamPool["callTool"]
   };
 }
 
+describe("getPool: describe", () => {
+  it("reports connecting before anything is dialled, and never dials to answer", async () => {
+    const pool = await getPool([grocery]);
+    const before = pool.describe();
+    // The pool connects lazily; a status read must not be what triggers it.
+    expect(before).toEqual([
+      expect.objectContaining({ id: "grocery", state: "connecting", connectedAt: null, sessionOpen: false, consecutiveFailures: 0 }),
+    ]);
+    await pool.close();
+  });
+
+  it("records the handshake time once an upstream is actually used", async () => {
+    const pool = await getPool([grocery]);
+    await pool.listAllTools();
+    const [status] = pool.describe();
+    expect(status?.state).toBe("ready");
+    expect(status?.sessionOpen).toBe(true);
+    expect(Date.parse(status?.connectedAt ?? "")).not.toBeNaN();
+    await pool.close();
+  });
+
+  it("marks an unreachable upstream failed and counts the attempts", async () => {
+    const dead = { id: "dead", url: "http://127.0.0.1:1/mcp", label: "Dead" };
+    const pool = await getPool([dead]);
+    await pool.listAllTools().catch(() => undefined);
+    const [status] = pool.describe();
+    expect(status?.state).toBe("failed");
+    expect(status?.connectedAt).toBeNull();
+    expect(status?.consecutiveFailures).toBeGreaterThan(0);
+    await pool.close();
+  });
+});
+
 describe("getPool: listAllTools", () => {
   it("returns wire-complete tool definitions namespaced by upstreamId", async () => {
     const pool = await getPool([grocery]);

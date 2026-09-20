@@ -50,6 +50,19 @@ export function wireFinish(
   emit();
 }
 
+/**
+ * Clears the log. The wire is a module-level store, so without this the
+ * snapshot suite's entry count would depend on how many tests had already
+ * run — and a snapshot that changes with test order is a flaky snapshot.
+ * Not reachable from the UI: there is no control that clears the wire,
+ * deliberately, because the wire is the console's own audit of itself.
+ */
+export function wireReset(): void {
+  entries = [];
+  nextId = 1;
+  emit();
+}
+
 function subscribe(listener: () => void): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);

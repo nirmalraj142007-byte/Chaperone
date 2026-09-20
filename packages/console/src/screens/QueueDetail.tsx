@@ -8,12 +8,15 @@
  */
 import { useState, type FormEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useQuarantine } from "../api";
+import { queryKeys, useQuarantine } from "../api";
 import { approveChange, type ApproveStep, type Decision } from "../mcp";
 import { formatDate, formatTime, segmentsFor, short } from "../lib";
 import { Link } from "../router";
+import { applyOverride, viewOf } from "../state";
+import { useOverride } from "../screenState";
+import { DETAIL_EMPTY, detailFixture } from "../fixtures";
 import type { DiffSpan, LedgerEvent, QuarantineDetail, ToolText } from "../types";
-import { CapabilityBadge, ErrorBox, Field, SkeletonRows, StateMark, stateNote } from "../components/marks";
+import { CapabilityBadge, EmptyState, ErrorBox, Field, SkeletonBlock, SkeletonRows, StateMark, stateNote } from "../components/marks";
 
 function Verbatim({ text, spans, side }: { text: string; spans: DiffSpan[]; side: DiffSpan["side"] }) {
   if (text.length === 0) {
@@ -165,6 +168,7 @@ function DecisionPanel({ q }: { q: QuarantineDetail }) {
   const queryClient = useQueryClient();
   const [token, setToken] = useState("");
   const [run, setRun] = useState<RunState>({ phase: "idle" });
+  const [reverted, setReverted] = useState<Decision | null>(null);
 
   if (q.reviewState !== "pending") {
     // Token consumed (by the card or here) or expired: there is no second approval mechanism to offer.
@@ -189,16 +193,41 @@ function DecisionPanel({ q }: { q: QuarantineDetail }) {
   }
 
   const busy = run.phase === "running";
+  const key = queryKeys.quarantine(q.quarantineId);
+
+  /**
+   * The decision is applied optimistically: the state mark flips the moment
+   * the resident commits, because the MCP round trip is several hops
+   * (initialize, tools/call, session close) and a form that looks inert for
+   * that long invites a second click.
+   *
+   * It reverts *visibly* on failure. The previous cache entry is restored
+   * and a crimson notice names what was rolled back. A silent revert would
+   * be the worst failure mode this screen has: a resident who believes they
+   * blocked something has to be told when they did not.
+   */
   const submit = (decision: Decision) => async (e?: FormEvent) => {
     e?.preventDefault();
     if (token.trim().length === 0 || busy) return;
     const steps: ApproveStep[] = [];
+    setReverted(null);
     setRun({ phase: "running", decision, steps });
+
+    await queryClient.cancelQueries({ queryKey: key });
+    const snapshot = queryClient.getQueryData<QuarantineDetail>(key);
+    queryClient.setQueryData<QuarantineDetail>(key, (prev) =>
+      prev === undefined
+        ? prev
+        : { ...prev, reviewState: decision === "approve" ? "approved" : "refused", resolvedAt: new Date().toISOString() },
+    );
+
+    let ok = false;
     try {
       const out = await approveChange(q.quarantineId, token.trim(), decision, (step) => {
         steps.push(step);
         setRun({ phase: "running", decision, steps: [...steps] });
       });
+      ok = out.ok;
       setRun({ phase: "done", decision, steps: [...steps], ok: out.ok, text: out.text });
     } catch (error) {
       setRun({
@@ -208,6 +237,15 @@ function DecisionPanel({ q }: { q: QuarantineDetail }) {
         ok: false,
         text: error instanceof Error ? `Could not reach the gateway: ${error.message}` : "Could not reach the gateway.",
       });
+    }
+    if (!ok) {
+      // Put the row back exactly as it was, and say so. The gateway is the
+      // only authority on whether a decision landed; a rejected token
+      // leaves the change withheld, and this screen has to show that.
+      if (snapshot !== undefined) {
+        queryClient.setQueryData(key, snapshot);
+      }
+      setReverted(decision);
     }
     // Success or a consumed/expired rejection: either way the server's view is what the page should show next.
     await queryClient.invalidateQueries();
@@ -257,6 +295,13 @@ function DecisionPanel({ q }: { q: QuarantineDetail }) {
           </button>
         </div>
       </form>
+      {reverted !== null && (
+        <p role="alert" className="mt-3 border-l-[length:var(--rule-heavy)] border-blocked bg-blocked-wash px-3 py-2 text-n-900">
+          <span className="label mr-2 text-blocked">Rolled back</span>
+          This page briefly showed the change as {reverted === "approve" ? "approved" : "blocked"}. The gateway did not
+          accept the decision, so it has been put back: the change is still withheld and still awaiting a resident.
+        </p>
+      )}
       {run.phase !== "idle" && <RunLog run={run} />}
     </section>
   );
@@ -324,17 +369,52 @@ function Trail({ events }: { events: LedgerEvent[] }) {
 }
 
 export function QueueDetail({ id }: { id: string }) {
-  const { data: q, isPending, isError, error } = useQuarantine(id);
+  const override = useOverride();
+  const query = useQuarantine(id);
+  // partial = the advisory is missing, which is the normal case rather than
+  // an exception: the advisory is generated asynchronously and the decision
+  // never waits on it.
+  const view = applyOverride(viewOf(query), override, {
+    empty: DETAIL_EMPTY,
+    partial: detailFixture({ advisory: null }),
+    what: "this change",
+  });
+  const q = view.status === "ready" ? view.data : undefined;
 
   return (
     <div className="grid gap-6">
       <Link href="/queue" className="label micro w-fit text-n-600 hover:text-accent">
         ← Review queue
       </Link>
-      {isPending ? (
-        <SkeletonRows rows={4} label="Reading quarantine, pin, advisory and ledger…" />
-      ) : isError ? (
-        <ErrorBox error={error} what="this change" />
+      {view.status === "loading" ? (
+        // Same regions, same heights, same two-column split as the loaded
+        // page, so nothing moves when the record lands.
+        <div className="grid gap-6">
+          <SkeletonBlock label="Reading quarantine, pin, advisory and ledger…" height="120px" />
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_26rem]">
+            <div className="grid content-start gap-6">
+              <SkeletonBlock label="Tool description, verbatim" height="var(--row-detail)" />
+              <SkeletonBlock label="Advisory" height="140px" />
+            </div>
+            <div className="grid content-start gap-6">
+              <SkeletonBlock label="Decision" height="260px" />
+              <SkeletonRows rows={1} label="Ledger trail" height="180px" />
+            </div>
+          </div>
+        </div>
+      ) : view.status === "error" ? (
+        <ErrorBox error={view.error} what="this change" onRetry={() => void query.refetch()} />
+      ) : q === undefined || q.quarantineId === "" ? (
+        <EmptyState label="No such change">
+          <p>
+            There is no quarantine with the id <span className="hash text-n-900">{id}</span> for this household. A
+            quarantine id is minted when a tool stops matching its pinned hash; if this link came from an older ledger
+            entry, the record may belong to a different household.
+          </p>
+          <Link href="/queue" className="label micro mt-3 inline-block border-b-[length:var(--rule)] border-accent text-accent">
+            Back to the review queue →
+          </Link>
+        </EmptyState>
       ) : (
         <>
           <header className="grid gap-4">

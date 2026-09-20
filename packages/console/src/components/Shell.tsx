@@ -43,18 +43,36 @@ export function Shell({ form, children }: { form: string; children: ReactNode })
           <span className="text-2 font-[var(--weight-title)] tracking-[var(--track-label)] uppercase text-accent">Chaperone</span>
         </Link>
         <span className="label hidden text-n-400 sm:inline">Form {form}</span>
-        <nav className="flex gap-4" aria-label="Screens">
+        <nav className="flex flex-wrap gap-x-4 gap-y-1" aria-label="Screens">
           <NavLink href="/queue">Queue</NavLink>
           <NavLink href="/ledger">Ledger</NavLink>
+          <NavLink href="/corpus">Corpus</NavLink>
+          <NavLink href="/bench">Bench</NavLink>
+          <NavLink href="/upstreams">Upstreams</NavLink>
         </nav>
         <div className="ml-auto hidden items-center gap-4 py-3 md:flex">
           {upstreams.data?.upstreams.map((u) => (
-            <span key={u.id} className="flex items-baseline gap-2" title={`upstream id: ${u.id}`}>
+            <Link
+              key={u.id}
+              href="/upstreams"
+              className="micro flex items-baseline gap-2"
+              title={`upstream id: ${u.id} · state: ${u.state}`}
+            >
+              {/* Connection state as ink, not a word: the header is glanced at, not read. */}
+              <span
+                aria-hidden
+                className="size-2 shrink-0 border-[length:var(--rule)] border-accent"
+                style={{
+                  background:
+                    u.state === "ready" ? "var(--ok)" : u.state === "failed" ? "var(--blocked)" : "var(--n-0)",
+                  borderColor: u.state === "failed" ? "var(--blocked)" : u.state === "ready" ? "var(--ok)" : "var(--n-400)",
+                }}
+              />
               <span className="text-n-800">{u.label}</span>
               <span className="label text-n-600">
                 <span className="num text-2 normal-case">{u.pinnedTools}</span> pinned
               </span>
-            </span>
+            </Link>
           ))}
           {upstreams.data && <span className="label text-n-400">{upstreams.data.householdId}</span>}
         </div>

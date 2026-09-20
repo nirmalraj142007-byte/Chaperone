@@ -1,7 +1,9 @@
 /**
- * Three routes do not need a router library. `usePath` reads
- * `location.pathname` through `useSyncExternalStore`; `Link` pushes history
- * and notifies. Vite's dev server already falls back to index.html.
+ * Six routes do not need a router library. `usePath` reads
+ * `location.pathname` through `useSyncExternalStore`, `useSearch` reads
+ * `location.search` (the `?state=` overrides and the queue filter), and
+ * `Link` pushes history and notifies. Vite's dev server already falls back
+ * to index.html.
  */
 import { useSyncExternalStore, type AnchorHTMLAttributes, type MouseEvent } from "react";
 
@@ -23,14 +25,26 @@ export function navigate(to: string): void {
   }
 }
 
+function subscribe(l: () => void): () => void {
+  listeners.add(l);
+  return () => {
+    listeners.delete(l);
+  };
+}
+
 export function usePath(): string {
-  return useSyncExternalStore(
-    (l) => {
-      listeners.add(l);
-      return () => listeners.delete(l);
-    },
-    () => window.location.pathname,
-  );
+  return useSyncExternalStore(subscribe, () => window.location.pathname);
+}
+
+/** `location.search`, including the `?state=` override. Notified by `navigate` and `replaceQuery`. */
+export function useSearch(): string {
+  return useSyncExternalStore(subscribe, () => window.location.search);
+}
+
+/** Rewrites the query string without a history entry (the queue's filter chips), then notifies subscribers. */
+export function replaceQuery(url: string): void {
+  window.history.replaceState(null, "", url);
+  notify();
 }
 
 export function Link({ href, onClick, ...rest }: AnchorHTMLAttributes<HTMLAnchorElement> & { href: string }) {

@@ -74,7 +74,7 @@ export function buildApp(
 
   // Read-only JSON for packages/console. The console's approve control does
   // not live here — it calls `chaperone/approve_change` over /mcp below.
-  app.use("/api", buildApiRouter(householdId, upstreams));
+  app.use("/api", buildApiRouter(householdId, upstreams, pool));
 
   app.post("/mcp", (req: Request, res: Response, next: NextFunction) => {
     void (async () => {

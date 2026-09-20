@@ -20,7 +20,7 @@
  */
 import { Router, type Request, type Response } from "express";
 import * as ledger from "@chaperone/ledger";
-import type { UpstreamConfig } from "@chaperone/upstream";
+import type { UpstreamConfig, UpstreamStatus } from "@chaperone/upstream";
 import { childLogger } from "@chaperone/logger";
 import { APPROVAL_TOKEN_TTL_MS } from "./approve.js";
 import { peekRevealedToken } from "./gate.js";
@@ -178,7 +178,27 @@ function storageUnavailable(res: Response, error: unknown, what: string): void {
   res.status(503).json({ error: "storage_unavailable", message: `Could not read ${what} from storage.` });
 }
 
-export function buildApiRouter(householdId: string, upstreams: readonly UpstreamConfig[]): Router {
+/**
+ * `describe()` off the live pool, so /api/upstreams can report a real
+ * connection state instead of the console guessing one. Optional: the
+ * router is also built in tests with no pool, and a router without one
+ * reports `state: "unknown"` rather than inventing "ready".
+ */
+export type PoolStatusSource = Pick<import("@chaperone/upstream").UpstreamPool, "describe">;
+
+export interface UpstreamRow {
+  id: string;
+  label: string;
+  pinnedTools: number;
+  pendingReview: number;
+  /** "unknown" when no pool was wired in — never defaulted to a healthy value. */
+  state: UpstreamStatus["state"] | "unknown";
+  connectedAt: string | null;
+  sessionOpen: boolean;
+  consecutiveFailures: number;
+}
+
+export function buildApiRouter(householdId: string, upstreams: readonly UpstreamConfig[], pool?: PoolStatusSource): Router {
   const router = Router();
 
   router.get("/quarantine", (req: Request, res: Response) => {
@@ -290,14 +310,22 @@ export function buildApiRouter(householdId: string, upstreams: readonly Upstream
           listHouseholdQuarantines(householdId),
         ]);
         const now = Date.now();
+        const status = new Map((pool?.describe() ?? []).map((s) => [s.id, s]));
         res.json({
           householdId,
-          upstreams: upstreams.map((u) => ({
-            id: u.id,
-            label: u.label,
-            pinnedTools: pins.filter((p) => p.upstreamId === u.id).length,
-            pendingReview: quarantines.filter((q) => q.upstreamId === u.id && reviewStateOf(q, now) === "pending").length,
-          })),
+          upstreams: upstreams.map((u): UpstreamRow => {
+            const s = status.get(u.id);
+            return {
+              id: u.id,
+              label: u.label,
+              pinnedTools: pins.filter((p) => p.upstreamId === u.id).length,
+              pendingReview: quarantines.filter((q) => q.upstreamId === u.id && reviewStateOf(q, now) === "pending").length,
+              state: s?.state ?? "unknown",
+              connectedAt: s?.connectedAt ?? null,
+              sessionOpen: s?.sessionOpen ?? false,
+              consecutiveFailures: s?.consecutiveFailures ?? 0,
+            };
+          }),
         });
       } catch (error) {
         storageUnavailable(res, error, "the upstream list");

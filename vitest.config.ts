@@ -28,6 +28,8 @@ export default defineConfig({
     // stack first — which is exactly what happened from Phase 9 onward
     // (ci.yml ran `pnpm test`, which included them, without ever starting
     // the stack; see spec/stack.vitest.config.ts and `pnpm test:stack`).
-    include: ["packages/*/test/**/*.test.ts"],
+    // .tsx as well as .ts: packages/console's state snapshots render real
+    // components, so its suite is TSX. Phase 15.
+    include: ["packages/*/test/**/*.test.{ts,tsx}"],
   },
 });

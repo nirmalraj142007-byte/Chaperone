@@ -1,0 +1,30 @@
+{
+  "$comment": "Emitted by `pnpm analyse:drift` after crawl 2. Committed in PENDING form before crawl 2 runs, because the shape itself is pre-registered: the fields below are the ones the analysis is allowed to fill, and a field that is not here cannot be added later without an additive appendix commit. See corpus/PREDICTIONS.md and CRAWL_DATES.md.",
+  "status": "pending",
+  "interval": 35,
+  "intervalBasis": "pre-registered from CRAWL_DATES.md (2026-09-15 -> 2026-10-20). Overwritten with the measured day count between crawl1StartedAt and crawl2StartedAt when status becomes \"complete\".",
+  "n": null,
+  "nBasis": "servers captured in BOTH crawls. null until crawl 2 runs; never inferred from crawl 1 alone.",
+  "crawl1StartedAt": "2026-09-15T06:19:42.282Z",
+  "crawl2StartedAt": null,
+  "crawl1ScheduledFor": "2026-09-15",
+  "crawl2ScheduledFor": "2026-10-20",
+  "scheduledForBasis": "copied from CRAWL_DATES.md, which is the authority. Present here so the console reads one machine-readable file instead of parsing markdown; `pnpm analyse:drift` re-asserts them against CRAWL_DATES.md.",
+  "taxonomyBlobSha": "0c896539006dbb6f8dfacc1f02ebbf179c50eec2",
+  "prediction": {
+    "source": "corpus/PREDICTIONS.md",
+    "registeredOn": "2026-09-12",
+    "metric": "semantic-intent drift, share of servers captured in both crawls with >= 1 semantic-intent change",
+    "lowPct": 20,
+    "highPct": 40
+  },
+  "semanticIntent": null,
+  "byCapability": null,
+  "countedSeparately": {
+    "$comment": "CLAUDE.md non-negotiable 9: cosmetic and schema-additive changes are counted and published separately and NEVER enter a headline number.",
+    "cosmetic": null,
+    "schemaAdditive": null,
+    "toolAdded": null,
+    "toolRemoved": null
+  }
+}

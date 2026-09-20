@@ -7,8 +7,11 @@
 import { Fragment, useState } from "react";
 import { useLedger } from "../api";
 import { Chain, ChainStamp, useChainView } from "../components/Chain";
-import { ErrorBox, SkeletonRows } from "../components/marks";
+import { EmptyState, ErrorBox, SkeletonRows } from "../components/marks";
 import { formatDate, formatTime, short } from "../lib";
+import { applyOverride, viewOf } from "../state";
+import { useOverride } from "../screenState";
+import { LEDGER_EMPTY, LEDGER_PARTIAL } from "../fixtures";
 import type { LedgerEvent, VerifyResponse } from "../types";
 
 const TYPES = ["all", "PIN_CREATED", "MISMATCH_DETECTED", "TOOL_QUARANTINED", "CONSENT_SHOWN", "APPROVED", "REFUSED", "REPIN"];
@@ -36,6 +39,7 @@ function EventRow({ e, verify }: { e: LedgerEvent; verify: VerifyResponse | unde
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
+        style={{ minHeight: "var(--row-ledger)" }}
         className={`micro grid w-full grid-cols-[3rem_minmax(0,1fr)_auto] items-baseline gap-x-3 gap-y-1 px-4 py-2 text-left hover:bg-accent-wash active:bg-n-100 ${COLS}`}
       >
         <span className={`num text-3 ${state === "broken" ? "text-blocked" : "text-accent"}`}>#{e.index}</span>
@@ -75,8 +79,10 @@ function EventRow({ e, verify }: { e: LedgerEvent; verify: VerifyResponse | unde
 
 export function Ledger() {
   const [type, setType] = useState("all");
+  const override = useOverride();
   const view = useChainView();
   const list = useLedger(type);
+  const listView = applyOverride(viewOf(list), override, { empty: LEDGER_EMPTY, partial: LEDGER_PARTIAL, what: "the ledger" });
   const verify = view.verifyError ? undefined : view.verify;
 
   const broken = verify !== undefined && !verify.ok;
@@ -131,10 +137,10 @@ export function Ledger() {
             ))}
           </select>
         </label>
-        {list.data && (
+        {listView.status === "ready" && (
           <span className="label text-n-600">
-            <span className="num text-3 normal-case tracking-normal text-n-900">{list.data.events.length}</span> of{" "}
-            <span className="num text-3 normal-case tracking-normal text-n-900">{list.data.total}</span> events
+            <span className="num text-3 normal-case tracking-normal text-n-900">{listView.data.events.length}</span> of{" "}
+            <span className="num text-3 normal-case tracking-normal text-n-900">{listView.data.total}</span> events
           </span>
         )}
       </div>
@@ -146,15 +152,28 @@ export function Ledger() {
           </span>
         ))}
       </div>
-      {list.isPending ? (
-        <SkeletonRows rows={5} label="Reading ledger partition…" />
-      ) : list.isError ? (
-        <ErrorBox error={list.error} what="the ledger" />
-      ) : list.data.events.length === 0 ? (
-        <div className="box border-dashed p-6 text-n-600">No events{type === "all" ? " yet" : ` of type ${type}`}.</div>
+      {listView.status === "loading" ? (
+        <SkeletonRows rows={5} label="Reading ledger partition…" height="var(--row-ledger)" />
+      ) : listView.status === "error" ? (
+        <ErrorBox error={listView.error} what="the ledger" onRetry={() => void list.refetch()} />
+      ) : listView.data.events.length === 0 ? (
+        <EmptyState label={type === "all" ? "No events yet" : `No ${type} events`} height="var(--row-ledger)">
+          {type === "all" ? (
+            <p>
+              Nothing has been written to the chain. The first event is a <span className="hash text-n-900">PIN_CREATED</span>{" "}
+              per tool, written when the household first approves what each tool claims —{" "}
+              <span className="hash text-n-900">pnpm pin:bootstrap</span> does that for a fresh household.
+            </p>
+          ) : (
+            <p>
+              No events of this type. The chain itself is unaffected: the filter narrows what is listed, not what is
+              verified — the stamp above is over every event.
+            </p>
+          )}
+        </EmptyState>
       ) : (
         <ol className="grid gap-1" aria-label="Ledger events, oldest first">
-          {list.data.events.map((e) => (
+          {listView.data.events.map((e) => (
             <Fragment key={e.sk}>
               <EventRow e={e} verify={verify} />
             </Fragment>

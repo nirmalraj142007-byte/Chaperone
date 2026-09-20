@@ -237,7 +237,53 @@ describe("/api routes", () => {
       { upstreamId: "grocery" },
     ] as never);
     const body = (await (await fetch(`${base}/upstreams`)).json()) as { upstreams: unknown[] };
-    expect(body.upstreams).toEqual([{ id: "grocery", label: "Household Grocery", pinnedTools: 2, pendingReview: 2 }]);
+    // No pool was wired into this router, so connection state is reported
+    // as "unknown" rather than defaulted to a healthy value.
+    expect(body.upstreams).toEqual([
+      {
+        id: "grocery",
+        label: "Household Grocery",
+        pinnedTools: 2,
+        pendingReview: 2,
+        state: "unknown",
+        connectedAt: null,
+        sessionOpen: false,
+        consecutiveFailures: 0,
+      },
+    ]);
+  });
+
+  it("GET /upstreams reports the pool's own connection state when one is wired in", async () => {
+    vi.mocked(ledger.listPinsForHousehold).mockResolvedValue([{ upstreamId: "grocery" }] as never);
+    const withPool = express();
+    withPool.use(
+      "/api",
+      buildApiRouter(HOUSEHOLD, [{ id: "grocery", url: "http://x/mcp", label: "Household Grocery" }], {
+        describe: () => [
+          {
+            id: "grocery",
+            label: "Household Grocery",
+            state: "failed" as const,
+            connectedAt: "2026-09-20T09:00:00.000Z",
+            sessionOpen: false,
+            consecutiveFailures: 3,
+          },
+        ],
+      }),
+    );
+    const poolServer = withPool.listen(0, "127.0.0.1");
+    await new Promise((resolve) => poolServer.once("listening", resolve));
+    const poolBase = `http://127.0.0.1:${(poolServer.address() as AddressInfo).port}/api`;
+    try {
+      const body = (await (await fetch(`${poolBase}/upstreams`)).json()) as {
+        upstreams: Array<{ state: string; connectedAt: string | null; consecutiveFailures: number }>;
+      };
+      expect(body.upstreams[0]).toEqual(
+        expect.objectContaining({ state: "failed", connectedAt: "2026-09-20T09:00:00.000Z", consecutiveFailures: 3 }),
+      );
+    } finally {
+      await new Promise((resolve) => poolServer.close(resolve));
+    }
   });
 
   it("anything else under /api is a JSON 404", async () => {

@@ -51,6 +51,8 @@
   --text-3-lh: 1.6rem;
   --text-4: 1.375rem; /* 22 — screen titles, tool names */
   --text-4-lh: 1.75rem;
+  --text-finding: 1.75rem; /* 28 — the finding sentence: prose carrying a number, set in the serif. Phase 15. */
+  --text-finding-lh: 2.3rem;
   --text-5: 2.5rem; /* 40 — serif numerals only */
   --text-5-lh: 1;
 
@@ -70,10 +72,43 @@
   --space-8: 32px;
   --space-12: 48px;
 
+  /*
+   * ── row heights, shared by a real row and its skeleton ──
+   * The skeleton for a list is the same height as the rows it is standing
+   * in for, so nothing moves when the data lands. These are tokens rather
+   * than two matching literals precisely so they cannot drift apart;
+   * test/states.test.tsx asserts the loading and ready markup use the
+   * same variable.
+   *
+   * The values are the rows' own measured heights, taken in a browser (see
+   * docs/UI-STATES.md, "Layout shift"). They are applied as `min-height` on
+   * the row, so a row whose natural height is under its token is raised to
+   * it and matches the skeleton exactly. Two of these were wrong on first
+   * write — ledger rows measured 55px against a 44px token, upstream cards
+   * 192px against 108px — and the structural test did not catch it,
+   * because both states did reference the token. Only measuring did.
+   */
+  --row-queue: 72px;
+  --row-ledger: 56px;
+  --row-upstream: 192px;
+  --row-detail: 132px;
+
   /* ── rules and shape: printed forms are square and ruled in ink, not hairline grey ── */
   --rule: 1.5px;
   --rule-heavy: 3px;
   --radius: 2px;
+
+  /*
+   * ── the prediction band (Phase 15 signature, /corpus) ──
+   * corpus/PREDICTIONS.md was committed 2026-09-12, before crawl 1. The
+   * band it declares is drawn on the track in every state of /corpus,
+   * including the 35 days when there is nothing measured to put on it —
+   * that is what makes the partial state read as awaiting rather than
+   * broken. Both values are mixes of --warn; no new hue enters the palette.
+   */
+  --band: color-mix(in oklab, var(--warn) 34%, var(--n-0));
+  --band-edge: color-mix(in oklab, var(--warn) 60%, var(--n-600));
+  --track-h: 22px; /* the 0–100% rule's height. Sized to read on a projector, not to fit a sidebar. */
 
   /* ── the chain (signature): link geometry at two sizes ── */
   --link-sm: 8px;
@@ -89,4 +124,7 @@
   --dur-ink-total: 700ms; /* the stagger across the whole chain, however long it is */
   --dur-ink-link: 240ms; /* each link's own fill, overlapping its neighbours so the run reads as one wave */
   --dur-stamp: 260ms;
+  --dur-band: 300ms; /* the band wipes in first */
+  --dur-bar: 360ms; /* each stratum bar extends */
+  --dur-bar-step: 90ms; /* ...staggered, same grammar as the chain's ink */
 }

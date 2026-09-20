@@ -32,6 +32,8 @@
   --color-warn-ink: var(--warn-ink);
   --color-blocked: var(--blocked);
   --color-blocked-wash: var(--blocked-wash);
+  --color-band: var(--band);
+  --color-band-edge: var(--band-edge);
   --color-transparent: transparent;
 
   --font-ui: var(--font-ui);
@@ -46,6 +48,8 @@
   --text-3--line-height: var(--text-3-lh);
   --text-4: var(--text-4);
   --text-4--line-height: var(--text-4-lh);
+  --text-finding: var(--text-finding);
+  --text-finding--line-height: var(--text-finding-lh);
   --text-5: var(--text-5);
   --text-5--line-height: var(--text-5-lh);
 
@@ -240,9 +244,140 @@ del.remove {
   background: var(--blocked-wash);
 }
 
+
+/* ──────────────────── the prediction track (Phase 15 signature) ────────────────────
+ *
+ * A 0–100% rule carrying the band that corpus/PREDICTIONS.md put on the
+ * record on 2026-09-12, before any data existed. It is fully legible with
+ * zero measurements — which is the entire reason it exists, because that
+ * is the state /corpus holds from 2026-09-15 until 2026-10-20. On crawl 2
+ * the four measured rates land on it as marks, green inside the band and
+ * crimson outside.
+ */
+
+.track {
+  position: relative;
+  height: var(--track-h);
+  border: var(--rule) solid var(--accent);
+  background: var(--n-0);
+  border-radius: var(--radius);
+}
+/*
+ * The decile ticks: a form's ruled scale. `::before`, not `::after`, so
+ * they paint *under* the band — a pseudo-element after the content paints
+ * over it, which left the band almost invisible.
+ */
+.track::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--n-200) 0 var(--rule),
+    transparent var(--rule) 10%
+  );
+  pointer-events: none;
+}
+.track-band {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--from);
+  width: calc(var(--to) - var(--from));
+  background: var(--band);
+  border-left: var(--rule) dashed var(--band-edge);
+  border-right: var(--rule) dashed var(--band-edge);
+  transform-origin: left center;
+  animation: band-wipe var(--dur-band) var(--ease-ink) both;
+}
+@keyframes band-wipe {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+/* the pending marker: where the measurement will land, drawn as a dashed plumb line */
+.track-pending {
+  position: absolute;
+  top: calc(-1 * var(--space-2));
+  bottom: calc(-1 * var(--space-2));
+  left: var(--at);
+  width: 0;
+  border-left: var(--rule) dashed var(--n-400);
+}
+/* a landed measurement: a solid plumb line with a square head */
+.track-mark {
+  position: absolute;
+  top: calc(-1 * var(--space-2));
+  bottom: calc(-1 * var(--space-2));
+  left: var(--at);
+  width: 0;
+  border-left: var(--rule-heavy) solid var(--tone);
+  animation: drop var(--dur-bar) var(--ease-ink) both;
+  animation-delay: calc(var(--dur-band) + var(--i) * var(--dur-bar-step));
+}
+.track-mark::before {
+  content: "";
+  position: absolute;
+  top: calc(-1 * var(--space-2));
+  left: calc(-1 * var(--space-1) - var(--rule));
+  width: var(--space-2);
+  height: var(--space-2);
+  background: var(--tone);
+}
+@keyframes drop {
+  from {
+    opacity: 0;
+    transform: translateY(calc(-1 * var(--space-4)));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ──────────────────── the capability strata bars ────────────────────
+ *
+ * These are SVG rects inside the Recharts chart, not divs. The stagger is
+ * the same grammar as the ledger chain's ink: index-delayed, one shared
+ * easing, one wave. `transform-box: fill-box` is what makes
+ * `transform-origin: left` mean the bar's own left edge rather than the
+ * SVG root's.
+ *
+ * The hatch for a low-confidence class is an SVG pattern (see Strata.tsx)
+ * rather than a CSS background, because `background` does not paint an
+ * SVG shape — only `fill` does.
+ */
+
+.stratum {
+  transform-box: fill-box;
+  transform-origin: left center;
+  animation: extend var(--dur-bar) var(--ease-ink) both;
+  animation-delay: calc(var(--dur-band) + var(--i) * var(--dur-bar-step));
+}
+@keyframes extend {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* A ruled signature block: where a form records who filed it and when. */
+.filed {
+  border-top: var(--rule-heavy) solid var(--accent);
+  background: var(--n-0);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .chain-link,
-  .stamp {
+  .stamp,
+  .track-band,
+  .track-mark,
+  .stratum {
     animation: none !important;
   }
   .micro {

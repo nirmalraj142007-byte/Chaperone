@@ -13,6 +13,8 @@ import type { CSSProperties } from "react";
 import { ApiError, useLedger, useVerify } from "../api";
 import { linkStates } from "../lib";
 import { Link } from "../router";
+import { useOverride } from "../screenState";
+import { overrideError } from "../state";
 import type { VerifyResponse } from "../types";
 
 const INK_TOTAL_MS = 700;
@@ -42,8 +44,25 @@ export interface ChainView {
 export function useChainView(): ChainView {
   const ledger = useLedger("all");
   const verify = useVerify();
+  const override = useOverride();
   const err = verify.error instanceof ApiError ? verify.error : verify.error ? new ApiError(0, String(verify.error)) : null;
-  return { total: ledger.data?.total, verify: verify.data, verifyError: err };
+
+  switch (override) {
+    case "loading":
+      // `total: undefined` is the chain's own dashed empty frame, not a spinner.
+      return { total: undefined, verify: undefined, verifyError: null };
+    case "empty":
+      return { total: 0, verify: { ok: true, count: 0 }, verifyError: null };
+    case "error":
+      // Fail closed in the UI: a verifier that could not run has verified nothing.
+      return { total: 2, verify: undefined, verifyError: overrideError("the ledger chain") };
+    case "partial":
+      // Events exist and are listed, but the verifier has not answered yet,
+      // so no link is inked and the stamp still reads "verifying".
+      return { total: 2, verify: undefined, verifyError: null };
+    default:
+      return { total: ledger.data?.total, verify: verify.data, verifyError: err };
+  }
 }
 
 export function Chain({ size, view }: { size: "sm" | "lg"; view: ChainView }) {

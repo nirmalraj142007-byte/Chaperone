@@ -1833,3 +1833,50 @@ aborts it on `terminateSession()`/`close()`. Better still, pass a
 distinguishable abort `reason` (for example `"session terminated"`) so a
 custom `fetch` can separate an intentional close from a failure without
 guessing from the error name.
+
+## Entry 033 — 2026-09-20
+
+**Task attempted:** Keep the console's rehearsal control — the button that
+fires demo-upstream's scripted `add_item` mutation — out of any build that
+does not set `VITE_DEMO_CONTROLS=true`, in Vite 6.4.3
+(`packages/console/src/screens/Upstreams.tsx`).
+
+**Steps taken:** Gated the component on
+`import.meta.env["VITE_DEMO_CONTROLS"] === "true"`, using bracket notation
+because the rest of this repo reads env that way under
+`noUncheckedIndexedAccess`. Built without the variable and grepped the
+emitted bundle for a string only that component renders.
+
+**Expected versus actual:** Expected the branch to fold to `false` and the
+component to be dropped. Actually the string was in the default bundle.
+Vite's define-style replacement only matches the **dotted** member
+expression `import.meta.env.VITE_DEMO_CONTROLS`; with bracket notation the
+expression survives as a runtime property lookup on the env object, the
+branch is never constant-folded, and Rollup cannot treeshake the component.
+There is no warning, no build error and no type error — the two spellings
+are interchangeable to TypeScript and produce identical behaviour at run
+time in dev, so `pnpm dev` and the test suite both pass either way. The env
+docs show only the dotted form and do not say the distinction is load
+bearing.
+
+**Severity:** major. Not because a button leaked — it is one demo control —
+but because the failure is silent in exactly the situation where silence is
+worst. The idiom is the standard one for compiling something out of a
+production build, which is how people gate admin panels, debug surfaces and
+internal tooling. A developer who writes the bracket form gets a build that
+behaves correctly in every test they run and ships the code anyway, and
+nothing anywhere tells them.
+
+**Workaround:** Use dot access, and verify by grepping the built bundle for
+a string only the gated component emits, rather than trusting that the
+branch folded. That grep is now part of this phase's acceptance run.
+
+**Actionable suggestion:** Make `import.meta.env["FOO"]` either work or
+warn. Warning is enough and is cheap: when Vite sees a bracket access on
+`import.meta.env` with a **static string literal** key that matches a
+defined variable, emit a build warning saying the value will not be
+statically replaced and naming the dotted form. Failing that, say it
+explicitly in the "Env Variables and Modes" docs next to the production
+example — the page currently demonstrates the dotted form without ever
+stating that it is the only form that is replaced, so a reader has no way
+to learn this except by disassembling their own bundle.

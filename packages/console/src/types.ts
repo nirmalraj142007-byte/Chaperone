@@ -80,7 +80,22 @@ export type VerifyResponse =
   | { ok: true; count: number }
   | { ok: false; index: number; brokenSk: string; reason: "hash" | "link" | "unhashed"; expected: string; actual: string };
 
+/** "unknown" is what the gateway reports when no pool was wired in. It is never treated as healthy. */
+export type UpstreamState = "connecting" | "ready" | "failed" | "unknown";
+
+export interface UpstreamRow {
+  id: string;
+  label: string;
+  pinnedTools: number;
+  pendingReview: number;
+  state: UpstreamState;
+  /** Last completed MCP handshake, or null if this gateway process has never connected. */
+  connectedAt: string | null;
+  sessionOpen: boolean;
+  consecutiveFailures: number;
+}
+
 export interface UpstreamsResponse {
   householdId: string;
-  upstreams: Array<{ id: string; label: string; pinnedTools: number; pendingReview: number }>;
+  upstreams: UpstreamRow[];
 }

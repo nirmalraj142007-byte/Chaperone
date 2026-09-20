@@ -6,4 +6,5 @@ export type {
   UpstreamConnectionState,
   UpstreamHandle,
   UpstreamPool,
+  UpstreamStatus,
 } from "./types.js";
