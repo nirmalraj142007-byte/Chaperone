@@ -1,0 +1,23 @@
+# Chaperone's gitleaks config. Extends gitleaks' own default ruleset rather
+# than replacing it — the default rules cover AWS keys, generic
+# high-entropy secrets, common vendor token formats, etc., and this repo has
+# no reason to narrow that.
+#
+# The one thing worth a project-specific carve-out: data/raw/crawl-1/**
+# and packages/crawler/.cache/** hold README text and package metadata
+# *crawled from third-party MCP servers* (packages/crawler, CLAUDE.md's
+# "external APIs are real calls, never mocked"). That content legitimately
+# contains the words "token", "key", "secret" — sometimes even a
+# placeholder or a deliberately-fake example credential in someone else's
+# README — as prose or documentation, not as a Chaperone secret. It is
+# evidence (crawl-1-report.json et al. are committed, timestamped, and
+# frozen per CLAUDE.md's calendar gates) and is never executed, so a
+# high-entropy string inside it is not a live credential of this project's.
+[extend]
+useDefault = true
+
+[allowlist]
+paths = [
+  '''data/raw/crawl-1/.*''',
+  '''packages/crawler/\.cache/.*''',
+]

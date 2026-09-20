@@ -2,6 +2,7 @@
   "name": "chaperone",
   "private": true,
   "version": "0.0.0",
+  "license": "MIT",
   "type": "module",
   "engines": {
     "node": ">=24 <25"
@@ -20,6 +21,7 @@
     "lint": "eslint .",
     "depcruise": "dependency-cruiser packages",
     "check-claims": "tsx scripts/check-claims.ts",
+    "check-audit": "tsx scripts/check-audit-exceptions.ts",
     "typecheck": "tsc -b && tsc --noEmit -p packages/ledger/scripts && tsc --noEmit -p packages/crawler/scripts && tsc --noEmit -p packages/gateway/scripts && tsc --noEmit -p packages/advisory/scripts && tsc --noEmit -p packages/eval/scripts && tsc --noEmit -p packages/bench/scripts && tsc --noEmit -p spec && tsc --noEmit -p scripts && tsc --noEmit -p packages/console",
     "ddb:migrate": "tsx packages/ledger/scripts/migrate.ts",
     "ddb:seed": "tsx packages/ledger/scripts/seed.ts",
