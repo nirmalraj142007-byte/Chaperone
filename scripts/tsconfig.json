@@ -5,5 +5,14 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["resume-demo.ts", "check-claims.ts"]
+  "include": [
+    "resume-demo.ts",
+    "check-claims.ts",
+    "demo-reset.ts",
+    "demo-verify.ts",
+    "demo-idempotence.ts",
+    "demo-call.ts",
+    "demo/**/*.ts",
+    "test/**/*.ts"
+  ]
 }

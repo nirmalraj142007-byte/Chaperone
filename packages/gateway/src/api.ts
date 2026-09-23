@@ -25,6 +25,7 @@ import { childLogger } from "@chaperone/logger";
 import { APPROVAL_TOKEN_TTL_MS } from "./approve.js";
 import { peekRevealedToken } from "./gate.js";
 import { upstreamLabelFor } from "./consentCard.js";
+import { advisoryFor } from "./advisoryLookup.js";
 
 const log = childLogger({ component: "gateway-api" });
 
@@ -159,11 +160,11 @@ export function pinnedVersionFor(
 }
 
 /** An advisory read failure degrades to "unscored" — which sorts first, i.e. toward more attention, not less. */
-async function advisoryOrNull(quarantineId: string): Promise<ledger.Advisory | null> {
+async function advisoryOrNull(quarantine: { quarantineId: string; toHash: string }): Promise<ledger.Advisory | null> {
   try {
-    return (await ledger.getAdvisory(quarantineId)) ?? null;
+    return (await advisoryFor(quarantine)) ?? null;
   } catch (error) {
-    log.warn({ error, quarantineId }, "advisory read failed; treating as unscored");
+    log.warn({ error, quarantineId: quarantine.quarantineId }, "advisory read failed; treating as unscored");
     return null;
   }
 }
@@ -213,7 +214,7 @@ export function buildApiRouter(householdId: string, upstreams: readonly Upstream
         const quarantines = await listHouseholdQuarantines(householdId);
         const rows = await Promise.all(
           quarantines.map(async (q): Promise<QueueRow> => {
-            const advisory = await advisoryOrNull(q.quarantineId);
+            const advisory = await advisoryOrNull(q);
             return {
               quarantineId: q.quarantineId,
               toolName: q.toolName,
@@ -247,7 +248,7 @@ export function buildApiRouter(householdId: string, upstreams: readonly Upstream
         const [events, pin, advisory] = await Promise.all([
           ledger.listEvents(householdId).then(toApiEvents),
           ledger.getPin(householdId, q.upstreamId, q.toolName),
-          advisoryOrNull(q.quarantineId),
+          advisoryOrNull(q),
         ]);
         res.json({
           quarantineId: q.quarantineId,

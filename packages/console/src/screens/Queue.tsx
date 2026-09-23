@@ -6,7 +6,7 @@
  */
 import { useState } from "react";
 import { useQueue, type QueueFilter } from "../api";
-import { ago, formatDate, formatTime } from "../lib";
+import { ago, formatDate, formatTime, isFixtureModelId } from "../lib";
 import { Link, replaceQuery, useSearch } from "../router";
 import { applyOverride, viewOf, withOverride } from "../state";
 import { useOverride } from "../screenState";
@@ -35,10 +35,19 @@ function Advisory({ row }: { row: QueueRow }) {
       </span>
     );
   }
+  const fixture = isFixtureModelId(row.advisory.modelId);
   return (
-    <span className="flex items-baseline gap-1" title={`Model-generated advisory score from ${row.advisory.modelId}. Not the decision.`}>
+    <span
+      className="flex items-baseline gap-1"
+      title={
+        fixture
+          ? "Fixture: a hand-written score for the offline demo, not model output. Not the decision."
+          : `Model-generated advisory score from ${row.advisory.modelId}. Not the decision.`
+      }
+    >
       <span className="num text-4 text-n-900">{Math.round(row.advisory.score)}</span>
       <span className="text-1 text-n-400">/100</span>
+      {fixture && <span className="label text-n-600">fixture</span>}
     </span>
   );
 }

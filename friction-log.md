@@ -2148,3 +2148,46 @@ whether this AWS account sits under an AWS Organization with a Service
 Control Policy scoping `bedrock:*` — `ValidationException` rather than
 `AccessDeniedException` is an unusual shape for an SCP denial but not
 impossible depending on how Bedrock's own API maps that case.
+
+
+## Entry 039 — 2026-09-23
+
+**Task attempted:** Show that the offline demo's containers cannot reach the
+internet ("block outbound in docker"), on Docker Desktop for Windows, without
+touching host firewall or adapter settings.
+
+**Steps taken:** First tried the obvious single-network answer: an overlay
+that recreates the compose default network with
+`com.docker.network.bridge.enable_ip_masquerade: "false"`, which on plain
+Linux Docker leaves containers reachable through published ports but strips
+their outbound NAT. Recreated the stack on it and, from inside the gateway and
+demo-upstream containers, fetched `https://example.com`, `https://1.1.1.1`
+and `https://registry.npmjs.org`. Then tried the second-most-obvious answer,
+an `internal: true` network, and worked around its one side effect (published
+ports do not cross an internal network) with a socat forwarder container
+(`edge`) attached to both the internal network and an ordinary one.
+
+**Expected versus actual:** Expected the masquerade option to make every
+public fetch fail. Actual: all three succeeded (HTTP 200); the option is
+accepted without complaint and does nothing observable on this Docker Desktop
+setup. The `internal: true` network did what it says: the same fetches fail
+with `ENETUNREACH` (by address) and `EAI_AGAIN` (by name) from both app
+containers, while in-stack names and the host's published ports keep working
+through `edge`.
+
+**Severity:** minor. One wrong turn, caught only because the overlay was
+tested from inside a container rather than trusted on the strength of its
+own comment.
+
+**Workaround:** `docker/compose.offline.yml`: app containers on an
+`internal: true` network, plus one `edge` socat container that carries ports
+3000, 4000 and 8000 to the host. `edge` is the only container with a route
+out, and it is only told to connect to the three in-stack targets.
+
+**Actionable suggestion:** Docker's documentation for
+`com.docker.network.bridge.enable_ip_masquerade` should say it is a
+Linux-bridge option that Docker Desktop's VM networking may not honour, and
+`docker network inspect` shows the option as set either way, so nothing
+signals that it is inert. A supported "no egress, but publish ports" switch
+(the thing people actually want for demos and hermetic tests) would remove
+the need for a forwarder container.

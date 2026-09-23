@@ -6,10 +6,12 @@ vi.mock("@chaperone/ledger", () => ({
   getPin: vi.fn(),
   listQuarantineByStatus: vi.fn(),
   getAdvisory: vi.fn(),
+  getFixtureAdvisory: vi.fn(),
+  isFixtureAdvisory: (a: { modelId: string }) => a.modelId.startsWith("fixture:"),
 }));
 
 const ledger = await import("@chaperone/ledger");
-const { loadConsentCardModel } = await import("../src/consentCard.js");
+const { loadConsentCardModel, formatApprovedOn } = await import("../src/consentCard.js");
 
 const HOUSEHOLD_ID = "household-test";
 const UPSTREAMS: UpstreamConfig[] = [{ id: "grocery", url: "http://127.0.0.1/mcp", label: "Household Grocery" }];
@@ -36,6 +38,7 @@ function quarantine(overrides: Record<string, unknown> = {}) {
 beforeEach(() => {
   vi.mocked(ledger.listQuarantineByStatus).mockResolvedValue([]);
   vi.mocked(ledger.getAdvisory).mockResolvedValue(undefined);
+  vi.mocked(ledger.getFixtureAdvisory).mockResolvedValue(undefined);
   vi.mocked(ledger.getPin).mockResolvedValue(undefined);
 });
 
@@ -182,5 +185,84 @@ describe("loadConsentCardModel — state selection", () => {
     vi.mocked(ledger.listQuarantineByStatus).mockResolvedValue([q1, q2] as never);
     const model = await loadConsentCardModel(HOUSEHOLD_ID, UPSTREAMS, "q1");
     expect(model?.state).not.toBe("batch");
+  });
+});
+
+describe("loadConsentCardModel — fixture advisories and the approval date", () => {
+  const FIXTURE_ROW = {
+    quarantineId: "fixture-for-hash",
+    score: 71,
+    summary: "Hand-written fixture line.",
+    modelId: "fixture:hand-written-not-model-output",
+    generatedAt: "2026-01-12T00:00:00.000Z",
+    promptSha: "fixture",
+  };
+
+  it("falls back to the fixture keyed by the definition's hash, and marks the item as a fixture", async () => {
+    const q = quarantine();
+    vi.mocked(ledger.getQuarantine).mockResolvedValue(q as never);
+    vi.mocked(ledger.listQuarantineByStatus).mockResolvedValue([q] as never);
+    vi.mocked(ledger.getFixtureAdvisory).mockResolvedValue(FIXTURE_ROW);
+    const model = await loadConsentCardModel(HOUSEHOLD_ID, UPSTREAMS, "q1", { approvalToken: "tok" });
+    expect(ledger.getFixtureAdvisory).toHaveBeenCalledWith(q.toHash);
+    expect(model?.state).toBe("pending");
+    if (model?.state === "pending") {
+      expect(model.item.advisorySummary).toBe("Hand-written fixture line.");
+      expect(model.item.advisorySource).toBe("fixture");
+    }
+  });
+
+  it("a real advisory wins over a fixture, and is not marked as a fixture", async () => {
+    const q = quarantine();
+    vi.mocked(ledger.getQuarantine).mockResolvedValue(q as never);
+    vi.mocked(ledger.listQuarantineByStatus).mockResolvedValue([q] as never);
+    vi.mocked(ledger.getAdvisory).mockResolvedValue({ ...FIXTURE_ROW, modelId: "us.amazon.nova-lite-v1:0", summary: "Model line." });
+    vi.mocked(ledger.getFixtureAdvisory).mockResolvedValue(FIXTURE_ROW);
+    const model = await loadConsentCardModel(HOUSEHOLD_ID, UPSTREAMS, "q1", { approvalToken: "tok" });
+    expect(ledger.getFixtureAdvisory).not.toHaveBeenCalled();
+    if (model?.state === "pending") {
+      expect(model.item.advisorySummary).toBe("Model line.");
+      expect(model.item.advisorySource).toBeUndefined();
+    }
+  });
+
+  it("carries the date the still-pinned version was approved", async () => {
+    const q = quarantine();
+    vi.mocked(ledger.getQuarantine).mockResolvedValue(q as never);
+    vi.mocked(ledger.listQuarantineByStatus).mockResolvedValue([q] as never);
+    vi.mocked(ledger.getPin).mockResolvedValue({ approvedHash: q.fromHash, approvedAt: "2026-01-12T10:30:00.000Z" } as never);
+    const model = await loadConsentCardModel(HOUSEHOLD_ID, UPSTREAMS, "q1", { approvalToken: "tok" });
+    if (model?.state === "loading" || model?.state === "pending" || model?.state === "advisory-unavailable") {
+      expect(model.item.approvedOn).toMatch(/^12 January/);
+    } else {
+      throw new Error(`unexpected state ${model?.state}`);
+    }
+  });
+
+  it("omits the date when the pin has moved on to a different hash", async () => {
+    const q = quarantine();
+    vi.mocked(ledger.getQuarantine).mockResolvedValue(q as never);
+    vi.mocked(ledger.listQuarantineByStatus).mockResolvedValue([q] as never);
+    vi.mocked(ledger.getPin).mockResolvedValue({ approvedHash: "sha256:other", approvedAt: "2026-01-12T10:30:00.000Z" } as never);
+    const model = await loadConsentCardModel(HOUSEHOLD_ID, UPSTREAMS, "q1", { approvalToken: "tok" });
+    if (model !== undefined && "item" in model) {
+      expect(model.item.approvedOn).toBeUndefined();
+    }
+  });
+});
+
+describe("formatApprovedOn", () => {
+  const NOW = Date.parse("2026-09-23T12:00:00.000Z");
+
+  it("reads the same UTC day regardless of the host timezone", () => {
+    expect(formatApprovedOn("2026-01-12T10:30:00.000Z", NOW)).toBe("12 January");
+  });
+
+  it("adds the year only when it is not the current one", () => {
+    expect(formatApprovedOn("2025-12-31T23:59:00.000Z", NOW)).toBe("31 December 2025");
+  });
+
+  it("returns undefined for an unparseable timestamp", () => {
+    expect(formatApprovedOn("not a date", NOW)).toBeUndefined();
   });
 });

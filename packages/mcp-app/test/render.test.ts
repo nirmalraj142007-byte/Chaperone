@@ -419,3 +419,35 @@ describe("description truncation \u2014 an upstream cannot force an unbounded re
     expect(html).not.toContain(tail.slice(tail.length - 5));
   });
 });
+
+describe("fixture advisories and the approval date", () => {
+  const fixtureItem = item({
+    advisorySummary: "Hand-written fixture line.",
+    advisorySource: "fixture",
+    approvedOn: "12 January",
+  });
+  const model: ConsentCardModel = { state: "pending", item: fixtureItem };
+
+  it("text: labels a fixture as a fixture and never as model-generated", () => {
+    const text = renderConsentCardText(model);
+    expect(text).toContain("Advisory (fixture: hand-written for the offline demo, not model output): Hand-written fixture line.");
+    expect(text).not.toContain("model-generated");
+  });
+
+  it("html: the advisory label says fixture, not model-generated", () => {
+    const html = renderConsentCardHtml(model);
+    expect(html).toContain("Advisory (fixture: hand-written for the offline demo, not model output)");
+    expect(html).not.toContain("model-generated");
+  });
+
+  it("text and html both say when the household approved the pinned version", () => {
+    expect(renderConsentCardText(model)).toContain("You approved this on 12 January");
+    expect(renderConsentCardHtml(model)).toContain("You approved this on 12 January");
+  });
+
+  it("an item with neither field renders exactly as before (no approval line)", () => {
+    const plain: ConsentCardModel = { state: "pending", item: item({ advisorySummary: "A model line." }) };
+    expect(renderConsentCardText(plain)).not.toContain("You approved this on");
+    expect(renderConsentCardHtml(plain)).not.toContain("approved-on\">");
+  });
+});

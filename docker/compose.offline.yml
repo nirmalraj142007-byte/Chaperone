@@ -1,0 +1,56 @@
+# Overlay for docker-compose.yml that removes the stack's route to the
+# internet, so "the recorded demo touches nothing outside docker compose"
+# can be shown instead of asserted.
+#
+#   docker compose -f docker-compose.yml -f docker/compose.offline.yml up -d
+#
+# The three app containers (ddb, demo-upstream, gateway) move onto a network
+# created with `internal: true`, which Docker enforces by dropping every
+# packet that would leave it: no route to any public address, by name or by
+# number. They still reach each other by name. But a published port cannot
+# cross an internal network, so the host could no longer reach 3000, 4000 or
+# 8000. `edge` fixes that and does nothing else: a socat forwarder, attached
+# to the internal network and to an ordinary one, that carries those three
+# ports across. It holds no data, runs no application code, and is the only
+# container with a route out; the only thing it is told to connect to is the
+# three in-stack targets below.
+#
+# `pnpm demo:verify` separately refuses every non-local request the browser
+# makes. This overlay is the network-level half of the same claim.
+#
+# The images must already exist: `docker compose build` (and pulling
+# alpine/socat) need the network, so do both once while online.
+services:
+  ddb:
+    ports: !reset []
+    networks: [internal]
+  demo-upstream:
+    ports: !reset []
+    networks: [internal]
+  gateway:
+    ports: !reset []
+    networks: [internal]
+
+  edge:
+    image: alpine/socat:latest
+    container_name: chaperone-edge
+    depends_on: [ddb, demo-upstream, gateway]
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        socat TCP-LISTEN:3000,fork,reuseaddr TCP:gateway:3000 &
+        socat TCP-LISTEN:4000,fork,reuseaddr TCP:demo-upstream:4000 &
+        socat TCP-LISTEN:8000,fork,reuseaddr TCP:ddb:8000 &
+        wait
+    ports:
+      - "3000:3000"
+      - "4000:4000"
+      - "8000:8000"
+    networks: [internal, host-facing]
+
+networks:
+  # Replaces the project's default network for every service above.
+  internal:
+    internal: true
+  host-facing: {}
+  default: !reset null

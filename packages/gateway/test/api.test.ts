@@ -7,6 +7,7 @@ vi.mock("@chaperone/ledger", () => ({
   listQuarantineByStatus: vi.fn(),
   getQuarantine: vi.fn(),
   getAdvisory: vi.fn(),
+  getFixtureAdvisory: vi.fn(),
   getPin: vi.fn(),
   listPinsForHousehold: vi.fn(),
   listEvents: vi.fn(),

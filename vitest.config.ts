@@ -31,7 +31,7 @@ export default defineConfig({
     // the stack; see spec/stack.vitest.config.ts and `pnpm test:stack`).
     // .tsx as well as .ts: packages/console's state snapshots render real
     // components, so its suite is TSX. Phase 15.
-    include: ["packages/*/test/**/*.test.{ts,tsx}"],
+    include: ["packages/*/test/**/*.test.{ts,tsx}", "scripts/test/**/*.test.ts"],
     // packages/console/src/lib.ts's formatDate/formatTime use
     // Intl.DateTimeFormat with no explicit timeZone — correct for
     // production (a resident's browser should show their own local time),

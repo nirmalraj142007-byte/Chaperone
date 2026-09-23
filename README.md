@@ -112,6 +112,18 @@ pnpm spec                     # MCP conformance suite
 pnpm test:all                 # everything a judge would run
 ```
 
+To run the whole demo on one machine with no network, and check it:
+
+```
+pnpm demo:reset               # staged household, table reset, prints the demo beats
+pnpm demo:verify              # walks the beats headlessly and asserts each one
+```
+
+[`demo/OFFLINE.md`](demo/OFFLINE.md) says exactly which parts of that run are
+hand-written fixtures (the advisory line, and the household's 12 January
+approval history) and which are the real gate, ledger, hashes and refusal
+text. Read it before trusting a screenshot.
+
 `pnpm bench` clears the `sse-event` table before measuring
 (`packages/ledger/scripts/reset-sse.ts`), because DynamoDB Local does not
 enforce TTL and those rows otherwise accumulate across runs and make each

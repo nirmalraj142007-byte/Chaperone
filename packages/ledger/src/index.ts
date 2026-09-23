@@ -1,6 +1,7 @@
 export * from "./client.js";
 export * from "./tables.js";
 export * from "./schema.js";
+export * from "./provision.js";
 export * from "./errors.js";
 export * from "./repos/corpusServer.js";
 export * from "./repos/toolSnapshot.js";

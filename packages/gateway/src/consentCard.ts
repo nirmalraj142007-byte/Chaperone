@@ -13,6 +13,7 @@ import * as ledger from "@chaperone/ledger";
 import type { ConsentCardItem, ConsentCardModel } from "@chaperone/mcp-app";
 import { childLogger } from "@chaperone/logger";
 import { advisoryUnavailableTotal } from "./metrics.js";
+import { advisoryFor } from "./advisoryLookup.js";
 import { APPROVAL_TOKEN_TTL_MS } from "./approve.js";
 import { peekRevealedToken } from "./gate.js";
 
@@ -36,21 +37,65 @@ function isExpired(quarantine: ledger.Quarantine): boolean {
   return !Number.isFinite(detectedAtMs) || Date.now() - detectedAtMs > APPROVAL_TOKEN_TTL_MS;
 }
 
+interface AdvisoryForCard {
+  summary: string;
+  isFixture: boolean;
+}
+
 /** A failure here degrades the card to "no advisory yet," never to a thrown error — the advisory is decoration, not the security decision. */
-async function loadAdvisorySummary(quarantineId: string): Promise<string | undefined> {
+async function loadAdvisory(quarantine: ledger.Quarantine): Promise<AdvisoryForCard | undefined> {
   try {
-    const advisory = await ledger.getAdvisory(quarantineId);
+    const advisory = await advisoryFor(quarantine);
     if (advisory?.summary === undefined) {
       // No row yet (still scoring), or a row with no summary. Counted the
       // same as a read failure below: from the card's point of view both
       // are "this card renders without an advisory", which is what the
       // metric is named for. It is never a gate outcome.
       advisoryUnavailableTotal.inc({ reason: "absent" });
+      return undefined;
     }
-    return advisory?.summary;
+    return { summary: advisory.summary, isFixture: ledger.isFixtureAdvisory(advisory) };
   } catch (error) {
-    log.warn({ error, quarantineId }, "advisory read failed; rendering the card without one");
+    log.warn({ error, quarantineId: quarantine.quarantineId }, "advisory read failed; rendering the card without one");
     advisoryUnavailableTotal.inc({ reason: "read_failed" });
+    return undefined;
+  }
+}
+
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+] as const;
+
+/**
+ * "12 January", or "12 January 2025" when that is not the current year.
+ * UTC on purpose: the same stored instant must read as the same day on
+ * every host, including a recorded demo replayed in another timezone.
+ */
+export function formatApprovedOn(approvedAt: string, now: number = Date.now()): string | undefined {
+  const at = new Date(approvedAt);
+  if (Number.isNaN(at.getTime())) {
+    return undefined;
+  }
+  const day = `${at.getUTCDate()} ${MONTHS[at.getUTCMonth()]}`;
+  return at.getUTCFullYear() === new Date(now).getUTCFullYear() ? day : `${day} ${at.getUTCFullYear()}`;
+}
+
+/**
+ * When the household approved the version that is still pinned — only
+ * while that pin is still the "before" side of this quarantine. Read
+ * failure or a moved pin just leaves the line off; it is context, not the
+ * decision.
+ */
+async function loadApprovedOn(quarantine: ledger.Quarantine): Promise<string | undefined> {
+  try {
+    const pin = await ledger.getPin(quarantine.householdId, quarantine.upstreamId, quarantine.toolName);
+    if (pin === undefined || pin.approvedHash !== quarantine.fromHash) {
+      return undefined;
+    }
+    return formatApprovedOn(pin.approvedAt);
+  } catch (error) {
+    log.warn({ error, quarantineId: quarantine.quarantineId }, "pin read failed; rendering the card without an approval date");
     return undefined;
   }
 }
@@ -59,7 +104,8 @@ function toItem(
   quarantine: ledger.Quarantine,
   upstreamLabel: string,
   approvalToken: string,
-  advisorySummary: string | undefined,
+  advisory: AdvisoryForCard | undefined,
+  approvedOn: string | undefined,
 ): ConsentCardItem {
   const before = JSON.parse(quarantine.fromCanonicalJson) as { description?: string };
   const after = JSON.parse(quarantine.toCanonicalJson) as { description?: string };
@@ -73,7 +119,9 @@ function toItem(
     afterDescription: after.description ?? "",
     spans: quarantine.diffSpans,
     approvalToken,
-    ...(advisorySummary !== undefined ? { advisorySummary } : {}),
+    ...(advisory !== undefined ? { advisorySummary: advisory.summary } : {}),
+    ...(advisory?.isFixture === true ? { advisorySource: "fixture" as const } : {}),
+    ...(approvedOn !== undefined ? { approvedOn } : {}),
   };
 }
 
@@ -143,18 +191,18 @@ export async function loadConsentCardModel(
   if (siblings.length >= 2) {
     const items = await Promise.all(
       siblings.map(async (sibling) => {
-        const advisorySummary = await loadAdvisorySummary(sibling.quarantineId);
+        const [advisory, approvedOn] = await Promise.all([loadAdvisory(sibling), loadApprovedOn(sibling)]);
         const token = resolveApprovalToken(
           sibling.quarantineId,
           sibling.quarantineId === quarantineId ? options.approvalToken : undefined,
         );
-        return toItem(sibling, label, token, advisorySummary);
+        return toItem(sibling, label, token, advisory, approvedOn);
       }),
     );
     return { state: "batch", upstreamLabel: label, items };
   }
 
-  const advisorySummary = await loadAdvisorySummary(quarantineId);
-  const item = toItem(quarantine, label, resolveApprovalToken(quarantineId, options.approvalToken), advisorySummary);
-  return pendingStateFor(item, quarantine, advisorySummary !== undefined);
+  const [advisory, approvedOn] = await Promise.all([loadAdvisory(quarantine), loadApprovedOn(quarantine)]);
+  const item = toItem(quarantine, label, resolveApprovalToken(quarantineId, options.approvalToken), advisory, approvedOn);
+  return pendingStateFor(item, quarantine, advisory !== undefined);
 }

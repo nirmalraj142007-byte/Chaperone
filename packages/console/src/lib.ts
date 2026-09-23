@@ -97,6 +97,18 @@ export function linkStates(total: number, verify: VerifyResponse | undefined): L
   });
 }
 
+/**
+ * Advisory rows written by `pnpm demo:reset` are hand-written fixtures, not
+ * model output. Their `modelId` starts with this prefix (the same constant
+ * the ledger package defines; the console does not import that package), and
+ * every place this UI shows an advisory labels a fixture as one.
+ */
+export const FIXTURE_MODEL_ID_PREFIX = "fixture:";
+
+export function isFixtureModelId(modelId: string): boolean {
+  return modelId.startsWith(FIXTURE_MODEL_ID_PREFIX);
+}
+
 /** First `n` hex chars of a digest, with any "sha256:" scheme prefix dropped — the prefix is identical on every hash and carries no information at a glance. */
 export function short(hash: string, n = 12): string {
   return hash.replace(/^sha256:/, "").slice(0, n);

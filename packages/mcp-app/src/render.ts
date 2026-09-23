@@ -29,6 +29,14 @@ export interface ConsentCardItem {
   spans: DiffSpan[];
   approvalToken: string;
   advisorySummary?: string;
+  /**
+   * Set to "fixture" when `advisorySummary` is a hand-written line for the
+   * offline demo rather than model output. The renderers label it as such;
+   * omitted (the normal case) means the summary is model-generated.
+   */
+  advisorySource?: "fixture";
+  /** When the household approved the version that is still pinned, already formatted for display ("12 January"). Omitted when unknown. */
+  approvedOn?: string;
 }
 
 export type ConsentCardModel =
@@ -156,17 +164,29 @@ function textActions(item: ConsentCardItem): string[] {
   ];
 }
 
+/** The label on an advisory line: a fixture is never presented as model output. */
+function advisoryLabel(item: ConsentCardItem): string {
+  return item.advisorySource === "fixture"
+    ? "Advisory (fixture: hand-written for the offline demo, not model output)"
+    : "Advisory (model-generated)";
+}
+
+function approvedOnLine(item: ConsentCardItem): string[] {
+  return item.approvedOn === undefined ? [] : [`You approved this on ${sanitizeUpstreamText(item.approvedOn)}`];
+}
+
 function textItemBlock(item: ConsentCardItem): string {
   const toolName = sanitizeUpstreamText(item.toolName);
   const lines = [
     `Tool changed: ${toolName} (${sanitizeUpstreamText(item.upstreamLabel)})`,
     `Capability: ${CAPABILITY_BADGES[item.capabilityClass]}`,
+    ...approvedOnLine(item),
     `Detected: ${item.detectedAt}`,
     "",
     ...textBeforeAfter(item),
   ];
   if (item.advisorySummary !== undefined) {
-    lines.push("", `Advisory (model-generated): ${sanitizeUpstreamText(item.advisorySummary)}`);
+    lines.push("", `${advisoryLabel(item)}: ${sanitizeUpstreamText(item.advisorySummary)}`);
   }
   lines.push(...textActions(item));
   return lines.join("\n");
@@ -178,6 +198,7 @@ export function renderConsentCardText(model: ConsentCardModel): string {
       return [
         `Tool changed: ${sanitizeUpstreamText(model.item.toolName)} (${sanitizeUpstreamText(model.item.upstreamLabel)})`,
         `Capability: ${CAPABILITY_BADGES[model.item.capabilityClass]}`,
+        ...approvedOnLine(model.item),
         `Detected: ${model.item.detectedAt}`,
         "",
         ...textBeforeAfter(model.item),
@@ -566,7 +587,7 @@ function itemCardHtml(item: ConsentCardItem, advisorySlot: string, rootId: strin
   <div class="body">
     <p class="tool-name">${escapeHtml(sanitizeUpstreamText(item.toolName))}</p>
     <p class="upstream">${escapeHtml(sanitizeUpstreamText(item.upstreamLabel))}</p>
-    <p class="meta">Detected ${escapeHtml(item.detectedAt)}</p>
+    ${approvedOnHtml(item)}<p class="meta">Detected ${escapeHtml(item.detectedAt)}</p>
     ${beforeAfterHtml(item)}
     ${advisorySlot}
     <div class="actions">
@@ -578,12 +599,19 @@ function itemCardHtml(item: ConsentCardItem, advisorySlot: string, rootId: strin
 <script>chaperoneBindDecision(document.getElementById("${rootId}").parentNode, "${quarantineIdJs}", "${approvalTokenJs}");</script>`;
 }
 
+function approvedOnHtml(item: ConsentCardItem): string {
+  return item.approvedOn === undefined
+    ? ""
+    : `<p class="meta approved-on" style="margin-bottom: 4px">You approved this on ${escapeHtml(sanitizeUpstreamText(item.approvedOn))}</p>
+    `;
+}
+
 function advisorySkeletonHtml(): string {
   return `<div class="advisory"><span class="advisory-label">Advisory (model-generated)</span><div class="advisory-skeleton"></div></div>`;
 }
 
-function advisoryFilledHtml(summary: string): string {
-  return `<div class="advisory"><span class="advisory-label">Advisory (model-generated)</span><p class="advisory-body">${escapeHtml(sanitizeUpstreamText(summary))}</p></div>`;
+function advisoryFilledHtml(item: ConsentCardItem, summary: string): string {
+  return `<div class="advisory"><span class="advisory-label">${escapeHtml(advisoryLabel(item))}</span><p class="advisory-body">${escapeHtml(sanitizeUpstreamText(summary))}</p></div>`;
 }
 
 function documentShell(title: string, bodyHtml: string): string {
@@ -620,7 +648,7 @@ export function renderConsentCardHtml(model: ConsentCardModel): string {
     case "pending": {
       const rootId = "chaperone-item";
       const advisory =
-        model.item.advisorySummary === undefined ? "" : advisoryFilledHtml(model.item.advisorySummary);
+        model.item.advisorySummary === undefined ? "" : advisoryFilledHtml(model.item, model.item.advisorySummary);
       return documentShell("Chaperone consent card", itemCardHtml(model.item, advisory, rootId));
     }
 
@@ -632,12 +660,12 @@ export function renderConsentCardHtml(model: ConsentCardModel): string {
     case "batch": {
       const rows = model.items
         .map((item, index) => {
-          const advisory = item.advisorySummary === undefined ? "" : advisoryFilledHtml(item.advisorySummary);
+          const advisory = item.advisorySummary === undefined ? "" : advisoryFilledHtml(item, item.advisorySummary);
           const rootId = `chaperone-item-${index}`;
           return `<details class="batch-item"${index === 0 ? " open" : ""}>
   <summary><span>${escapeHtml(sanitizeUpstreamText(item.toolName))}</span><span class="badge">${escapeHtml(CAPABILITY_BADGES[item.capabilityClass])}</span></summary>
   <div class="body pending-content" id="${rootId}">
-    <p class="meta">Detected ${escapeHtml(item.detectedAt)}</p>
+    ${approvedOnHtml(item)}<p class="meta">Detected ${escapeHtml(item.detectedAt)}</p>
     ${beforeAfterHtml(item)}
     ${advisory}
     <div class="actions">

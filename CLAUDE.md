@@ -97,6 +97,9 @@ pnpm install
 docker compose up -d          # ddb (DynamoDB Local), demo-upstream, gateway
 pnpm ddb:migrate              # idempotent table creation
 pnpm demo:reset               # full staged demo state, offline, < 60s
+pnpm demo:verify              # the demo beats, headless (Playwright), asserted; must pass twice in a row
+pnpm demo:idempotence         # two resets, ddb:dump after each, diffed (ULIDs/timestamps normalised)
+pnpm demo:call [tool k=v]     # bare MCP client for filming; no arguments lists the tools
 pnpm verify-ledger            # hash chain walk; exits 1 on break
 pnpm spec                     # MCP conformance suite, 25+ named assertions
 pnpm test:resume              # 10-iteration kill-and-resume loop. must be 10/10

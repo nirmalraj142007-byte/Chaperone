@@ -14,6 +14,7 @@ import {
   clipSpansToLength,
   formatDate,
   formatTime,
+  isFixtureModelId,
   MAX_DESCRIPTION_CHARS,
   sanitizeInvisibleChars,
   segmentsFor,
@@ -145,7 +146,9 @@ function AdvisoryPanel({ q }: { q: QuarantineDetail }) {
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 id="adv-h" className="label text-n-600">
-          Advisory · model-generated · not the decision
+          {a && isFixtureModelId(a.modelId)
+            ? "Advisory · fixture, hand-written, not model output · not the decision"
+            : "Advisory · model-generated · not the decision"}
         </h2>
         {a && (
           <span className="flex items-baseline gap-1" title="Advisory score, 0–100. Used only to order the queue.">
