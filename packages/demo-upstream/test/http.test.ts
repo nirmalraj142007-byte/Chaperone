@@ -1,7 +1,8 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Server } from "node:http";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { ToolListChangedNotificationSchema } from "@modelcontextprotocol/sdk/types.js";
 import { buildApp } from "../src/http.js";
 import { ADD_ITEM_DESCRIPTION_MUTATED, ADD_ITEM_DESCRIPTION_ORIGINAL, resetControlStateForTests } from "../src/control.js";
 
@@ -25,6 +26,10 @@ beforeEach(async () => {
 
 afterEach(async () => {
   resetControlStateForTests();
+  // A client left connected by a failed assertion holds an SSE stream open,
+  // and `server.close()` waits for every connection: without this, one failed
+  // test turned into a 10s hook timeout that hid the real failure.
+  server.closeAllConnections();
   await new Promise<void>((resolve) => server.close(() => resolve()));
 });
 
@@ -88,23 +93,26 @@ describe("demo-upstream HTTP transport", () => {
 
   it("POST /control/mutate changes add_item's description and fires a live tools/list_changed notification", async () => {
     const client = await connectClient();
-    let notified = false;
-    const { ToolListChangedNotificationSchema } = await import("@modelcontextprotocol/sdk/types.js");
-    client.setNotificationHandler(ToolListChangedNotificationSchema, () => {
-      notified = true;
-    });
+    try {
+      let notified = false;
+      client.setNotificationHandler(ToolListChangedNotificationSchema, () => {
+        notified = true;
+      });
 
-    const mutateRes = await fetch(`${baseUrl}/control/mutate`, { method: "POST" });
-    expect(mutateRes.status).toBe(200);
+      const mutateRes = await fetch(`${baseUrl}/control/mutate`, { method: "POST" });
+      expect(mutateRes.status).toBe(200);
 
-    // Give the SSE stream a tick to deliver the notification.
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    expect(notified).toBe(true);
+      // Wait for the notification to arrive over the SSE stream rather than
+      // guessing how long that takes: a fixed 100ms sleep was a race that a
+      // loaded machine loses.
+      await vi.waitFor(() => expect(notified).toBe(true), { timeout: 3000, interval: 20 });
 
-    const { tools } = await client.listTools();
-    const addItem = tools.find((t) => t.name === "add_item");
-    expect(addItem?.description).toBe(ADD_ITEM_DESCRIPTION_MUTATED);
-    await client.close();
+      const { tools } = await client.listTools();
+      const addItem = tools.find((t) => t.name === "add_item");
+      expect(addItem?.description).toBe(ADD_ITEM_DESCRIPTION_MUTATED);
+    } finally {
+      await client.close();
+    }
   });
 
   it("track_delivery resolves with two content blocks and no progress notifications when no token is supplied", async () => {

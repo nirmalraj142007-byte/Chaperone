@@ -47,5 +47,17 @@ export default defineConfig({
     // than by regenerating snapshots against whichever machine happens to
     // run them next.
     env: { TZ: "UTC" },
+    // Worker cap. Vitest defaults to one fork per logical core minus one: 15
+    // on the 16-thread machine this was diagnosed on. The suite is
+    // import-bound, not test-bound (a full run measured ~570s of module
+    // collection against ~25s of test bodies, summed across workers), and
+    // every fork holds its own copy of the module graph, AWS SDK included:
+    // the vitest processes alone peaked at ~1.3 GB. With a couple of GB free
+    // that is paging, and under paging tests that were only fast by luck
+    // (packages/demo-upstream/test/http.test.ts, packages/eval/test/guards.test.ts)
+    // blew their 5s/10s limits while passing alone. 4 is close to what a
+    // 4-vCPU CI runner gets by default (cores - 1 = 3). Raising individual
+    // timeouts instead would only have hidden the pressure.
+    poolOptions: { forks: { maxForks: 4, minForks: 1 } },
   },
 });

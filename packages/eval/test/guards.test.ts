@@ -1,4 +1,9 @@
 import { describe, expect, it } from "vitest";
+// Static, not `await import()` inside the test: importing the package index pulls in the
+// advisory package and the AWS Bedrock SDK, which is seconds of module loading on a starved
+// machine. At file scope that cost is spent before the test clock starts; inside the test it
+// counts against its 5s timeout and made this a load-dependent failure.
+import * as evalExports from "../src/index.js";
 import { loadAttackCorpus } from "../src/corpus.js";
 import { findUnqualifiedAbsoluteChaperoneBlockRate, hasDeltaField } from "../src/guards.js";
 import { buildBaselineReport } from "../src/report.js";
@@ -56,8 +61,7 @@ describe("guard applied to the real eval package output", () => {
     expect(findUnqualifiedAbsoluteChaperoneBlockRate(result)).toEqual([]);
   });
 
-  it("no exported constant/value (as opposed to a guard function whose job is detecting this) is a raw Chaperone block rate", async () => {
-    const evalExports: Record<string, unknown> = await import("../src/index.js");
+  it("no exported constant/value (as opposed to a guard function whose job is detecting this) is a raw Chaperone block rate", () => {
     // Functions are exempt from the name check: this package legitimately
     // exports functions whose *name* describes chaperone-block-rate
     // detection (findUnqualifiedAbsoluteChaperoneBlockRate, this test file's
@@ -65,7 +69,7 @@ describe("guard applied to the real eval package output", () => {
     // point of the function. A non-function export named this way would be
     // the real smell: a constant baked in at module-load time rather than
     // measured, which is exactly what CLAUDE.md #7 forbids.
-    const suspiciousNonFunctionExports = Object.entries(evalExports)
+    const suspiciousNonFunctionExports = Object.entries(evalExports as Record<string, unknown>)
       .filter(([name]) => /chaperone.*block.*rate/i.test(name))
       .filter(([, value]) => typeof value !== "function");
     expect(suspiciousNonFunctionExports).toEqual([]);
