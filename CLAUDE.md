@@ -124,6 +124,14 @@ pnpm analyse:drift            # emits data/drift.json
 
 **Tests.** Vitest. `packages/policy` is gated at 100% statements and branches — it is 200 lines and it is the entire security property. Everything else 80%. Playwright for the two E2E specs. A flaky test is a failed phase, because a demo take will not be luckier than the suite.
 
+**Fixtures and placeholders.** Allowed only where a real source is genuinely unavailable (a blocked provider, a crawl that has not happened yet). Every fixture is labelled as a fixture in the file, in the code, and anywhere it is displayed, and is never presented as real output. Every TODO names its blocker and when it will be resolved.
+
+**Model output is untrusted input.** Parse it against a schema, repair or reject.
+
+**UI floor.** Keyboard reachable, visible focus, labelled controls, AA contrast, `prefers-reduced-motion` respected.
+
+**Real copy only.** No lorem ipsum, no placeholder names like "Feature One".
+
 **External APIs.** Never mock them in the crawler. If an endpoint's shape differs from what a doc or a prompt claims, discover the real shape, use it, and append a friction-log entry.
 
 **Known deviations from a naive reading of the scripts — do not "restore" these.**
