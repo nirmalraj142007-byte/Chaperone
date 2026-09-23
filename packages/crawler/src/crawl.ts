@@ -4,7 +4,7 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { childLogger } from "@chaperone/logger";
 import { getCorpusServer, putCorpusServer, putToolSnapshot } from "@chaperone/ledger";
-import { canonicalizeTool, classifyCapability, hashTool } from "@chaperone/policy";
+import { CLASSIFIER_VERSION, canonicalizeTool, classifyCapability, hashTool } from "@chaperone/policy";
 import { CANDIDATES_PATH, type CandidateRecord } from "./assemble.js";
 import { type BootCandidate, type BootResult, type BootStatus, bootAndList, ensureCrawlInfrastructure } from "./boot.js";
 
@@ -319,7 +319,16 @@ export async function runCrawl(crawlId: string, opts: RunCrawlOptions = {}): Pro
       bootedServerIds.push(record.serverId);
       for (const tool of result.tools) {
         totalToolsCaptured++;
-        const verdict = classifyCapability(tool);
+        // Every crawl stamps CLASSIFIER_VERSION explicitly (never a bare
+        // classifyCapability(tool) relying on its default) so a future
+        // classifier bump can never silently change what an in-flight
+        // crawl records. Phase 19's drift analysis must compare crawl 1
+        // and crawl 2 under the SAME classifier version — v2 on both,
+        // never v1 against v2 — using findCapabilityClassifierArtifacts
+        // (@chaperone/policy) as a hard-failure guard against exactly that
+        // mistake. See CLAUDE.md "Capability classifier versioning" and
+        // corpus/TAXONOMY-APPENDIX-classifier-v2.md.
+        const verdict = classifyCapability(tool, CLASSIFIER_VERSION);
         capabilityDistribution[verdict.class] = (capabilityDistribution[verdict.class] ?? 0) + 1;
         await putToolSnapshot({
           serverId: record.serverId,
@@ -331,7 +340,7 @@ export async function runCrawl(crawlId: string, opts: RunCrawlOptions = {}): Pro
           sha256: hashTool(tool),
           capabilityClass: verdict.class,
           capabilityConfidence: verdict.confidence,
-          capabilityAssignedBy: "rules-v1",
+          capabilityAssignedBy: CLASSIFIER_VERSION,
           capturedAt: new Date().toISOString(),
           rawPayloadPath: archivePath,
         });

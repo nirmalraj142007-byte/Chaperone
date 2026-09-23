@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { CAPABILITY_RULES, classifyCapability } from "../src/capability.js";
+import {
+  CAPABILITY_RULES,
+  CAPABILITY_RULES_BY_VERSION,
+  CLASSIFIER_VERSION,
+  classifyCapability,
+  findCapabilityClassifierArtifacts,
+} from "../src/capability.js";
 import type { ToolDefinition } from "../src/types.js";
 
 function tool(name: string, description: string): ToolDefinition {
@@ -135,5 +141,145 @@ describe("classifyCapability: noun-sense false positives stay read", () => {
     expect(classifyCapability(tool("t", "Posted an update to the shared board.")).class).toBe("communicate");
     expect(classifyCapability(tool("t", "Messaging the on-call contact now.")).class).toBe("communicate");
     expect(classifyCapability(tool("t", "Orders more supplies when stock is low.")).class).toBe("transact");
+  });
+});
+
+describe("classifier versioning", () => {
+  it("defaults CLASSIFIER_VERSION to v2", () => {
+    expect(CLASSIFIER_VERSION).toBe("v2");
+  });
+
+  it("defaults classifyCapability to CLASSIFIER_VERSION when no version is given", () => {
+    const withDefault = classifyCapability(tool("add_item", "Adds an item to your shopping list."));
+    const withExplicitV2 = classifyCapability(tool("add_item", "Adds an item to your shopping list."), "v2");
+    expect(withDefault).toEqual(withExplicitV2);
+  });
+
+  it("exports a rule table for every ClassifierVersion", () => {
+    expect(Object.keys(CAPABILITY_RULES_BY_VERSION).sort()).toEqual(["v1", "v2"]);
+  });
+
+  it("CAPABILITY_RULES is the table for the current CLASSIFIER_VERSION", () => {
+    expect(CAPABILITY_RULES).toBe(CAPABILITY_RULES_BY_VERSION[CLASSIFIER_VERSION]);
+  });
+});
+
+describe("classifyCapability: v2 fixes the add_item under-classification (found 2026-09-20)", () => {
+  // This is TAXONOMY.md's own Axis 2 `write` example, verbatim:
+  // "add_to_list(item)". v1 had no verb matching "add", so this defaulted
+  // to read/low — the exact bug this classifier version exists to fix.
+  it("classifies add_item as write, high confidence under v2", () => {
+    const verdict = classifyCapability(tool("add_item", "Adds an item to your shopping list."), "v2");
+    expect(verdict.class).toBe("write");
+    expect(verdict.confidence).toBe("high");
+    expect(verdict.matchedRules).toContain("write");
+  });
+
+  it("still classifies add_item as read, low confidence under v1 — v1 is frozen, never patched in place", () => {
+    const verdict = classifyCapability(tool("add_item", "Adds an item to your shopping list."), "v1");
+    expect(verdict.class).toBe("read");
+    expect(verdict.confidence).toBe("low");
+  });
+
+  it.each([
+    ["insert_row", "Inserts a row into the table."],
+    ["append_note", "Appends a note to the record."],
+    ["clear_cart", "Clears every item from your cart."],
+  ])("classifies %s as write, high confidence under v2", (name, description) => {
+    const verdict = classifyCapability(tool(name, description), "v2");
+    expect(verdict.class).toBe("write");
+    expect(verdict.confidence).toBe("high");
+  });
+
+  it.each([
+    ["insert_row", "Inserts a row into the table."],
+    ["append_note", "Appends a note to the record."],
+    ["clear_cart", "Clears every item from your cart."],
+  ])("still classifies %s as read, low confidence under v1", (name, description) => {
+    const verdict = classifyCapability(tool(name, description), "v1");
+    expect(verdict.class).toBe("read");
+    expect(verdict.confidence).toBe("low");
+  });
+
+  it("save matches only the bare form and third-person-singular under v2 (suffixes restricted to s)", () => {
+    expect(classifyCapability(tool("save_link", "Save a new link to your library."), "v2").class).toBe("write");
+    expect(classifyCapability(tool("t", "Saves the PDF to disk and returns the path."), "v2").class).toBe("write");
+  });
+
+  it("edit matches only ed/ing forms under v2 (suffixes restricted, bare form still matches)", () => {
+    expect(classifyCapability(tool("edit_image", "Edit an existing image using a text prompt."), "v2").class).toBe(
+      "write",
+    );
+    expect(classifyCapability(tool("t", "Edited the layer's opacity."), "v2").class).toBe("write");
+  });
+
+  it("remove matches only the bare form and third-person-singular under v2 (suffixes restricted to s)", () => {
+    expect(classifyCapability(tool("remove_service", "Remove a service and all dependencies."), "v2").class).toBe(
+      "write",
+    );
+    expect(classifyCapability(tool("t", "Calling again removes it from favourites."), "v2").class).toBe("write");
+  });
+});
+
+describe("classifyCapability: v2 false-positive regressions found in crawl-1 evidence review", () => {
+  it("does not fire write on 'edits' used as a plural noun", () => {
+    const verdict = classifyCapability(
+      tool("t", "Every following material row freezes, and edits to the original stop reaching it."),
+      "v2",
+    );
+    expect(verdict.class).toBe("read");
+    expect(verdict.confidence).toBe("low");
+  });
+
+  it("does not fire write on 'saved' used as an adjective describing pre-existing data", () => {
+    const verdict = classifyCapability(tool("list_library", "Browse your saved icons."), "v2");
+    expect(verdict.class).toBe("read");
+    expect(verdict.confidence).toBe("low");
+  });
+
+  it("does not fire write on 'removed'/'removing' describing a fact other than this tool's own action", () => {
+    expect(
+      classifyCapability(
+        tool("device_recall_search", "FDA medical-device recalls: devices removed from the market."),
+        "v2",
+      ).class,
+    ).toBe("read");
+    expect(
+      classifyCapability(tool("read_page", "Extract the main readable content, removing navigation and ads."), "v2")
+        .class,
+    ).toBe("read");
+  });
+
+  it("does not add a write rule for 'modify' — deliberately excluded from v2", () => {
+    const verdict = classifyCapability(tool("t", "Does not modify any pixel data."), "v2");
+    expect(verdict.class).toBe("read");
+    expect(verdict.confidence).toBe("low");
+    expect(verdict.matchedRules).toEqual([]);
+  });
+});
+
+describe("findCapabilityClassifierArtifacts", () => {
+  it("returns empty when no crawl-2 sha256 matches a crawl-1 sha256", () => {
+    const artifacts = findCapabilityClassifierArtifacts(
+      [{ sha256: "aaa", capabilityClass: "read" }],
+      [{ sha256: "bbb", capabilityClass: "write" }],
+    );
+    expect(artifacts).toEqual([]);
+  });
+
+  it("returns empty when matching sha256 rows agree on capability class", () => {
+    const artifacts = findCapabilityClassifierArtifacts(
+      [{ sha256: "aaa", capabilityClass: "read" }],
+      [{ sha256: "aaa", capabilityClass: "read" }],
+    );
+    expect(artifacts).toEqual([]);
+  });
+
+  it("flags a matching sha256 whose capability class disagrees across crawls as a classifier artifact", () => {
+    const artifacts = findCapabilityClassifierArtifacts(
+      [{ sha256: "aaa", capabilityClass: "read" }],
+      [{ sha256: "aaa", capabilityClass: "write" }],
+    );
+    expect(artifacts).toEqual([{ sha256: "aaa", crawl1Class: "read", crawl2Class: "write" }]);
   });
 });

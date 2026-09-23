@@ -134,6 +134,45 @@ pnpm analyse:drift            # emits data/drift.json
 
 ---
 
+## Capability classifier versioning
+
+`classifyCapability` (`packages/policy/src/capability.ts`) assigns Axis 2
+of `corpus/TAXONOMY.md` — `read`/`write`/`transact`/`communicate` — from a
+hand-reviewed verb list. That list has changed once already (v1 → v2, found
+2026-09-20: v1 had no verb matching "add", so `add_to_list(item)` —
+TAXONOMY.md's own `write` example — defaulted to `read`/`low`; see
+`corpus/TAXONOMY-APPENDIX-classifier-v2.md`) and may change again before
+crawl 2. Three rules follow from that and are not optional:
+
+1. **A rule-table fix is never applied in place.** It lands as a new
+   `ClassifierVersion` (`packages/policy/src/capability.ts`), with the
+   prior version's rule table left byte-identical in the source. Capability
+   class is assigned once, at first observation, and is never re-derived
+   for a tool that already existed at an earlier crawl (TAXONOMY.md, Axis
+   2) — patching the rules in place would mean a tool whose description
+   never changed could appear to have drifted in capability class purely
+   because the classifier changed underneath it.
+2. **Every verdict records which version produced it.** `crawl.ts` calls
+   `classifyCapability(tool, CLASSIFIER_VERSION)` explicitly — never the
+   bare, default-relying form — and stores the result as
+   `capabilityAssignedBy`. Never hardcode a version string literal there;
+   import `CLASSIFIER_VERSION`.
+3. **Phase 19's drift analysis compares crawl 1 and crawl 2 under the SAME
+   classifier version — never v1 against v2.** Before publishing any
+   capability-class transition, it calls
+   `findCapabilityClassifierArtifacts` (`@chaperone/policy`) over both
+   crawls' `ToolSnapshot` rows: for any tool whose `sha256` is identical
+   across the two crawls, the capability class must also be identical, or
+   it is a classifier artifact — a bug to fix, never a reportable finding.
+   A non-empty result from that function fails the analysis run.
+
+The interim crawl on Oct 2 and crawl 2 on Oct 20 both stamp
+`CLASSIFIER_VERSION` (currently `"v2"`) via `crawl.ts`'s explicit call —
+there is no code path in `crawl.ts` that calls `classifyCapability` without
+naming the version.
+
+---
+
 ## Two things to verify rather than remember
 
 **The MCP SDK surface.** Do not write `@modelcontextprotocol/sdk` calls from memory. Open the type definitions in `node_modules` and confirm: the `EventStore` interface shape that `StreamableHTTPServerTransport` accepts, which parts of protocol-version negotiation and session handling the SDK already owns, and the current mechanism for UI resources. Note what you found in a code comment with the SDK version. If something is unclear, say so — do not invent an API.
