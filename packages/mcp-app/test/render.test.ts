@@ -451,3 +451,16 @@ describe("fixture advisories and the approval date", () => {
     expect(renderConsentCardHtml(plain)).not.toContain("approved-on\">");
   });
 });
+
+describe("displayed hashes", () => {
+  it("drop the sha256: scheme before truncating to twelve hex characters", () => {
+    const model: ConsentCardModel = {
+      state: "approved",
+      toolName: "add_item",
+      upstreamLabel: "Grocery",
+      newHashPrefix: "sha256:abcdef0123456789abcdef",
+    };
+    expect(renderConsentCardText(model)).toContain("pinned as abcdef012345.");
+    expect(renderConsentCardHtml(model)).toContain('<span class="hash">abcdef012345</span>');
+  });
+});

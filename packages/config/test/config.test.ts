@@ -6,7 +6,35 @@ const VALID_UPSTREAMS = JSON.stringify([
   { id: "grocery", url: "http://localhost:4001/mcp", label: "Grocery" },
 ]);
 
-function withEnv(vars: Record<string, string | undefined>, fn: () => void): void {
+/**
+ * Every variable loadConfig reads. withEnv clears all of them before applying
+ * the ones a test names, so a test asserts what an *unset* variable defaults
+ * to no matter what the shell running the suite exported. It failed exactly
+ * that way in CI's stack job (which exports DDB_ENDPOINT for pnpm test:all)
+ * and on a laptop with a real .env: defaults were being read off the ambient
+ * environment, not off the code.
+ */
+const CONFIG_KEYS = [
+  "AWS_REGION",
+  "DDB_ENDPOINT",
+  "DDB_TABLE_PREFIX",
+  "HOUSEHOLD_ID",
+  "CHAPERONE_UPSTREAMS",
+  "ADVISORY_MODEL_ID",
+  "BASELINE_MODEL_ID",
+  "GITHUB_TOKEN",
+  "LOG_LEVEL",
+  "PORT",
+  "GATEWAY_ORIGIN_ALLOWLIST",
+  "BIND_ALL",
+  "MCP_APP_ENABLED",
+  "CHAPERONE_VERSION",
+  "CHAPERONE_COMMIT",
+  "CHAPERONE_ENV",
+];
+
+function withEnv(overrides: Record<string, string | undefined>, fn: () => void): void {
+  const vars: Record<string, string | undefined> = { ...Object.fromEntries(CONFIG_KEYS.map((k) => [k, undefined])), ...overrides };
   const previous: Record<string, string | undefined> = {};
   for (const key of Object.keys(vars)) {
     previous[key] = process.env[key];

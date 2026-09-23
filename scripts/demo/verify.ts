@@ -18,16 +18,27 @@
  * demo/advisory-fixtures.json. Beat 5 asserts that it is labelled as one.
  */
 import assert from "node:assert/strict";
-import { execFileSync, spawn, type ChildProcess } from "node:child_process";
+import type { ChildProcess } from "node:child_process";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
-import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
+import type { Browser, BrowserContext, Page } from "playwright";
+import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { REFUSAL_TOOL_CHANGED } from "@chaperone/policy";
-import { STACK, isLocalUrl } from "./env.js";
-import { CONSOLE_DIR, viteBin } from "./console.js";
+import { STACK } from "./env.js";
+import {
+  blocks,
+  cardActionOf,
+  closeBrowser,
+  connectGateway,
+  getJson,
+  isServing,
+  launchBrowser,
+  newOfflineContext,
+  pollUntil,
+  runVerifyLedgerScript,
+  startConsole,
+  textOf,
+} from "./harness.js";
 import { REPO_ROOT } from "./fixtures.js";
 import { resetDemo } from "./reset.js";
 
@@ -36,12 +47,6 @@ export interface VerifyOptions {
   skipReset?: boolean;
   /** Leave the stack in its post-beats state instead of resetting it again. */
   leaveDirty?: boolean;
-}
-
-interface Block {
-  type: string;
-  text?: string;
-  resource?: { uri: string; mimeType?: string; text?: string };
 }
 
 interface State {
@@ -64,81 +69,6 @@ interface Beat {
 }
 
 const SCREENSHOT_DIR = path.join(REPO_ROOT, "test-results", "demo-verify");
-const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
-
-async function pollUntil<T>(what: string, probe: () => Promise<T | undefined>, timeoutMs = 15_000): Promise<T> {
-  const deadline = Date.now() + timeoutMs;
-  for (;;) {
-    const value = await probe().catch(() => undefined);
-    if (value !== undefined) return value;
-    if (Date.now() > deadline) throw new Error(`timed out after ${timeoutMs / 1000}s waiting for ${what}`);
-    await sleep(200);
-  }
-}
-
-/**
- * GET with one retry. The gateway (Express) closes an idle keep-alive socket
- * after 5 seconds; a fetch that reuses that socket in the instant it closes
- * fails with a bare "fetch failed". This is read-only, so retrying is safe.
- */
-async function getJson<T>(url: string): Promise<{ status: number; body: T }> {
-  for (let attempt = 1; ; attempt++) {
-    try {
-      const res = await fetch(url, { headers: { accept: "application/json" } });
-      return { status: res.status, body: (await res.json()) as T };
-    } catch (error) {
-      if (attempt >= 2) throw error;
-    }
-  }
-}
-
-function blocks(result: unknown): Block[] {
-  return ((result as { content?: Block[] }).content ?? []) as Block[];
-}
-
-function textOf(block: Block | undefined): string {
-  assert.ok(block !== undefined && block.type === "text" && typeof block.text === "string", "expected a text content block");
-  return block.text;
-}
-
-// --- infrastructure the beats stand on --------------------------------------
-
-async function isServing(url: string): Promise<boolean> {
-  try {
-    return (await fetch(url)).ok;
-  } catch {
-    return false;
-  }
-}
-
-/** Serves the console's production bundle. If something already answers on 4173, that is used as is. */
-async function startConsole(): Promise<ChildProcess | undefined> {
-  if (await isServing(`${STACK.consoleUrl}/`)) {
-    return undefined;
-  }
-  const child = spawn(process.execPath, [viteBin(), "preview", "--port", "4173", "--strictPort"], {
-    cwd: CONSOLE_DIR,
-    stdio: "ignore",
-  });
-  await pollUntil("the console preview server", async () => ((await isServing(`${STACK.consoleUrl}/`)) ? true : undefined), 30_000);
-  return child;
-}
-
-/** Bundled Chromium first. On a machine where `playwright install chromium` has not run, an installed Edge or Chrome does the same job. */
-async function launchBrowser(): Promise<Browser> {
-  const wanted = process.env["PW_CHANNEL"];
-  const attempts: Array<{ channel?: string }> = wanted !== undefined ? [{ channel: wanted }] : [{}, { channel: "msedge" }, { channel: "chrome" }];
-  const errors: string[] = [];
-  for (const attempt of attempts) {
-    try {
-      return await chromium.launch({ headless: true, ...attempt });
-    } catch (error) {
-      errors.push(`${attempt.channel ?? "bundled chromium"}: ${error instanceof Error ? error.message.split("\n")[0] : String(error)}`);
-    }
-  }
-  throw new Error(`no browser could be launched. Run \`pnpm exec playwright install chromium\` once, while online.\n  ${errors.join("\n  ")}`);
-}
-
 /**
  * Is the stack exactly where `pnpm demo:reset` leaves it? Cheap read-only
  * checks, so a run straight after a reset (the usual case, and every second
@@ -159,19 +89,6 @@ async function whyNotPristine(): Promise<string | undefined> {
   } catch (error) {
     return `the stack is not answering (${error instanceof Error ? error.message : String(error)})`;
   }
-}
-
-/**
- * Chromium's shutdown is the one step in this run whose duration is not ours:
- * on a machine short of memory it has taken anywhere from 0.1 s to over a
- * minute. Wait a bounded time, then let the process exit take it down with
- * the driver (demo-verify.ts exits explicitly). Returns whether it closed.
- */
-async function closeBrowser(browser: Browser, timeoutMs = 8_000): Promise<boolean> {
-  return Promise.race([
-    browser.close().then(() => true, () => true),
-    sleep(timeoutMs).then(() => false),
-  ]);
 }
 
 // --- the beats ---------------------------------------------------------------
@@ -253,10 +170,7 @@ function beats(): Beat[] {
         );
         assert.ok(!card.includes("model-generated"), "a fixture must never be labelled model-generated");
 
-        const tokenMatch = /quarantineId=(\S+) approvalToken=(\S+) decision=approve/.exec(card);
-        assert.ok(tokenMatch, "the card should carry the quarantine id and one-time token");
-        const [, quarantineId, approvalToken] = tokenMatch;
-        assert.ok(quarantineId !== undefined && approvalToken !== undefined);
+        const { quarantineId, approvalToken } = cardActionOf(card);
         s.quarantineId = quarantineId;
         s.approvalToken = approvalToken;
 
@@ -344,17 +258,9 @@ function beats(): Beat[] {
     {
       title: "The ledger vouches for it",
       run: async () => {
-        // The real script `pnpm verify-ledger` runs (package.json: `tsx packages/ledger/scripts/verify-ledger.ts`),
-        // launched directly so the pnpm shim's start-up is not counted against the demo's time.
-        const out = execFileSync(process.execPath, ["--import", "tsx", path.join("packages", "ledger", "scripts", "verify-ledger.ts")], {
-          cwd: REPO_ROOT,
-          encoding: "utf8",
-          env: process.env,
-        });
-        const match = /chain OK — (\d+) events verified/.exec(out);
-        assert.ok(match, `verify-ledger did not report a verified chain:\n${out}`);
+        // The real script `pnpm verify-ledger` runs, not a re-implementation.
         // 4 staged approvals + MISMATCH_DETECTED, TOOL_QUARANTINED, CONSENT_SHOWN + APPROVED, REPIN.
-        assert.equal(Number(match[1]), 9);
+        assert.equal(runVerifyLedgerScript(), 9);
         const api = await getJson<{ ok: boolean; count?: number }>(`${STACK.gatewayUrl}/api/ledger/verify`);
         assert.deepEqual(api.body, { ok: true, count: 9 });
         return "verify-ledger: chain OK, 9 events; the gateway's /api/ledger/verify agrees";
@@ -422,21 +328,10 @@ export async function verifyDemo(options: VerifyOptions = {}, out: (line: string
     const setupStarted = Date.now();
     preview = await startConsole();
     browser = await launchBrowser();
-    const context = await browser.newContext({ timezoneId: "UTC", locale: "en-US", reducedMotion: "reduce", viewport: { width: 1280, height: 900 } });
-    const externalRequests: string[] = [];
-    // The offline claim, enforced rather than assumed: anything that is not this machine is refused and recorded.
-    await context.route("**/*", (route) => {
-      const url = route.request().url();
-      if (isLocalUrl(url) || url.startsWith("data:") || url.startsWith("about:") || url.startsWith("blob:")) {
-        return route.continue();
-      }
-      externalRequests.push(url);
-      return route.abort();
-    });
+    const { context, externalRequests } = await newOfflineContext(browser);
     const page = await context.newPage();
 
-    client = new Client({ name: "demo-verify", version: "0.0.0" });
-    await client.connect(new StreamableHTTPClientTransport(new URL(`${STACK.gatewayUrl}/mcp`)) as Transport);
+    client = await connectGateway("demo-verify");
 
     const state: State = { client, page, context, externalRequests };
     out(`setup: console served, browser launched, gateway session open (${Date.now() - setupStarted} ms)`);

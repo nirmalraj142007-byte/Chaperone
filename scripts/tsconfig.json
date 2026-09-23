@@ -13,6 +13,8 @@
     "demo-idempotence.ts",
     "demo-call.ts",
     "demo/**/*.ts",
-    "test/**/*.ts"
+    "test/**/*.ts",
+    "../e2e/**/*.ts",
+    "../playwright.config.ts"
   ]
 }

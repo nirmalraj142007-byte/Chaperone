@@ -59,5 +59,28 @@ export default defineConfig({
     // 4-vCPU CI runner gets by default (cores - 1 = 3). Raising individual
     // timeouts instead would only have hidden the pressure.
     poolOptions: { forks: { maxForks: 4, minForks: 1 } },
+    // Coverage gates (`pnpm test` runs with --coverage; a run below a
+    // threshold exits non-zero). Deliberately per package, not global:
+    //   policy   100%: it is ~200 lines and it is the entire security
+    //            property (CLAUDE.md, Tests). A line there that no test
+    //            reaches is a line nobody has shown to be right. If a branch
+    //            looks unreachable, test it (see canonical-guard.test.ts)
+    //            rather than lowering this or excluding the file.
+    //   ledger, gateway  80%: CLAUDE.md's bar for everything else.
+    // Nothing is excluded but type-only files, which have no statements.
+    // gateway/src/index.ts (the process entry point, top-level await, starts
+    // a server) is INCLUDED and counts at 0%; the gate still clears 80% with
+    // it in, which is the honest number.
+    coverage: {
+      provider: "v8",
+      reporter: ["text"],
+      include: ["packages/policy/src/**/*.ts", "packages/ledger/src/**/*.ts", "packages/gateway/src/**/*.ts"],
+      exclude: ["**/types.ts"],
+      thresholds: {
+        "packages/policy/src/**": { statements: 100, branches: 100, functions: 100, lines: 100 },
+        "packages/ledger/src/**": { statements: 80, branches: 80, functions: 80, lines: 80 },
+        "packages/gateway/src/**": { statements: 80, branches: 80, functions: 80, lines: 80 },
+      },
+    },
   },
 });

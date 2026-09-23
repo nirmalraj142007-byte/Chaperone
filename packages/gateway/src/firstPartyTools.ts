@@ -120,7 +120,7 @@ export async function handleApproveChange(
     );
     if (result.decision === "approve") {
       onApproved();
-      return textResult(`Quarantine ${result.quarantineId} approved. New definition pinned as ${(result.newHash ?? "").slice(0, 12)}.`);
+      return textResult(`Quarantine ${result.quarantineId} approved. New definition pinned as ${(result.newHash ?? "").replace(/^sha256:/, "").slice(0, 12)}.`);
     }
     return textResult(`Quarantine ${result.quarantineId} ${result.status}.`);
   } catch (error) {

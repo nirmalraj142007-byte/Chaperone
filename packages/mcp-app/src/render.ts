@@ -81,8 +81,9 @@ function sanitizeUpstreamText(text: string): string {
   return text.replace(INVISIBLE_CONTROL_CHARS, " ");
 }
 
+/** Twelve hex characters of the digest: the `sha256:` scheme prefix is dropped first, or it would eat five of the twelve. */
 function truncateHash(hash: string): string {
-  return hash.slice(0, 12);
+  return hash.replace(/^sha256:/, "").slice(0, 12);
 }
 
 /** Resident-facing cap on a rendered description — see truncateForRender. */
