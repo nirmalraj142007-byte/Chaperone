@@ -3,5 +3,7 @@ export * from "./corpus.js";
 export * from "./baseline-regex.js";
 export * from "./scoreCorpus.js";
 export * from "./baseline-model.js";
+export * from "./baseline2Classify.js";
+export * from "./baseline2Controls.js";
 export * from "./report.js";
 export * from "./guards.js";

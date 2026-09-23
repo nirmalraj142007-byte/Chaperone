@@ -21,11 +21,11 @@ function resolveProvider(): { provider: ModelProvider; kind: string } {
   }
 
   if (kind === "bedrock") {
-    const { bedrockModelId, awsRegion } = loadConfig();
-    if (!bedrockModelId) {
-      throw new Error("ADVISORY_PROVIDER=bedrock requires BEDROCK_MODEL_ID to be set.");
+    const { advisoryModelId, awsRegion } = loadConfig();
+    if (!advisoryModelId) {
+      throw new Error("ADVISORY_PROVIDER=bedrock requires ADVISORY_MODEL_ID to be set.");
     }
-    return { provider: new BedrockModelProvider({ modelId: bedrockModelId, region: awsRegion }), kind };
+    return { provider: new BedrockModelProvider({ modelId: advisoryModelId, region: awsRegion }), kind };
   }
 
   throw new Error(

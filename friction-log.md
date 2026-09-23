@@ -2033,3 +2033,118 @@ through a shell. The warning currently tells developers that a common and
 necessary pattern is dangerous without telling them what to do instead,
 which pushes some fraction of them toward string concatenation — the more
 dangerous of the two options.
+
+---
+
+## Entry 037 — 2026-09-23
+
+**Task attempted:** Step 0(c) of the Phase 12/13 completion brief — invoke
+both `us.amazon.nova-lite-v1:0` and `us.amazon.nova-pro-v1:0` once via the
+Bedrock Converse API from IAM user `chaperone-dev` (account `856820205068`,
+`us-east-1`), the call that both confirms the model IDs resolve and (per the
+brief) auto-enables Bedrock's serverless models on first invocation.
+
+**Steps taken:** `aws sts get-caller-identity` first confirmed the identity
+(IAM user, not root) and `aws configure get region` confirmed `us-east-1`,
+per Step 0(a)/(b). Wrote a short script using
+`@aws-sdk/client-bedrock-runtime`'s `ConverseCommand` (already a dependency
+of `packages/advisory`, per `BedrockModelProvider` — see
+`docs/AWS-BUILDER.md`'s "Verifying the SDK surface") and ran it with `pnpm
+--filter @chaperone/advisory exec tsx`, sending a trivial one-word prompt to
+each model ID in turn.
+
+**Expected versus actual:** Expected either a real completion (confirming
+the inference-profile ID and auto-enablement both work as the brief
+describes) or an `AccessDeniedException` naming a missing IAM action on
+`chaperone-dev`'s policy — the failure mode Step 0(d) is written to handle.
+Actual: both calls returned `AccessDeniedException`, but with a body that
+names neither model nor any IAM action: "Your account is currently being
+verified. Verification normally takes less than 2 hours. Until your account
+is verified, you may not have access to this operation." This is an
+account-level KYC/fraud-verification hold Bedrock applies automatically to
+an account's first attempted invocation, separate from and prior to the
+per-model "use-case verification" gate the brief already knew about for
+Anthropic's models on Bedrock — Amazon's own Nova models hit a different,
+account-wide hold instead of the model-specific one.
+
+**Severity:** blocker, until AWS's own side clears — this is not an IAM
+permissions gap (no policy attached to `chaperone-dev` can fix it; nothing
+about the request was malformed) and not something creating or modifying an
+IAM entity would address, so per this repo's own CLAUDE.md and the phase
+brief's explicit instruction not to create IAM users/roles/policies, no
+workaround was attempted. Phases 12 and 13 cannot make the one real model
+call either phase is scoped around until this clears.
+
+**Workaround:** None applied. AWS's own message gives an ETA ("normally
+less than 2 hours") and an escalation path (`aws-verification@amazon.com`)
+if it doesn't clear in that window — both stated here rather than acted on,
+since retrying inside this session on a fixed schedule would not make the
+verification finish any faster.
+
+**Actionable suggestion:** Budget real calendar time for this specific hold
+when a hackathon account first turns on Bedrock — it is distinct from (and
+apparently not documented alongside) the per-Anthropic-model use-case-review
+gate this project already budgeted for in an earlier phase, so a builder
+who has already cleared that first gate can still be surprised by a second,
+account-wide one on a completely different model family. Re-run the exact
+Converse calls above once the account clears, before assuming Phase 12/13
+are unblocked on the IAM side alone.
+
+---
+
+## Entry 038 — 2026-09-23
+
+**Task attempted:** Re-ran Entry 037's exact preflight (`ConverseCommand`
+against `us.amazon.nova-lite-v1:0` and `us.amazon.nova-pro-v1:0`, IAM user
+`chaperone-dev`) later in the same session, to check whether the account
+verification hold had cleared.
+
+**Steps taken:** Re-ran the same script, then, once the error changed,
+cross-checked with the AWS CLI directly (`aws bedrock-runtime converse`) for
+a fuller error, confirmed both model IDs are real and `ACTIVE` (`aws bedrock
+list-foundation-models`/`list-inference-profiles`), tried the plain
+on-demand model ID in place of the `us.`-prefixed inference-profile ID in
+case that mattered, and tried a third, unrelated model
+(`meta.llama3-8b-instruct-v1:0`) to check whether the failure was
+Nova-specific or account-wide. Also tried `iam:ListAttachedUserPolicies` /
+`ListUserPolicies` / `ListGroupsForUser` on `chaperone-dev` to see its own
+attached policy, which itself returned `AccessDenied` (the user has no
+IAM-introspection permission — expected for a least-privilege dev user, not
+itself a finding).
+
+**Expected versus actual:** Expected either a real completion (verification
+cleared, Bedrock enabled on first call as the phase brief describes) or the
+same `AccessDeniedException` as before. Actual: the error changed —
+`AccessDeniedException` ("account is currently being verified") is gone,
+replaced by `ValidationException: Operation not allowed` on every single
+model tried, model ID format tried, and provider tried (Amazon Nova and
+Meta Llama alike), both via the SDK and the raw AWS CLI. This rules out an
+IAM permissions gap (would be `AccessDeniedException`, naming an action) and
+rules out anything Nova-specific or inference-profile-ID-specific (the
+identical error on `meta.llama3-8b-instruct-v1:0` and on the plain
+on-demand `amazon.nova-lite-v1:0` id). The account-level verification hold
+from Entry 037 appears to have cleared, but something else — most likely
+Bedrock's own account-level model-invocation enablement still propagating,
+though this could equally be an unstated account/region/SCP restriction —
+is still blocking every `Converse` call uniformly.
+
+**Severity:** blocker, same as Entry 037 — Phase 12/13 still cannot make
+the one real model call either phase is scoped around. Distinct root cause
+from Entry 037 though: that one had a stated ETA and escalation path from
+AWS directly; this one's error message gives neither.
+
+**Workaround:** None applied — no IAM entity was created or modified (per
+this repo's CLAUDE.md and the phase brief's explicit instruction), and
+`ValidationException` on every model/provider combination gives nothing
+project-side to fix. Reported to the user rather than guessed at further.
+
+**Actionable suggestion:** If this repeats after a longer wait, check the
+Bedrock console's own "Model access" page for this account/region directly
+(this session cannot — `chaperone-dev` was denied even read-only IAM
+introspection, and there is no Bedrock model-access-status API distinct
+from `ListFoundationModels`, which only lists what an account *could*
+request, not whether it already has invocation rights). Worth asking
+whether this AWS account sits under an AWS Organization with a Service
+Control Policy scoping `bedrock:*` — `ValidationException` rather than
+`AccessDeniedException` is an unusual shape for an SCP denial but not
+impossible depending on how Bedrock's own API maps that case.

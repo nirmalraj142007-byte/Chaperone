@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@chaperone/advisory": "workspace:*",
+    "@chaperone/config": "workspace:*",
     "@chaperone/errors": "workspace:*",
     "@chaperone/logger": "workspace:*",
     "@chaperone/policy": "workspace:*",

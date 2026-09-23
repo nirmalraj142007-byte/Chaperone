@@ -1,5 +1,5 @@
 {
   "schemaVersion": 1,
-  "description": "Human adjudications for baseline-2 'ambiguous' verdicts (see packages/eval/src/baseline-model.ts, Baseline2ItemSummary.needsAdjudication). Populated once baseline 2 actually runs against a live model provider — Bedrock access is pending (support case raised 2026-09-18, no reply as of this phase; see friction-log.md). An empty array here is the honest, correct state until a real run exists, never a placeholder to backfill with invented data.",
+  "description": "Human adjudications for baseline-2 'ambiguous' verdicts, across both the attack corpus (Baseline2ItemSummary.needsAdjudication, packages/eval/src/baseline-model.ts) and the benign controls (Baseline2ControlItemSummary.needsAdjudication, packages/eval/src/baseline2Controls.ts). Populated by packages/eval/scripts/run-baseline2.ts, which appends one entry per ambiguous run with its full raw response text and humanDecision: null — never decided automatically. A live Bedrock model call is currently blocked by an account-wide AWS verification hold, not an IAM or code issue (see friction-log.md Entry 037). An empty array here is the honest, correct state until a real run exists, never a placeholder to backfill with invented data.",
   "adjudications": []
 }

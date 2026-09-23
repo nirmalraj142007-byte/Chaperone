@@ -94,12 +94,31 @@ export function buildBaseline2Prompt(item: AttackCorpusItem): string {
   ].join("\n");
 }
 
+/**
+ * Called with the full, un-hashed response text for one run, right after
+ * classification and before `runBaseline2Item`/`runBaseline2Corpus` discard
+ * it — the only seam that ever sees raw model output outside the process
+ * that made the call. `packages/eval/scripts/run-baseline2.ts` uses it to
+ * write full text into `data/baseline2-adjudication.json` for `ambiguous`
+ * verdicts (the only place that file's rows can come from without a second,
+ * cost-doubling call); `Baseline2RunResult` itself deliberately keeps only
+ * `rawResponseSha` so the committed aggregate report never carries full
+ * model output.
+ */
+export type Baseline2RawResponseListener = (info: {
+  itemId: string;
+  runIndex: number;
+  verdict: Baseline2Verdict;
+  text: string;
+}) => void;
+
 /** One call, one classification. Provider errors propagate — this is offline eval tooling run by a human, not the gateway's fail-closed runtime path, so there is no reason to swallow a failure here. */
 export async function runBaseline2Item(
   provider: ModelProvider,
   item: AttackCorpusItem,
   runIndex: number,
   classify: Baseline2Classifier,
+  onRawResponse?: Baseline2RawResponseListener,
 ): Promise<Baseline2RunResult> {
   const prompt = buildBaseline2Prompt(item);
   const deadline = Date.now() + PER_CALL_TIMEOUT_MS * (RETRY_DELAYS_MS.length + 1);
@@ -115,6 +134,7 @@ export async function runBaseline2Item(
   }
 
   const verdict = classify(item, retryResult.value.text);
+  onRawResponse?.({ itemId: item.id, runIndex, verdict, text: retryResult.value.text });
   return {
     itemId: item.id,
     runIndex,
@@ -145,12 +165,13 @@ export async function runBaseline2Corpus(
   items: readonly AttackCorpusItem[],
   classify: Baseline2Classifier,
   runsPerItem: number = BASELINE2_RUNS_PER_ITEM,
+  onRawResponse?: Baseline2RawResponseListener,
 ): Promise<Baseline2ItemSummary[]> {
   const summaries: Baseline2ItemSummary[] = [];
   for (const item of items) {
     const runs: Baseline2RunResult[] = [];
     for (let runIndex = 0; runIndex < runsPerItem; runIndex++) {
-      runs.push(await runBaseline2Item(provider, item, runIndex, classify));
+      runs.push(await runBaseline2Item(provider, item, runIndex, classify, onRawResponse));
     }
     summaries.push(summarizeRuns(item.id, runs));
   }
@@ -158,21 +179,21 @@ export async function runBaseline2Corpus(
 }
 
 /**
- * TODO(bedrock, blocked): construct a real `BedrockModelProvider` (from
- * @chaperone/advisory) and call `runBaseline2Corpus` against the full
- * attack corpus, once Bedrock model access is granted — support case raised
- * 2026-09-18, no reply as of this phase (see friction-log.md). Everything
- * above this line is real, generic over any `ModelProvider`, and already
- * exercised end-to-end against `MockModelProvider` in
- * test/baseline-model.test.ts. Three concrete things remain, in order:
- *   1. A real `classify` function, tuned against actual model output —
- *      this file deliberately does not guess at one (see Baseline2Classifier
- *      above).
- *   2. A runnable script (mirroring packages/advisory/scripts/run-local.ts's
- *      ADVISORY_PROVIDER=mock/bedrock switch) that wires the real provider,
- *      the real corpus, and that classifier together.
- *   3. Once that script has actually run once: populate every `ambiguous`
- *      verdict's human call into BASELINE2_ADJUDICATION_FILE, and only then
- *      replace baseline 2's `null`/"pending: provider unavailable" fields in
- *      data/baselines.json with real numbers — never before real runs exist.
+ * TODO(bedrock, blocked): call `runBaseline2Corpus` (and its control-item
+ * counterpart, `runBaseline2ControlCorpus` in `baseline2Controls.ts`) for
+ * real, once Bedrock account verification clears (see friction-log.md Entry
+ * 037 — a different, account-wide hold than the earlier Anthropic-model
+ * use-case-review gate). Everything needed to do that is now built:
+ *   1. `classifyBaseline2Response` / `classifyBaseline2ControlResponse`
+ *      (`baseline2Classify.ts`) — PROVISIONAL, tuned only against synthetic
+ *      responses; must be revisited against real output before real numbers
+ *      are trusted (see that file's own doc comment).
+ *   2. `packages/eval/scripts/run-baseline2.ts` — wires the real
+ *      `BedrockModelProvider` (`BASELINE_MODEL_ID`), the real corpus (attacks
+ *      and controls), and both classifiers together.
+ *   3. Once that script has actually run once: `data/baseline2-adjudication.json`
+ *      is populated with every `ambiguous` verdict's full raw response text
+ *      for human review — never decided automatically — and only after a
+ *      human has reviewed it should baseline 2's `null`/"pending" fields in
+ *      data/baselines.json be replaced with real numbers.
  */

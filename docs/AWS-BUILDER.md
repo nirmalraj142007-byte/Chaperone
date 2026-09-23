@@ -1,11 +1,15 @@
 # AWS Builder — the advisory pipeline
 
-Phase 12. Before this phase, `putAdvisory` existed in `packages/ledger` (the
-storage shape) but nothing in the repo ever called it — no producer. This
-phase builds that producer: everything that turns one quarantined tool's
-before/after description into an `Advisory` row, up to but not including the
-one real Bedrock call, which stays out of scope tonight (see "What's left"
-below).
+Phase 12, completed in a later Phase 12/13 session. Before Phase 12, `putAdvisory`
+existed in `packages/ledger` (the storage shape) but nothing in the repo ever
+called it — no producer. Phase 12's first session built that producer:
+everything that turns one quarantined tool's before/after description into
+an `Advisory` row, up to but not including the one real Bedrock call, which
+stayed out of scope that night. This completion session adds: the real
+Bedrock model call (attempted; see "Bedrock model availability" below for
+why it's still not confirmed), AWS-01 (the Step Functions pipeline, `cdk
+synth`-only), and baseline 2's real classifier/runner (Phase 13 — see
+`docs/LIMITATIONS.md` for its current status).
 
 Internally this is a risk-scoring pipeline sitting downstream of
 `gate.ts`'s quarantine detection, not a resident-facing surface in its own
@@ -28,7 +32,7 @@ to this document.
    │   automatically via a stream/EventBridge trigger. Tonight's stand-in:)
    ▼
  pnpm advisory:run-local              [packages/advisory/scripts/run-local.ts]
-   │  loadConfig() → householdId, BEDROCK_MODEL_ID, AWS_REGION
+   │  loadConfig() → householdId, ADVISORY_MODEL_ID, AWS_REGION
    │  resolveProvider() → MockModelProvider (default) | BedrockModelProvider
    ▼
  runLocalAdvisoryPipeline()           [packages/advisory/src/localRunner.ts]
@@ -105,15 +109,40 @@ not recalled from training data:
   `ValidationException`, `AccessDeniedException`, `ResourceNotFoundException`,
   `ModelErrorException`.
 
+## Model choice (Phase 12/13, decided)
+
+Two separate Bedrock models, both via the Converse API and the same
+`BedrockModelProvider` — the model id, not the provider class, is what
+differs (see "Why Bedrock's Converse API" above):
+
+| Use | Env var | Model | Why |
+|---|---|---|---|
+| Advisory diff scoring (`scoreDiff`) | `ADVISORY_MODEL_ID` | Amazon Nova Lite (`us.amazon.nova-lite-v1:0`) | Cheap, fast, adequate for a one-or-two-sentence resident-facing summary. |
+| Eval baseline 2 (`packages/eval/src/baseline-model.ts`) | `BASELINE_MODEL_ID` | Amazon Nova Pro (`us.amazon.nova-pro-v1:0`) | Amazon's own production model — baseline 2 answers "does Amazon's own model resist these attacks without Chaperone?", so it should be Amazon's strongest generally-available model, not their cheapest. |
+
+Both are Amazon's own models, specifically because Anthropic's models on
+Bedrock remain gated behind Anthropic's separate use-case verification for
+this account (unresolved as of this phase). Claude Haiku 4.5 via Bedrock
+remains a documented, swappable-by-config alternative for either use — set
+the corresponding env var to its Bedrock model id, no code change needed —
+but is not wired as either default.
+
 ## Bedrock model availability (CLAUDE.md's separate verification rule)
 
-**Not done tonight — explicit TODO.** AWS Bedrock model access for this
-account is pending approval (support case raised; see the phase brief).
-Confirming `BEDROCK_MODEL_ID` actually resolves in `AWS_REGION` requires a
-real, billed Bedrock call, which is exactly the "one real invocation" this
-phase is scoped to stop short of. Nothing in this repo hard-codes a model
-ID string anywhere — `BEDROCK_MODEL_ID` stays an unset, optional env var
-(`packages/config/src/index.ts`) until that verification actually happens.
+**Attempted this phase, blocked on a different gate than expected.** A
+`ConverseCommand` call to both `us.amazon.nova-lite-v1:0` and
+`us.amazon.nova-pro-v1:0` from this account's IAM user (`chaperone-dev`,
+`us-east-1`) returned `AccessDeniedException` on both — but the message was
+`"Your account is currently being verified. Verification normally takes
+less than 2 hours."`, an account-wide AWS KYC/fraud-verification hold, not
+an IAM permissions gap and not the per-model Anthropic use-case-review gate
+this project already knew about. See friction-log.md Entry 037 for the
+full investigation. Nothing in this repo hard-codes a model ID string
+anywhere — `ADVISORY_MODEL_ID`/`BASELINE_MODEL_ID` stay unset, optional env
+vars (`packages/config/src/index.ts`) until a real call actually succeeds.
+This section is updated with the confirmed-working call and its real output
+once the account clears — see "Verified this phase" below for whichever of
+that evidence exists as of the last edit to this file.
 
 ---
 
@@ -190,31 +219,106 @@ October by re-running `crawl:assemble`.
 
 ---
 
-## What's left (explicit TODOs, not silently deferred)
+## AWS-01: the Step Functions pipeline (Phase 12/13, built — `cdk synth` only)
 
-1. **The one real Bedrock invocation.** Confirming `BEDROCK_MODEL_ID`
-   resolves in `AWS_REGION` — blocked on the pending Bedrock access
-   approval. `ADVISORY_PROVIDER=bedrock pnpm advisory:run-local` is the
-   command that will make it, once access clears; today it only constructs
-   `BedrockModelProvider`, it is never invoked by any test or by the
-   script's own default (`ADVISORY_PROVIDER` defaults to `mock`).
-2. **AWS-01: the CDK Step Functions pipeline.** `pnpm advisory:run-local`
-   is tonight's in-process stand-in, run by hand against DynamoDB Local. A
-   real deployment needs the actual trigger (stream on `chaperone-quarantine`
-   or an EventBridge rule), a Step Functions state machine, and IAM scoped
-   so the advisory role can `PutItem` on `chaperone-advisory` only — never
-   write to `chaperone-ledger-event` (CLAUDE.md: "the Bedrock client holds
-   a read-only IAM role" against the hash-chained ledger; the advisory
-   table is deliberately outside that chain).
-3. **Wiring `checkChangelog` into a real caller** once `packages/analysis`
+`infra/` (a new pnpm workspace package, `@chaperone/infra` — added to
+`pnpm-workspace.yaml` this phase) now has a real CDK v2 app,
+`infra/lib/advisory-pipeline-stack.ts`, replacing the "not built" gap this
+section used to describe:
+
+```
+ DynamoDB Stream (chaperone-quarantine, NEW_IMAGE)
+   │  filtered: eventName=INSERT, NewImage.status.S=pending
+   ▼
+ EventBridge Pipe (chaperone-advisory-quarantine-pipe)
+   │  InputTemplate -> {householdId, quarantineId}
+   │  target invocation: FIRE_AND_FORGET
+   ▼
+ Step Functions (chaperone-advisory-pipeline, STANDARD)
+   │
+   ├─ ScoreAdvisoryTask (Lambda: chaperone-advisory-score)
+   │    getQuarantine(householdId, quarantineId) -> scoreDiff() -> Bedrock
+   │    IAM: bedrock:Converse/InvokeModel + GetItem/Query on
+   │    chaperone-quarantine ONLY. Zero DynamoDB write verbs anywhere on
+   │    this role — verified by packages/ledger/test/iam-advisory.test.ts
+   │    against infra/iam-advisory.json's "chaperone-bedrock-advisory-role".
+   │
+   ├─ Choice: $.status == "scored"?
+   │    no  -> Succeed (AdvisoryUnavailable) — never a pipeline failure,
+   │           matches scoreDiff's own "caller renders without one" contract
+   │    yes ↓
+   │
+   └─ WriteAdvisoryTask (Lambda: chaperone-advisory-write)
+        getAdvisory() idempotency check, then putAdvisory()
+        IAM: GetItem/PutItem on chaperone-advisory ONLY — no Bedrock
+        permission, no ledger-event/pin access, no quarantine access.
+        infra/iam-advisory.json's new "chaperone-advisory-writer-role".
+```
+
+Splitting scoring and writing into two Lambdas under two separate IAM roles
+is what makes "the Bedrock-calling Lambda has zero DynamoDB write
+permission" (this phase's own instruction) true without also meaning the
+pipeline can never write its own result — a single combined function would
+have forced a choice between those two.
+
+**Table ownership, a real change this phase:** `chaperone-quarantine` and
+`chaperone-advisory` are now also defined as CDK-managed `dynamodb.Table`
+constructs inside this stack, built from `packages/ledger/src/schema.ts`'s
+`TABLE_SCHEMAS` directly (never hand-duplicated) so the two can never drift.
+This is new — every table was previously only ever created imperatively by
+`packages/ledger/scripts/migrate.ts`. That script, and every
+`DDB_ENDPOINT`-pointed local/DynamoDB-Local run (`docker compose`, this
+project's whole existing dev loop), is completely unaffected: `migrate.ts`'s
+own `tableExists` guard makes it a harmless no-op against an environment
+where this stack already created the table. This is the Phase 18 migration
+path for a real deployed copy of these two specific tables — a stream (what
+this pipeline needs) can only exist on a table something actually
+provisions and owns, and CDK is that something once deployed.
+
+**Verified this phase — `cdk synth`, never `cdk deploy` (explicitly out of
+scope; that is Phase 18):**
+
+```
+$ cd infra && pnpm exec cdk synth
+```
+
+Synthesizes cleanly to a full CloudFormation template (`infra/cdk.out/`,
+gitignored): both tables (with the quarantine table's stream), both
+Lambdas (esbuild-bundled via `NodejsFunction`, confirmed
+`aws:asset:is-bundled: true` in the synthesized template), the Step
+Functions state machine and its own execution role, the EventBridge Pipe
+and its execution role, and the CDK bootstrap metadata. Inspected the
+synthesized `ScoreAdvisoryFunctionServiceRoleDefaultPolicy` and
+`WriteAdvisoryFunctionServiceRoleDefaultPolicy` statements directly: the
+Bedrock-calling role's statements are exactly `bedrock:InvokeModel` /
+`bedrock:Converse` plus `dynamodb:{BatchGetItem,Query,GetItem,Scan,
+ConditionCheckItem,DescribeTable,GetRecords,GetShardIterator}` scoped to
+`chaperone-quarantine` and its indexes only — no `PutItem`/`UpdateItem`/
+`DeleteItem`/`BatchWriteItem` anywhere; the writer role's statements are
+exactly `dynamodb:GetItem`/`dynamodb:PutItem` scoped to `chaperone-advisory`
+only. `infra/iam-advisory.json` was updated to add the new
+`chaperone-advisory-writer-role` entry, and
+`packages/ledger/test/iam-advisory.test.ts` (7 assertions) still passes
+unmodified against it.
+
+**What's left for Phase 18 (deployment), not this phase:** `cdk bootstrap`
++ `cdk deploy` against a real AWS environment; wiring `CDK_DEFAULT_ACCOUNT`;
+deciding whether the Fargate/ALB gateway stack (CLAUDE.md's other `infra/`
+scope) imports these two tables cross-stack or the reverse.
+
+## Other remaining TODOs (explicit, not silently deferred)
+
+1. **Wiring `checkChangelog` into a real caller** once `packages/analysis`
    exists (see above).
-4. **A direct (non-Bedrock) Anthropic provider.** The interface
+2. **A direct (non-Bedrock) Anthropic provider.** The interface
    (`provider.ts`) is already shaped for it; no implementation exists yet
-   because nothing in this phase's scope calls for one.
+   because nothing in this phase's scope calls for one. Claude Haiku 4.5
+   remains documented as the swappable alternative (see "Model choice"
+   above) without a concrete provider class of its own.
 
 ---
 
-## Verified this phase
+## Verified in Phase 12's first session (mock provider, before this completion pass)
 
 Real run against a real, local DynamoDB (not a description of what it
 would do):

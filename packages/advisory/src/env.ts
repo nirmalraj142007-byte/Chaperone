@@ -4,7 +4,7 @@ import { ConfigError } from "@chaperone/errors";
 /**
  * Advisory's own knob, separate from `@chaperone/config`'s schema: where
  * `changelog.ts` caches successful GitHub REST responses on disk. Everything
- * else the advisory pipeline needs — household id, `BEDROCK_MODEL_ID`,
+ * else the advisory pipeline needs — household id, `ADVISORY_MODEL_ID`,
  * `GITHUB_TOKEN`, AWS region — already lives in `@chaperone/config`, which
  * localRunner.ts's caller (packages/advisory/scripts/run-local.ts) reads
  * directly rather than this duplicating it.

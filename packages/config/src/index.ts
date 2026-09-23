@@ -57,7 +57,18 @@ const envSchema = z.object({
   DDB_TABLE_PREFIX: z.string().min(1).default("chaperone"),
   HOUSEHOLD_ID: z.string().min(1).default("household-demo"),
   CHAPERONE_UPSTREAMS: upstreamsField,
-  BEDROCK_MODEL_ID: z.string().min(1).optional(),
+  // Two separate model ids, not one shared BEDROCK_MODEL_ID: advisory
+  // scoring (packages/advisory/src/scoreDiff.ts) and baseline 2
+  // (packages/eval/src/baseline-model.ts) are deliberately different
+  // Bedrock calls answering different questions, so they are separately
+  // configurable rather than forced to move together. Both are consumed by
+  // the same BedrockModelProvider (packages/advisory/src/providers/bedrock.ts)
+  // — the model id, not the provider class, is what differs. Amazon Nova
+  // Lite/Nova Pro are the decided defaults for this project (see
+  // docs/AWS-BUILDER.md); Claude Haiku 4.5 via Bedrock remains a documented,
+  // swappable-by-config alternative, never hard-coded here.
+  ADVISORY_MODEL_ID: z.string().min(1).optional(),
+  BASELINE_MODEL_ID: z.string().min(1).optional(),
   GITHUB_TOKEN: z.string().min(1).optional(),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace"]).default("info"),
   PORT: z.coerce.number().int().positive().default(3000),
@@ -99,7 +110,8 @@ export interface Config {
   ddbTablePrefix: string;
   householdId: string;
   upstreams: UpstreamConfig[];
-  bedrockModelId?: string;
+  advisoryModelId?: string;
+  baselineModelId?: string;
   githubToken?: string;
   logLevel: string;
   port: number;
@@ -117,7 +129,8 @@ const EXPECTED_SHAPE: Record<string, string> = {
   DDB_TABLE_PREFIX: 'string (default "chaperone")',
   HOUSEHOLD_ID: 'string (default "household-demo")',
   CHAPERONE_UPSTREAMS: "JSON array of {id: string, url: string, label: string}",
-  BEDROCK_MODEL_ID: "string, optional",
+  ADVISORY_MODEL_ID: "string, optional (Bedrock model/inference-profile id for advisory diff scoring)",
+  BASELINE_MODEL_ID: "string, optional (Bedrock model/inference-profile id for eval baseline 2)",
   GITHUB_TOKEN: "string, optional",
   LOG_LEVEL: 'one of "fatal" | "error" | "warn" | "info" | "debug" | "trace" (default "info")',
   PORT: "positive integer (default 3000)",
@@ -166,7 +179,8 @@ export function loadConfig(): Config {
     commit: env.CHAPERONE_COMMIT,
     env: env.CHAPERONE_ENV,
     ...(env.DDB_ENDPOINT !== undefined ? { ddbEndpoint: env.DDB_ENDPOINT } : {}),
-    ...(env.BEDROCK_MODEL_ID !== undefined ? { bedrockModelId: env.BEDROCK_MODEL_ID } : {}),
+    ...(env.ADVISORY_MODEL_ID !== undefined ? { advisoryModelId: env.ADVISORY_MODEL_ID } : {}),
+    ...(env.BASELINE_MODEL_ID !== undefined ? { baselineModelId: env.BASELINE_MODEL_ID } : {}),
     ...(env.GITHUB_TOKEN !== undefined ? { githubToken: env.GITHUB_TOKEN } : {}),
   };
 

@@ -57,14 +57,13 @@ function toChaperoneError(error: unknown): Error {
  * message envelope, matching CLAUDE.md's "either Bedrock or the Anthropic
  * API can back it with a config change" requirement.
  *
- * Not invoked by anything in this phase. CLAUDE.md: "no working model
- * provider yet... build everything that does not require a live call,
- * against a mocked provider, and stop short of the one real invocation."
- * Every test and every `pnpm advisory:run-local` run in this phase
- * constructs `MockModelProvider`, never this class. The one real
- * invocation that would confirm `BEDROCK_MODEL_ID` resolves in the
- * configured region — CLAUDE.md's separate "Bedrock model availability"
- * verification rule — is an explicit TODO; see docs/AWS-BUILDER.md.
+ * Constructed for real as of Phase 12/13, with `ADVISORY_MODEL_ID` (advisory
+ * diff scoring, `packages/advisory/scripts/run-local.ts`) and
+ * `BASELINE_MODEL_ID` (eval baseline 2, `packages/eval/scripts/run-baseline2.ts`)
+ * each supplying their own `modelId` — this class itself is agnostic to
+ * which Bedrock model it calls. See docs/AWS-BUILDER.md, "Bedrock model
+ * availability," for the working model ids confirmed against this account
+ * and region.
  */
 export class BedrockModelProvider implements ModelProvider {
   readonly modelId: string;

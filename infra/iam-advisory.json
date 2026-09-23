@@ -40,7 +40,7 @@
     },
     {
       "name": "chaperone-bedrock-advisory-role",
-      "description": "The scoped role for an isolated advisory-scoring worker — the deployment target this table of permissions is designed for, even though packages/advisory/src/localRunner.ts does not yet run as a separate worker (see the gateway role above for what actually executes today; splitting the two is tracked as deployment work, not done in this phase). This is 'the Bedrock role' this phase's tests mean: it may call Bedrock, and it may read a quarantine row to build the prompt for it, and it may do nothing else. No statement here names ledger-event or pin at all, and the one statement that names quarantine grants only GetItem/Query. There is no PutItem, UpdateItem, DeleteItem, or BatchWriteItem anywhere in this role — a compromised or misbehaving model call cannot alter the record a resident is being asked to trust, cannot touch the append-only ledger, and cannot re-pin anything.",
+      "description": "AWS-01 (Phase 12/13): now the real, deployed (via `cdk synth`, not yet `cdk deploy` — see infra/lib/advisory-pipeline-stack.ts) execution role of the ScoreAdvisory Lambda, the first stage of the Step Functions pipeline that replaces packages/advisory/src/localRunner.ts's dev-only stand-in. This is 'the Bedrock role' this phase's tests mean: it may call Bedrock, and it may read a quarantine row to build the prompt for it, and it may do nothing else. No statement here names ledger-event, pin, or advisory at all, and the one statement that names quarantine grants only read verbs. There is no PutItem, UpdateItem, DeleteItem, or BatchWriteItem anywhere in this role — a compromised or misbehaving model call cannot alter the record a resident is being asked to trust, cannot touch the append-only ledger, cannot re-pin anything, and cannot even write the very advisory score it computes (see chaperone-advisory-writer-role below, a completely separate role under a separate Lambda, for that).",
       "statements": [
         {
           "sid": "BedrockInvoke",
@@ -56,6 +56,18 @@
             "arn:aws:dynamodb:*:*:table/chaperone-quarantine",
             "arn:aws:dynamodb:*:*:table/chaperone-quarantine/index/*"
           ]
+        }
+      ]
+    },
+    {
+      "name": "chaperone-advisory-writer-role",
+      "description": "AWS-01 (Phase 12/13): the execution role of the WriteAdvisory Lambda, the pipeline's second and final stage — infra/lib/advisory-pipeline-stack.ts. Reached only when the Bedrock role above returns a scored result (an 'unavailable' result short-circuits the state machine to Succeed before this Lambda is ever invoked). This role is the mirror image of the Bedrock role: it may PutItem/GetItem on chaperone-advisory only (GetItem for the same idempotent-skip-if-already-scored check packages/advisory/src/localRunner.ts already does), and it has no Bedrock permission, no ledger-event or pin access, and no access to quarantine at all — it never re-derives or re-checks anything about the change itself, it only persists a score another role already computed.",
+      "statements": [
+        {
+          "sid": "AdvisoryReadWriteOnly",
+          "effect": "Allow",
+          "actions": ["dynamodb:GetItem", "dynamodb:PutItem"],
+          "resources": ["arn:aws:dynamodb:*:*:table/chaperone-advisory"]
         }
       ]
     }

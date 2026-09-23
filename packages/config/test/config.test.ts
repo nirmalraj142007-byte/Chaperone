@@ -130,4 +130,27 @@ describe("@chaperone/config loadConfig", () => {
       expect(() => loadConfig()).toThrow(ConfigError);
     });
   });
+
+  it("leaves advisoryModelId and baselineModelId undefined when unset", () => {
+    withEnv({ CHAPERONE_UPSTREAMS: VALID_UPSTREAMS, ADVISORY_MODEL_ID: undefined, BASELINE_MODEL_ID: undefined }, () => {
+      const config = loadConfig();
+      expect(config.advisoryModelId).toBeUndefined();
+      expect(config.baselineModelId).toBeUndefined();
+    });
+  });
+
+  it("reads ADVISORY_MODEL_ID and BASELINE_MODEL_ID independently", () => {
+    withEnv(
+      {
+        CHAPERONE_UPSTREAMS: VALID_UPSTREAMS,
+        ADVISORY_MODEL_ID: "us.amazon.nova-lite-v1:0",
+        BASELINE_MODEL_ID: "us.amazon.nova-pro-v1:0",
+      },
+      () => {
+        const config = loadConfig();
+        expect(config.advisoryModelId).toBe("us.amazon.nova-lite-v1:0");
+        expect(config.baselineModelId).toBe("us.amazon.nova-pro-v1:0");
+      },
+    );
+  });
 });
