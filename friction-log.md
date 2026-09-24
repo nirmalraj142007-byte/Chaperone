@@ -2163,16 +2163,20 @@ Control Policy scoping `bedrock:*` — `ValidationException` rather than
 `AccessDeniedException` is an unusual shape for an SCP denial but not
 impossible depending on how Bedrock's own API maps that case.
 
-**Update, 2026-09-24 (recorded from the author's report; the details below
-are thin on purpose):** Bedrock access for this account was declined, and
-the cause was the account's history, not a propagation delay, an IAM gap or
-a model-specific gate. The `ValidationException: Operation not allowed`
-above gave no hint of that, which is the finding: an account-level refusal
-surfaced as a generic validation error naming no cause and no remedy, on
-every model tried. Not recorded here, because it was not captured in this
-log at the time: the wording of the decline and where it was communicated.
-Consequence for this project: no model provider is chosen, and nothing in
-the repo states one as chosen (`docs/LIMITATIONS.md`).
+**Update, 2026-09-24 (AWS Support's reply, paraphrased from the author's
+report):** Support replied that the request for Bedrock model access in
+us-east-1 had been reviewed and could not be approved. Access depends on
+region, payment history and overall account usage; this account does not
+currently meet the criteria; the decision is not permanent and is
+re-evaluated automatically as usage and billing history build up. The same
+reply confirmed that the Anthropic use-case form error and the `Operation not
+allowed` error above share this root cause. So the cause was the account's
+history, not a propagation delay, an IAM gap or an organisation policy (this
+entry's guesses). The finding stands: an account-level refusal surfaced as a
+generic `ValidationException` naming no cause and no remedy, on every model
+tried, and the use-case-form error gave no hint that it was the same problem.
+Consequence for this project: no model provider is chosen, and nothing in the
+repo states one as chosen (`docs/LIMITATIONS.md`).
 
 
 ## Entry 039 — 2026-09-23

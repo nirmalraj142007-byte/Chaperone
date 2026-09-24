@@ -30,13 +30,17 @@ fails the build if anyone tries.
 fixed before crawl 2, so the analysis can fill them but cannot add new ones
 without an additive appendix commit.
 
-**The interim crawl.** A third capture is scheduled for 2026-10-02, between
-the two. It is disclosed here so that nobody has to discover it. It has not
-run as of this writing (2026-09-24). What is fixed about it: it runs under the
-same capability classifier as crawl 2 (classifier `v2`, see
-[`LIMITATIONS.md`](LIMITATIONS.md)), and the pre-registered comparison is
-crawl 1 against crawl 2, not either against the interim capture.
-{{PENDING: what the 2026-10-02 interim crawl was used for and what it showed — 2026-10-02}}
+**The interim crawl.** A third capture is planned for 2026-10-02, between the
+two. It was added on 2026-09-18, after crawl 1, so it is **not
+pre-registered**, and it is announced in `CRAWL_DATES.md` (an appended
+section; the pre-registered lines above it are untouched) before it runs. It
+has not run as of this writing (2026-09-24). It is supplementary to the
+headline pair: it runs under the same capability classifier as crawl 2
+(classifier `v2`, see [`LIMITATIONS.md`](LIMITATIONS.md)), it is used only to
+show drift over time and to detect changes that revert, and its segment rates
+are never headlines. The pre-registered comparison is crawl 1 against crawl 2,
+2026-09-15 to 2026-10-20, 35 days.
+{{PENDING: the 2026-10-02 interim crawl's timestamp and what it showed about drift over time and reverted changes — 2026-10-02}}
 
 The candidate list is the one committed before crawl 1 and is used unchanged
 for crawl 2. A server that appeared in October cannot enter the comparison,

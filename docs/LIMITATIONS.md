@@ -28,11 +28,14 @@ What happened, in order, with the evidence for each step:
    allowed` on every model and provider tried, including a non-Amazon
    model (friction-log Entry 038). The message named no cause and no
    remedy. Entry 038 could only guess (propagation delay, or an
-   organisation-level policy). The outcome, reported by the author on
-   2026-09-24, is that **Bedrock access for this new account was
-   declined**: a consequence of the account's history, which nothing in the
-   error text hinted at. The wording and date of the decline itself were not
-   recorded in the friction log.
+   organisation-level policy). On 2026-09-24 AWS Support replied that the
+   request for Bedrock model access in us-east-1 had been reviewed and could
+   not be approved: access depends on region, payment history and overall
+   account usage, and **this account does not currently meet the criteria**.
+   The decision is not permanent and is re-evaluated automatically as usage
+   and billing history build up. The same reply confirmed that the
+   Anthropic use-case form error and the `Operation not allowed` error share
+   this root cause. Nothing in either error text hinted at that.
 4. No live Bedrock model call has ever succeeded from this project.
 
 What that means for every claim in this repo:

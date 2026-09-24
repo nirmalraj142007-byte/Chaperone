@@ -157,9 +157,10 @@ ever succeeded from this project**, and no model provider is currently chosen
   on every model and provider tried, through both the SDK and the raw CLI.
   The status code says "your request was invalid" when nothing about the
   request was, and the message gives no cause and no remedy, unlike the first
-  error, which at least gave an ETA and a contact. The cause turned out to be
-  the account's history: access for this new account was declined. Nothing in
-  the error hinted at that, and there is no API distinct from
+  error, which at least gave an ETA and a contact. AWS Support later said the
+  cause was the account's region, payment and usage history (not permanent,
+  re-evaluated automatically), and that the Anthropic use-case form error
+  shares it. Nothing in either error hinted at that, and there is no API distinct from
   `ListFoundationModels` that reports whether an account may invoke a model
   (Entry 038, blocker, with the 2026-09-24 update).
 
