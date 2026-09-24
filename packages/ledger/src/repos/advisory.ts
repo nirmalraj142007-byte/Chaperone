@@ -42,8 +42,8 @@ export async function getAdvisory(quarantineId: string): Promise<Advisory | unde
 /**
  * Fixture advisories — the offline demo's stand-in for a model call.
  *
- * Real Bedrock advisory output does not exist yet (AWS account restriction,
- * support case open; see docs/AWS-BUILDER.md). The offline demo still needs
+ * Real advisory output does not exist: no model provider is chosen (Bedrock
+ * access for this account was declined; see docs/LIMITATIONS.md). The offline demo still needs
  * the consent card's advisory line to appear instantly, so
  * `pnpm demo:reset` writes hand-written rows from demo/advisory-fixtures.json.
  *

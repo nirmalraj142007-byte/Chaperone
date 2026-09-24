@@ -16,7 +16,7 @@ In this order, stopping at the first failure:
 
 | # | Command | What it proves | Needs | Takes |
 |---|---|---|---|---|
-| 1 | `pnpm test` | Every package's unit and integration tests, with **coverage gates**: `packages/policy` 100% statements, branches, functions and lines; `packages/ledger` and `packages/gateway` 80%. Below a gate, the command exits 1. | Nothing. No Docker. | ~110 s (84 files, 866 tests) |
+| 1 | `pnpm test` | Every package's unit and integration tests, with **coverage gates**: `packages/policy` 100% statements, branches, functions and lines; `packages/ledger` and `packages/gateway` 80%. Below a gate, the command exits 1. | Nothing. No Docker. | ~110 s (85 files, 871 tests) |
 | 2 | `pnpm spec` | The MCP conformance suite: 27 named assertions about the wire protocol (initialize, versions, sessions, progress, cancellation, error shapes, the `{upstreamId}__` namespacing that is the one deliberate non-transparency). In-process. | Nothing. | ~21 s |
 | 3 | `pnpm test:stack` | The four suites that need real processes: `resumption` (10 independent kill-the-socket-and-resume iterations, `place_order` invoked exactly once each, counted by the upstream itself), `long-stream` (a live SSE stream held ~180 s with progress notifications), `ledger-tamper` (edit a type, edit an actor, delete a look-alike event: each is detected at the right index), `refusal-final` (a refused change is not asked about again). | Docker stack, migrated, pins bootstrapped. | ~196 s |
 | 4 | `pnpm test:e2e` | Two Playwright specs against the real stack, below. | Docker stack; Playwright's Chromium. | ~47 s |
@@ -78,6 +78,8 @@ into a green run.
 | `pnpm demo:idempotence` | Two resets, `ddb:dump` after each, diffed. | Docker stack | ~15 s |
 | `pnpm depcruise` | `packages/policy` imports no model client and there are no cycles. A product claim, not lint. | Nothing | seconds |
 | `pnpm check-claims` | Committed prose contains no rounded interval language. | Nothing | seconds |
+| `pnpm check-placeholders` | Committed prose contains no `PENDING` placeholder marker (the double-brace kind, described below). **A pre-submission step, expected to fail until 2026-10-20 and not in CI**: see below. | Nothing | seconds |
+| `pnpm demo:ledger` | `pnpm verify-ledger` with the demo stack's local addresses filled in, for a shell that has not exported `DDB_ENDPOINT` and `CHAPERONE_UPSTREAMS`. Used by the README quickstart. | Docker stack | ~2 s |
 | `pnpm typecheck`, `pnpm lint` | Types (including scripts, e2e and the console) and lint. | Nothing | about a minute |
 
 ## `pnpm bench` is not in `test:all`, and is red on purpose
@@ -89,6 +91,33 @@ Local is not one we will stand behind. A red `pnpm bench` today is the
 intended state. Putting it in `test:all` would make "everything passes"
 impossible to say, and loosening the budget to turn it green would be the wrong
 fix. It joins `test:all` when Phase 18 lands.
+
+## Before you submit: `pnpm check-placeholders`
+
+Committed prose marks every number that has not been measured yet with a
+placeholder of the form `{{PENDING: <what> — <when>}}` <!-- check-placeholders:allow: documents the marker syntax, is not itself a marker -->, so that a value is never invented to fill a gap. The
+README, `docs/QA.md`, `docs/LIMITATIONS.md` and `docs/PRODUCT-FEEDBACK.md`
+carry them today (drift rate, baseline 2, production latency, the quickstart
+timing, the interim crawl, Kiro and CDK deploy feedback).
+
+```
+pnpm check-placeholders
+```
+
+It scans every committed `*.md` plus everything under `demo/` and `docs/`,
+prints each remaining marker with its file and line, and exits 1 if there is
+one. It exits 0 only when none remain. Run it after crawl 2 and the last
+measurement have been written in, and before submission on 2026-10-22: a
+green run means every marker was replaced with a measured value or an explicit
+statement that the thing was not measured.
+
+It is **not** in `test:all` and **not** in `.github/workflows/ci.yml`, on
+purpose. The markers are correct and expected until 2026-10-20; a red CI for
+something that cannot exist yet would teach everyone to ignore CI. Add it to
+CI in the same commit that replaces the last marker, if at all. A line that
+documents the marker syntax itself, like the one above, opts out with the text
+`check-placeholders:allow` on that line. Its finder is unit-tested in
+`scripts/test/placeholders.test.ts`.
 
 ## Before you run anything
 

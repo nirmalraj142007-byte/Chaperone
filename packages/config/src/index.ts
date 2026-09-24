@@ -63,10 +63,9 @@ const envSchema = z.object({
   // Bedrock calls answering different questions, so they are separately
   // configurable rather than forced to move together. Both are consumed by
   // the same BedrockModelProvider (packages/advisory/src/providers/bedrock.ts)
-  // — the model id, not the provider class, is what differs. Amazon Nova
-  // Lite/Nova Pro are the decided defaults for this project (see
-  // docs/AWS-BUILDER.md); Claude Haiku 4.5 via Bedrock remains a documented,
-  // swappable-by-config alternative, never hard-coded here.
+  // — the model id, not the provider class, is what differs. No provider or
+  // model is chosen for either use (docs/LIMITATIONS.md, "The model provider
+  // is not decided"), so neither has a default here.
   ADVISORY_MODEL_ID: z.string().min(1).optional(),
   BASELINE_MODEL_ID: z.string().min(1).optional(),
   GITHUB_TOKEN: z.string().min(1).optional(),

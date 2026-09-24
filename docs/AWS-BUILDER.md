@@ -109,23 +109,28 @@ not recalled from training data:
   `ValidationException`, `AccessDeniedException`, `ResourceNotFoundException`,
   `ModelErrorException`.
 
-## Model choice (Phase 12/13, decided)
+## Model choice: PENDING (provider not decided)
 
-Two separate Bedrock models, both via the Converse API and the same
-`BedrockModelProvider` — the model id, not the provider class, is what
-differs (see "Why Bedrock's Converse API" above):
+**Status as of 2026-09-24: no provider or model is chosen for either use.**
+An earlier version of this section named Amazon Nova Lite and Nova Pro on
+Bedrock as decided defaults. That was a working assumption made while
+Bedrock access looked recoverable, and it is withdrawn: Bedrock access for
+this account was declined (see `docs/LIMITATIONS.md`, "The model provider is
+not decided", and friction-log Entries 037 and 038).
 
-| Use | Env var | Model | Why |
-|---|---|---|---|
-| Advisory diff scoring (`scoreDiff`) | `ADVISORY_MODEL_ID` | Amazon Nova Lite (`us.amazon.nova-lite-v1:0`) | Cheap, fast, adequate for a one-or-two-sentence resident-facing summary. |
-| Eval baseline 2 (`packages/eval/src/baseline-model.ts`) | `BASELINE_MODEL_ID` | Amazon Nova Pro (`us.amazon.nova-pro-v1:0`) | Amazon's own production model — baseline 2 answers "does Amazon's own model resist these attacks without Chaperone?", so it should be Amazon's strongest generally-available model, not their cheapest. |
+Two separate uses still want a model, and they are still separate knobs, so
+the eventual choice can differ between them:
 
-Both are Amazon's own models, specifically because Anthropic's models on
-Bedrock remain gated behind Anthropic's separate use-case verification for
-this account (unresolved as of this phase). Claude Haiku 4.5 via Bedrock
-remains a documented, swappable-by-config alternative for either use — set
-the corresponding env var to its Bedrock model id, no code change needed —
-but is not wired as either default.
+| Use | Env var | Model |
+|---|---|---|
+| Advisory diff scoring (`scoreDiff`) | `ADVISORY_MODEL_ID` | not chosen |
+| Eval baseline 2 (`packages/eval/src/baseline-model.ts`) | `BASELINE_MODEL_ID` | not chosen |
+
+Nothing in this repo has ever produced a model-written advisory or a
+baseline-2 number. The `ModelProvider` interface described above is the seam
+a chosen provider plugs into; `BedrockModelProvider` is written against the
+Bedrock Converse API and unit-tested at the SDK boundary, and has never made
+a successful live call.
 
 ## Bedrock model availability (CLAUDE.md's separate verification rule)
 

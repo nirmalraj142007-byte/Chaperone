@@ -2,8 +2,8 @@
  * `pnpm --filter @chaperone/eval exec tsx scripts/run-baseline2.ts` — the
  * real baseline-2 run: the full attack corpus (30 items) plus all 10 benign
  * controls, 3 runs per item, against `BASELINE_MODEL_ID` via Bedrock's
- * Converse API (the decided default: Amazon Nova Pro — see
- * docs/AWS-BUILDER.md). Requires `BASELINE_MODEL_ID` and `AWS_REGION` to be
+ * Converse API (no model is chosen yet — see docs/LIMITATIONS.md, "The model
+ * provider is not decided"). Requires `BASELINE_MODEL_ID` and `AWS_REGION` to be
  * set (see .env.example) and a Bedrock-reachable AWS credential in the
  * environment already — this script never constructs or prints one.
  *

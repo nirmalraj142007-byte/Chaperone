@@ -1,7 +1,7 @@
 {
   "$fixture": true,
   "notice": "FIXTURE, NOT MODEL OUTPUT. Every summary and score in this file was written by a person on the date below. No model produced any of it. It exists only so the offline demo's consent card can show an advisory line instantly, with no network call. Every surface that displays one of these rows labels it as a fixture. See demo/OFFLINE.md.",
-  "todo": "TODO(blocker: Bedrock calls are unavailable because of an AWS account restriction, support case open; resolves once live Bedrock calls work, before the Oct 22, 2026 submission cutoff): run `pnpm advisory:run-local` for the demo mutation, record what the model really says, and either replace these rows with that output (modelId set to the real model, no longer a fixture) or delete this file and let the card show its advisory-unavailable state.",
+  "todo": "TODO(blocker: no model provider is chosen, because Bedrock access for this AWS account was declined; resolves when a provider is chosen and a live call works, before the Oct 22, 2026 submission cutoff, otherwise this fixture stays, labelled): run `pnpm advisory:run-local` for the demo mutation, record what the model really says, and either replace these rows with that output (modelId set to the real model, no longer a fixture) or delete this file and let the card show its advisory-unavailable state.",
   "writtenOn": "2026-09-23",
   "modelId": "fixture:hand-written-not-model-output",
   "rows": [

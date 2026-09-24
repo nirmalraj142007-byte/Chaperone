@@ -40,7 +40,7 @@ export function demoBeats(ctx: ChecklistContext): Beat[] {
     {
       title: "The upstream changes a tool's description",
       steps: [
-        `open ${ctx.consoleUrl}/upstreams  -> click "Mutate add_item"      (or: curl -X POST http://localhost:4000/control/mutate)`,
+        `open ${ctx.consoleUrl}/upstreams  -> click "Mutate add_item"      (or: pnpm demo:mutate)`,
       ],
     },
     {
@@ -63,7 +63,7 @@ export function demoBeats(ctx: ChecklistContext): Beat[] {
       title: "The tool is back, and the ledger vouches for it",
       steps: [
         "pnpm demo:call grocery__add_item item=batteries      -> Added again",
-        "pnpm verify-ledger                                   -> chain OK",
+        "pnpm demo:ledger                                     -> chain OK   (pnpm verify-ledger is the same walk, once DDB_ENDPOINT and CHAPERONE_UPSTREAMS are exported)",
       ],
     },
     {

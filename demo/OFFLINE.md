@@ -19,8 +19,9 @@ because they are what a reader could be misled by.
 The card has a short summary line under the before/after text, and the
 console's queue detail has the same line with a 0-100 score. In a normal
 run a language model writes them. **No model wrote the ones in this demo.**
-Real Bedrock output does not exist yet: the AWS account is restricted and a
-support case is open (friction-log Entries 037 and 038).
+Real model output does not exist: no model provider has been chosen. Bedrock
+access for this AWS account was declined (friction-log Entries 037 and 038;
+`docs/LIMITATIONS.md`, "The model provider is not decided").
 
 | | |
 |---|---|
@@ -30,7 +31,7 @@ support case is open (friction-log Entries 037 and 038).
 | Model ID stored | `fixture:hand-written-not-model-output` |
 | How it is labelled where you see it | Card (text): `Advisory (fixture: hand-written for the offline demo, not model output): ...`. Card (HTML): the same words as the section label. Console detail: `Advisory · fixture, hand-written, not model output · not the decision`. Console queue: a `fixture` tag beside the score. |
 | What it cannot do | It cannot decide anything. The gate never reads an advisory. The card and console say so, and `packages/policy` has no import path to any of this. |
-| Its TODO | Blocker: Bedrock calls unavailable (AWS restriction, support case open). Resolves once live calls work, before the 2026-10-22 cutoff: run `pnpm advisory:run-local` on the demo mutation and either replace the row with the real output or delete the file and let the card show its no-advisory state. The same text is in the file. |
+| Its TODO | Blocker: no model provider is chosen (Bedrock access for this account was declined). Resolves when one is chosen and a live call works, before the 2026-10-22 cutoff: run `pnpm advisory:run-local` on the demo mutation and either replace the row with the real output, or delete the file and let the card show its no-advisory state. If no provider is chosen by then, the fixture stays, labelled, and the submission says so. The same text is in the file. |
 
 The fixture is attached to a hash, not to a quarantine, and the hash is read
 from the running upstream after it has really been mutated (see "how reset
@@ -99,6 +100,7 @@ Once, while online:
 pnpm install
 pnpm build
 docker compose build                       # builds the gateway and demo-upstream images
+docker compose pull ddb                    # DynamoDB Local (an image, not a build; found missing from this list 2026-09-24)
 docker pull alpine/socat                   # only for the no-egress overlay below
 pnpm exec playwright install chromium      # only for demo:verify
 ```

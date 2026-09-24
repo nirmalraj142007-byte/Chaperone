@@ -7,164 +7,310 @@ that claim changes.
 
 # Chaperone
 
-Cross-session state for an assistant that has none. A resident approves
-"Shopping List" once; nothing in MCP binds what that tool claimed at
-approval to what it claims on every connect after that. Chaperone
-content-hashes each tool definition at the moment a household approves it,
-and withholds any tool whose definition has drifted, showing the changed
-clause on a card before anything runs.
+## What it does
 
-Internally it is a spec-2025-11-25 Streamable HTTP MCP server that proxies
-N upstream servers. The entire security property is a synchronous hash
-comparison in `packages/policy` — no LLM in that package's import graph,
-enforced by `pnpm depcruise`.
+When a resident approves a tool for the household's assistant, Chaperone
+remembers exactly what that tool said it would do. The next time the tool's
+words have changed, the assistant is not allowed to use it, and the resident
+sees a short card with the sentence they approved beside the sentence that
+replaced it. They choose to approve the change or keep it blocked, and until
+they do, every other tool carries on working.
 
-MIT licensed. The repo is public from commit one.
+## Quickstart: about 90 seconds, no AWS account
 
-## Measured results
+You need Git, Node 24 (see `.nvmrc`), pnpm 12.4.1 (`corepack enable` picks it
+up from `package.json`), and Docker Desktop running. On Windows, clone into a
+short path such as `C:\src\chaperone`: a deeply nested folder trips the
+260-character path limit and `git clone` stops with "Filename too long".
 
-Two numbers here are externally verifiable: anyone can rerun them. Both are
-reported as measured, including where the measurement is unflattering.
+**1. Set up** (the `docker compose` step builds two images, and is most of the
+first-run time):
 
-### Boot success — an ecosystem finding
+```
+git clone https://github.com/nirmalraj142007-byte/Chaperone.git
+cd Chaperone
+pnpm install
+pnpm build
+docker compose up -d --build
+pnpm demo:reset
+```
 
-> 47.8% of public MCP servers with a discoverable install command did not
-> start from their own documented setup instructions (152 booted of 291
-> attempted; 656 had no discoverable install path at all).
+`pnpm demo:reset` builds the demo state, prints the beats, and takes about 15
+seconds. Skipping `pnpm build` fails with `ERR_MODULE_NOT_FOUND`, because the
+scripts load the workspace packages from their built output.
 
-Measured against 947 candidate servers in crawl 1 (2026-09-15). This is a
-measurement of other people's repositories, not of this one. Regenerate with
-`pnpm crawl:boot-rate --crawl-id=crawl-1`; the counts are in
-`data/boot-rate.json` and `benchmarks/boot-rate.json`, both derived from
-`data/crawl-1-report.json` by one shared function.
+**2. Run the demo** (each command is copy-pasteable; run them in order):
 
-### Added latency — measured, and not yet verified against the target
+```
+pnpm demo:call
+pnpm demo:call grocery__add_item item=batteries
+pnpm demo:mutate
+pnpm demo:call grocery__add_item item=batteries
+```
 
-**The 30 ms added-p95 budget is UNVERIFIED.** It has not been measured
-against provisioned DynamoDB, and this repo does not claim to have met it.
-Phase 18 takes that measurement and publishes a second file; until then the
-budget is a target the build enforces, not a result.
+1. `pnpm demo:call` lists the tools the assistant can see.
+2. The first `add_item` works: `Added 1 × batteries to the shopping list.`
+3. `pnpm demo:mutate` makes the tool's server change `add_item`'s description,
+   which is the thing that happens in the real world without anyone telling
+   you.
+4. The second `add_item` is refused, in words that never change, followed by
+   the card: the added sentence marked `{+ +}`, "can change your data", "You
+   approved this on 12 January", and two lines that begin `[Approve]` and
+   `[Keep blocked]`.
 
-What has been measured, at concurrency 4 over 1000 samples per mode against
-**DynamoDB Local**:
+Copy the `[Approve]` line from the card, put `pnpm demo:call` in front of it,
+and run it. Then:
 
-| | added p50 | added p95 | added p99 |
-|---|---|---|---|
-| `backend: dynamodb-local` | 480.53 ms | 591.89 ms | 635.63 ms |
+```
+pnpm demo:call grocery__add_item item=batteries
+pnpm demo:ledger
+```
 
-That is not "Chaperone's added latency." It is Chaperone's added latency
-*against a single-writer storage backend*, and the distinction is the whole
-finding.
+The tool works again, and `pnpm demo:ledger` walks the household's hash chain
+and prints `chain OK — 9 events verified`.
 
-**The result, stated as a cost model rather than a millisecond count:**
+Optional, in a second terminal, to see it the way the resident does:
 
-> Every gated `tools/call` performs one pin read plus two resumable-SSE
-> event-store events, each of which is a sequence `UpdateItem` and a
-> `PutItem` — **four DynamoDB write operations per tool call.**
+```
+pnpm --filter @chaperone/console exec vite preview
+```
 
-That count is a property of Chaperone and transfers between environments.
-The milliseconds do not: they belong to the backend. Against DynamoDB Local
-— a single-writer SQLite process whose throughput is flat at roughly 60
-writes/second regardless of client concurrency (measured: per-op p50 20.7 ms
-at concurrency 1, 54.7 ms at 4, 127.3 ms at 8, throughput 42–70 ops/s
-throughout) — those four writes dominate the added latency entirely, and
-dominate it more as concurrency rises. Storage is the measurement; the
-gateway's own work is a rounding error beside it.
+then open <http://localhost:4173/queue> (the held change and its card),
+`/ledger` (the chain), and `/corpus` (the evidence so far). `pnpm demo:reset`
+puts everything back for another run.
 
-This is the cost of resumable SSE being real rather than claimed. Every
-event that a client could later replay with `Last-Event-ID` has to be
-durable before the response goes out. A gateway that skipped those writes
-would be faster and would lose the flagship property.
+To check all of it headlessly: `pnpm demo:verify` walks the same beats in a real
+browser and asserts each one (11 pass, 1 skipped by design: the drift chart
+has nothing to draw until crawl 2). It needs Chromium once:
+`pnpm exec playwright install chromium`.
 
-`benchmarks/latency.json` records `environment.backend` as a required
-field — the bench runner reads it from the gateway's own `/healthz` and
-refuses to write a file without it, because a latency number that cannot be
-attributed to a backend cannot be compared to anything, including the
-`dynamodb-aws` run Phase 18 will produce. Both runs get reported.
+**Two things in the demo are hand-written stand-ins, and both are labelled on
+screen.** The one-line "advisory" on the card is a fixture, not model output,
+and the household's "12 January" approval history is staged. Everything else,
+the check, the refusal text, the hashes and the ledger, is the real code.
+[`demo/OFFLINE.md`](demo/OFFLINE.md) lists exactly which is which.
 
-The budget is enforced by exit code, not by a sentence: `pnpm bench` exits 1
-when added p95 exceeds 30 ms or p99 exceeds 60 ms. **It currently exits 1.**
-A performance claim that does not fail a build is a performance hope.
+**Measured**, from a fresh clone on the author's Windows laptop (16 threads):
+{{PENDING: quickstart time measured from a clean clone of the final commit — Phase 21 acceptance run}}
 
-### What is not claimed
-
-Chaperone's block rate against its own attack corpus is **tautological** —
-the attacks are author-written and the mechanism is a hash comparison, so it
-cannot come out any other way. It is reported only as a delta against
-baseline 2, never as an absolute. `packages/eval` has a test that fails if
-an absolute block rate leaks into a report object.
-
-## Running it
+**One-time online prerequisites**, from [`demo/OFFLINE.md`](demo/OFFLINE.md).
+After these, the demo needs no network at all:
 
 ```
 pnpm install
-docker compose up -d          # ddb, demo-upstream, gateway
-pnpm ddb:migrate              # idempotent
-pnpm pin:bootstrap            # pin the demo upstream's tools
+pnpm build
+docker compose build                       # builds the gateway and demo-upstream images
+docker compose pull ddb                    # DynamoDB Local
+docker pull alpine/socat                   # only for the no-egress overlay
+pnpm exec playwright install chromium      # only for demo:verify
 ```
 
-Then:
+## What this does not prove
 
+This is the audit of the claims this project could have made and does not.
+
+- **"Quarantine caught 100% of changed tools" is cut from every claim.** It is
+  a hash comparison run against an attack corpus the author wrote, so it
+  cannot come out any other way. It is **tautological**: a correctness
+  property, not a result. A block rate is reported only as a delta against
+  baseline 2 (an unaided model), never as an absolute, and `packages/eval` has
+  a test that fails if an absolute leaks into a report.
+- **The drift rate is not measured yet.** Crawl 2 runs on 2026-10-20, 35 days
+  after crawl 1. The prediction (20 to 40%) was committed before crawl 1 and
+  will be reported against whatever comes out, including if it is low.
+- **Baseline 2 is not measured.** No model provider is chosen, and Bedrock
+  access for this AWS account was declined. Nothing in this repo states a
+  provider as chosen.
+- **The sample is the servers that boot without credentials**, 152 of 947
+  candidates. That likely understates drift.
+- **Classifying a change is one person's reading.** Detecting that a change
+  happened is not: it is a hash comparison. Deciding whether it was cosmetic,
+  additive or a change of meaning is the author reading it.
+- **The 30 ms latency budget is unverified.** It has been measured only
+  against DynamoDB Local, where it fails.
+- **It detects changed claims, not malicious behaviour.**
+
+The reasoning behind each is in [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md),
+and the questions a reviewer is likely to ask are answered in
+[`docs/QA.md`](docs/QA.md).
+
+## The numbers
+
+Each number has its provenance and the command or file that reproduces it.
+Anything not yet measured is a `{{PENDING}}` marker. No value has been
+estimated to fill one.
+
+### Crawl 1 (2026-09-15)
+
+Started 2026-09-15T06:19:42.282Z, finished 06:51:29.907Z
+(`data/crawl-1-report.json`). The candidate list is frozen
+(`corpus/candidates.json`) and crawl 2 runs against it unchanged.
+
+| | Value | Source | Reproduce |
+|---|---:|---|---|
+| Candidate servers | 947 | `data/crawl-1-report.json` | `corpus/candidates-README.md` explains where they came from |
+| No discoverable install command | 656 | `data/boot-rate.json` | `pnpm crawl:boot-rate --crawl-id=crawl-1` |
+| Attempted | 291 | `data/boot-rate.json` | same |
+| **Captured** (booted, tool list read) | **152** | `data/boot-rate.json` | same |
+| **Did not start from their own setup instructions** | **47.8%** (139 of 291) | `data/boot-rate.json` | same |
+| Tools captured | 6,058 | `data/crawl-1-report.json` | same |
+
+`pnpm crawl:boot-rate` re-derives the boot figures from the committed report
+and rewrites `data/boot-rate.json` (verified 2026-09-24: identical output; the copy
+under `benchmarks/` is written by `pnpm bench`). It does not re-run the crawl. The crawl itself
+(`pnpm crawl:run`) is not something to run casually; see `CLAUDE.md`.
+
+**Capability distribution under classifier v2**
+(`data/crawl-1-capabilities-v2.json`, reproduced by `pnpm crawl:reclassify-v2`):
+
+| Class | Tools | Share |
+|---|---:|---:|
+| read | 4,185 | 69.1% |
+| write | 1,300 | 21.5% |
+| communicate | 371 | 6.1% |
+| transact | 202 | 3.3% |
+
+This is the corrected distribution. The first classifier (v1) had no verb
+matching "add" and missed 196 tools that write (write was 18.2%, now 21.5%).
+`read` is the residual class: every one of its 4,185 verdicts is low
+confidence. The correction and what it does and does not establish are in
+[`docs/LIMITATIONS.md`](docs/LIMITATIONS.md).
+
+### Baseline 1: a regex blocklist
+
+Against the 30-item author-written attack corpus (`corpus/attacks/`) and 40
+benign definitions: **15 of 30 detected (50.0%), 0 of 40 false positives.**
+By pattern: direct-instruction 0/6, false-authority 6/6, data-exfiltration 3/6,
+scope-widening 2/6, delayed-trigger 4/6. Source: `data/baselines.json`;
+reproduce with `pnpm eval:report`. It is a comparison point, not a headline.
+
+### Cost per call: four DynamoDB writes
+
+Every gated `tools/call` performs one pin read plus two resumable-SSE event
+store events, each an `UpdateItem` and a `PutItem`: **four DynamoDB write
+operations per call.** That is a property of Chaperone and transfers between
+environments (`benchmarks/latency.json`, `environment.storageWritesPerToolCall`).
+The milliseconds do not transfer, because they belong to the storage backend.
+
+Measured at concurrency 4, 1000 samples per mode, against **DynamoDB Local**
+(a single-writer SQLite process that saturates at roughly 60 writes per
+second), on one machine, at commit `e7a453b` on a dirty tree:
+
+| Backend | Added p50 | Added p95 | Added p99 |
+|---|---:|---:|---:|
+| `dynamodb-local` | 480.53 ms | 591.89 ms | 635.63 ms |
+
+That is Chaperone's added latency against a single-writer local backend, not
+its added latency. The 30 ms p95 budget is enforced by exit code: `pnpm bench`
+exits 1 over budget, and **it currently exits 1.** The bench file records the
+backend as a required field so a number cannot be quoted without it.
+Resumable SSE is why the writes exist: an event a client could replay with
+`Last-Event-ID` has to be durable before the response goes out.
+
+### Tests
+
+| Command | Result |
+|---|---|
+| `pnpm test` | 871 tests in 85 files, all passing (103.5 s, run 2026-09-24), with coverage gates |
+| `pnpm spec` | 27 named conformance assertions, all passing (29.6 s, run 2026-09-24) |
+| `pnpm test:stack`, `pnpm test:e2e` | need the Docker stack; last measured 2026-09-23 and recorded in [`docs/TESTING.md`](docs/TESTING.md) |
+
+`packages/policy` is gated at 100% statements and branches; the rest at 80%.
+
+### Not measured yet
+
+| | Marker |
+|---|---|
+| Semantic-intent drift rate, and the changes counted separately | {{PENDING: drift rate and its denominator — 2026-10-20}} |
+| Baseline 2 (an unaided model against the attack corpus) | {{PENDING: baseline 2 result — a model provider must be chosen first; not before 2026-10-20}} |
+| Added latency against DynamoDB on AWS | {{PENDING: production latency — after the AWS deployment (Phase 18)}} |
+
+## Architecture
+
+```mermaid
+flowchart TB
+  host["Assistant host<br/>(MCP client)"]
+  subgraph gw["Chaperone gateway (Streamable HTTP MCP server)"]
+    session["Session<br/>and resumable SSE"]
+    gate["Gate"]
+  end
+  policy["packages/policy<br/>allow(current, pinnedHash)<br/>pure: no I/O, no clock, no model"]
+  ledger[("Ledger, pins and held changes<br/>DynamoDB, append-only,<br/>hash-chained")]
+  up1["Upstream tool server A"]
+  up2["Upstream tool server B"]
+  card["Consent card<br/>(MCP App + text)"]
+  advisory["Advisory pipeline<br/>one-line summary of the change"]
+  model["model provider (configurable)<br/>NOT CHOSEN"]
+
+  host <-->|"tools/list, tools/call"| session
+  session --> gate
+  gate -->|"hash, compare"| policy
+  gate <-->|"read pin, append event"| ledger
+  gate <-->|"namespaced calls"| up1
+  gate <-->|"namespaced calls"| up2
+  gate -->|"on a mismatch"| card
+  card -->|"resident approves or blocks"| gate
+
+  ledger -.->|"a held change appears"| advisory
+  advisory -.-> model
+  advisory -.->|"advisory row, labelled"| card
 ```
-pnpm bench                    # latency + boot rate + ledger chain; exits 1 over budget
-pnpm verify-ledger            # hash-chain walk
-pnpm spec                     # MCP conformance suite
-pnpm test:all                 # everything a judge would run
-```
 
-To run the whole demo on one machine with no network, and check it:
+The solid path is everything that decides whether a tool runs. The dashed
+branch is off that path: it can be slow, wrong or absent and the gate reads
+none of it. Source for the diagram is this block; it is committed as text.
 
-```
-pnpm demo:reset               # staged household, table reset, prints the demo beats
-pnpm demo:verify              # walks the beats headlessly and asserts each one
-```
+Internally the gateway is a spec-2025-11-25 Streamable HTTP MCP server that
+proxies N upstream servers. The entire security property is a synchronous hash
+comparison in `packages/policy`, with no language model anywhere in that
+package's import graph, enforced by `pnpm depcruise`. Denied tools are left
+out of `tools/list` rather than annotated. Tool names are namespaced
+`{upstreamId}__{toolName}`, the one place the gateway is deliberately not
+byte-transparent, and that is asserted in the conformance suite rather than
+hidden. Storage failures fail closed: if a pin cannot be read the tool is
+withheld, and `/healthz` returning 503 never means permissive.
 
-[`demo/OFFLINE.md`](demo/OFFLINE.md) says exactly which parts of that run are
-hand-written fixtures (the advisory line, and the household's 12 January
-approval history) and which are the real gate, ledger, hashes and refusal
-text. Read it before trusting a screenshot.
+## Spec conformance
 
-`pnpm bench` clears the `sse-event` table before measuring
-(`packages/ledger/scripts/reset-sse.ts`), because DynamoDB Local does not
-enforce TTL and those rows otherwise accumulate across runs and make each
-run slower than the last — a benchmark whose result depends on how many
-times it has been run is not a measurement. It never touches `ledger-event`,
-and refuses to run without `DDB_ENDPOINT` set.
+- **Revision:** MCP `2025-11-25`, on `@modelcontextprotocol/sdk` 1.30.0.
+- **Transport:** Streamable HTTP on `/mcp`. A POST without the required
+  `Accept` header gets 406, and a disallowed `Origin` gets 403.
+- **Session lifecycle:** `initialize` with `2025-11-25` mints a session id;
+  an older revision is refused with 400 naming both versions; a request with no
+  `Mcp-Session-Id` gets 400 and an unknown one gets 404; `DELETE` terminates
+  a session and later requests against it 404; two clients get two independent
+  sessions.
+- **Resumability:** every SSE event is durable in DynamoDB before it is sent,
+  so a client that loses its connection resumes with `Last-Event-ID` and gets
+  the events it missed. `pnpm test:resume` runs ten independent
+  kill-the-connection-and-resume iterations and asserts `place_order` ran
+  exactly once each time, counted by the upstream itself.
+- **Also asserted:** progress notifications arrive in order and before the
+  result, a downstream cancel reaches the real upstream, and JSON-RPC errors
+  keep their reserved codes (`-32601` for an unknown method, `-32700` for
+  malformed JSON).
 
-## Observability
-
-- `GET /healthz` — per-component checks (DynamoDB, event store, upstreams),
-  `storageBackend`, version, commit, uptime. 200 healthy or degraded, 503
-  when storage is unreachable. The body carries a `gateWhenUnhealthy` field
-  stating that **a 503 is not a permissive state**: when DynamoDB is
-  unreachable the gateway cannot read the pin that authorises a tool, so
-  every gated tool is withheld. Unhealthy means fewer tools are reachable,
-  never more.
-- `GET /metrics` — Prometheus text exposition: request counts and a duration
-  histogram by method, gate decisions, quarantine events, upstream errors,
-  event-store writes, advisory-unavailable count. No tool names, hashes,
-  quarantine IDs or session IDs are ever label values, and unrecognised MCP
-  methods collapse to `other` so label cardinality is bounded.
-- A request ID is minted at ingress, echoed on `X-Request-Id`, and carried
-  on every log line for that request — including lines from the gate, the
-  upstream pool and the event store, which are never handed the request.
-- Every gated tool logs its allow decision at debug with both hashes
-  truncated to 12 characters. That line is what makes the mechanism legible
-  when the terminal is on camera: two hashes, equal or not equal, and
-  nothing else consulted.
+To run the conformance suite: `pnpm spec` (in-process, needs no Docker, about
+20 seconds). Its named assertions are printed as it runs, and the resumption
+and long-stream suites that need a live stack are in `pnpm test:stack`. See
+[`docs/TESTING.md`](docs/TESTING.md).
 
 ## Evidence and pre-registration
 
-`corpus/TAXONOMY.md` and `corpus/PREDICTIONS.md` were committed before crawl
-1 ran and are frozen; their commit timestamps are load-bearing. Crawl 1 ran
-2026-09-15 and crawl 2 runs 2026-10-20 — **35 days**, stated as a day count
-rather than a rounded week count, with `pnpm check-claims` failing CI on
-rounded-week language in committed prose.
+`corpus/TAXONOMY.md` and `corpus/PREDICTIONS.md` were committed on 2026-09-12,
+before crawl 1, and are frozen; their commit timestamps are load-bearing.
+Crawl 1 ran 2026-09-15 and crawl 2 runs 2026-10-20: **35 days**, stated as a
+day count, with `pnpm check-claims` failing on rounded-week language in
+committed prose. Later changes to the taxonomy go in additive appendix files,
+never in an edit. See [`CRAWL_DATES.md`](CRAWL_DATES.md),
+[`corpus/TAXONOMY.md`](corpus/TAXONOMY.md),
+[`corpus/PREDICTIONS.md`](corpus/PREDICTIONS.md),
+[`docs/DECISIONS.md`](docs/DECISIONS.md) and
+[`friction-log.md`](friction-log.md), which is a submission artifact in its own
+right.
 
-See [`CRAWL_DATES.md`](CRAWL_DATES.md), [`corpus/TAXONOMY.md`](corpus/TAXONOMY.md),
-[`corpus/PREDICTIONS.md`](corpus/PREDICTIONS.md), [`docs/DECISIONS.md`](docs/DECISIONS.md)
-and [`friction-log.md`](friction-log.md).
+## Licence
 
-## License
-
-MIT — see [`LICENSE`](LICENSE).
+MIT, and the repository was public from the first commit. See
+[`LICENSE`](LICENSE). Testing, and every command that proves something, is in
+[`docs/TESTING.md`](docs/TESTING.md).

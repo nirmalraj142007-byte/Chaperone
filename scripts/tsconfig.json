@@ -8,10 +8,13 @@
   "include": [
     "resume-demo.ts",
     "check-claims.ts",
+    "check-placeholders.ts",
     "demo-reset.ts",
     "demo-verify.ts",
     "demo-idempotence.ts",
     "demo-call.ts",
+    "demo-ledger.ts",
+    "demo-mutate.ts",
     "demo/**/*.ts",
     "test/**/*.ts",
     "../e2e/**/*.ts",

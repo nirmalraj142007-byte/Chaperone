@@ -58,7 +58,11 @@ function findTableSchema(logicalName: string): TableSchema {
 export interface AdvisoryPipelineStackProps extends StackProps {
   /** Single hardcoded household, per CLAUDE.md's "out of scope: multi-tenancy... one household, one resident identity." */
   householdId?: string;
-  /** Decided default per docs/AWS-BUILDER.md: Amazon Nova Lite. */
+  /**
+   * Placeholder default only: the model provider is NOT decided (docs/LIMITATIONS.md,
+   * "The model provider is not decided"). This stack is `cdk synth`-only and has
+   * never been deployed; the default id keeps the template valid.
+   */
   advisoryModelId?: string;
 }
 

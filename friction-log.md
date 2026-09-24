@@ -15,6 +15,21 @@ Every entry uses exactly these six fields, in this order:
 5. **Workaround**
 6. **Actionable suggestion**
 
+**Audit, 2026-09-24 (Phase 21).** 41 entries, 001 to 041 (040 and 041 were
+added by this audit's own quickstart run). A script checked that every entry
+contains all six fields above, in that order: 41 of 41 do.
+Four entries carry "(thin)" in their heading because the friction was small,
+a repeat of an earlier entry, or the suggestion is not aimed at the tool
+they are filed against, and they have been left as written rather than
+padded: **010** (a startup warning that never became a failure), **012** (the
+second instance of 007's cast, same root cause), **014** (deliberate SDK
+behaviour; the suggestion is "none for the SDK"), **016** (a bug in this
+repo's own error handler, not friction with a third-party tool). Entries
+003, 017, 018 and 022 carry an extra labelled paragraph after the six fields
+(an update, or a false alarm the entry caused); the six fields are still
+present and in order. Entry 006 had one stray duplicated line at its end
+(a fragment of Entry 005), which was removed; no other wording was changed.
+
 ---
 
 ## Entry 001 — 2026-09-12
@@ -386,7 +401,6 @@ payloads to disk — ours is the opposite: /tmp is *supposed* to run code).
 Test one real install end-to-end before trusting the harness's failure
 categories on a genuinely broken server; a clean-looking `FAILED_INSTALL`
 distribution can be 100% environmental.
-clearing the N=300 floor, which they do comfortably on their own.
 
 ---
 
@@ -556,7 +570,7 @@ about the exact mechanism.
 
 ---
 
-## Entry 010 — 2026-09-13
+## Entry 010 — 2026-09-13 (thin: see audit note at top)
 
 **Task attempted:** Register the tool this phase's prompt specified,
 `chaperone/approve_change`, verbatim, on the spike `McpServer`.
@@ -640,7 +654,7 @@ about the same SDK.
 
 ---
 
-## Entry 012 — 2026-09-13
+## Entry 012 — 2026-09-13 (thin: see audit note at top)
 
 **Task attempted:** Connect the gateway's upstream client
 (`StreamableHTTPClientTransport` + `Client.connect`) inside
@@ -715,7 +729,7 @@ already branches on this value; the types should too.
 
 ---
 
-## Entry 014 — 2026-09-14
+## Entry 014 — 2026-09-14 (thin: see audit note at top)
 
 **Task attempted:** Forward a downstream `tools/call`'s `progressToken`
 upstream from `packages/upstream/src/pool.ts`, so a resident-side progress
@@ -807,7 +821,7 @@ controls or can predict from the request shape alone.
 
 ---
 
-## Entry 016 — 2026-09-14
+## Entry 016 — 2026-09-14 (thin: see audit note at top)
 
 **Task attempted:** Assert `pnpm spec`'s "malformed JSON returns -32700"
 conformance behaviour — required by this phase's own prompt — against the
@@ -2149,6 +2163,17 @@ Control Policy scoping `bedrock:*` — `ValidationException` rather than
 `AccessDeniedException` is an unusual shape for an SCP denial but not
 impossible depending on how Bedrock's own API maps that case.
 
+**Update, 2026-09-24 (recorded from the author's report; the details below
+are thin on purpose):** Bedrock access for this account was declined, and
+the cause was the account's history, not a propagation delay, an IAM gap or
+a model-specific gate. The `ValidationException: Operation not allowed`
+above gave no hint of that, which is the finding: an account-level refusal
+surfaced as a generic validation error naming no cause and no remedy, on
+every model tried. Not recorded here, because it was not captured in this
+log at the time: the wording of the decline and where it was communicated.
+Consequence for this project: no model provider is chosen, and nothing in
+the repo states one as chosen (`docs/LIMITATIONS.md`).
+
 
 ## Entry 039 — 2026-09-23
 
@@ -2191,3 +2216,83 @@ Linux-bridge option that Docker Desktop's VM networking may not honour, and
 signals that it is inert. A supported "no egress, but publish ports" switch
 (the thing people actually want for demos and hermetic tests) would remove
 the need for a forwarder container.
+
+## Entry 040 — 2026-09-24
+
+**Task attempted:** Clone this repository into a fresh folder on Windows 11,
+as a judge would, to time the README quickstart from a clean checkout (Git
+for Windows, the Bash tool).
+
+**Steps taken:** `git clone https://github.com/nirmalraj142007-byte/Chaperone.git
+chaperone-fresh` inside a scratch directory whose path was 139 characters
+long. Repeated it once to confirm it was not a transient failure. Then listed
+the longest tracked paths with `git ls-files`, and cloned again into a short
+path (`C:\Users\Nirmalraj\chaperone-fresh`).
+
+**Expected versus actual:** Expected a clean checkout. Actual, both times in
+the long path: `error: unable to create file
+data/raw/crawl-1/daedalusdevelopmentgroup__ddg-agent-payable-services__daedalusdevelopmentgroup-ddg-age.json:
+Filename too long`, then `fatal: unable to checkout working tree` and
+`warning: Clone succeeded, but checkout failed`, leaving a repository with a
+partial working tree. The longest tracked path in the repo is 108
+characters, so any clone location whose own path is longer than about 150
+characters fails on Windows' legacy 260-character limit, and the paths
+`pnpm install` creates under `node_modules/.pnpm` are longer than any tracked
+file. The hint Git prints is `git restore --source=HEAD :/`, which would fail
+the same way; nothing in the message mentions `core.longpaths` or the
+260-character limit. In the short path the clone worked in 3 seconds.
+
+**Severity:** minor. It fails loudly and at the first command, and a normal
+clone location (`C:\Users\<name>\Chaperone`, about 30 characters) is nowhere
+near the limit. It would still cost a judge on a deeply nested Documents or
+OneDrive path a confusing first minute.
+
+**Workaround:** Clone into a short path. `git config --global
+core.longpaths true` is Git's own documented remedy; it was not tried here,
+so it is not verified for this repo. The README quickstart says to use a
+short path.
+
+**Actionable suggestion:** For Git for Windows: when checkout fails with
+"Filename too long", say so in the closing hint and name `core.longpaths`
+and the 260-character limit, instead of suggesting a restore that would fail
+identically. For this repo: the raw crawl archive names are 100-character
+truncations of server ids; shorter archive filenames would remove most of
+the exposure.
+
+## Entry 041 — 2026-09-24
+
+**Task attempted:** Bring up the stack from a second checkout of the repo,
+on the same machine as the first, to time the README quickstart
+(`docker compose up -d --build`, Docker Desktop 4.90.0 on Windows).
+
+**Steps taken:** Ran `docker compose up -d --build` in the fresh clone while
+the original checkout's three containers existed in the `Exited (255)` state
+(why they had exited was not investigated). The images built first, then
+container creation failed.
+
+**Expected versus actual:** Expected the second project to start, or to be
+told why it could not. Actual: `Error response from daemon: Conflict. The
+container name "/chaperone-demo-upstream" is already in use by container
+"d669ce33faa6...". You have to remove (or rename) that container to be able
+to reuse that name.` The cause is this repo's own choice: `docker-compose.yml`
+gives every service a fixed `container_name`, so two checkouts (or two
+compose project names) cannot coexist on one machine, running or stopped.
+The message names a container id and not the compose project that owns it,
+so a reader has to run `docker ps -a` and read the project label to learn
+that it is the other checkout's leftover.
+
+**Severity:** minor. It happens after the build, so the wasted time is the
+build, and a judge with one checkout and a clean Docker never sees it.
+
+**Workaround:** `docker compose down` in the other checkout (without `-v`,
+so its data volume is kept), then `docker compose up -d --build` again. The
+second run took 8 seconds because the images were already built.
+
+**Actionable suggestion:** For Docker Compose: a container-name conflict
+message should say which compose project (`com.docker.compose.project`
+label, which the conflicting container carries) owns the name, since that is
+what tells the user which directory to run `down` in. For this repo: the
+fixed names exist so logs and docs can say `chaperone-gateway`; dropping
+them would let two checkouts coexist at the cost of longer generated names.
+Not changed here, because the docs and the demo scripts refer to the fixed
+names.
