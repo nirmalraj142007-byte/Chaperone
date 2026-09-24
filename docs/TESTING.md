@@ -23,7 +23,9 @@ In this order, stopping at the first failure:
 | 5 | `pnpm verify-ledger` | Walks the household's hash chain from genesis; exits 1 on any hash, link or missing-hash break. | Docker stack. | ~2 s |
 
 Measured on one Windows laptop (16 threads, about 2 GB of free RAM, Docker
-Desktop): `pnpm test:all` from a freshly recreated stack took 392 s. A CI runner
+Desktop): `pnpm test:all` from a freshly recreated stack took 392 s. Run again on 2026-09-24 from a fresh clone of
+commit `bafc5f5` (85 files, 871 tests; 27 spec assertions; 4 stack files, 16
+tests; 4 e2e tests; `verify-ledger` green): exit 0 in 327 s. A CI runner
 has fewer cores and more memory; expect the same order of magnitude.
 
 ### The two end-to-end specs

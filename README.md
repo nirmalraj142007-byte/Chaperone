@@ -16,7 +16,7 @@ sees a short card with the sentence they approved beside the sentence that
 replaced it. They choose to approve the change or keep it blocked, and until
 they do, every other tool carries on working.
 
-## Quickstart: about 90 seconds, no AWS account
+## Quickstart (no AWS account)
 
 You need Git, Node 24 (see `.nvmrc`), pnpm 12.4.1 (`corepack enable` picks it
 up from `package.json`), and Docker Desktop running. On Windows, clone into a
@@ -24,7 +24,7 @@ short path such as `C:\src\chaperone`: a deeply nested folder trips the
 260-character path limit and `git clone` stops with "Filename too long".
 
 **1. Set up** (the `docker compose` step builds two images, and is most of the
-first-run time):
+time the first time; see the measured times below):
 
 ```
 git clone https://github.com/nirmalraj142007-byte/Chaperone.git
@@ -35,9 +35,12 @@ docker compose up -d --build
 pnpm demo:reset
 ```
 
-`pnpm demo:reset` builds the demo state, prints the beats, and takes about 15
-seconds. Skipping `pnpm build` fails with `ERR_MODULE_NOT_FOUND`, because the
-scripts load the workspace packages from their built output.
+`pnpm demo:reset` builds the demo state (and, the first time, the console
+bundle) and prints the beats. Skipping `pnpm build` fails with
+`ERR_MODULE_NOT_FOUND`, because the scripts load the workspace packages from
+their built output. If `docker compose up` reports that a container name is
+already in use, another checkout's stack exists: run `docker compose down` in
+that checkout first (the container names are fixed).
 
 **2. Run the demo** (each command is copy-pasteable; run them in order):
 
@@ -90,8 +93,24 @@ and the household's "12 January" approval history is staged. Everything else,
 the check, the refusal text, the hashes and the ledger, is the real code.
 [`demo/OFFLINE.md`](demo/OFFLINE.md) lists exactly which is which.
 
-**Measured**, from a fresh clone on the author's Windows laptop (16 threads):
-{{PENDING: quickstart time measured from a clean clone of the final commit — Phase 21 acceptance run}}
+**Measured**, from a fresh clone of commit `bafc5f5` on the author's Windows 11
+laptop (16 threads, Docker Desktop, about 2 GB of free RAM), running every
+command above in order, then the seven demo commands (a script pulled the
+`[Approve]` line out of the card instead of a person copying it); the times are
+seconds from the start of `git clone` to `chain OK`:
+
+| Run | Clone | install | build | compose up | demo:reset | demo commands | **Total** |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| First run: Docker had to build both images | 4 | 36 | 12 | 328 | 91 | 50 | **521** (8 min 41 s) |
+| Second run: images and the pnpm store already cached | 6 | 18 | 7 | 15 | 16 | 19 | **81** |
+
+So "about 90 seconds" is the warm figure. **The first time, expect several
+minutes** (8 min 41 s above), almost all of it Docker building two images, plus
+the demo building the console bundle. For scale, a separate
+`docker compose build --no-cache` of the same Dockerfiles took 106 s when run
+on its own; why the build inside the first row took 328 s was not established,
+and this laptop has little memory to spare. A machine with a warm Docker cache,
+which is the state "ready to film" means, is the 81 s row.
 
 **One-time online prerequisites**, from [`demo/OFFLINE.md`](demo/OFFLINE.md).
 After these, the demo needs no network at all:
@@ -213,7 +232,9 @@ Resumable SSE is why the writes exist: an event a client could replay with
 |---|---|
 | `pnpm test` | 871 tests in 85 files, all passing (103.5 s, run 2026-09-24), with coverage gates |
 | `pnpm spec` | 27 named conformance assertions, all passing (29.6 s, run 2026-09-24) |
-| `pnpm test:stack`, `pnpm test:e2e` | need the Docker stack; last measured 2026-09-23 and recorded in [`docs/TESTING.md`](docs/TESTING.md) |
+| `pnpm test:stack` | 16 tests in 4 files, all passing: ten kill-and-resume iterations, a held-open stream, ledger tamper detection, "refused stays refused" |
+| `pnpm test:e2e` | 4 Playwright tests in 2 specs, all passing (38.6 s) |
+| `pnpm test:all` | exit 0 in 327 s from a fresh clone of `bafc5f5` on 2026-09-24; it also ends with `verify-ledger` green. See [`docs/TESTING.md`](docs/TESTING.md) |
 
 `packages/policy` is gated at 100% statements and branches; the rest at 80%.
 

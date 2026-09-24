@@ -106,6 +106,9 @@ pnpm test:resume              # 10-iteration kill-and-resume loop. must be 10/10
 pnpm bench                    # latency + boot rate. exits 1 if added p95 > 30ms
 pnpm depcruise                # no-llm-in-policy, no-circular
 pnpm check-claims             # greps prose for rounded-week language
+pnpm check-placeholders       # fails while any PENDING placeholder marker remains. NOT in CI: pre-submission step
+pnpm demo:mutate              # make demo-upstream change add_item's description (same as the console button)
+pnpm demo:ledger              # verify-ledger with the demo stack's local addresses filled in
 pnpm test:all                 # everything. what a judge runs.
 pnpm crawl:run --crawl-id=... # DANGEROUS. see calendar gates before touching.
 pnpm analyse:drift            # emits data/drift.json
