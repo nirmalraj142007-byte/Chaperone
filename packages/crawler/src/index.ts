@@ -11,6 +11,7 @@ export * from "./assemble.js";
 export * from "./installInference.js";
 export * from "./boot.js";
 export * from "./crawl.js";
+export * from "./crawlId.js";
 export * from "./sources/registry.js";
 export * from "./sources/pulsemcp.js";
 export * from "./sources/glama.js";

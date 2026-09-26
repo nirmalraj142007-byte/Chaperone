@@ -1,11 +1,12 @@
 import { execFile } from "node:child_process";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 import { childLogger } from "@chaperone/logger";
 import { getCorpusServer, putCorpusServer, putToolSnapshot } from "@chaperone/ledger";
 import { CLASSIFIER_VERSION, canonicalizeTool, classifyCapability, hashTool } from "@chaperone/policy";
 import { CANDIDATES_PATH, type CandidateRecord } from "./assemble.js";
+import { applyCrawlDatesUpdate, assertCrawlIdRunnable } from "./crawlId.js";
 import { type BootCandidate, type BootResult, type BootStatus, bootAndList, ensureCrawlInfrastructure } from "./boot.js";
 
 const execFileAsync = promisify(execFile);
@@ -29,6 +30,8 @@ export const NEEDS_REVIEW_SAMPLE_SIZE = 150;
 
 export interface RunCrawlOptions {
   limit?: number;
+  /** Clock for the crawl-ID date gate. Tests only; a real run uses the wall clock. */
+  now?: () => Date;
 }
 
 export interface CrawlReport {
@@ -213,26 +216,29 @@ async function getTaxonomyBlobSha(): Promise<string> {
 }
 
 /**
- * Replaces exactly the one reserved "_(pending...)_" line for this crawl —
- * the rest of CRAWL_DATES.md is frozen prose from before crawl 1 and must
- * never be touched by anything but this targeted substitution.
+ * Fills the one reserved, still-pending line of CRAWL_DATES.md that belongs
+ * to this crawl ID (see applyCrawlDatesUpdate in crawlId.ts for which line
+ * that is) and touches nothing else in the file. The rest of CRAWL_DATES.md
+ * is frozen prose from before crawl 1.
  */
 async function updateCrawlDatesFile(crawlId: string, startedAt: string, finishedAt: string, taxonomyBlobSha: string): Promise<void> {
-  const match = /^crawl-(\d+)$/.exec(crawlId);
-  if (!match) {
-    log.warn({ crawlId }, "crawlId doesn't match 'crawl-N'; leaving CRAWL_DATES.md untouched");
-    return;
-  }
-  const crawlNumber = match[1];
   const filePath = "CRAWL_DATES.md";
   const content = await readFile(filePath, "utf8");
-  const pattern = new RegExp(`^- Crawl ${crawlNumber} executed at:.*$`, "m");
-  if (!pattern.test(content)) {
-    log.warn({ crawlId }, "CRAWL_DATES.md has no matching 'Crawl N executed at' line to update");
+  const update = applyCrawlDatesUpdate(content, crawlId, startedAt, finishedAt, taxonomyBlobSha);
+  if (update.outcome === "untouched") {
+    log.warn({ crawlId, reason: update.reason }, "CRAWL_DATES.md left untouched");
     return;
   }
-  const replacement = `- Crawl ${crawlNumber} executed at: ${startedAt} (finished ${finishedAt}; corpus/TAXONOMY.md blob ${taxonomyBlobSha})`;
-  await writeFile(filePath, content.replace(pattern, replacement), "utf8");
+  await writeFile(filePath, update.content, "utf8");
+}
+
+async function fileExists(filePath: string): Promise<boolean> {
+  try {
+    await access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -247,6 +253,12 @@ async function updateCrawlDatesFile(crawlId: string, startedAt: string, finished
  * regardless of whether this candidate was just booted or read from disk).
  */
 export async function runCrawl(crawlId: string, opts: RunCrawlOptions = {}): Promise<CrawlReport> {
+  // First, before Docker or any write: refuses `crawl-2` before 2026-10-20 and
+  // refuses to re-run a numbered or interim crawl that already has a report.
+  assertCrawlIdRunnable(crawlId, {
+    now: opts.now?.() ?? new Date(),
+    reportExists: await fileExists(path.join("data", `${crawlId}-report.json`)),
+  });
   const startedAt = new Date().toISOString();
   await ensureCrawlInfrastructure();
 

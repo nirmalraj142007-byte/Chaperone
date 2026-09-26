@@ -23,7 +23,11 @@ function parseArgs(argv: string[]): { crawlId: string; limit?: number } {
   }
 
   if (!crawlId) {
-    throw new Error("usage: pnpm crawl:run --crawl-id=crawl-1 [--limit=N]");
+    throw new Error(
+      "usage: pnpm crawl:run --crawl-id=<id> [--limit=N]\n" +
+        "  ids: crawl-1, crawl-2 (refused before 2026-10-20), crawl-interim-1 (the 2026-10-02 interim crawl),\n" +
+        "       or a scratch id such as crawl-dryrun-1, which writes nothing to CRAWL_DATES.md",
+    );
   }
   return { crawlId, ...(limit !== undefined ? { limit } : {}) };
 }

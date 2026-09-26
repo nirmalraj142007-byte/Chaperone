@@ -62,3 +62,15 @@ interval from crawl 1 to the interim crawl, or from the interim crawl to crawl
 quoted as a headline number anywhere. The headline remains the crawl 1 to
 crawl 2 figure, and only `semantic-intent` changes enter it
 (`corpus/TAXONOMY.md`).
+
+### Interim crawl: ID and execution timestamp (added 2026-09-26; additive)
+
+Everything above this subsection, including the two reserved crawl lines, is
+unchanged. The interim crawl runs under the ID `crawl-interim-1`. The
+crawler refuses the ID `crawl-2` before 2026-10-20 (UTC), so an interim run
+cannot consume crawl 2's line above, and it fills only the line below.
+
+Like the two lines above the appendix, this one is written by the crawler from
+its own report, not by hand:
+
+- Interim crawl 1 (`crawl-interim-1`) executed at: _(pending — see `data/crawl-interim-1-report.json` → `.startedAt`)_
