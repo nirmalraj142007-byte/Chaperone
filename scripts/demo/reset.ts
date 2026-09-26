@@ -15,7 +15,8 @@
  *      committed files
  *
  * Nothing here calls out of the machine. The only external process is
- * `docker compose` and, if the console bundle is stale, `vite build`.
+ * `docker compose` and, if the console or simulated-assistant bundle is
+ * stale, `vite build`.
  */
 import { execFileSync } from "node:child_process";
 import { STACK, assertLocalDynamoDb } from "./env.js";
@@ -30,6 +31,7 @@ import {
 } from "@chaperone/ledger";
 import { getPool } from "@chaperone/upstream";
 import { hashTool, type ToolDefinition } from "@chaperone/policy";
+import { ensureAssistantBundle } from "./assistant.js";
 import { ensureConsoleBundle } from "./console.js";
 import { REPO_ROOT, loadFixtureFile } from "./fixtures.js";
 import { dropDemoTables, planDemoDrop } from "./tables.js";
@@ -39,7 +41,7 @@ import { loadEvidence } from "../../packages/console/evidence.load.js";
 export interface ResetOptions {
   /** Skip `docker compose up`; assume the stack is already running. */
   skipDocker?: boolean;
-  /** Skip the console bundle check/build. */
+  /** Skip the console and simulated-assistant bundle checks/builds. */
   skipConsole?: boolean;
   log?: (line: string) => void;
 }
@@ -204,6 +206,7 @@ export async function resetDemo(options: ResetOptions = {}): Promise<ResetResult
 
     if (options.skipConsole !== true) {
       ensureConsoleBundle(log);
+      ensureAssistantBundle(log);
     }
     const evidence = loadEvidence(REPO_ROOT);
     const driftStatus = evidence.drift?.status ?? null;

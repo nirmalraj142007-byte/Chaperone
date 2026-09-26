@@ -444,3 +444,64 @@ here as the shape it would take, not built.
 pending quarantine (`01M2X4PQ…`) that the bug created after the refusal
 of `01M2X4CX…` for the same transition. The gate finds the open pending
 row first and keeps reusing it. That's pre-fix residue, not new behaviour.
+
+## The simulated Alexa+ experience is the primary demo surface — 2026-09-26
+
+**Decision.** The demo is filmed in `packages/assistant-sim`, a web page titled
+"Simulated Alexa+ experience", not in MCP Inspector (a developer tool) and not
+in the operator console. The hackathon's Alexa+ track allows the experience to
+be simulated with a web app. `pnpm demo:assistant` serves it on port 5174.
+
+**The assistant is a rule-based stand-in, and the page says so.** No model
+provider is chosen (`docs/LIMITATIONS.md`), so a fixed list of regular
+expressions in one file (`src/rules.ts`) maps phrasings to tool calls. It is
+labelled on every screen and on every assistant message as a stand-in for the
+assistant's model, not part of Chaperone. It has no way to decide whether a
+tool runs and never words a refusal: the gateway's frozen text is shown as
+written, and the page's own account of a refusal says a hash comparison
+happened, never that anything decided. `interpret()` is the one function a
+model call would replace.
+
+**It is a real MCP host, with no shortcut around the gateway.** The official
+SDK client (`Client` + `StreamableHTTPClientTransport`) does `initialize`,
+`tools/list` and `tools/call` against the gateway through a same-origin proxy,
+and follows `notifications/tools/list_changed`. It declares the MCP Apps
+capability, which is true because it hosts the card.
+
+**How the card is hosted.** `AppBridge` from `@modelcontextprotocol/ext-apps`
+1.7.5, constructed with a `null` client so nothing is forwarded automatically.
+Its `oncalltool` is the only path from the card to the gateway, and it forwards
+`chaperone/approve_change` with exactly `quarantineId`, `approvalToken` and
+`decision`, nothing else. The card runs in `<iframe sandbox="allow-scripts"
+srcdoc>` (opaque origin: it cannot reach the page) with a
+Content-Security-Policy that forbids every network request from it; the bridge
+is connected before the frame gets its content, so the card's first message
+cannot arrive unheard. The frame follows the card's own
+`ui/notifications/size-changed`, and when the card asks to close the host sends
+`ui/resource-teardown`, waits a bounded 1.5 s for the answer, and unmounts.
+The floor is the text card, drawn by the page with the same two decisions; it
+appears if the handshake has not completed in 10 s, if the gateway sent no
+HTML, or when asked for with `?card=text`, and it says which.
+
+**Corrections to the Phase 11 record, found by building the host.** The GO
+above stands for the handshake and the resource linkage. It did not establish
+that the card's buttons work, and they did not: the inline call binding the
+buttons ran before the script that defined it (`render.ts` `documentShell`), so
+in a real host Approve and Keep blocked did nothing. Fixed there, with
+`packages/mcp-app/test/card-behaviour.test.ts` running the card's script in
+jsdom (4 of its 6 tests fail against the old order). The card also now answers
+the host's `ui/resource-teardown` request (it did not, so a spec-following host
+would wait forever) and reports its height with `ui/notifications/size-changed`
+(it did not, so a host could not size the frame). Friction-log Entries 042 and
+043. The earlier entries above are left as written.
+
+**Deliberately not done.**
+- *A docker compose service.* The console is served the same way (a `vite
+  preview` process on the host), the no-egress overlay would need another edge
+  route, and a third image would add build time to every fresh clone and every
+  CI run. `pnpm demo:reset` builds the bundle if it is stale and prints the URL.
+- *Speech recognition.* Browsers send that audio to a vendor's cloud, which
+  would break "runs with the network off". Spoken replies (`speechSynthesis`)
+  are behind a toggle that starts off; typed input is primary.
+- *Amazon or Alexa branding of any kind.* The design is original, and the page
+  states that it is not made by or affiliated with Amazon.

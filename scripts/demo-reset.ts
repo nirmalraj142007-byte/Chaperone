@@ -14,7 +14,12 @@ resetDemo({ skipDocker: args.has("--no-docker"), skipConsole: args.has("--no-con
   .then((result) => {
     const seconds = ((Date.now() - started) / 1000).toFixed(1);
     console.log(`\ndemo:reset: done in ${seconds}s (${result.pins.length} tools pinned, ${result.ledgerEvents} ledger events)`);
-    printChecklist({ consoleUrl: STACK.consoleUrl, gatewayUrl: STACK.gatewayUrl, corpusState: result.corpusState });
+    printChecklist({
+      consoleUrl: STACK.consoleUrl,
+      assistantUrl: STACK.assistantUrl,
+      gatewayUrl: STACK.gatewayUrl,
+      corpusState: result.corpusState,
+    });
   })
   .catch((error: unknown) => {
     console.error("demo:reset: failed —", error instanceof Error ? error.message : error);

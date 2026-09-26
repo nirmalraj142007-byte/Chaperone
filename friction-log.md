@@ -2300,3 +2300,76 @@ fixed names exist so logs and docs can say `chaperone-gateway`; dropping
 them would let two checkouts coexist at the cost of longer generated names.
 Not changed here, because the docs and the demo scripts refer to the fixed
 names.
+
+## Entry 042 — 2026-09-26
+
+**Task attempted:** Host Chaperone's consent card as a real MCP App inside
+the simulated Alexa+ web page (`packages/assistant-sim`), using
+`@modelcontextprotocol/ext-apps` 1.7.5's host-side `AppBridge`, and press the
+card's Approve and Keep blocked buttons.
+
+**Steps taken:** Rendered the card's HTML in `<iframe sandbox="allow-scripts"
+srcdoc>`, connected an `AppBridge` to it over `PostMessageTransport`, and ran
+the real stack. The card completed `ui/initialize` (the bridge's
+`initialized` event fired). Clicked Approve with Playwright.
+
+**Expected versus actual:** Expected `tools/call chaperone/approve_change` to
+reach the bridge's `oncalltool`. Actual: nothing happened, no error anywhere.
+`packages/mcp-app/src/render.ts` emitted the inline
+`chaperoneBindDecision(...)` call in a `<script>` that comes *before* the
+`<script>` defining it (`documentShell` put the bridge script last). Separate
+`<script>` elements run in document order and a function declaration in a
+later one is not hoisted across them, so the first threw a `ReferenceError`
+and the buttons were never bound. The handshake still worked, because the
+later script runs it. This shipped in Phase 11 because every earlier check
+looked at the card's HTML for the right strings, or exercised
+`approve_change` directly, and MCP Inspector's Apps tab never pressed the
+card's own buttons. `docs/DECISIONS.md`'s Phase 11 GO is therefore correct
+about the handshake and the resource linkage, and was wrong to imply the
+button round trip had been seen.
+
+**Severity:** major. The one interactive thing the card exists for did not
+work in any host, and no test or manual step would have said so.
+
+**Workaround:** Moved the bridge `<script>` ahead of the card markup in
+`documentShell`. Added `packages/mcp-app/test/card-behaviour.test.ts`, which
+runs the card's script in jsdom against a recording `window.parent`, plays
+the host's half of the handshake, presses each button, and asserts the exact
+JSON-RPC. With the old order 4 of its 6 tests fail; with the fix all pass.
+Recorded here rather than in DECISIONS.md, which is not rewritten.
+
+**Actionable suggestion:** For ext-apps: a host-side conformance harness
+(a scripted view that performs the handshake and sends one `tools/call`,
+usable against any host) would have caught this in one call. Its absence is
+why this had to be found by building a host. For this repo: a card's tests
+should run its script, not grep its markup; that is now the case.
+
+## Entry 043 — 2026-09-26
+
+**Task attempted:** Decide how a single-page host should isolate the card's
+untrusted HTML using `AppBridge`.
+
+**Steps taken:** Read `dist/src/app-bridge.d.ts`. The package's isolation
+story appears only as `@internal` members (`sendSandboxResourceReady`,
+`onsandboxready`, the `ui/notifications/sandbox-proxy-ready` event), which
+describe a two-frame arrangement with a separate-origin proxy. The
+package README says only that the host "displays it in a sandboxed iframe"
+and links to online guides, which were not read for this entry; nothing in
+the shipped `.d.ts` files says whether a simpler arrangement is acceptable.
+
+**Expected versus actual:** Expected a stated minimum for what a host must do
+to isolate a view. Actual: none in the shipped package. Chose a sandboxed `srcdoc` iframe with
+an opaque origin (`sandbox="allow-scripts"`, no `allow-same-origin`) plus a
+Content-Security-Policy that forbids every network request from the frame.
+That is isolation by construction, but it is this repo's judgement, not
+something the package told me was sufficient.
+
+**Severity:** minor. Nothing was blocked; the risk is a host author guessing.
+
+**Workaround:** The choice and its reasoning are in the header comment of
+`packages/assistant-sim/src/components/ConsentCard.tsx`.
+
+**Actionable suggestion:** For ext-apps: say in one paragraph of the host
+guide what the minimum sandbox is (`sandbox` flags, whether a separate origin
+is required, whether the host should add a CSP), and mark the sandbox-proxy
+notifications as optional if a same-page host is allowed.

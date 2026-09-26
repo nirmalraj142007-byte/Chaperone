@@ -79,6 +79,9 @@ packages/
   eval/          attack corpus, two baselines, the absolute-block-rate guard.
   bench/         latency + boot-rate. budgets enforced by exit code.
   console/       React 19 + Vite + Tailwind. read-only. supporting surface, not the product.
+  assistant-sim/ the primary demo surface: a simulated Alexa+ experience. React 19 + Vite + Tailwind, port 5174.
+                 a rule-based stand-in for the assistant's model (no model, and it says so on screen) that
+                 talks to the gateway over real MCP and hosts the consent card as an MCP App. rules.ts is the whole assistant.
   demo-upstream/ staged grocery server. control.ts holds the demo mutation trigger.
 spec/            25+ conformance assertions. output gets filmed — keep it legible.
 corpus/          FROZEN: TAXONOMY.md, PREDICTIONS.md, candidates.json, attacks/
@@ -108,6 +111,7 @@ pnpm depcruise                # no-llm-in-policy, no-circular
 pnpm check-claims             # greps prose for rounded-week language
 pnpm check-placeholders       # fails while any PENDING placeholder marker remains. NOT in CI: pre-submission step
 pnpm demo:mutate              # make demo-upstream change add_item's description (same as the console button)
+pnpm demo:assistant           # serve the simulated Alexa+ experience on http://localhost:5174 (the primary demo surface)
 pnpm demo:ledger              # verify-ledger with the demo stack's local addresses filled in
 pnpm test:all                 # everything. what a judge runs.
 pnpm crawl:run --crawl-id=... # DANGEROUS. see calendar gates before touching.
@@ -131,7 +135,7 @@ pnpm analyse:label --prevalence  # M14: label the committed 150-tool sample in d
 
 **Storage.** Repository functions with narrow signatures, one module per entity. No generic DAO. Conditional writes for anything that must not race.
 
-**Tests.** Vitest. `packages/policy` is gated at 100% statements and branches — it is 200 lines and it is the entire security property. Everything else 80%. Playwright for the two E2E specs. A flaky test is a failed phase, because a demo take will not be luckier than the suite.
+**Tests.** Vitest. `packages/policy` is gated at 100% statements and branches — it is 200 lines and it is the entire security property. Everything else 80%. Playwright for the E2E specs (consent flow, fails-closed, and the simulated assistant). A flaky test is a failed phase, because a demo take will not be luckier than the suite.
 
 **Fixtures and placeholders.** Allowed only where a real source is genuinely unavailable (a blocked provider, a crawl that has not happened yet). Every fixture is labelled as a fixture in the file, in the code, and anywhere it is displayed, and is never presented as real output. Every TODO names its blocker and when it will be resolved.
 

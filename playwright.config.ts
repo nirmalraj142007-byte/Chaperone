@@ -1,5 +1,5 @@
 /**
- * `pnpm test:e2e` — the two end-to-end specs in e2e/, run against the real
+ * `pnpm test:e2e` — the end-to-end specs in e2e/, run against the real
  * docker-compose stack (gateway, demo-upstream, DynamoDB Local).
  *
  * One worker, no parallelism: every spec resets and mutates the same shared

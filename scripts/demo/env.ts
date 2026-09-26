@@ -22,6 +22,7 @@ export const STACK = {
   gatewayUrl: "http://localhost:3000",
   demoUpstreamUrl: "http://localhost:4000",
   consoleUrl: "http://localhost:4173",
+  assistantUrl: "http://localhost:5174",
 } as const;
 
 process.env["DDB_ENDPOINT"] ??= STACK.ddbEndpoint;

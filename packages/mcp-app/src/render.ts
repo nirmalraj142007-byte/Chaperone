@@ -488,10 +488,33 @@ function initChaperoneBridge(){
       post({ jsonrpc: "2.0", id: id, method: method, params: params });
     });
   }
-  function notify(method){ post({ jsonrpc: "2.0", method: method }); }
+  function notify(method, params){
+    var msg = { jsonrpc: "2.0", method: method };
+    if (params) msg.params = params;
+    post(msg);
+  }
+  function watchSize(){
+    if (typeof ResizeObserver !== "function") return;
+    var last = -1;
+    function report(){
+      var h = Math.ceil(document.documentElement.getBoundingClientRect().height);
+      if (h !== last) { last = h; notify("ui/notifications/size-changed", { height: h }); }
+    }
+    new ResizeObserver(report).observe(document.documentElement);
+    report();
+  }
   window.addEventListener("message", function(event){
     var msg = event.data;
     if (!msg || typeof msg !== "object" || msg.jsonrpc !== "2.0") return;
+    if (typeof msg.method === "string") {
+      // A request from the host (never a response to one of ours). The spec
+      // requires the view to answer ui/resource-teardown before it is
+      // unmounted; anything else it does not implement gets method-not-found.
+      if (typeof msg.id === "undefined") return;
+      if (msg.method === "ui/resource-teardown" || msg.method === "ping") post({ jsonrpc: "2.0", id: msg.id, result: {} });
+      else post({ jsonrpc: "2.0", id: msg.id, error: { code: -32601, message: "Method not found" } });
+      return;
+    }
     if (typeof msg.id === "undefined") return;
     var p = pending[msg.id];
     if (!p) return;
@@ -503,7 +526,7 @@ function initChaperoneBridge(){
     appInfo: { name: "chaperone-consent-card", version: "1.0.0" },
     appCapabilities: { tools: { listChanged: false } },
     protocolVersion: "2025-11-25"
-  }).then(function(){ notify("ui/notifications/initialized"); }).catch(function(err){
+  }).then(function(){ notify("ui/notifications/initialized"); watchSize(); }).catch(function(err){
     console.debug("chaperone consent card: no MCP App host detected", err);
   });
   return {
@@ -624,10 +647,10 @@ function documentShell(title: string, bodyHtml: string): string {
 <style>${CARD_STYLE}</style>
 </head>
 <body>
+<script>${bridgeScript()}</script>
 <div class="card">
 ${bodyHtml}
 </div>
-<script>${bridgeScript()}</script>
 </body>
 </html>`;
 }

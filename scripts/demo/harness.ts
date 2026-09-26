@@ -14,6 +14,7 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import { STACK, isLocalUrl } from "./env.js";
 import { CONSOLE_DIR, viteBin } from "./console.js";
+import { ASSISTANT_DIR, assistantViteBin, ensureAssistantBundle } from "./assistant.js";
 import { REPO_ROOT } from "./fixtures.js";
 
 export interface Block {
@@ -87,6 +88,23 @@ export async function startConsole(): Promise<ChildProcess | undefined> {
     stdio: "ignore",
   });
   await pollUntil("the console preview server", async () => ((await isServing(`${STACK.consoleUrl}/`)) ? true : undefined), 30_000);
+  return child;
+}
+
+/**
+ * Serves the simulated assistant's production bundle (building it first if stale). If something
+ * already answers on 5174, that is used as is.
+ */
+export async function startAssistant(): Promise<ChildProcess | undefined> {
+  if (await isServing(`${STACK.assistantUrl}/`)) {
+    return undefined;
+  }
+  ensureAssistantBundle(() => {});
+  const child = spawn(process.execPath, [assistantViteBin(), "preview", "--port", "5174", "--strictPort"], {
+    cwd: ASSISTANT_DIR,
+    stdio: "ignore",
+  });
+  await pollUntil("the simulated assistant preview server", async () => ((await isServing(`${STACK.assistantUrl}/`)) ? true : undefined), 30_000);
   return child;
 }
 

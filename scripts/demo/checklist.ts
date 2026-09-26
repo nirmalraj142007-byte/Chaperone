@@ -7,6 +7,7 @@
 
 export interface ChecklistContext {
   consoleUrl: string;
+  assistantUrl: string;
   gatewayUrl: string;
   corpusState: "PARTIAL" | "COMPLETE" | "EMPTY";
 }
@@ -23,7 +24,8 @@ export function demoBeats(ctx: ChecklistContext): Beat[] {
       steps: [
         "docker compose up -d",
         `curl -s ${ctx.gatewayUrl}/healthz`,
-        `pnpm --filter @chaperone/console exec vite preview     (serves ${ctx.consoleUrl})`,
+        `pnpm demo:assistant     (serves ${ctx.assistantUrl}: the simulated Alexa+ experience, the primary demo surface)`,
+        `pnpm --filter @chaperone/console exec vite preview     (serves ${ctx.consoleUrl}: the supporting console)`,
       ],
     },
     {
@@ -35,7 +37,10 @@ export function demoBeats(ctx: ChecklistContext): Beat[] {
     },
     {
       title: "An approved tool works",
-      steps: ["pnpm demo:call grocery__add_item item=batteries      -> Added 1 x batteries to the shopping list."],
+      steps: [
+        `open ${ctx.assistantUrl}, say "add batteries to my list"      -> Added 1 x batteries to the shopping list.`,
+        "  (or, in a terminal: pnpm demo:call grocery__add_item item=batteries)",
+      ],
     },
     {
       title: "The upstream changes a tool's description",
@@ -46,23 +51,23 @@ export function demoBeats(ctx: ChecklistContext): Beat[] {
     {
       title: "The gate refuses, in words that never change",
       steps: [
-        "pnpm demo:call grocery__add_item item=batteries",
-        "  -> the frozen refusal, then the card: the added clause marked {+ +}, 'can change your data',",
+        `in the assistant, say "add batteries to my list" again`,
+        "  -> the frozen refusal, then the card INSIDE the conversation: the added clause highlighted, 'can change your data',",
         "     'You approved this on 12 January', and the advisory line labelled as a FIXTURE",
-        "  -> copy the approvalToken from the card",
+        "  (or, in a terminal: pnpm demo:call grocery__add_item item=batteries, then copy the approvalToken from the text card)",
       ],
     },
     {
       title: "The resident decides on the console",
       steps: [
-        `open ${ctx.consoleUrl}/queue      -> one held change; open it: the clause is highlighted`,
-        "paste the token, click \"Approve & re-pin\"",
+        "in the assistant, press Approve on the card (Keep blocked is the other button)",
+        `  (or on the console: open ${ctx.consoleUrl}/queue, open the held change, paste the token, click "Approve & re-pin")`,
       ],
     },
     {
       title: "The tool is back, and the ledger vouches for it",
       steps: [
-        "pnpm demo:call grocery__add_item item=batteries      -> Added again",
+        `say "add batteries to my list" once more      -> Added again   (or: pnpm demo:call grocery__add_item item=batteries)`,
         "pnpm demo:ledger                                     -> chain OK   (pnpm verify-ledger is the same walk, once DDB_ENDPOINT and CHAPERONE_UPSTREAMS are exported)",
       ],
     },

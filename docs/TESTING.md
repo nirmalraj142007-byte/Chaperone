@@ -28,7 +28,7 @@ commit `bafc5f5` (85 files, 871 tests; 27 spec assertions; 4 stack files, 16
 tests; 4 e2e tests; `verify-ledger` green): exit 0 in 327 s. A CI runner
 has fewer cores and more memory; expect the same order of magnitude.
 
-### The two end-to-end specs
+### The end-to-end specs
 
 `e2e/consent-flow.spec.ts` (the happy path): starts from a fresh
 `demo:reset`; `add_item` works; the upstream changes its description; the
@@ -39,6 +39,33 @@ approving with the issued token restores the tool; `verify-ledger` is green and
 the ledger holds exactly `PIN_CREATED x4, MISMATCH_DETECTED, TOOL_QUARANTINED,
 CONSENT_SHOWN, APPROVED, REPIN`, in that order, with the right actors and none
 of them a model.
+
+`e2e/assistant-sim.spec.ts` (the same story, through the simulated Alexa+
+experience the demo is filmed on), four tests in a real browser against the
+real stack:
+
+1. **Approve.** "add batteries to my list" runs; `pnpm demo:mutate` (the real
+   script); asking again is refused with text **equal to**
+   `REFUSAL_TOOL_CHANGED`, and the card is *inside the conversation*, hosted as
+   an MCP App (the `ui/initialize` handshake really completed, asserted from
+   the frame's `data-phase`). Pressing **Approve** on the card round-trips
+   through `chaperone/approve_change`; the card closes with the MCP Apps
+   teardown; the next request runs. The "What just happened" panel shows the
+   session ID, protocol `2025-11-25` and a latency for all four calls; the
+   ledger holds the same nine events as above, actors never a model; and the
+   browser made no request to anything but this machine.
+2. **Keep blocked.** Same opening; **Keep blocked** on the card; the next
+   request is refused again in the same words and nothing runs; the ledger has
+   `REFUSED` and no `APPROVED` or `REPIN`, and the pin has not moved.
+3. **The text floor.** `?card=text` shows the text card instead, and its own
+   Approve button works the same way.
+4. **Gateway not reachable.** With `/mcp` blocked at the network, the page
+   shows a clear error and a "Try again" that recovers when it is unblocked.
+
+`packages/mcp-app/test/card-behaviour.test.ts` is the unit-level companion: it
+runs the card's own script in jsdom, plays the host's half of the handshake,
+and presses each button. It exists because the card's buttons were once
+inert in every real host (friction-log Entry 042) and nothing had pressed them.
 
 `e2e/fails-closed.spec.ts` (the failure paths), three tests:
 

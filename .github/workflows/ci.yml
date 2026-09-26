@@ -185,7 +185,7 @@ jobs:
           CHAPERONE_UPSTREAMS: '[{"id":"grocery","url":"http://localhost:4000/mcp","label":"Household Grocery"}]'
         run: pnpm test:all
 
-      # The flake gate. Both e2e specs, three times over, no retries: a spec
+      # The flake gate. Every e2e spec, three times over, no retries: a spec
       # that is only sometimes right must fail the build, not pass on the
       # second attempt. Playwright fails the run if any repetition fails.
       - name: Flake gate (e2e x3, no retries)

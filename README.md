@@ -5,6 +5,13 @@ tool servers, keeps a record of what each tool claimed the last time a
 resident approved it, and tells the household, in one sentence, the moment
 that claim changes.
 
+It is built for Alexa+ households: a context-aware add-on that maintains state
+across sessions, so when a tool the assistant uses changes its own wording, the
+resident sees the old and the new sentence side by side before anything runs.
+The demo is a *simulated* Alexa+ experience, a web page in which a rule-based
+stand-in plays the assistant (see the quickstart below); it is not made by or
+affiliated with Amazon.
+
 # Chaperone
 
 ## What it does
@@ -42,7 +49,42 @@ their built output. If `docker compose up` reports that a container name is
 already in use, another checkout's stack exists: run `docker compose down` in
 that checkout first (the container names are fixed).
 
-**2. Run the demo** (each command is copy-pasteable; run them in order):
+**2. Run the demo.** The primary surface is the *simulated Alexa+ experience*: a
+web page with a conversation, where you talk to a household assistant and the
+review card appears inside the conversation. In a second terminal:
+
+```
+pnpm demo:assistant
+```
+
+then open <http://localhost:5174> and:
+
+1. Type (or tap) **add batteries to my list**. It works: `Added 1 × batteries to
+   the shopping list.`
+2. In the first terminal, run `pnpm demo:mutate`. That makes the tool's server
+   change `add_item`'s description, which is the thing that happens in the real
+   world without anyone telling you.
+3. Type **add batteries to my list** again. The tool does not run. You get the
+   refusal, in words that never change, and under it the card, inside the
+   conversation: the added sentence highlighted, "can change your data", "You
+   approved this on 12 January".
+4. Press **Approve** (or **Keep blocked**) on the card. Ask again: after an
+   approval it runs; after Keep blocked it stays blocked.
+
+A collapsible "What just happened" panel shows the tool called, the MCP session
+ID, the protocol version and the latency of each call. **There is no model on
+that page.** The assistant is a rule-based stand-in for the assistant's model
+(fixed phrases mapped to tool calls, all in
+[`packages/assistant-sim/src/rules.ts`](packages/assistant-sim/src/rules.ts)),
+and the page says so on screen. What it is real about: it talks to the gateway
+over MCP Streamable HTTP with the official SDK client, and it hosts the card as
+an MCP App (the `ui/initialize` handshake of `@modelcontextprotocol/ext-apps`,
+in a sandboxed frame), so Approve and Keep blocked are real calls to
+`chaperone/approve_change`. Speech (`speechSynthesis`) is available behind a
+toggle, off by default; typed input is the primary way to talk to it.
+
+**Or, without a browser** (the command-line path; the timings below were
+measured on it). Each command is copy-pasteable; run them in order:
 
 ```
 pnpm demo:call
@@ -72,7 +114,7 @@ pnpm demo:ledger
 The tool works again, and `pnpm demo:ledger` walks the household's hash chain
 and prints `chain OK — 9 events verified`.
 
-Optional, in a second terminal, to see it the way the resident does:
+Optional, in a second terminal, to see the supporting operator console (the held change, the ledger, the evidence so far):
 
 ```
 pnpm --filter @chaperone/console exec vite preview

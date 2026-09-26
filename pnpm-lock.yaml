@@ -329,6 +329,52 @@ importers:
         specifier: ^2.1.4
         version: 2.1.9(@types/node@22.20.2)(jsdom@30.1.0)(lightningcss@1.32.0)(supports-color@7.2.0)
 
+  packages/assistant-sim:
+    dependencies:
+      '@modelcontextprotocol/ext-apps':
+        specifier: 1.7.5
+        version: 1.7.5(@modelcontextprotocol/sdk@1.30.0(supports-color@7.2.0)(zod@3.25.76))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(zod@3.25.76)
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.30.0
+        version: 1.30.0(supports-color@7.2.0)(zod@3.25.76)
+      react:
+        specifier: ^19.3.0
+        version: 19.3.0
+      react-dom:
+        specifier: ^19.3.0
+        version: 19.3.0(react@19.3.0)
+    devDependencies:
+      '@chaperone/mcp-app':
+        specifier: workspace:*
+        version: link:../mcp-app
+      '@tailwindcss/vite':
+        specifier: ^4.3.3
+        version: 4.3.3(vite@6.4.3(@types/node@22.20.2)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.13))
+      '@types/node':
+        specifier: ^22.20.2
+        version: 22.20.2
+      '@types/react':
+        specifier: ^19.3.0
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: ^19.3.0
+        version: 19.3.0(@types/react@19.3.0)
+      '@vitejs/plugin-react':
+        specifier: ^4.7.0
+        version: 4.7.0(supports-color@7.2.0)(vite@6.4.3(@types/node@22.20.2)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.13))
+      jsdom:
+        specifier: ^30.1.0
+        version: 30.1.0
+      tailwindcss:
+        specifier: ^4.3.3
+        version: 4.3.3
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      vite:
+        specifier: ^6.4.3
+        version: 6.4.3(@types/node@22.20.2)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.13)
+
   packages/bench:
     dependencies:
       '@chaperone/errors':
@@ -635,6 +681,9 @@ importers:
       '@types/express':
         specifier: ^5.0.0
         version: 5.0.6
+      jsdom:
+        specifier: ^30.1.0
+        version: 30.1.0
       tsx:
         specifier: ^4.23.13
         version: 4.23.13

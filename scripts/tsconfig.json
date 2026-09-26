@@ -15,6 +15,7 @@
     "demo-call.ts",
     "demo-ledger.ts",
     "demo-mutate.ts",
+    "demo-assistant.ts",
     "demo/**/*.ts",
     "test/**/*.ts",
     "../e2e/**/*.ts",

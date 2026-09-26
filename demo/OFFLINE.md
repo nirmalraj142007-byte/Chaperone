@@ -5,10 +5,11 @@ later version of a tool against it. This file is about running that whole
 story on one machine with no network: what you will see, what is real, and
 what is not.
 
-The short version for anyone re-running it: **two things in this run are
-hand-written stand-ins, and both are labelled on screen.** Everything else
-is the real code doing the real thing. The stand-ins are listed first
-because they are what a reader could be misled by.
+The short version for anyone re-running it: **three things in this run are
+stand-ins, and all three are labelled on screen.** Two are hand-written data
+and one is the assistant itself. Everything else is the real code doing the
+real thing. The stand-ins are listed first because they are what a reader
+could be misled by.
 
 ---
 
@@ -58,6 +59,23 @@ other than now (`scripts/demo/stage.ts`, deliberately outside
 quarantine, the approval, is written by the running gateway, stamped with the
 real time.
 
+### 3. The assistant: a rule-based stand-in, not a model
+
+The primary demo surface is a web page titled "Simulated Alexa+ experience"
+(`packages/assistant-sim`, `pnpm demo:assistant`, port 5174). A real
+assistant would give the resident's words to a language model and let it pick
+a tool. No model provider has been chosen, so this page has none.
+
+| | |
+|---|---|
+| What stands in | a list of regular expressions in one file, `packages/assistant-sim/src/rules.ts`, each mapping a phrasing ("add batteries to my list", "what's on my list", "place my order") to exactly one tool call. The same words always make the same call. Unmatched input gets a reply that lists the phrases it does understand |
+| How it is labelled | a banner on every screen ("a rule-based stand-in for the assistant's model, not part of Chaperone"), a label on every assistant message, and the same sentence at the top of the collapsible "What just happened" panel |
+| What it cannot do | it cannot decide whether a tool runs. It names a tool and arguments; the gateway compares hashes and answers over MCP. The page never words a refusal itself: it shows the gateway's frozen text as written |
+| What is real about it | it speaks MCP Streamable HTTP to the real gateway with the official SDK client (`initialize`, `tools/list`, `tools/call`, and `notifications/tools/list_changed`), and it hosts the consent card as an MCP App: the `ui/initialize` handshake of `@modelcontextprotocol/ext-apps` (its `AppBridge`) with the card in a sandboxed frame. Approve and Keep blocked are real calls to `chaperone/approve_change`; the ledger records them as the resident's |
+| Not used, on purpose | speech *recognition*: browsers send that audio to a vendor's cloud, which would break "runs with the network off". Spoken *replies* (`speechSynthesis`) are behind a toggle, off by default |
+| Branding | an original design. No Amazon or Alexa logos, no device styling, and the page says it is not made by or affiliated with Amazon |
+| Its TODO | Blocker: no model provider is chosen. Resolves when one is, before 2026-10-22: the stand-in's `interpret()` is the one function a model call would replace. If none is chosen, the stand-in stays, labelled, and the submission says so |
+
 There is no other fixture in the demo path. If you see something on screen
 that looks like one and is not in this list, that is a bug; please say so.
 
@@ -67,6 +85,7 @@ that looks like one and is not in this list, that is a bug; please say so.
 
 | | In the offline run |
 |---|---|
+| **The simulated assistant's connection** | real MCP over Streamable HTTP to the real gateway: the session ID, protocol version (2025-11-25) and per-call latency in its "What just happened" panel are read from the transport and measured, not written. The card is the gateway's own, hosted through the ext-apps `AppBridge` |
 | **The gate** | `allow(current, pinnedHash)`: a synchronous hash comparison in `packages/policy`. Nothing about it is staged. |
 | **The refusal text** | the frozen constant `REFUSAL_TOOL_CHANGED`. `demo:verify` asserts the tool result's first block is byte-for-byte equal to it. |
 | **The hashes** | computed from the tool definitions the running `demo-upstream` serves, by the same `hashTool` the crawler uses. |
@@ -110,6 +129,7 @@ Then, with the network off if you like:
 ```
 pnpm demo:reset            # drops and recreates the demo tables (never the crawl tables), seeds the household, prints the beats
 docker compose up -d
+pnpm demo:assistant        # serves the simulated Alexa+ experience on http://localhost:5174 (the primary surface); Ctrl+C stops it
 pnpm demo:verify           # walks the beats headlessly; run it twice
 ```
 
@@ -135,7 +155,8 @@ above works from cold.
 7. Verifies the ledger chain.
 8. Makes sure the console bundle in `packages/console/dist` was built from the
    committed data files at the current commit, with the rehearsal controls
-   compiled in, and rebuilds it if not.
+   compiled in, and rebuilds it if not. Does the same for the simulated
+   assistant's bundle in `packages/assistant-sim/dist` (built from its sources).
 9. Prints the numbered beats with the exact commands and clicks.
 
 It is idempotent: `pnpm demo:idempotence` runs it twice, runs `ddb:dump`
@@ -162,6 +183,14 @@ run.
 | 10 | The evidence screen | `/corpus` renders "Observation 1 of 2 recorded", the 2026-10-20 target, and not "2 of 2" |
 | 11 | The drift chart | **SKIPPED**, with its TODO (see above) |
 | 12 | Nothing left this machine | every browser request went to localhost |
+
+`demo:verify` walks the beats through the console and the command line. The
+simulated assistant's own flow is asserted by two Playwright specs in
+`e2e/assistant-sim.spec.ts` (`pnpm test:e2e`): reset, "add batteries" runs,
+`pnpm demo:mutate`, "add batteries" is refused with the card inline, then
+Approve (the next request runs) and, in a second test, Keep blocked (it stays
+blocked). They also assert the refusal text equals `REFUSAL_TOOL_CHANGED`
+byte for byte, and that the page made no request to anything but this machine.
 
 `demo:verify` starts from the state `demo:reset` leaves. If the stack is not
 in that state it resets first, and it resets again when it finishes, so a
