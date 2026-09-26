@@ -3,7 +3,10 @@
  * offline, from committed inputs only.
  *
  *   1. make sure DynamoDB Local and demo-upstream are running
- *   2. drop and recreate every table
+ *   2. drop and recreate the demo-owned tables (pins, quarantines, ledger
+ *      events, sessions, SSE events, advisory). The crawler's tables
+ *      (tool-snapshot, corpus-server, drift-record) are never touched; see
+ *      tables.ts. The plan is printed before anything is dropped.
  *   3. return demo-upstream to its benign descriptions
  *   4. seed household-demo: connect to demo-upstream, pin every tool it
  *      lists, approved 12 January 2026 (a staged fixture; see stage.ts)
@@ -15,11 +18,9 @@
  * `docker compose` and, if the console bundle is stale, `vite build`.
  */
 import { execFileSync } from "node:child_process";
-import { DeleteTableCommand } from "@aws-sdk/client-dynamodb";
 import { STACK, assertLocalDynamoDb } from "./env.js";
 import { loadConfig } from "@chaperone/config";
 import {
-  TABLE_SCHEMAS,
   createAdminClient,
   ensureTables,
   putFixtureAdvisory,
@@ -31,6 +32,7 @@ import { getPool } from "@chaperone/upstream";
 import { hashTool, type ToolDefinition } from "@chaperone/policy";
 import { ensureConsoleBundle } from "./console.js";
 import { REPO_ROOT, loadFixtureFile } from "./fixtures.js";
+import { dropDemoTables, planDemoDrop } from "./tables.js";
 import { stageApprovedPins, STAGED_APPROVED_AT, type StagedPin } from "./stage.js";
 import { loadEvidence } from "../../packages/console/evidence.load.js";
 
@@ -95,20 +97,6 @@ async function ensureStack(log: (line: string) => void, skipDocker: boolean): Pr
   await waitFor("demo-upstream", async () => (await fetch(`${STACK.demoUpstreamUrl}/control/stats`)).ok);
 }
 
-/** Drops every table this repo defines, and only those. DynamoDB Local only: assertLocalDynamoDb() has already run. */
-async function dropAllTables(): Promise<number> {
-  const client = createAdminClient();
-  let dropped = 0;
-  for (const schema of TABLE_SCHEMAS) {
-    const name = tableName(schema.logicalName);
-    if (await tableExists(client, name)) {
-      await client.send(new DeleteTableCommand({ TableName: name }));
-      dropped += 1;
-    }
-  }
-  return dropped;
-}
-
 async function control(pathAndQuery: string): Promise<void> {
   const res = await fetch(`${STACK.demoUpstreamUrl}${pathAndQuery}`, {
     method: "POST",
@@ -138,9 +126,12 @@ export async function resetDemo(options: ResetOptions = {}): Promise<ResetResult
 
   await ensureStack(log, options.skipDocker === true);
 
-  log("tables: dropping and recreating every DynamoDB Local table");
-  const dropped = await dropAllTables();
-  const { created } = await ensureTables(createAdminClient());
+  const adminClient = createAdminClient();
+  const plan = await planDemoDrop(adminClient);
+  const dropped = await dropDemoTables(adminClient, plan, log);
+  // Creates the tables just dropped, and any that were absent. Crawl-owned
+  // tables that already exist (with their rows) are skipped, not recreated.
+  const { created } = await ensureTables(adminClient);
   log(`tables: dropped ${dropped}, created ${created.length}`);
 
   await control("/control/reset");

@@ -54,7 +54,7 @@ export function assertLocalDynamoDb(): string {
   if (endpoint === undefined || !isLocalUrl(endpoint)) {
     throw new Error(
       `refusing to run: DDB_ENDPOINT is "${endpoint ?? "(unset)"}", which is not DynamoDB Local on this machine. ` +
-        "This script drops and recreates every table.",
+        "This script drops and recreates the demo-owned tables.",
     );
   }
   return endpoint;

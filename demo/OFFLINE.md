@@ -108,7 +108,7 @@ pnpm exec playwright install chromium      # only for demo:verify
 Then, with the network off if you like:
 
 ```
-pnpm demo:reset            # drops and recreates every table, seeds the household, prints the beats
+pnpm demo:reset            # drops and recreates the demo tables (never the crawl tables), seeds the household, prints the beats
 docker compose up -d
 pnpm demo:verify           # walks the beats headlessly; run it twice
 ```
@@ -121,7 +121,10 @@ above works from cold.
 1. `docker compose up -d`, then waits for DynamoDB Local and `demo-upstream`.
 2. Refuses to continue unless `DDB_ENDPOINT` is a loopback address. It drops
    tables.
-3. Drops and recreates all nine DynamoDB Local tables.
+3. Prints which tables it will drop, then drops and recreates the six
+   demo-owned ones (`pin`, `quarantine`, `ledger-event`, `session`,
+   `sse-event`, `advisory`). It never touches the crawler's three
+   (`tool-snapshot`, `corpus-server`, `drift-record`); the list is printed too.
 4. Resets `demo-upstream` to its benign descriptions.
 5. Connects to `demo-upstream`, lists its tools, pins all four, dated 12 January
    (fixture 2 above).
