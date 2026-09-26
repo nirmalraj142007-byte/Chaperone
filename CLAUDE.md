@@ -111,7 +111,10 @@ pnpm demo:mutate              # make demo-upstream change add_item's description
 pnpm demo:ledger              # verify-ledger with the demo stack's local addresses filled in
 pnpm test:all                 # everything. what a judge runs.
 pnpm crawl:run --crawl-id=... # DANGEROUS. see calendar gates before touching.
-pnpm analyse:drift            # emits data/drift.json
+pnpm analyse:drift            # crawl-1 vs crawl-2 -> data/drift.json. stops at data/labels-todo.json while labels are missing
+pnpm analyse:drift --dry-run  # crawl-1 vs itself: must be 0 drift, 0 classifier artifacts. writes nothing under data/
+pnpm analyse:label            # human change-class labelling (data/labels-todo.json -> data/labels.json). resumable
+pnpm analyse:label --prevalence  # M14: label the committed 150-tool sample in data/prevalence.json
 ```
 
 `TARGET=https://<host>/mcp` points `test:resume` and `spec` at a deployed environment. Both must pass there, not just locally.

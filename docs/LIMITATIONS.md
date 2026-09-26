@@ -245,3 +245,30 @@ positively identified it as read-only. The `read` share (69.1% under v2)
 is therefore an upper bound on how many tools are read-only, and the
 `write`, `transact` and `communicate` shares are the ones the verb list
 actually recognised. The counts come from `data/crawl-1-capabilities-v2.json`.
+
+## Rider C counts signals up to the day it runs, not up to crawl 2
+
+Prediction 3 asks whether a server with a `semantic-intent` change published
+any signal of it between crawl 1 and crawl 2. `checkChangelog`
+(`packages/advisory/src/changelog.ts`) takes a start date and no end date,
+so when `pnpm analyse:drift` runs rider C on or after 2026-10-20, a release,
+tag or commit published after crawl 2 started but before the check ran is
+still counted. `data/drift.json` records this as
+`riderC.windowEndEnforced: false`, together with `riderC.checkedAt`. The
+leak can only add signals, so it pushes the result toward "publishes a
+signal", which is against the prediction. Rider C only runs at all if
+semantic-intent drift is at least 20% with n of at least 100
+(`corpus/DRIFT-JSON-APPENDIX-report-shape.md`).
+
+## Only two change classes are decided without a person
+
+`packages/analysis` settles a changed tool pair mechanically in two cases
+only. If the descriptions are equal once case, whitespace, punctuation and
+markdown markers are stripped, and the schema is unchanged, the pair is
+`cosmetic`. If the description is unchanged or formatting-only and the
+schema change is purely additive, it is `schema-additive`. Every other
+changed pair, a one-letter typo fix included, goes to the labeller as
+proposed `semantic-intent`, so the "author is the labeller" limitation
+above applies to all of them. `data/drift.json` reports how many labels
+were needed (`labels.required`) and how many overrode the mechanical
+proposal (`labels.humanOverrodeProposal`).

@@ -18,7 +18,8 @@ export type ErrorCode =
   | "QUARANTINE_ALREADY_RESOLVED_ERROR"
   | "APPROVAL_TOKEN_EXPIRED_ERROR"
   | "INVALID_APPROVAL_TOKEN_ERROR"
-  | "BENCH_ERROR";
+  | "BENCH_ERROR"
+  | "ANALYSIS_ERROR";
 
 export abstract class ChaperoneError extends Error {
   abstract readonly code: ErrorCode;
@@ -113,6 +114,19 @@ export class InvalidApprovalTokenError extends ChaperoneError {
  */
 export class BenchError extends ChaperoneError {
   readonly code = "BENCH_ERROR" as const;
+  readonly retryable = false;
+}
+
+/**
+ * The drift analysis cannot produce an honest result: a pre-registration
+ * gate refused (the taxonomy postdates crawl 1, the interval does not add
+ * up), the committed crawl evidence is inconsistent (a report disagrees
+ * with its raw archives, a classifier verdict does not reproduce), or a
+ * required human label is missing. Never retryable: every one of these is
+ * a fact about the committed data, and running again cannot change it.
+ */
+export class AnalysisError extends ChaperoneError {
+  readonly code = "ANALYSIS_ERROR" as const;
   readonly retryable = false;
 }
 

@@ -8,7 +8,7 @@
  * rendering anything.
  */
 import { createContext, useContext } from "react";
-import type { CapabilityClass, Drift, Evidence, Latency } from "../evidence.load";
+import type { CapabilityClass, Drift, DriftStratum, Evidence, Latency } from "../evidence.load";
 
 export type { CapabilityClass, CrawlReport, Drift, DriftStratum, Evidence, Latency } from "../evidence.load";
 
@@ -42,10 +42,26 @@ export type CorpusState = "empty" | "partial" | "complete";
  * says `pending` is still the partial state.
  */
 export function corpusState(ev: Evidence): CorpusState {
-  if (ev.drift?.status === "complete" && ev.drift.byCapability !== null) {
+  if (quotableStrata(ev.drift) !== null) {
     return "complete";
   }
   return ev.crawl1 === null ? "empty" : "partial";
+}
+
+export type RatedStratum = DriftStratum & { ratePct: number };
+
+/**
+ * The strata whose rates the console may print, or null. Rates exist only in
+ * a complete drift.json that cleared the n >= 100 floor; below it the file
+ * carries counts with every ratePct null (headlineEligible false), and the
+ * screen stays in its partial state rather than inventing a percentage.
+ */
+export function quotableStrata(drift: Drift | null): RatedStratum[] | null {
+  if (drift?.status !== "complete" || drift.byCapability === null || drift.headlineEligible === false) {
+    return null;
+  }
+  const rated = drift.byCapability.filter((s): s is RatedStratum => s.ratePct !== null);
+  return rated.length === drift.byCapability.length ? rated : null;
 }
 
 /** Axis 2 of corpus/TAXONOMY.md, in its documented order of consequence — not sorted by size, ever. */
@@ -79,9 +95,9 @@ const int = (n: number): string => n.toLocaleString("en-US");
  * not a placeholder for the drift chart.
  */
 export function strata(ev: Evidence): Stratum[] {
-  const drift = ev.drift;
-  if (drift?.status === "complete" && drift.byCapability !== null) {
-    const by = new Map(drift.byCapability.map((s) => [s.capabilityClass, s]));
+  const quoted = quotableStrata(ev.drift);
+  if (quoted !== null) {
+    const by = new Map(quoted.map((s) => [s.capabilityClass, s]));
     return CAPABILITY_ORDER.flatMap((capabilityClass) => {
       const s = by.get(capabilityClass);
       return s === undefined

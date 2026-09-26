@@ -4,7 +4,7 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { childLogger } from "@chaperone/logger";
 import { getCorpusServer, putCorpusServer, putToolSnapshot } from "@chaperone/ledger";
-import { CLASSIFIER_VERSION, canonicalizeTool, classifyCapability, hashTool } from "@chaperone/policy";
+import { CLASSIFIER_VERSION, type ClassifierVersion, canonicalizeTool, classifyCapability, hashTool } from "@chaperone/policy";
 import { CANDIDATES_PATH, type CandidateRecord } from "./assemble.js";
 import { applyCrawlDatesUpdate, assertCrawlIdRunnable } from "./crawlId.js";
 import { type BootCandidate, type BootResult, type BootStatus, bootAndList, ensureCrawlInfrastructure } from "./boot.js";
@@ -72,6 +72,12 @@ interface CapabilityRow {
   toolName: string;
   capabilityClass: string;
   confidence: string;
+  /**
+   * Which classifier version produced this row. packages/analysis refuses a
+   * row without it: the drift comparison must be v2 on both sides, and
+   * crawl 1's v2 rows (data/crawl-1-capabilities-v2.json) already carry it.
+   */
+  classifierVersion: ClassifierVersion;
 }
 
 export interface NeedsReviewSample {
@@ -356,7 +362,13 @@ export async function runCrawl(crawlId: string, opts: RunCrawlOptions = {}): Pro
           capturedAt: new Date().toISOString(),
           rawPayloadPath: archivePath,
         });
-        const row: CapabilityRow = { serverId: record.serverId, toolName: tool.name, capabilityClass: verdict.class, confidence: verdict.confidence };
+        const row: CapabilityRow = {
+          serverId: record.serverId,
+          toolName: tool.name,
+          capabilityClass: verdict.class,
+          confidence: verdict.confidence,
+          classifierVersion: CLASSIFIER_VERSION,
+        };
         capabilitiesOut.push(row);
         if (verdict.confidence === "low") {
           needsReview.push(row);

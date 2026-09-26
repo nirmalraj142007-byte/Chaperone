@@ -18,6 +18,7 @@ export default defineConfig({
       "@chaperone/gateway": path.resolve(rootDir, "packages/gateway/src/app.ts"),
       "@chaperone/eval": path.resolve(rootDir, "packages/eval/src/index.ts"),
       "@chaperone/bench": path.resolve(rootDir, "packages/bench/src/index.ts"),
+      "@chaperone/analysis": path.resolve(rootDir, "packages/analysis/src/index.ts"),
     },
   },
   test: {
@@ -66,7 +67,9 @@ export default defineConfig({
     //            reaches is a line nobody has shown to be right. If a branch
     //            looks unreachable, test it (see canonical-guard.test.ts)
     //            rather than lowering this or excluding the file.
-    //   ledger, gateway  80%: CLAUDE.md's bar for everything else.
+    //   ledger, gateway, analysis  80%: CLAUDE.md's bar for everything else.
+    //            analysis computes the headline drift number, so it is gated
+    //            from the phase it lands in rather than left ungated.
     // Nothing is excluded but type-only files, which have no statements.
     // gateway/src/index.ts (the process entry point, top-level await, starts
     // a server) is INCLUDED and counts at 0%; the gate still clears 80% with
@@ -74,12 +77,13 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text"],
-      include: ["packages/policy/src/**/*.ts", "packages/ledger/src/**/*.ts", "packages/gateway/src/**/*.ts"],
+      include: ["packages/policy/src/**/*.ts", "packages/ledger/src/**/*.ts", "packages/gateway/src/**/*.ts", "packages/analysis/src/**/*.ts"],
       exclude: ["**/types.ts"],
       thresholds: {
         "packages/policy/src/**": { statements: 100, branches: 100, functions: 100, lines: 100 },
         "packages/ledger/src/**": { statements: 80, branches: 80, functions: 80, lines: 80 },
         "packages/gateway/src/**": { statements: 80, branches: 80, functions: 80, lines: 80 },
+        "packages/analysis/src/**": { statements: 80, branches: 80, functions: 80, lines: 80 },
       },
     },
   },

@@ -67,7 +67,8 @@ export interface DriftStratum {
   capabilityClass: CapabilityClass;
   servers: number;
   drifted: number;
-  ratePct: number;
+  /** null when the run was below the n >= 100 floor: drift.json then carries counts only. */
+  ratePct: number | null;
 }
 
 /** data/drift.json. `status` is the authority on which /corpus state renders — never the presence of the file. */
@@ -82,7 +83,9 @@ export interface Drift {
   crawl2ScheduledFor: string;
   taxonomyBlobSha: string | null;
   prediction: DriftPrediction;
-  semanticIntent: { servers: number; drifted: number; ratePct: number } | null;
+  semanticIntent: { servers: number; drifted: number; ratePct: number | null } | null;
+  /** false below the n >= 100 floor (corpus/DRIFT-JSON-APPENDIX-report-shape.md). Absent from the pending file. */
+  headlineEligible?: boolean | null;
   byCapability: DriftStratum[] | null;
   countedSeparately: Record<string, number | null | string>;
 }

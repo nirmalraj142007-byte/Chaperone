@@ -14,6 +14,7 @@ import {
   corpusState,
   daysUntil,
   intervalDays,
+  quotableStrata,
   staleness,
   strata,
   type Drift,
@@ -87,6 +88,22 @@ describe("corpusState", () => {
         },
       }),
     ).toBe("complete");
+  });
+
+  it("stays partial when the analysis ran below the n >= 100 floor: counts only, no rate to render", () => {
+    const base = real.drift as Drift;
+    const countsOnly: Drift = {
+      ...base,
+      status: "complete",
+      headlineEligible: false,
+      semanticIntent: { servers: 87, drifted: 9, ratePct: null },
+      byCapability: [{ capabilityClass: "read", servers: 87, drifted: 9, ratePct: null }],
+    };
+    expect(corpusState({ ...real, drift: countsOnly })).toBe("partial");
+    expect(quotableStrata(countsOnly)).toBeNull();
+    // The strata fall back to the crawl-1 frame rather than printing a percentage.
+    expect(strata({ ...real, drift: countsOnly }).every((s) => !s.display.endsWith("%"))).toBe(true);
+    expect(quotableStrata({ ...countsOnly, headlineEligible: true, byCapability: [{ capabilityClass: "read", servers: 120, drifted: 9, ratePct: 7.5 }] })).toHaveLength(1);
   });
 });
 

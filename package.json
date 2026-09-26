@@ -30,7 +30,7 @@
     "check-claims": "tsx scripts/check-claims.ts",
     "check-placeholders": "tsx scripts/check-placeholders.ts",
     "check-audit": "tsx scripts/check-audit-exceptions.ts",
-    "typecheck": "tsc -b && tsc --noEmit -p packages/ledger/scripts && tsc --noEmit -p packages/crawler/scripts && tsc --noEmit -p packages/gateway/scripts && tsc --noEmit -p packages/advisory/scripts && tsc --noEmit -p packages/eval/scripts && tsc --noEmit -p packages/bench/scripts && tsc --noEmit -p spec && tsc --noEmit -p scripts && tsc --noEmit -p packages/console && tsc --noEmit -p infra",
+    "typecheck": "tsc -b && tsc --noEmit -p packages/ledger/scripts && tsc --noEmit -p packages/crawler/scripts && tsc --noEmit -p packages/gateway/scripts && tsc --noEmit -p packages/advisory/scripts && tsc --noEmit -p packages/eval/scripts && tsc --noEmit -p packages/analysis/scripts && tsc --noEmit -p packages/bench/scripts && tsc --noEmit -p spec && tsc --noEmit -p scripts && tsc --noEmit -p packages/console && tsc --noEmit -p infra",
     "ddb:migrate": "tsx packages/ledger/scripts/migrate.ts",
     "ddb:seed": "tsx packages/ledger/scripts/seed.ts",
     "ddb:dump": "tsx packages/ledger/scripts/dump.ts",
@@ -47,6 +47,8 @@
     "advisory:run-local": "tsx packages/advisory/scripts/run-local.ts",
     "eval:report": "tsx packages/eval/scripts/build-report.ts",
     "eval:baseline2": "tsx packages/eval/scripts/run-baseline2.ts",
+    "analyse:drift": "node --env-file-if-exists=.env --import tsx packages/analysis/scripts/analyse-drift.ts",
+    "analyse:label": "tsx packages/analysis/scripts/label.ts",
     "bench": "tsx packages/bench/scripts/bench.ts",
     "infra:synth": "pnpm --filter @chaperone/infra synth"
   },

@@ -16,7 +16,7 @@
  * with the network off, and a judge can diff it against git.
  */
 import type { CSSProperties, ReactNode } from "react";
-import { bandVerdict, corpusState, daysUntil, intervalDays, strata, useEvidence, type Drift, type Evidence } from "../evidence";
+import { bandVerdict, corpusState, daysUntil, intervalDays, quotableStrata, strata, useEvidence, type Drift, type Evidence } from "../evidence";
 import { PredictionTrack, type TrackMark } from "../components/Track";
 import { Strata } from "../components/Strata";
 import { EmptyState, ErrorBox, SkeletonBlock, SkeletonRows } from "../components/marks";
@@ -246,11 +246,12 @@ export function Corpus() {
     );
   }
 
-  const complete = state === "complete" && drift !== null && drift.byCapability !== null;
+  const quoted = quotableStrata(drift);
+  const complete = state === "complete" && drift !== null && quoted !== null;
   const rows = strata(evidence);
   const marks: TrackMark[] | null =
-    complete && drift !== null && drift.byCapability !== null
-      ? drift.byCapability.map((s) => ({ label: s.capabilityClass, ratePct: s.ratePct, verdict: bandVerdict(s.ratePct, drift) }))
+    complete && drift !== null && quoted !== null
+      ? quoted.map((s) => ({ label: s.capabilityClass, ratePct: s.ratePct, verdict: bandVerdict(s.ratePct, drift) }))
       : null;
 
   return (
@@ -265,7 +266,7 @@ export function Corpus() {
 
       {!complete && drift !== null && <ScheduleBanner drift={drift} />}
 
-      {complete && drift?.semanticIntent != null && (
+      {complete && drift?.semanticIntent != null && drift.semanticIntent.ratePct !== null && (
         <section aria-labelledby="head-h" className="box p-4 sm:p-6">
           <h2 id="head-h" className="label">
             Headline · semantic-intent only

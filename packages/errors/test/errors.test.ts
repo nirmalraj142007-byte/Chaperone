@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   AdvisoryUnavailableError,
+  AnalysisError,
   ApprovalTokenExpiredError,
   BootFailureError,
   ChaperoneError,
@@ -33,6 +34,7 @@ describe("@chaperone/errors taxonomy", () => {
     expect(isRetryable(new QuarantineAlreadyResolvedError("x"))).toBe(false);
     expect(isRetryable(new ApprovalTokenExpiredError("x"))).toBe(false);
     expect(isRetryable(new InvalidApprovalTokenError("x"))).toBe(false);
+    expect(isRetryable(new AnalysisError("x"))).toBe(false);
   });
 
   it("returns false for non-ChaperoneError values", () => {

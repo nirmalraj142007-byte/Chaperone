@@ -307,6 +307,28 @@ importers:
         specifier: ^2.1.4
         version: 2.1.9(@types/node@22.20.2)(jsdom@30.1.0)(lightningcss@1.32.0)(supports-color@7.2.0)
 
+  packages/analysis:
+    dependencies:
+      '@chaperone/advisory':
+        specifier: workspace:*
+        version: link:../advisory
+      '@chaperone/errors':
+        specifier: workspace:*
+        version: link:../errors
+      '@chaperone/policy':
+        specifier: workspace:*
+        version: link:../policy
+      zod:
+        specifier: ^3.23.8
+        version: 3.25.76
+    devDependencies:
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.4
+        version: 2.1.9(@types/node@22.20.2)(jsdom@30.1.0)(lightningcss@1.32.0)(supports-color@7.2.0)
+
   packages/bench:
     dependencies:
       '@chaperone/errors':
