@@ -1,0 +1,1124 @@
+{
+  "serverId": "blockrunai__blockrun-mcp__blockrunai-blockrun-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "blockrun_wallet",
+      "description": "Call this tool to manage the BlockRun payment wallet and control agent spending budgets.\n\nCall this FIRST if any other blockrun_* tool returns a payment/balance error.\nCall this to check your current USDC balance before expensive operations.\nCall this to set spending limits before spawning child agents.\n\nIf this server is running on a BlockRun API key (BLOCKRUN_API_KEY), there is no\nwallet and no chain: status reports the account, and setup/qr/deposit/chain do\nnot apply. Credit is managed at https://user.blockrun.ai/dashboard/credits.\n\nIn wallet mode the server holds TWO wallets — one on Solana, one on Base — but\npays on ONE active chain at a time. status shows both addresses/balances and\nwhich is active. New installs default to Solana; an existing Base wallet keeps\nBase until you switch.\n\nTo switch chain (no env vars, no file editing, no restart):\n  1. action:\"chain\" chain:\"solana\"   → provisions + activates the Solana wallet\n  2. action:\"setup\"                   → address + funding QR for the active chain\nSwitch back with action:\"chain\" chain:\"base\". Almost everything now settles on\neither chain; only blockrun_defi (DefiLlama) and blockrun_modal are Base-only,\nplus native Anthropic (claude-*) in blockrun_chat.\n\nActions:\n- status (default): Both wallet addresses + USDC balances, active chain, session spending\n- deposit: Buy USDC with a card — mints a one-time Coinbase Onramp link and opens it in the browser (Base only; funds settle into your own wallet). Paid tools auto-open this on an out-of-funds failure; call it directly to fund up front.\n- setup: Get funding instructions + QR code for the ACTIVE chain (call this when balance is 0)\n- qr: Open QR code (active chain) in system viewer\n- chain + chain:\"base\"|\"solana\": Switch the active payment chain (omit chain: to just see the current one)\n\nBudget controls:\n- budget + budget_action:\"set\" + budget_amount:1.00 → Set global spend cap\n- budget + budget_action:\"check\" (the default) → Report the cap, spend and remaining\n- budget + budget_action:\"clear\" → Remove a cap set here\nIf the operator started the server with BLOCKRUN_BUDGET_LIMIT, that value is a\nceiling this tool can only lower: set above it is clamped, clear restores it,\nand agent_limit is clamped to it. Only a restart with a new env raises it.\n\nMulti-agent orchestration:\n- delegate + agent_id:\"research\" + agent_limit:2.00 → Allocate $2 to a child agent\n- revoke + agent_id:\"research\" → Remove a child agent's cap (its spend is kept; re-delegating the id carries it)\n- report → See per-agent spending breakdown\n\nUsage pattern for multi-agent systems:\n  1. blockrun_wallet action:\"delegate\" agent_id:\"worker-1\" agent_limit:1.00\n  2. Pass agent_id:\"worker-1\" to all blockrun_chat/search/etc calls for that agent\n  3. blockrun_wallet action:\"report\" to audit spending\n\nDo NOT call this for actual AI queries — use blockrun_chat for that.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "default": "status",
+            "description": "What to do",
+            "type": "string",
+            "enum": [
+              "status",
+              "deposit",
+              "setup",
+              "qr",
+              "chain",
+              "budget",
+              "delegate",
+              "revoke",
+              "report"
+            ]
+          },
+          "chain": {
+            "description": "Target chain for action='chain'. Omit to view the current active chain.",
+            "type": "string",
+            "enum": [
+              "base",
+              "solana"
+            ]
+          },
+          "budget_action": {
+            "description": "Budget action (for action='budget'). Defaults to 'check', which only reports.",
+            "type": "string",
+            "enum": [
+              "set",
+              "check",
+              "clear"
+            ]
+          },
+          "budget_amount": {
+            "description": "Budget limit in USD (for budget_action='set')",
+            "type": "number"
+          },
+          "agent_id": {
+            "description": "Agent identifier for delegate/revoke/report actions",
+            "type": "string"
+          },
+          "agent_limit": {
+            "description": "Budget limit in USD for this agent (required for delegate action)",
+            "type": "number"
+          }
+        }
+      }
+    },
+    {
+      "name": "blockrun_chat",
+      "description": "Get a second opinion from another AI model, or use a specialized model for a specific task.\n\nNotable modes:\n- mode:\"powerful\" → Claude Opus 5, Claude Opus 4.8, GPT-5.6-sol, Claude Fable 5 (frontier, 1M context)\n- mode:\"reasoning\" → Claude Opus 5, GPT-5.6-sol, Kimi K3, Grok 4.3, deepseek-v4-pro\n- mode:\"coding\" → Claude Opus 5, GPT-5.3-codex, Kimi K3, Grok Build, GLM-5.2\n- mode:\"cheap\" → deepseek-v4-pro, Qwen3.7 Flash, MiniMax M3, Tencent Hy3\n- mode:\"glm\" → Zhipu GLM-5 / 5.2 / 5.1 / 5-Turbo (strong at coding)\n- mode:\"free\" → free models (no cost)\n\nPick directly: model:\"anthropic/claude-opus-5\", model:\"moonshot/kimi-k3\", model:\"openai/gpt-5.6-sol\", model:\"xai/grok-4.5\", model:\"nvidia/gpt-oss-120b\" (free).\n\nRun blockrun_models to see all available models with pricing.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "Your message to the AI"
+          },
+          "model": {
+            "description": "Specific model ID (e.g., 'moonshot/kimi-k3', 'openai/gpt-5.6-sol', 'zai/glm-5')",
+            "type": "string"
+          },
+          "mode": {
+            "description": "Routing mode: powerful/reasoning = frontier models (Opus 5, GPT-5.6-sol, Kimi K3), coding = code-specialized, glm = Zhipu GLM (great for coding), cheap = budget models, free = $0 models (ignored if model specified)",
+            "type": "string",
+            "enum": [
+              "fast",
+              "balanced",
+              "powerful",
+              "cheap",
+              "reasoning",
+              "free",
+              "coding",
+              "glm"
+            ]
+          },
+          "system": {
+            "description": "Optional system prompt",
+            "type": "string"
+          },
+          "max_tokens": {
+            "default": 1024,
+            "description": "Max tokens in response",
+            "type": "number"
+          },
+          "temperature": {
+            "default": 1,
+            "description": "Creativity 0-2",
+            "type": "number"
+          },
+          "response_format": {
+            "description": "Set to 'json_object' to force valid JSON output (no markdown fences). Works across all providers.",
+            "type": "string",
+            "enum": [
+              "text",
+              "json_object"
+            ]
+          },
+          "stop": {
+            "description": "Up to 4 stop sequences; generation halts when any is produced",
+            "maxItems": 4,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "thinking": {
+            "description": "Anthropic extended thinking. Only honored for anthropic/claude-* models — these go direct to the native /v1/messages endpoint and the response includes verbatim type:'thinking' blocks with their original signature. Ignored for non-Claude models (no native thinking channel).",
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "enabled"
+              },
+              "budget_tokens": {
+                "type": "integer",
+                "minimum": 1024,
+                "maximum": 100000,
+                "description": "Tokens Claude may spend reasoning before answering (1024–100000; Anthropic requires ≥1024). max_tokens is auto-raised above this if needed; counts toward the budget reserve."
+              }
+            },
+            "required": [
+              "type",
+              "budget_tokens"
+            ]
+          },
+          "agent_id": {
+            "description": "Agent identifier. If a budget was delegated for this agent_id via blockrun_wallet action:'delegate', spending is tracked and enforced. The agent is hard-stopped when its budget is exhausted.",
+            "type": "string"
+          },
+          "messages": {
+            "description": "Conversation history for multi-turn context. When provided, 'message' is appended as the final user turn. Use with explicit 'model' param (defaults to 'openai/gpt-5.6-terra' if not specified). Note: if you include a role:'system' entry in messages[], do not also pass the system param to avoid duplicate system messages.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "user",
+                    "assistant",
+                    "system"
+                  ]
+                },
+                "content": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "const": "text"
+                              },
+                              "text": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "text"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "const": "image_url"
+                              },
+                              "image_url": {
+                                "type": "object",
+                                "properties": {
+                                  "url": {
+                                    "type": "string",
+                                    "description": "https URL or data:<mime>;base64,<...> URI"
+                                  }
+                                },
+                                "required": [
+                                  "url"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "image_url"
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "description": "Plain text, or an array of parts for multimodal input (text + image_url). Images are honored on the native anthropic/claude-* path."
+                }
+              },
+              "required": [
+                "role",
+                "content"
+              ]
+            }
+          }
+        },
+        "required": [
+          "message"
+        ]
+      }
+    },
+    {
+      "name": "blockrun_models",
+      "description": "List available AI models with pricing. Use to discover models and compare costs.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "default": "all",
+            "description": "Filter by category",
+            "type": "string",
+            "enum": [
+              "all",
+              "chat",
+              "reasoning",
+              "image",
+              "embedding"
+            ]
+          },
+          "provider": {
+            "description": "Filter by provider (e.g., 'openai', 'anthropic')",
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "name": "blockrun_image",
+      "description": "Generate or edit images via BlockRun. Pays with USDC on the ACTIVE chain — Base or Solana (see blockrun_wallet) — no separate API keys needed.\n\nActions:\n- generate (default): Create image from text prompt\n- edit: Transform an existing image using img2img\n\nGeneration models (1024x1024 base price; larger sizes cost more on gpt-image-*):\n- openai/gpt-image-2 ($0.06–0.12) — flagship, reasoning-driven, multilingual on-image text + character consistency (default)\n- openai/gpt-image-1 ($0.02–0.04) — GPT native image generation\n- google/nano-banana ($0.05) — Gemini-family image model\n- google/nano-banana-2 ($0.09) — Gemini 3.1 Flash, pro-level quality at Flash speed (1024x1024 only)\n- google/nano-banana-pro ($0.10; $0.15 at 4096px) — up to 4K, strongest photorealism\n- xai/grok-imagine-image ($0.02) — stylized, fast\n- xai/grok-imagine-image-pro ($0.07) — higher quality Grok Imagine\n- zai/cogview-4 ($0.015) — cheapest, photorealistic detailed scenes\n- bytedance/seedream-5-pro ($0.045; $0.09 when both dimensions exceed 1024) — Seedream 5.0 Pro; cheap widescreen at 1280x720 / 2048x1024, large formats up to 2848x1600\n\nEdit (img2img) models: openai/gpt-image-2 (default), openai/gpt-image-1, google/nano-banana, google/nano-banana-2, google/nano-banana-pro\nMulti-image edit: pass an array of 2–4 source images to \"image\" to fuse them in one render (openai/* up to 4, google/* up to 3) — e.g. a subject plus a sprite layout guide, or a reference plus a brand logo.\nSource images and masks accept a base64 data URI, an http(s) URL, or a local file path (auto-encoded). Inpaint mask (openai/gpt-image-* only) via \"mask\"; not combinable with multiple source images.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "Image description or edit instructions"
+          },
+          "action": {
+            "default": "generate",
+            "description": "generate: create from text; edit: transform existing image",
+            "type": "string",
+            "enum": [
+              "generate",
+              "edit"
+            ]
+          },
+          "model": {
+            "description": "Model to use (default: openai/gpt-image-2 for both generate and edit). gpt-image-2 renders on-image text best; nano-banana-pro for 4K photorealism; cogview-4 / grok-imagine-image for cheap drafts.",
+            "type": "string",
+            "enum": [
+              "zai/cogview-4",
+              "google/nano-banana",
+              "google/nano-banana-2",
+              "google/nano-banana-pro",
+              "openai/gpt-image-1",
+              "openai/gpt-image-2",
+              "xai/grok-imagine-image",
+              "xai/grok-imagine-image-pro",
+              "bytedance/seedream-5-pro"
+            ]
+          },
+          "image": {
+            "description": "Source image(s) for edit action: a base64 data URI, an http(s) URL, or a local file path (auto-encoded to a data URI) — or an array of 2–4 to fuse into one render (e.g. subject + layout guide, or reference + brand logo). openai/* accepts up to 4, google/* up to 3; a mask cannot be combined with multiple images.",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "minItems": 1,
+                "maxItems": 4,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ]
+          },
+          "mask": {
+            "description": "Inpaint mask for edit action (openai/gpt-image-* only): a base64 data URI, http(s) URL, or local file path. Transparent areas of the mask are regenerated. Cannot be combined with multiple source images.",
+            "type": "string"
+          },
+          "size": {
+            "default": "1024x1024",
+            "description": "Image size. Common values: 1024x1024 (all models), 1536x1024 / 1024x1536 (gpt-image-*), 2048x2048 / 4096x4096 (nano-banana-pro), 1280x720 / 2048x1024 / 2048x2048 / 2848x1600 (seedream-5-pro)",
+            "type": "string"
+          },
+          "inline": {
+            "description": "Return a small inline image preview (thumbnail) the client can render in-conversation, in addition to the full-resolution URL. Defaults to the BLOCKRUN_INLINE_IMAGES env setting (off unless set). Rich clients (e.g. the VS Code extension) render it; plain terminals ignore it. Off keeps responses lightweight.",
+            "type": "boolean"
+          },
+          "agent_id": {
+            "description": "Agent identifier for budget tracking and enforcement.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "prompt"
+        ]
+      }
+    },
+    {
+      "name": "blockrun_music",
+      "description": "Generate music tracks via BlockRun x402 (async, client-polled).\n\nGenerates a full-length ~3 minute MP3 track. Takes 1-3 minutes to complete. The\ntool submits the job and, for slower tracks, polls until it is ready. On the\nBase wallet payment settles only when a finished track is returned — if the\njob fails you are not charged; if this client gives up while a paid request is\nstill in flight the gateway may still settle, and the error text says so. On\nSolana and on the account rail the job is billed when the gateway ACCEPTS it,\nso a job that later fails or outlives the poll budget is still charged — the\nerror text says so and names the job, which stays claimable for ~48h.\n\nModel: minimax/music-2.5+ ($0.1575/track, up to ~4 min)\n\nReturns a permanent BlockRun-hosted URL.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "Music style, mood, or description. E.g. 'upbeat synthwave with neon pads', 'chill lo-fi beats', 'epic orchestral film score'"
+          },
+          "instrumental": {
+            "default": true,
+            "description": "Generate without vocals (default: true)",
+            "type": "boolean"
+          },
+          "lyrics": {
+            "description": "Custom lyrics. Cannot be used with instrumental: true",
+            "type": "string"
+          },
+          "model": {
+            "default": "minimax/music-2.5+",
+            "description": "Music model to use",
+            "type": "string",
+            "enum": [
+              "minimax/music-2.5+"
+            ]
+          },
+          "agent_id": {
+            "description": "Agent identifier for budget tracking and enforcement.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "prompt"
+        ]
+      }
+    },
+    {
+      "name": "blockrun_speech",
+      "description": "AI voice via BlockRun x402 — speak text aloud (ElevenLabs or ByteDance Seed Audio), generate sound effects, list voices.\n\nActions:\n- speak (default): text-to-speech. E.g. \"speak this with the sarah voice\". Price = chars/1000 × rate (min $0.001), quoted before payment.\n- sound_effect: cinematic sound effects from a text prompt, up to 22s ($0.0525/clip)\n- voices: list available voices (free)\n\nModels (speak): elevenlabs/flash-v2.5 ($0.05/1k chars, ~75ms, default), elevenlabs/turbo-v2.5 ($0.05/1k), elevenlabs/multilingual-v2 ($0.10/1k, narration), elevenlabs/v3 ($0.10/1k, most expressive), bytedance/seed-audio-1.0 (~$0.003/sec of output, est. from input length; max 3k chars in / 120s out) — prompt-DIRECTED audio: describe the voice, emotion, and sound staging in the input text itself (\"a tired detective mutters, rain in the background: ...\"); the voice parameter is ignored.\n\nVoice aliases (ElevenLabs models only): sarah (default), george, laura, charlie, river, roger, callum, harry — or any raw ElevenLabs voice_id.\n\nReturns a hosted audio URL — download immediately if you need to keep the file.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "default": "speak",
+            "description": "speak: text-to-speech (default). sound_effect: generate a sound effect. voices: list voices (free).",
+            "type": "string",
+            "enum": [
+              "speak",
+              "sound_effect",
+              "voices"
+            ]
+          },
+          "input": {
+            "description": "speak: text to synthesize. sound_effect: description of the sound, e.g. 'rain on a tin roof, distant thunder' (max 1000 chars).",
+            "type": "string"
+          },
+          "voice": {
+            "description": "Voice alias (sarah, george, laura, charlie, river, roger, callum, harry) or raw ElevenLabs voice_id. Default: sarah.",
+            "type": "string"
+          },
+          "model": {
+            "default": "elevenlabs/flash-v2.5",
+            "description": "Speech model (speak only). seed-audio-1.0 is prompt-directed: voice/emotion/staging go in the input text, the voice param is ignored, and billing is per estimated second of output.",
+            "type": "string",
+            "enum": [
+              "elevenlabs/flash-v2.5",
+              "elevenlabs/turbo-v2.5",
+              "elevenlabs/multilingual-v2",
+              "elevenlabs/v3",
+              "bytedance/seed-audio-1.0"
+            ]
+          },
+          "response_format": {
+            "default": "mp3",
+            "description": "Audio format",
+            "type": "string",
+            "enum": [
+              "mp3",
+              "opus",
+              "pcm",
+              "wav"
+            ]
+          },
+          "speed": {
+            "description": "Playback speed 0.7-1.2 (speak only)",
+            "type": "number",
+            "minimum": 0.7,
+            "maximum": 1.2
+          },
+          "duration_seconds": {
+            "description": "Sound effect length in seconds (sound_effect only; default: auto)",
+            "type": "number",
+            "minimum": 0.5,
+            "maximum": 22
+          },
+          "prompt_influence": {
+            "description": "How literally to follow the prompt, 0-1 (sound_effect only)",
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "agent_id": {
+            "description": "Agent identifier for budget tracking and enforcement.",
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "name": "blockrun_video",
+      "description": "Generate short AI videos via BlockRun x402 on the active Base or Solana chain (async, client-polled).\n\nTurns a text prompt (and optional seed image) into a short video clip (MP4, or MOV on Seedance 2.5). The tool submits the job, then polls until the video is ready (typical total wall-time 60-180s; 9 min Base / 15 min Solana hard cap). On the wallet rails payment settles only when upstream returns a finished video — if the job fails you are not charged; if this client gives up while a paid poll is still in flight the gateway may still settle, and the error text says so. On the account rail the job is billed when the gateway accepts it, so a job that fails or outlives the poll budget is still charged — the error names it.\n\nModels. Every rate below is what you are CHARGED (margin and transaction fee included), at the 720p baseline Seedance renders by default with synced audio:\n- azure/sora-2 (~$0.105/sec, 720p + synced audio, text- or image-to-video) — OpenAI Sora 2 via Azure AI Foundry. duration_seconds must be 4, 8, or 12 (4s default -> ~$0.42/clip). image_url takes a NON-HUMAN reference image (faces are rejected upstream by moderation — use Seedance + RealFace for real people); same price as text-to-video. No RealFace, no last_frame_url. Base only for now: the Solana gateway quotes it as Seedance 2.0 at $1.135 and the tool refuses that quote unsigned.\n- xai/grok-imagine-video ($0.05/sec at 480p default, $0.07/sec at 720p; 8s default -> $0.401/clip, 1-15s) — stylized, fast. 480p/720p only.\n- bytedance/seedance-1.5-pro (~$0.071/sec, 4-12s, 5s default -> ~$0.35/clip) — cheapest Seedance, token-priced upstream\n- bytedance/seedance-2.0-mini (~$0.080/sec, 4-15s, 5s default) — 2.0-generation quality at roughly half the 2.0-fast rate; 720p ceiling; supports RealFace, first/last-frame and the full reference set. The CHEAPEST model that takes reference video/audio — prefer it over 2.0 for reference work unless you need 4K.\n- bytedance/seedance-2.0-fast (~$0.165/sec, 4-15s, ~60-80s gen) — sweet-spot price/quality; supports RealFace, first/last-frame and the full reference set\n- bytedance/seedance-2.0 (~$0.227/sec, 4-15s, up to 4K) — highest quality, and the ONLY model that renders true 4K; supports RealFace, first/last-frame and the full reference set. Also the priciest: 2.0-mini takes the same reference inputs at ~1/3 the rate.\n- bytedance/seedance-2.5 (~$0.315/sec, 4-30s, 5s default) — long-form: double 2.0's length ceiling, multilingual. NOT a strict upgrade — it caps at 720p and takes no RealFace and no reference VIDEO/AUDIO, though it does take first/last-frame and up to 30 reference IMAGES. Use 2.0 for 1080p/4K or real-person video.\n\nImage-to-video is NOT cheaper than text-to-video on Seedance — same per-second rate. Higher resolutions ARE more expensive (token-priced: 1080p ~2.25x, 4K ~9x the 720p rate); the 402 quote is authoritative and is what gets charged.\n\nReference media (reference_image_urls / reference_videos / reference_audios) is served ONLY on the BlockRun account rail (BLOCKRUN_API_KEY) — the Base and Solana gateways refuse it with a 400 before quoting, and this tool refuses it there first. Reference CLIPS are expensive: each one is billed at the 15.2s ceiling whatever its real length, and that price does NOT shrink with a shorter render or a lower resolution. On seedance-2.0-mini a 5s 720p render goes ~$0.40 -> ~$1.61 with one reference video (~4x), ~$5.10 with three videos plus three audios (~13x), and ~24x at 480p, where the discount reaches the render but not the clip. Reference IMAGES cost nothing extra. The account rail bills at submit with no quote to correct against, so check blockrun_wallet action:\"report\" before a large reference job.\n\nRealFace: to generate video of a SPECIFIC real person, first enroll them with blockrun_realface (returns a ta_xxxx asset id), then pass real_face_asset_id here with seedance-2.0, seedance-2.0-fast, or seedance-2.0-mini. Mutually exclusive with image_url.\n\nReturns a permanent blockrun-hosted video URL (the gateway mirrors the asset to GCS so URLs don't expire).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "Text description of the video to generate. E.g. 'a red apple slowly spinning on a wooden table', 'a hummingbird hovering near a red flower, ultra slow motion'"
+          },
+          "image_url": {
+            "description": "Optional seed image URL for image-to-video generation",
+            "type": "string",
+            "format": "uri"
+          },
+          "real_face_asset_id": {
+            "description": "BytePlus RealFace asset id (from blockrun_realface enroll/list) to generate video of a specific real person. Seedance 2.0 / 2.0-fast / 2.0-mini only (NOT 2.5). Mutually exclusive with image_url.",
+            "type": "string",
+            "pattern": "^ta_[A-Za-z0-9]+$"
+          },
+          "duration_seconds": {
+            "description": "Duration to bill for. Defaults to the model's own default (8s xAI, 5s Seedance, 4s Sora). Per-model range: seedance-1.5-pro 4-12s · seedance-2.0 / 2.0-fast / 2.0-mini 4-15s · seedance-2.5 4-30s · sora-2 exactly 4, 8 or 12 · grok-imagine-video 1-15s.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 60
+          },
+          "generate_audio": {
+            "description": "Seedance only: whether to generate a synced audio track. Defaults ON for text-to-video and OFF for image/RealFace-conditioned. The auto-generated audio is occasionally rejected by upstream moderation ('output audio may contain sensitive information') even for benign prompts — pass false to skip audio and avoid that failure. Ignored by xAI/Sora.",
+            "type": "boolean"
+          },
+          "resolution": {
+            "description": "Output resolution. Seedance defaults to 720p and is token-priced (~2.25x at 1080p, ~9x at 4K); per-model sets from token360's published schema: seedance-2.0 480p/720p/1080p/4K · 1.5-pro 480p/720p/1080p · 2.0-fast, 2.0-mini and 2.5 480p/720p only. grok-imagine-video honours 480p (default, $0.05/sec) and 720p ($0.07/sec) and rejects anything higher. Ignored by Sora only (dropped from the request).",
+            "type": "string",
+            "enum": [
+              "480p",
+              "720p",
+              "1080p",
+              "4K"
+            ]
+          },
+          "aspect_ratio": {
+            "description": "Output aspect ratio. Seedance honors the full set; Sora uses it only to pick portrait vs landscape (9:16 / 3:4 -> portrait); Grok ignores it (the gateway never forwards it to xAI). Defaults to the model's own default. (9:21 removed 2026-08-07 — no Seedance model offers it; use 9:16 for vertical.)",
+            "type": "string",
+            "enum": [
+              "adaptive",
+              "16:9",
+              "9:16",
+              "1:1",
+              "4:3",
+              "3:4",
+              "21:9"
+            ]
+          },
+          "last_frame_url": {
+            "description": "Seedance 1.5-pro / 2.0 / 2.0-fast / 2.0-mini / 2.5 (2.5 not on the Solana wallet rail): first-and-last-frame interpolation. A second image URL that seeds the FINAL frame so the model tweens from image_url (first frame) → last_frame_url (last frame). Requires image_url; mutually exclusive with real_face_asset_id.",
+            "type": "string",
+            "format": "uri"
+          },
+          "model": {
+            "default": "xai/grok-imagine-video",
+            "description": "Video model to use",
+            "type": "string",
+            "enum": [
+              "azure/sora-2",
+              "xai/grok-imagine-video",
+              "bytedance/seedance-1.5-pro",
+              "bytedance/seedance-2.0-mini",
+              "bytedance/seedance-2.0-fast",
+              "bytedance/seedance-2.0",
+              "bytedance/seedance-2.5"
+            ]
+          },
+          "reference_image_urls": {
+            "description": "ACCOUNT RAIL ONLY (BLOCKRUN_API_KEY) — the Base and Solana gateways refuse reference media with a 400. Character/style reference images, cited as 'image 1', 'image 2' in the prompt: up to 9 on seedance-2.0 / 2.0-fast / 2.0-mini, 30 on 2.5. Mutually exclusive with image_url / last_frame_url / real_face_asset_id.",
+            "minItems": 1,
+            "maxItems": 30,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 2048,
+              "format": "uri"
+            }
+          },
+          "reference_videos": {
+            "description": "ACCOUNT RAIL ONLY. Motion reference clips (1-3) on seedance-2.0 / 2.0-fast / 2.0-mini — NOT 2.5. Each clip is BILLED AT THE 15.2s CEILING whatever its real length, so one clip makes a 5s 720p render cost about 4x (seedance-2.0-mini ~$0.40 -> ~$1.61), and more at 480p.",
+            "minItems": 1,
+            "maxItems": 3,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string",
+                  "maxLength": 2048,
+                  "format": "uri"
+                }
+              },
+              "required": [
+                "url"
+              ]
+            }
+          },
+          "reference_audios": {
+            "description": "ACCOUNT RAIL ONLY. Audio reference clips (1-3) on seedance-2.0 / 2.0-fast / 2.0-mini — NOT 2.5. Requires a reference image or video alongside. Billed at 0.3x the 15.2s video-clip rate.",
+            "minItems": 1,
+            "maxItems": 3,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string",
+                  "maxLength": 2048,
+                  "format": "uri"
+                }
+              },
+              "required": [
+                "url"
+              ]
+            }
+          },
+          "bitrate_mode": {
+            "description": "Seedance 2.x only (2.0, 2.0-fast, 2.0-mini, 2.5): output bitrate. Defaults to standard.",
+            "type": "string",
+            "enum": [
+              "standard",
+              "high"
+            ]
+          },
+          "output_format": {
+            "description": "Seedance 2.5 only: output container. Every other model returns MP4.",
+            "type": "string",
+            "enum": [
+              "mp4",
+              "mov"
+            ]
+          },
+          "camera_fixed": {
+            "description": "Seedance 1.5-pro only: lock the camera so the shot does not drift.",
+            "type": "boolean"
+          },
+          "safety_identifier": {
+            "description": "Seedance only: an opaque, stable end-user id forwarded upstream for abuse attribution. Not a content filter — do NOT put personal data in it.",
+            "type": "string",
+            "maxLength": 128
+          },
+          "seed": {
+            "description": "Seedance 1.5-pro only: reproducibility seed. Same seed + same prompt re-renders the same clip.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "watermark": {
+            "description": "Seedance only: burn the provider watermark into the output. Defaults off.",
+            "type": "boolean"
+          },
+          "return_last_frame": {
+            "description": "Seedance only: also return the final frame as an image URL, to seed the next clip in a chain.",
+            "type": "boolean"
+          },
+          "agent_id": {
+            "description": "Agent identifier for budget tracking and enforcement.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "prompt"
+        ]
+      }
+    },
+    {
+      "name": "blockrun_realface",
+      "description": "Enroll a real person's face as a BytePlus RealFace asset, then drive Seedance 2.0 video with it (blockrun_video real_face_asset_id).\n\nA RealFace asset (ta_xxxx) lets Seedance 2.0 / 2.0-fast / 2.0-mini generate video of a SPECIFIC real person — not a generic seed image. Only those three models: seedance-2.5 is numerically newer but does NOT accept ta_ assets, and seedance-1.5-pro never did. Enrollment is a multi-step flow because BytePlus requires a live phone liveness check (the real person nods + blinks on camera) before a face photo can be uploaded.\n\nActions:\n- init: FREE. Create an asset group + a phone H5 link. The tool renders the link as a QR code and opens it; the real person scans it on their phone and completes the ~1 min liveness check. Pass group_id to refresh an expired link.\n- status: FREE. Poll a group until status:\"active\" (ready_to_finalize:true). The H5 link is valid ~120s — re-init if it expires.\n- enroll: PAID ($0.01). Settles on Solana or Base from a wallet, or against your BlockRun account key. After the group is active, upload a clear front-facing photo (image_url) of the SAME person. Returns the ta_xxxx asset id.\n- portrait: PAID ($0.01). Settles on Solana or Base from a wallet, or against your BlockRun account key. Virtual Portrait — enroll an AI-GENERATED character from an image URL directly, NO liveness needed (one step: name + image_url → ta_xxxx). For fictional/AI characters only; for a real person use the init→status→enroll liveness flow.\n- list: FREE, WALLET MODE ONLY (assets are indexed by wallet address). List the RealFace + Virtual Portrait assets enrolled by this wallet (their ta_xxxx ids + names) so you can pick one for blockrun_video.\n\nTypical flow:\n  1. blockrun_realface action:\"init\" name:\"Alice\"          → scan QR on phone, do liveness\n  2. blockrun_realface action:\"status\" group_id:\"legacy_rf_…\"  → repeat until ready_to_finalize:true\n  3. blockrun_realface action:\"enroll\" name:\"Alice\" group_id:\"legacy_rf_…\" image_url:\"https://…/alice.jpg\"  → ta_xxxx\n  4. blockrun_video model:\"bytedance/seedance-2.0\" real_face_asset_id:\"ta_xxxx\" prompt:\"…\"\n\nPrivacy: BlockRun does not store face/liveness data — only the asset id, name, and the photo URL you supply.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "init",
+              "status",
+              "enroll",
+              "portrait",
+              "list"
+            ],
+            "description": "What to do"
+          },
+          "name": {
+            "description": "Display name for the person/character (required for init, enroll, and portrait).",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "group_id": {
+            "description": "Asset-group id from init (required for status and enroll; pass to init to refresh an expired H5 link). Not used by portrait.",
+            "type": "string",
+            "pattern": "^legacy_rf_\\d+$"
+          },
+          "image_url": {
+            "description": "Public HTTPS URL to a clear front-facing face image (JPG/PNG/WEBP, ≤10MB). Required for enroll and portrait.",
+            "type": "string",
+            "format": "uri"
+          },
+          "agent_id": {
+            "description": "Agent identifier for budget tracking and enforcement (enroll only).",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action"
+        ]
+      }
+    },
+    {
+      "name": "blockrun_search",
+      "description": "Grok Live Search — real-time web + news with AI-summarized results and citations. PRICED PER SOURCE and expensive by default: $0.025 × max_results, +5% gateway buffer — default max_results=10 settles ~$0.26 (max_results=50 → ~$1.31). Pass a smaller max_results to cap spend; for a plain fact, 3 sources (~$0.08) is usually enough.\n\nCommon shape:\n- body: { query: \"...\", sources: [\"web\",\"news\"], max_results: 10, from_date: \"YYYY-MM-DD\", to_date: \"YYYY-MM-DD\" }\n\n`sources` accepts any subset of [\"web\",\"news\"] (default [\"web\"] — pass both for news coverage). There is no X/Twitter source (removed upstream 2026-07-05; asking for it is refused before payment). `max_results` is 1–50 (default 10) and drives the price — pass a smaller value if you want to cap spend.\n\nFull request shape + worked examples in the `search` skill (`skills/search/SKILL.md`).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "default": "",
+            "description": "Endpoint sub-path under /v1/search/ (default empty = root /v1/search). Reserved for future surfaces.",
+            "type": "string"
+          },
+          "body": {
+            "description": "Request body. At minimum { query: '...' }. Sent as POST."
+          },
+          "agent_id": {
+            "description": "Agent identifier for budget tracking and enforcement.",
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "name": "blockrun_exa",
+      "description": "Neural web search via Exa — understands meaning, not just keywords. Great for research.\n\nCommon paths (all POST, body shapes documented in the exa-research skill):\n- search       — body: { query, numResults?, category?, includeDomains?, excludeDomains? }   ($0.010 base + tx fee)\n- answer       — body: { query }                                                              ($0.010 base + tx fee)\n- contents     — body: { urls: [...] }                                                        ($0.002/URL + ONE tx fee, up to 100)\n- find-similar — body: { url, numResults? }                                                   ($0.010 base + tx fee)\nTx fee = the gateway's flat network fee, $0.001 today (we reserve $0.002); the 402 header carries the exact charge.\n\nCategories for search: \"news\", \"research paper\", \"company\", \"tweet\", \"github\", \"pdf\".\n\nFull request/response shapes + worked research workflows in the `exa-research` skill.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Endpoint name under /v1/exa/, e.g. 'search', 'answer', 'contents', 'find-similar'"
+          },
+          "body": {
+            "description": "JSON body for the call. Sent as POST. Required for all four endpoints."
+          },
+          "agent_id": {
+            "description": "Agent identifier for budget tracking and enforcement.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    },
+    {
+      "name": "blockrun_markets",
+      "description": "Prediction market + derivatives data via Predexon aggregator. Flat $0.0075 base per call (every endpoint) plus the gateway's network fee — $0.001 on Base today, none quoted on Solana; the 402 header carries the exact charge (we reserve $0.0095).\n\nPOLYMARKET (Tier 1):\n- polymarket/events, polymarket/markets — list events/markets (filter, sort, paginate)\n- polymarket/markets/keyset, polymarket/events/keyset — same data, cursor-based keyset pagination (params: { pagination_key })\n- polymarket/crypto-updown — crypto up/down markets\n- polymarket/market-price/:token_id — current/historical price\n- polymarket/candlesticks/:condition_id — OHLCV by market\n- polymarket/candlesticks/token/:token_id — OHLCV by single outcome token\n- polymarket/volume-chart/:condition_id — volume w/ YES/NO split\n- polymarket/orderbooks, polymarket/trades, polymarket/activity\n- polymarket/markets/:token_id/volume, polymarket/markets/:condition_id/open_interest\n- polymarket/positions — user positions\n- polymarket/leaderboard, polymarket/leaderboard/market/:condition_id\n- polymarket/cohorts/stats, polymarket/market/:condition_id/top-holders\n- polymarket/uma/markets, polymarket/uma/market/:condition_id — UMA oracle questions/timeline\n\nPOLYMARKET (Tier 2 — wallet/smart-money analytics):\n- polymarket/wallet/:wallet — full smart-wallet profile\n- polymarket/wallet/:wallet/markets, .../similar\n- polymarket/wallet/pnl/:wallet, .../positions/:wallet, .../volume-chart/:wallet\n- polymarket/wallets/profiles — batch profiles, GET with params: { addresses } (POST 404s); polymarket/wallets/filter — AND/OR filter\n- polymarket/market/:condition_id/smart-money, polymarket/markets/smart-activity\n\nWALLET IDENTITY & CLUSTERING (Tier 2) — cross-context labels + on-chain relationship graph:\n- polymarket/wallet/identity/:wallet — fetch identity + profile metadata for one wallet\n- polymarket/wallet/identities — POST { addresses: [...] } for bulk lookup (up to 200 wallets)\n- polymarket/wallet/:address/cluster — discover wallets connected via on-chain transfers + identity proofs\n\nSPORTS — sports/* (categories, markets, markets/:game_id, outcomes/:predexon_id) DEGRADED, do not call: Predexon 500 on every call since 2026-08-04; the gateway releases the payment on that upstream 500. Use markets/search { q: \"NBA\" } or polymarket/events { search: \"NBA\" } instead — no live route takes a \"league\" param.\n\nKALSHI: kalshi/markets, kalshi/trades, kalshi/orderbooks\nLIMITLESS / OPINION / PREDICT.FUN: {platform}/markets, {platform}/orderbooks\nBINANCE FUTURES: binance/candles/:symbol, binance/ticks/:symbol\n\nCROSS-PLATFORM:\n- markets/search — search every venue in one call (search term is \"q\"). The only canonical-layer route left: markets, markets/listings, outcomes/:id and matching-markets(/pairs) were removed upstream 2026-08-04 and 404 before payment.\n\nREQUEST CONTRACTS:\n- Discover current markets with markets/search (its search term is \"q\"), then resolve the chosen Polymarket market with polymarket/markets/keyset and condition_id.\n- On polymarket/markets{,/keyset} the free-text filter is \"search\" (NOT \"q\"), and status:\"open\"/\"closed\" replaces Gamma's active/closed. \"sort\", \"end_after\", and \"end_before\" are supported; \"order\"/\"ascending\" are not.\n- Candlesticks interval is integer minutes (\"1440\", not \"1h\"); it is OPTIONAL (the server defaults). Which intervals a market serves varies — 1440 may work where 60 does not. start_time/end_time are Unix seconds.\n- polymarket/orderbooks requires token_id plus start_time/end_time in Unix milliseconds.\n- Smart-money needs a smart-wallet CRITERION (min_trades, min_volume, min_roi, min_*_pnl, min_win_rate, min_profit_factor). \"window\" only scopes time and is NOT sufficient on its own. Default: { window: \"30d\", min_trades: \"100\" }.\n\nPass query params via 'params' (GET) — a '?' in 'path' is refused before payment, because path-carried values bypass the pre-payment checks above. Use 'body' only for POST endpoints (e.g. polymarket/wallet/identities).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Endpoint path, no query string, e.g. 'polymarket/events', 'kalshi/markets' (filter via params: { ticker: 'KXBTC-25MAR14' }), 'polymarket/wallet/0xabc...', 'markets/search'"
+          },
+          "params": {
+            "description": "Query parameters for GET requests (e.g. markets/search uses { q: 'Bitcoin', status: 'open', venue: 'polymarket', limit: '20' })",
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "body": {
+            "description": "JSON body for POST queries (triggers pmQuery — most endpoints are GET)"
+          },
+          "agent_id": {
+            "description": "Agent identifier for budget tracking and enforcement.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    },
+    {
+      "name": "blockrun_price",
+      "description": "Realtime quotes and OHLC history for crypto, FX and commodities (Pyth-backed), plus the ticker catalog for 12 stock markets.\n\n- action=\"price\" — realtime quote for a symbol\n- action=\"history\" — OHLC bars between from/to (unix seconds)\n- action=\"list\" — discovery: list available symbols (free)\n\nPricing:\n- crypto / fx / commodity: FREE across price, history and list\n- stocks / usstock: list (ticker catalog) FREE; price/history NOT SERVED — gateway 501 before payment since 2026-09-05, nothing charged, do not retry\n\nStocks markets: us, hk, jp, kr, gb, de, fr, nl, ie, lu, cn, ca (required when category=\"stocks\").\n\nExamples:\n- { action: \"price\", category: \"crypto\", symbol: \"BTC-USD\" }\n- { action: \"price\", category: \"fx\", symbol: \"EUR-USD\" }\n- { action: \"history\", category: \"crypto\", symbol: \"ETH-USD\", resolution: \"D\", from: 1700000000, to: 1710000000 }\n- { action: \"list\", category: \"crypto\", query: \"sol\" }",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "price",
+              "history",
+              "list"
+            ],
+            "description": "Which endpoint to hit: price, history, or list."
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "crypto",
+              "fx",
+              "commodity",
+              "usstock",
+              "stocks"
+            ],
+            "description": "Market category."
+          },
+          "symbol": {
+            "description": "Ticker (required for price+history). e.g. BTC-USD, EUR-USD, XAU-USD.",
+            "type": "string"
+          },
+          "market": {
+            "description": "Stock market code — required when category='stocks'.",
+            "type": "string",
+            "enum": [
+              "us",
+              "hk",
+              "jp",
+              "kr",
+              "gb",
+              "de",
+              "fr",
+              "nl",
+              "ie",
+              "lu",
+              "cn",
+              "ca"
+            ]
+          },
+          "session": {
+            "description": "Equity session hint (pre/post/on); ignored for non-equity.",
+            "type": "string",
+            "enum": [
+              "pre",
+              "post",
+              "on"
+            ]
+          },
+          "resolution": {
+            "description": "Bar resolution for history (default D).",
+            "type": "string",
+            "enum": [
+              "1",
+              "5",
+              "15",
+              "60",
+              "240",
+              "D",
+              "W",
+              "M"
+            ]
+          },
+          "from": {
+            "description": "History window start (unix seconds).",
+            "type": "number"
+          },
+          "to": {
+            "description": "History window end (unix seconds).",
+            "type": "number"
+          },
+          "query": {
+            "description": "Free-text filter for list.",
+            "type": "string"
+          },
+          "limit": {
+            "description": "Max items for list (default 100, max 2000).",
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 2000
+          },
+          "agent_id": {
+            "description": "Agent identifier for budget tracking and enforcement.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "category"
+        ]
+      }
+    },
+    {
+      "name": "blockrun_dex",
+      "description": "Get real-time DEX data from DexScreener. FREE - no payment required.\n\nUse for:\n- Token prices and liquidity across chains\n- Trading volume and price changes\n- Finding token pairs and contracts\n\nExamples:\n  blockrun_dex({ query: \"SOL\" })           -> Search for SOL pairs\n  blockrun_dex({ token: \"So11...xxx\" })    -> Get specific token data\n  blockrun_dex({ symbol: \"PEPE\" })         -> Search by symbol",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "description": "Search query (token name, symbol, or address)",
+            "type": "string"
+          },
+          "token": {
+            "description": "Token address for direct lookup",
+            "type": "string"
+          },
+          "symbol": {
+            "description": "Token symbol to search",
+            "type": "string"
+          },
+          "chain": {
+            "description": "Filter by chain (ethereum, solana, base, etc.)",
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "name": "blockrun_modal",
+      "description": "Run isolated code in a BlockRun-hosted Modal sandbox — disposable remote container, optional GPU.\n\nUse when you need: a clean ephemeral environment, GPU access (T4/L4/A10G/A100/H100 — those five only), or a safer place for untrusted code. Prefer local tools for normal repo work.\n\n⚠️ `timeout` IS THE BILLED LIFETIME — charged upfront in full, NEVER refunded. It is not an idle timeout: you pay for the time you ASK for, not the time you use, and terminating early refunds nothing. Ask for what you need, not a safe-looking ceiling.\n- timeout ≤ 300s → flat: $0.0120 CPU · $0.0520 T4 · $0.0820 L4 · $0.1020 A10G · $0.2020 A100 · $0.4020 H100\n- timeout > 300s → PER-HOUR × the full requested lifetime: $0.10/h CPU · $1.50 T4 · $2.00 L4 · $2.50 A10G · $4.00 A100 · $8.00/h H100\n  e.g. { timeout: 600, gpu: \"A100\" } = $0.6687 · { timeout: 86400, gpu: \"H100\" } = $192.00\n\nCommon paths (all POST):\n- sandbox/create     — body: { image?, timeout?, cpu?, memory?, gpu?, setup_commands? }    (see above — $0.0120 to $192.00)\n- sandbox/exec       — body: { sandbox_id, command: [\"python\",\"-c\",\"...\"], timeout? }      ($0.0030)\n- sandbox/status     — body: { sandbox_id }                                                ($0.0030)\n- sandbox/terminate  — body: { sandbox_id }                                                ($0.0030)\n\nFull pricing tables + GPU details in the `modal` skill.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Endpoint under /v1/modal/, e.g. 'sandbox/create', 'sandbox/exec'"
+          },
+          "body": {
+            "description": "JSON body. Sent as POST."
+          },
+          "agent_id": {
+            "description": "Agent identifier for budget tracking and enforcement.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    },
+    {
+      "name": "blockrun_phone",
+      "description": "Phone-number intelligence, US/CA number provisioning, and outbound AI voice calls.\n\nCommon paths (path = everything after /v1/):\n- phone/lookup               POST body: { phoneNumber }                                          ($0.01)\n- phone/lookup/fraud         POST body: { phoneNumber } — SIM-swap + call-forwarding signals    ($0.05)\n- phone/numbers/buy          POST body: { country?: \"US\"|\"CA\", areaCode? } — 30-day lease       ($5.00)\n- phone/numbers/renew        POST body: { phoneNumber } — extend 30 days                        ($5.00)\n- phone/numbers/list         POST body: {} — your wallet-owned numbers                          ($0.001)\n- phone/numbers/release      POST body: { phoneNumber } — release back to pool                  (free)\n- voice/call                 POST body: { to, task, from, voice?, max_duration?, ... }          ($0.54 flat)\n- voice/call/{call_id}       GET (no body) — poll status + transcript                           (free)\n\nREQUIRED for voice/call: `from` must be a number your wallet owns. Provision one with `phone/numbers/buy` first ($5, 30-day lease).\n\nVoice presets: nat, josh, maya, june, paige, derek, florian. Phone numbers use E.164 format (e.g. +1 followed by 10 US digits, or +<country-code><number>).\n\nVoice call flow + voice preset details + full body shapes in the `phone` skill.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Endpoint after /v1/. Use 'phone/...' for lookup + number ops, 'voice/call' for outbound AI calls, 'voice/call/{id}' (no body) to poll status."
+          },
+          "body": {
+            "description": "JSON body. Sent as POST. Omit for the free GET poll (voice/call/{call_id})."
+          },
+          "agent_id": {
+            "description": "Agent identifier for budget tracking and enforcement.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    },
+    {
+      "name": "blockrun_rpc",
+      "description": "Raw JSON-RPC against 40+ blockchains — one endpoint, no node, no API key. $0.002 base per call plus the gateway's flat tx fee ($0.001 today; we reserve $0.002, so budget/confirm show $0.004 per single call). A JSON-RPC batch charges $0.002 per element plus ONE fee — batch when you can.\n\nUse when you need data the higher-level tools don't cover: contract reads (eth_call), balances, blocks, txs, logs, gas, or any chain-native RPC method.\n\nNetworks (full catalog in the rpc skill): ethereum, base, arbitrum, optimism, polygon, bsc, avalanche, solana, bitcoin, sui, near, ripple, polkadot, dogecoin, litecoin, monad, berachain, unichain, hyperevm, sonic, and 20+ more.\n\nExamples:\n  blockrun_rpc({ network: \"ethereum\", method: \"eth_blockNumber\" })\n  blockrun_rpc({ network: \"base\", method: \"eth_getBalance\", params: [\"0xabc...\", \"latest\"] })\n  blockrun_rpc({ network: \"solana\", method: \"getSlot\" })\n  blockrun_rpc({ network: \"bitcoin\", method: \"getblockchaininfo\" })\n  blockrun_rpc({ network: \"ethereum\", body: [{jsonrpc:\"2.0\",id:1,method:\"eth_blockNumber\"},{...}] })  // batch\n\nPrefer blockrun_price (free quotes) or blockrun_dex (free DEX data) when they cover the question — this tool is for raw chain access.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "network": {
+            "type": "string",
+            "description": "Chain key, e.g. 'ethereum', 'base', 'solana', 'bitcoin', 'arbitrum', 'polygon'. Unknown slugs pass through to the Tatum gateway."
+          },
+          "method": {
+            "description": "JSON-RPC method, e.g. 'eth_blockNumber', 'eth_call', 'getSlot' (Solana), 'getblockchaininfo' (Bitcoin). Required unless 'body' is set.",
+            "type": "string"
+          },
+          "params": {
+            "description": "JSON-RPC params array for the method, e.g. ['0xabc...', 'latest']."
+          },
+          "body": {
+            "description": "Full JSON-RPC 2.0 body or an array of them (batch). Overrides method/params when set."
+          },
+          "agent_id": {
+            "description": "Agent identifier for budget tracking and enforcement.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "network"
+        ]
+      }
+    },
+    {
+      "name": "blockrun_defi",
+      "description": "DeFi fundamentals via DefiLlama — protocol TVL, chain TVL, yield pools (APY), token prices. Pays per call in USDC, no API key.\n\nPaths (GET only; price = base + the gateway's flat tx fee, $0.001 today — we reserve $0.002; the 402 header carries the exact charge):\n- protocols                      ($0.005 base) — all DeFi protocols ranked by TVL\n- protocol/{slug}                ($0.005 base) — one protocol's TVL history + chain breakdown, e.g. protocol/aave-v3\n- chains                         ($0.005 base) — TVL by chain\n- yields                         ($0.005 base) — yield pools with APY + TVL (large; filter client-side)\n- prices/{coins}                 ($0.001 base) — token prices, coins like 'base:0x833589...,coingecko:ethereum'\n\nExamples:\n  blockrun_defi({ path: \"protocol/uniswap-v3\" })\n  blockrun_defi({ path: \"prices/coingecko:bitcoin,coingecko:ethereum\" })\n  blockrun_defi({ path: \"chains\" })\n\nUse blockrun_price (free) for plain spot quotes, blockrun_dex (free) for DEX pairs — this tool is for protocol/TVL/yield fundamentals.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Endpoint under /v1/defillama/, e.g. 'protocols', 'protocol/aave-v3', 'chains', 'yields', 'prices/coingecko:ethereum'"
+          },
+          "agent_id": {
+            "description": "Agent identifier for budget tracking and enforcement.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    },
+    {
+      "name": "blockrun_polymarket_read",
+      "description": "Read or preview Polymarket state without signing or changing anything.\n\nActions:\n- positions — holdings, current value, PnL, and redeemable status (free Data API)\n- orders — open CLOB orders, optionally filtered by condition_id\n- preview — build a live buy/sell order preview from the CLOB book. side plus token_id (or condition_id+outcome) are required. Market buys use amount_usd; limit orders use price+size. This action never accepts confirm and never signs or submits an order.\n\nUse blockrun_polymarket only for setup and funds-affecting operations: confirmed buy/sell, cancel, redeem, fund, or withdraw.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "positions",
+              "orders",
+              "preview"
+            ],
+            "description": "Read-only operation"
+          },
+          "condition_id": {
+            "description": "orders: optional market condition ID filter",
+            "type": "string"
+          },
+          "side": {
+            "description": "preview: order side",
+            "type": "string",
+            "enum": [
+              "buy",
+              "sell"
+            ]
+          },
+          "token_id": {
+            "description": "preview: outcome token ID",
+            "type": "string"
+          },
+          "outcome": {
+            "description": "preview: outcome label used with condition_id",
+            "type": "string"
+          },
+          "price": {
+            "description": "preview: limit probability; omit for market order",
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "exclusiveMaximum": 1
+          },
+          "size": {
+            "description": "preview: shares for limits and market sells",
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "amount_usd": {
+            "description": "preview: pUSD to spend on a market buy",
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "order_type": {
+            "description": "preview: order type",
+            "type": "string",
+            "enum": [
+              "GTC",
+              "GTD",
+              "FOK",
+              "FAK"
+            ]
+          },
+          "expires_at": {
+            "description": "preview: GTD expiry in Unix seconds",
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "post_only": {
+            "description": "preview: maker-only limit order",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "action"
+        ]
+      }
+    },
+    {
+      "name": "blockrun_polymarket",
+      "description": "Trade on Polymarket prediction markets (CLOB V2, Polygon). REAL MONEY — orders spend pUSD held in your Polymarket deposit wallet, signed locally by your BlockRun key. Free tool (no BlockRun API charge); discover markets/prices/token IDs with blockrun_markets first.\n\nRun action:\"setup\" FIRST (and again after funding). It creates a gasless deposit wallet owned by your key, checks pUSD balance + exchange approvals, and prints funding instructions. Zero config — no Polymarket account or API keys; setup bootstraps its credentials from your wallet key.\n\nActions:\n- setup — create/inspect deposit wallet, funding, approvals (confirm:true to sign the approval batch), region check. Idempotent.\n- fund — top up the deposit wallet from your OWN Base USDC, gasless (confirm:true). amount_usd required. BlockRun pays the gas + charges $0.01; you need no ETH. Non-custodial (USDC → Polymarket bridge → your vault).\n- buy / sell — token_id (or condition_id+outcome) + either price+size (limit) or amount_usd (market buy) / size (market sell). confirm:true REQUIRED to place; omitting it returns a dry-run preview. Per-order cap: POLYMARKET_MAX_BET_USD (default $25).\n- orders — list open orders (optional condition_id filter)\n- cancel — order_id:\"…\" or all:true\n- positions — holdings incl. redeemable winnings (free Data-API)\n- redeem — claim resolved winnings for condition_id (confirm:true; gasless)\n- withdraw — cash out pUSD → native USDC on Base to your agent wallet (confirm:true). amount_usd optional (default: full balance); to_address optional (default: your wallet).\n\nPrices are probabilities 0–1 on the market's tick grid. token_id comes from blockrun_markets Polymarket data. Geoblock is handled by default (CLOB traffic routes through BlockRun's Finland egress) — setup reports your region status. Complying with Polymarket's terms for the user's jurisdiction is the user's responsibility.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "setup",
+              "fund",
+              "buy",
+              "sell",
+              "cancel",
+              "orders",
+              "positions",
+              "redeem",
+              "withdraw"
+            ],
+            "description": "Operation to perform"
+          },
+          "token_id": {
+            "description": "Outcome token ID (decimal ERC-1155 id from blockrun_markets clobTokenIds)",
+            "type": "string"
+          },
+          "condition_id": {
+            "description": "Market condition ID (0x…). With `outcome` it resolves token_id; required for redeem.",
+            "type": "string"
+          },
+          "outcome": {
+            "description": "Outcome label (e.g. 'Yes') — used with condition_id when token_id is omitted",
+            "type": "string"
+          },
+          "price": {
+            "description": "Limit price as probability (0–1). Omit for a market order.",
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "exclusiveMaximum": 1
+          },
+          "size": {
+            "description": "Shares — required for limit orders and market sells",
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "amount_usd": {
+            "description": "pUSD dollars — to spend (market buy) or to cash out (withdraw; default full balance)",
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "order_type": {
+            "description": "Default: GTC for limit orders, FOK for market orders",
+            "type": "string",
+            "enum": [
+              "GTC",
+              "GTD",
+              "FOK",
+              "FAK"
+            ]
+          },
+          "max_fill_price": {
+            "description": "Market orders only: the worst fill you accept (0-1). Defaults to the worst fill of this session's last preview for the same token+side, so a bare confirm:true is already held to what was quoted — a book that moved past it is refused, not signed. Pass this to widen or tighten that bound. Buy = ceiling, sell = floor.",
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "exclusiveMaximum": 1
+          },
+          "expires_at": {
+            "description": "Unix seconds expiry (GTD only, ≥ ~3 min in the future)",
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "post_only": {
+            "description": "Maker-only limit order (rejected if it would cross the book)",
+            "type": "boolean"
+          },
+          "order_id": {
+            "description": "Order ID to cancel",
+            "type": "string"
+          },
+          "all": {
+            "description": "cancel: cancel ALL open orders",
+            "type": "boolean"
+          },
+          "to_address": {
+            "description": "withdraw: destination address on Base (default: your agent wallet)",
+            "type": "string"
+          },
+          "confirm": {
+            "description": "Must be true to place orders / sign approvals / redeem. Omit for a dry-run preview.",
+            "type": "boolean"
+          },
+          "agent_id": {
+            "description": "Tag for the session betting ledger (bets do NOT draw from the x402 API budget)",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action"
+        ]
+      }
+    }
+  ],
+  "stderrTail": "npm warn deprecated uuid@8.3.2: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).\nBlockRun MCP Server started (v0.53.1) — stdio transport — 19 tools\n",
+  "durationMs": 92190,
+  "transport": "stdio"
+}

@@ -1,0 +1,8 @@
+{
+  "serverId": "blackwhite084__playwright-plus-python-mcp__blackwhite084-playwright-plus-py",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "Downloading playwright (46.0MiB)\nDownloading cryptography (4.5MiB)\nDownloading pydantic-core (2.0MiB)\n Downloaded pydantic-core\n Downloaded cryptography\n Downloaded playwright\nInstalled 32 packages in 9ms\nTraceback (most recent call last):\n  File \"/tmp/uv-cache/archive-v0/ylp3F4ITfFgES9og/bin/playwright-server\", line 6, in <module>\n    from playwright_server import main\n  File \"/tmp/uv-cache/archive-v0/ylp3F4ITfFgES9og/lib/python3.12/site-packages/playwright_server/__init__.py\", line 1, in <module>\n    from . import server\n  File \"/tmp/uv-cache/archive-v0/ylp3F4ITfFgES9og/lib/python3.12/site-packages/playwright_server/server.py\", line 11, in <module>\n    @server.list_resources()\n     ^^^^^^^^^^^^^^^^^^^^^\nAttributeError: 'Server' object has no attribute 'list_resources'\n",
+  "durationMs": 17649,
+  "transport": "stdio"
+}

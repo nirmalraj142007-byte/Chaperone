@@ -1,0 +1,8 @@
+{
+  "serverId": "asmith26__jupytercad-mcp__asmith26-jupytercad-mcp",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "Downloading pydantic-core (2.0MiB)\nDownloading pycrdt (1.0MiB)\nDownloading cryptography (4.5MiB)\nDownloading pygments (1.2MiB)\nDownloading jupyterlab (16.4MiB)\nDownloading jedi (4.7MiB)\nDownloading babel (9.7MiB)\nDownloading debugpy (3.8MiB)\nDownloading jupytercad-core (4.0MiB)\nDownloading jupytercad-app (3.1MiB)\n Downloaded pycrdt\n Downloaded pygments\n Downloaded pydantic-core\n Downloaded debugpy\n Downloaded jupytercad-app\n Downloaded cryptography\n Downloaded jedi\n Downloaded jupytercad-core\n Downloaded babel\n Downloaded jupyterlab\nInstalled 125 packages in 100ms\nTraceback (most recent call last):\n  File \"/tmp/uv-cache/archive-v0/K9SM-mFObziXZ7BO/bin/jupytercad-mcp\", line 6, in <module>\n    from jupytercad_mcp.server import main\n  File \"/tmp/uv-cache/archive-v0/K9SM-mFObziXZ7BO/lib/python3.12/site-packages/jupytercad_mcp/server.py\", line 7, in <module>\n    from mcp.server.fastmcp import FastMCP\n  File \"/tmp/uv-cache/archive-v0/K9SM-mFObziXZ7BO/lib/python3.12/site-packages/mcp/server/fastmcp.py\", line 16, in <module>\n    raise ModuleNotFoundError(_MESSAGE, name=__name__)\nModuleNotFoundError: No module named 'mcp.server.fastmcp'. This is mcp 2.x, where FastMCP was renamed to MCPServer (from mcp.server.mcpserver import MCPServer) and other APIs changed; see the migration guide at https://py.sdk.modelcontextprotocol.io/v2/migration/#fastmcp-renamed-to-mcpserver or pin 'mcp<2' to keep running v1 code.\n",
+  "durationMs": 22042,
+  "transport": "stdio"
+}

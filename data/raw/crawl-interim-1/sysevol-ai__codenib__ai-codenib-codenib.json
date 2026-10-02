@@ -1,0 +1,8 @@
+{
+  "serverId": "sysevol-ai__codenib__ai-codenib-codenib",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "Downloading pygments (1.2MiB)\nDownloading tree-sitter-language-pack (2.1MiB)\nDownloading pydantic-core (2.0MiB)\nDownloading numpy (15.9MiB)\nDownloading codenib (3.3MiB)\n Downloaded pygments\n Downloaded pydantic-core\n Downloaded tree-sitter-language-pack\n Downloaded codenib\n Downloaded numpy\nInstalled 26 packages in 16ms\nusage: codenib [-h] [--version]\n               {index,wiki,export,artifact,publish,auth,explore,mcp,init,status,uninstall,codegraph,toolchain,doctor}\n               ...\ncodenib: error: the following arguments are required: command\n",
+  "durationMs": 9609,
+  "transport": "stdio"
+}

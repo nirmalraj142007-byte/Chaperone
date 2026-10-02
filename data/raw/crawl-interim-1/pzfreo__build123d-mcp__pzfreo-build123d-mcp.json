@@ -1,0 +1,8 @@
+{
+  "serverId": "pzfreo__build123d-mcp__pzfreo-build123d-mcp",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "Downloading matplotlib (9.4MiB)\nDownloading jedi (4.7MiB)\nDownloading kiwisolver (1.4MiB)\nDownloading fonttools (5.1MiB)\nDownloading numpy (15.9MiB)\nDownloading sympy (6.0MiB)\nDownloading pydantic-core (2.0MiB)\nDownloading cryptography (4.5MiB)\nDownloading pillow (6.6MiB)\nDownloading scipy (33.7MiB)\nDownloading vtk (133.2MiB)\nDownloading pygments (1.2MiB)\nDownloading scikit-learn (8.7MiB)\nDownloading cadquery-ocp-novtk (64.3MiB)\nDownloading resvg-py (1.3MiB)\nDownloading ezdxf (5.5MiB)\nDownloading lib3mf (1.5MiB)\n Downloaded pygments\n Downloaded resvg-py\n Downloaded kiwisolver\n Downloaded lib3mf\n Downloaded pydantic-core\n Downloaded cryptography\n Downloaded jedi\n Downloaded fonttools\n Downloaded ezdxf\n Downloaded sympy\n Downloaded pillow\n Downloaded scikit-learn\n Downloaded matplotlib\n Downloaded numpy\n Downloaded scipy\n",
+  "durationMs": 20035,
+  "transport": "stdio"
+}

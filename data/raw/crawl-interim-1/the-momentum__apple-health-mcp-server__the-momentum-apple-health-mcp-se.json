@@ -1,0 +1,8 @@
+{
+  "serverId": "the-momentum__apple-health-mcp-server__the-momentum-apple-health-mcp-se",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "Downloading pydantic-core (2.0MiB)\nDownloading pygments (1.2MiB)\nDownloading pyarrow (47.8MiB)\nDownloading lxml (5.0MiB)\nDownloading cryptography (4.5MiB)\nDownloading chardet (1.4MiB)\nDownloading duckdb (20.6MiB)\n Downloaded pygments\n Downloaded chardet\n Downloaded pydantic-core\n Downloaded cryptography\n Downloaded lxml\n Downloaded duckdb\n Downloaded pyarrow\nInstalled 42 packages in 23ms\n",
+  "durationMs": 8102,
+  "transport": "stdio"
+}

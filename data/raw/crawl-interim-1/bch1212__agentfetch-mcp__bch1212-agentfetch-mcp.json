@@ -1,0 +1,129 @@
+{
+  "serverId": "bch1212__agentfetch-mcp__bch1212-agentfetch-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "fetch_url",
+      "description": "Fetch any URL and return clean, LLM-ready Markdown with token count, metadata, and 6h caching.\n\n        WHEN TO USE:\n        - You have a specific URL whose content you need.\n        - You want to cap response size to stay inside your context window.\n        - You want repeat fetches to be cheap (cache hits ≈ $0.0001).\n        - The URL might be JS-rendered, a PDF, or behind a paywall — this tool\n          auto-routes to the right fetcher (Trafilatura → Jina → FireCrawl → PDF).\n\n        WHEN NOT TO USE:\n        - You don't know which URL to fetch — use search_and_fetch instead.\n        - You have many URLs to fetch — use fetch_multiple instead.\n\n        Args:\n            url: The URL to fetch.\n            max_tokens: Hard cap on response size. Default unlimited. Pass this\n                if you're tight on context budget — cheaper than over-fetching.\n            format: \"markdown\" (default — recommended), \"text\", or \"json\".\n            use_cache: True returns a cached copy if one exists (≤6h old).\n                Pass False only when freshness matters (live news, prices).\n\n        Returns:\n            {\n              \"url\": str, \"success\": bool, \"markdown\": str,\n              \"metadata\": {title, author, published_date, domain, word_count,\n                           token_count, reading_time_seconds, content_type, language},\n              \"cache\": {hit, cached_at, expires_at},\n              \"fetch_info\": {fetcher_used, fetch_time_ms, cost_credits},\n              \"error\": str | None\n            }\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "title": "Url",
+            "type": "string"
+          },
+          "max_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Max Tokens"
+          },
+          "format": {
+            "default": "markdown",
+            "title": "Format",
+            "type": "string"
+          },
+          "use_cache": {
+            "default": true,
+            "title": "Use Cache",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "fetch_urlArguments"
+      }
+    },
+    {
+      "name": "estimate_tokens",
+      "description": "Estimate token count of a URL's content WITHOUT fetching the body.\n\n        WHEN TO USE:\n        - You're considering fetching a URL but unsure if it fits your remaining\n          context window. This call is ~10x cheaper than a full fetch.\n        - You want to triage a list of candidate URLs before deciding which to\n          actually retrieve.\n\n        IMPORTANT: Many servers omit Content-Length on dynamic / chunked\n        responses. When that happens, this tool returns confident=false and\n        estimated_tokens=null. In that case, call fetch_url with a max_tokens\n        cap instead of trusting the estimate.\n\n        Args:\n            url: The URL to estimate.\n\n        Returns:\n            {\n              \"url\": str, \"success\": bool,\n              \"estimated_tokens\": int | null,\n              \"byte_size\": int | null,\n              \"content_type\": str,\n              \"confident\": bool,\n              \"note\": str\n            }\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "estimate_tokensArguments"
+      }
+    },
+    {
+      "name": "fetch_multiple",
+      "description": "Fetch up to 20 URLs concurrently. Each result is the same shape as fetch_url.\n\n        WHEN TO USE:\n        - You have a list of URLs (search results, links from a doc, sitemap)\n          and want them retrieved in parallel rather than one at a time.\n\n        Args:\n            urls: 1–20 URLs. Larger batches: split into multiple calls.\n            max_tokens_each: Per-result cap. Apply this to keep total response\n                inside your context budget — total ≈ len(urls) * max_tokens_each.\n            use_cache: True for cache-aware fetching (default).\n\n        Returns:\n            {\"count\": int, \"results\": [<fetch_url shape>, ...]}\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "urls": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Urls",
+            "type": "array"
+          },
+          "max_tokens_each": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Max Tokens Each"
+          },
+          "use_cache": {
+            "default": true,
+            "title": "Use Cache",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "urls"
+        ],
+        "title": "fetch_multipleArguments"
+      }
+    },
+    {
+      "name": "search_and_fetch",
+      "description": "Web search + fetch top results in one call.\n\n        WHEN TO USE:\n        - You have a research question, not specific URLs. E.g. \"what's the\n          latest on X\", \"find docs for Y library\", \"recent news about Z\".\n        - You'd otherwise have to call a search tool, parse results, then call\n          fetch — this collapses that into one round-trip.\n\n        Args:\n            query: Search query (2–500 chars).\n            num_results: Top N to fetch (1–10, default 3).\n            max_tokens_each: Per-result cap (default 2000).\n\n        Returns:\n            {\"query\": str, \"count\": int, \"results\": [<fetch_url shape>, ...]}\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "title": "Query",
+            "type": "string"
+          },
+          "num_results": {
+            "default": 3,
+            "title": "Num Results",
+            "type": "integer"
+          },
+          "max_tokens_each": {
+            "default": 2000,
+            "title": "Max Tokens Each",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "title": "search_and_fetchArguments"
+      }
+    }
+  ],
+  "stderrTail": "Downloading pydantic-core (2.0MiB)\nDownloading pygments (1.2MiB)\nDownloading cryptography (4.5MiB)\nDownloading tiktoken (1.1MiB)\nDownloading babel (9.7MiB)\nDownloading lxml (5.0MiB)\n Downloaded tiktoken\n Downloaded pygments\n Downloaded pydantic-core\n Downloaded cryptography\n Downloaded lxml\n Downloaded babel\nInstalled 58 packages in 19ms\nINFO:agentfetch.mcp:Starting AgentFetch MCP server (stdio transport)…\nINFO:mcp.server.lowlevel.server:Processing request of type ListToolsRequest\n",
+  "durationMs": 12003,
+  "transport": "stdio"
+}

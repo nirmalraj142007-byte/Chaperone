@@ -1,0 +1,8 @@
+{
+  "serverId": "cifero74__mcp-apple-music__cifero74-mcp-apple-music",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "Downloading pygments (1.2MiB)\nDownloading pydantic-core (2.0MiB)\nDownloading cryptography (4.5MiB)\n Downloaded pygments\n Downloaded pydantic-core\n Downloaded cryptography\nInstalled 37 packages in 11ms\nAn executable named `mcp-apple-music-server` is not provided by package `mcp-apple-music-server`.\nThe following executables are available:\n- mcp-apple-music\n- mcp-apple-music-setup\n\nUse `uvx --from mcp-apple-music-server <EXECUTABLE-NAME>` instead.\n\n",
+  "durationMs": 8279,
+  "transport": "stdio"
+}

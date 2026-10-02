@@ -1,0 +1,1175 @@
+{
+  "serverId": "ninjabeam20__sportiq-mcp__utkarshgupta885-sportiq",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "sportiq_health",
+      "description": "Report cache backend, per-adapter healthcheck, and quota status.\n\n        Returns:\n            HealthReport-shaped dict with `cache_backend`, `cache_ok`,\n            `adapters` (per-source ok/detail), and `quotas`.\n        ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "title": "sportiq_healthArguments"
+      }
+    },
+    {
+      "name": "football_get_groups",
+      "description": "Return the FIFA World Cup 2026 group draw and advancement format.\n\n    Returns:\n        data.groups: {group_letter: [4 team codes]} for all 12 groups.\n        data.format: 48-team / 12-group / top-2 + 8-best-thirds rule.\n        data.teams: team-code -> {name, fifa_code} metadata.\n        meta.source: adapter that served the data.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "title": "football_get_groupsArguments"
+      }
+    },
+    {
+      "name": "football_get_fixtures",
+      "description": "Return World Cup 2026 fixtures (live providers, else the group schedule).\n\n    Args:\n        limit: Max fixtures to return, 1..200 (default 50).\n        offset: Number of fixtures to skip for paging (default 0).\n\n    Returns:\n        data.fixtures: page of {home, away, date/group, status, home_goals, away_goals}.\n        data.pagination: {total, count, offset, limit, has_more, next_offset}.\n        meta.source: adapter that served the data (static_seed = group schedule only).\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "default": 50,
+            "title": "Limit",
+            "type": "integer",
+            "description": "Max fixtures to return, 1..200 (default 50)."
+          },
+          "offset": {
+            "default": 0,
+            "title": "Offset",
+            "type": "integer",
+            "description": "Number of fixtures to skip for paging (default 0)."
+          }
+        },
+        "title": "football_get_fixturesArguments"
+      }
+    },
+    {
+      "name": "football_get_standings",
+      "description": "Return current World Cup 2026 group standings.\n\n    Args:\n        limit: Max standing rows to return, 1..200 (default 50).\n        offset: Number of rows to skip for paging (default 0).\n\n    Returns:\n        data.standings: page of {rank, team, group, points, played, goals_diff}.\n        data.pagination: {total, count, offset, limit, has_more, next_offset}.\n        meta.source: adapter that served the data.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "default": 50,
+            "title": "Limit",
+            "type": "integer",
+            "description": "Max standing rows to return, 1..200 (default 50)."
+          },
+          "offset": {
+            "default": 0,
+            "title": "Offset",
+            "type": "integer",
+            "description": "Number of rows to skip for paging (default 0)."
+          }
+        },
+        "title": "football_get_standingsArguments"
+      }
+    },
+    {
+      "name": "football_get_squad",
+      "description": "Return a national team's World Cup squad.\n\n    Args:\n        team: Team code or name (e.g. \"ARG\"). Without an API-Football key, the\n            static seed serves an empty-but-valid squad (rosters are a follow-up).\n\n    Returns:\n        data.squad: list of {name, number, position, age}.\n        meta.source: adapter that served the data.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "team": {
+            "title": "Team",
+            "type": "string",
+            "description": "Team code or name (e.g. \"ARG\"). Without an API-Football key, the static seed serves an empty-but-valid squad (rosters are a follow-up)."
+          }
+        },
+        "required": [
+          "team"
+        ],
+        "title": "football_get_squadArguments"
+      }
+    },
+    {
+      "name": "football_get_match_stats",
+      "description": "Return a team's aggregate World Cup tournament statistics.\n\n    Network-only enrichment: requires a configured API-Football (or\n    football-data.org) key. There is no offline static fallback, so without a\n    key the call returns a clean ALL_SOURCES_FAILED envelope.\n\n    Args:\n        team: API-Football numeric team id (not a country code).\n\n    Returns:\n        data.team_stats: {team, played, wins, goals_for, goals_against}.\n        meta.source: adapter that served the data.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "team": {
+            "title": "Team",
+            "type": "integer",
+            "description": "API-Football numeric team id (not a country code)."
+          }
+        },
+        "required": [
+          "team"
+        ],
+        "title": "football_get_match_statsArguments"
+      }
+    },
+    {
+      "name": "football_get_top_scorers",
+      "description": "Return the World Cup 2026 top scorers.\n\n    Returns:\n        data.scorers: list of {name, team, goals, assists}.\n        meta.source: adapter that served the data.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "title": "football_get_top_scorersArguments"
+      }
+    },
+    {
+      "name": "football_get_odds",
+      "description": "Return live market head-to-head odds for upcoming World Cup 2026 matches.\n\n    Sourced from The Odds API (requires THEODDS_KEY). Without a key the call\n    returns a clean ALL_SOURCES_FAILED envelope rather than crashing.\n\n    Args:\n        team: Optional team name to filter events (case-insensitive substring,\n            matched against both sides). Omit to return every WC event.\n\n    Returns:\n        data.events: list of {event_id, home, away, commence_time, bookmakers:\n            [{name, home, draw, away}]} with decimal 1X2 prices per bookmaker.\n        meta.source: adapter that served the data (theodds / cache:stale).\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "team": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Team",
+            "description": "Optional team name to filter events (case-insensitive substring, matched against both sides). Omit to return every WC event."
+          }
+        },
+        "title": "football_get_oddsArguments"
+      }
+    },
+    {
+      "name": "football_xg_model",
+      "description": "Estimate a match's expected goals and win/draw/loss probabilities.\n\n    Args:\n        home_team: First team code (e.g. \"ARG\").\n        away_team: Second team code (e.g. \"BRA\").\n        neutral: True for a neutral venue (no home advantage). World Cup default.\n\n    Returns:\n        data: {expected_home_goals, expected_away_goals, home_win, draw, away_win}.\n        meta.estimated: true.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "home_team": {
+            "title": "Home Team",
+            "type": "string",
+            "description": "First team code (e.g. \"ARG\")."
+          },
+          "away_team": {
+            "title": "Away Team",
+            "type": "string",
+            "description": "Second team code (e.g. \"BRA\")."
+          },
+          "neutral": {
+            "default": true,
+            "title": "Neutral",
+            "type": "boolean",
+            "description": "True for a neutral venue (no home advantage). World Cup default."
+          }
+        },
+        "required": [
+          "home_team",
+          "away_team"
+        ],
+        "title": "football_xg_modelArguments"
+      }
+    },
+    {
+      "name": "football_match_predictor",
+      "description": "Predict a single match: most likely scoreline + outcome probabilities.\n\n    Args:\n        home_team: First team code.\n        away_team: Second team code.\n        neutral: True for a neutral venue (World Cup default).\n\n    Returns:\n        data: {most_likely_score, home_win, draw, away_win, predicted_winner}.\n        meta.estimated: true.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "home_team": {
+            "title": "Home Team",
+            "type": "string",
+            "description": "First team code."
+          },
+          "away_team": {
+            "title": "Away Team",
+            "type": "string",
+            "description": "Second team code."
+          },
+          "neutral": {
+            "default": true,
+            "title": "Neutral",
+            "type": "boolean",
+            "description": "True for a neutral venue (World Cup default)."
+          }
+        },
+        "required": [
+          "home_team",
+          "away_team"
+        ],
+        "title": "football_match_predictorArguments"
+      }
+    },
+    {
+      "name": "football_simulate_group",
+      "description": "Monte Carlo one group within the full 12-group qualification context.\n\n    Args:\n        group: Group letter A-L.\n        iterations: Number of simulations (clamped to 100..20000).\n\n    Returns:\n        data.teams: Per-team position probabilities, p_auto_advance,\n            p_best_third_advance, truthful combined p_advance, and avg_points.\n        data.iterations: iterations actually run.\n        meta.estimated: true. meta.conditioned_matches: completed matches locked in.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "group": {
+            "title": "Group",
+            "type": "string",
+            "description": "Group letter A-L."
+          },
+          "iterations": {
+            "default": 5000,
+            "title": "Iterations",
+            "type": "integer",
+            "description": "Number of simulations (clamped to 100..20000)."
+          }
+        },
+        "required": [
+          "group"
+        ],
+        "title": "football_simulate_groupArguments"
+      }
+    },
+    {
+      "name": "football_simulate_bracket",
+      "description": "Monte Carlo the full World Cup 2026 — per-team round + title probabilities.\n\n    Simulates all 12 groups, advances the top 2 + 8 best third-placed teams to a\n    32-team knockout, and plays it to a champion, ``iterations`` times.\n\n    Args:\n        iterations: Number of tournament simulations (clamped to 100..20000;\n            ~10000 gives stable ±2% probabilities).\n        seed: Optional RNG seed for reproducible output.\n\n    Returns:\n        data.teams: {code: {reach_r32, reach_r16, reach_qf, reach_sf, reach_final, win}}\n            sorted by win probability descending.\n        data.champion: most likely winner.\n        data.iterations: iterations run.\n        meta.estimated: true. meta.conditioned_matches: completed matches locked in\n            (played group results fixed, decided knockout ties locked).\n\n    Example:\n        football_simulate_bracket()\n        football_simulate_bracket(iterations=20000, seed=42)\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "iterations": {
+            "default": 10000,
+            "title": "Iterations",
+            "type": "integer",
+            "description": "Number of tournament simulations (clamped to 100..20000; ~10000 gives stable ±2% probabilities)."
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Seed",
+            "description": "Optional RNG seed for reproducible output."
+          }
+        },
+        "title": "football_simulate_bracketArguments"
+      }
+    },
+    {
+      "name": "football_knockout_path",
+      "description": "Round-by-round survival probabilities for one team in the full sim.\n\n    Args:\n        team: Team code (e.g. \"FRA\").\n        iterations: Number of tournament simulations (clamped to 100..20000).\n        seed: Optional RNG seed.\n\n    Returns:\n        data: {team, reach_r32, reach_r16, reach_qf, reach_sf, reach_final, win}.\n        meta.estimated: true.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "team": {
+            "title": "Team",
+            "type": "string",
+            "description": "Team code (e.g. \"FRA\")."
+          },
+          "iterations": {
+            "default": 10000,
+            "title": "Iterations",
+            "type": "integer",
+            "description": "Number of tournament simulations (clamped to 100..20000)."
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Seed",
+            "description": "Optional RNG seed."
+          }
+        },
+        "required": [
+          "team"
+        ],
+        "title": "football_knockout_pathArguments"
+      }
+    },
+    {
+      "name": "football_find_value_bets",
+      "description": "Surface the largest gaps between the model's win probability and the market.\n\n    De-vigs each market's 1X2 decimal odds (removes the margin so implied\n    probabilities sum to 1) and compares them to this server's own match-outcome\n    probabilities — the same Elo/Poisson path ``football_match_predictor`` uses.\n    Where the model probability exceeds the de-vigged market probability by at\n    least ``min_edge``, the outcome is flagged with its edge and the\n    model's fair odds.\n\n    Args:\n        team: Optional team name to filter events (case-insensitive substring,\n            matched against both sides). Omit to scan every WC 2026 odds event.\n        min_edge: Minimum edge (model_prob - devigged_market_prob), 0..1.\n            Default 0.05 (5 percentage points).\n\n    Returns:\n        data.value_bets: list of {event_id, home, away, outcome, model_prob,\n            fair_odds, market_odds, edge, bookmaker}, sorted by edge descending.\n        data.events_analysed: events with both teams rated (model-comparable).\n        meta.estimated: true. meta.is_stale reflects the odds freshness.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "team": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Team",
+            "description": "Optional team name to filter events (case-insensitive substring, matched against both sides). Omit to scan every WC 2026 odds event."
+          },
+          "min_edge": {
+            "default": 0.05,
+            "title": "Min Edge",
+            "type": "number",
+            "description": "Minimum edge (model_prob - devigged_market_prob), 0..1. Default 0.05 (5 percentage points)."
+          }
+        },
+        "title": "football_find_value_betsArguments"
+      }
+    },
+    {
+      "name": "football_form_trends",
+      "description": "Return rolling form, goal record, and xG trend for a football team.\n\n    Args:\n        team: Team name (e.g. \"Brazil\", \"Argentina\").\n\n    Returns:\n        data: {form_string, wins, draws, losses, goals_scored, goals_conceded,\n               xg_for, xg_against, recent_trend, matches_analysed}.\n        meta.estimated: true — derived from available fixture data.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "team": {
+            "title": "Team",
+            "type": "string",
+            "description": "Team name (e.g. \"Brazil\", \"Argentina\")."
+          }
+        },
+        "required": [
+          "team"
+        ],
+        "title": "football_form_trendsArguments"
+      }
+    },
+    {
+      "name": "football_build_accumulator",
+      "description": "Model the joint probability of several match outcomes from the top model-vs-market gaps.\n\n    Calls ``football_find_value_bets`` internally to fetch live odds, then selects\n    the strongest legs and combines them under the joint-probability model.\n\n    Args:\n        legs: Number of legs (2-8). Default 3.\n        min_edge: Minimum edge threshold per leg. Default 0.05.\n\n    Returns:\n        data: {legs, legs_used, combined_odds, combined_model_prob, combined_edge,\n               risk_flag, independence_warning}.\n        meta.estimated: true.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "legs": {
+            "default": 3,
+            "title": "Legs",
+            "type": "integer",
+            "description": "Number of legs (2-8). Default 3."
+          },
+          "min_edge": {
+            "default": 0.05,
+            "title": "Min Edge",
+            "type": "number",
+            "description": "Minimum edge threshold per leg. Default 0.05."
+          }
+        },
+        "title": "football_build_accumulatorArguments"
+      }
+    },
+    {
+      "name": "f1_get_sessions",
+      "description": "Return F1 sessions for a given year, optionally filtered by country.\n\n    Args:\n        year: Championship year (e.g. 2025).\n        country: Optional country name to filter (e.g. \"Monaco\").\n\n    Returns:\n        data.sessions: list of session objects with session_key, session_type, date.\n        meta.source: adapter that served the data.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "year": {
+            "title": "Year",
+            "type": "integer",
+            "description": "Championship year (e.g. 2025)."
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Country",
+            "description": "Optional country name to filter (e.g. \"Monaco\")."
+          }
+        },
+        "required": [
+          "year"
+        ],
+        "title": "f1_get_sessionsArguments"
+      }
+    },
+    {
+      "name": "f1_get_drivers",
+      "description": "Return driver list for a specific F1 session.\n\n    Args:\n        session_key: OpenF1 session identifier.\n\n    Returns:\n        data.drivers: list of driver objects with driver_number, full_name, team.\n        meta.source: adapter that served the data.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_key": {
+            "title": "Session Key",
+            "type": "integer",
+            "description": "OpenF1 session identifier."
+          }
+        },
+        "required": [
+          "session_key"
+        ],
+        "title": "f1_get_driversArguments"
+      }
+    },
+    {
+      "name": "f1_get_lap_times",
+      "description": "Return lap times for a driver in a specific F1 session.\n\n    Args:\n        session_key: OpenF1 session identifier.\n        driver_number: Driver's race number (e.g. 1 for Verstappen).\n        limit: Max laps to return, 1..200 (default 100 — covers most full races).\n        offset: Number of laps to skip for paging (default 0).\n\n    Returns:\n        data.laps: page of lap objects with lap_number and lap_duration. OpenF1\n            does not put compound/tyre_life here — those live on the stints endpoint.\n        data.pagination: {total, count, offset, limit, has_more, next_offset}.\n        meta.source: adapter that served the data.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_key": {
+            "title": "Session Key",
+            "type": "integer",
+            "description": "OpenF1 session identifier."
+          },
+          "driver_number": {
+            "title": "Driver Number",
+            "type": "integer",
+            "description": "Driver's race number (e.g. 1 for Verstappen)."
+          },
+          "limit": {
+            "default": 100,
+            "title": "Limit",
+            "type": "integer",
+            "description": "Max laps to return, 1..200 (default 100 — covers most full races)."
+          },
+          "offset": {
+            "default": 0,
+            "title": "Offset",
+            "type": "integer",
+            "description": "Number of laps to skip for paging (default 0)."
+          }
+        },
+        "required": [
+          "session_key",
+          "driver_number"
+        ],
+        "title": "f1_get_lap_timesArguments"
+      }
+    },
+    {
+      "name": "f1_get_standings",
+      "description": "Return F1 driver and constructor championship standings for a year.\n\n    Use this for \"who is leading / who will win the F1 championship this year\".\n    There is no F1 title Monte Carlo — current points and position are the answer.\n    This is not a cricket or football tool.\n\n    Args:\n        year: Championship year (e.g. 2026).\n\n    Returns:\n        data.driver_standings: driver championship positions and points.\n        data.constructor_standings: constructor championship positions and points.\n        meta.source: adapter that served the data.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "year": {
+            "title": "Year",
+            "type": "integer",
+            "description": "Championship year (e.g. 2026)."
+          }
+        },
+        "required": [
+          "year"
+        ],
+        "title": "f1_get_standingsArguments"
+      }
+    },
+    {
+      "name": "f1_get_race_results",
+      "description": "Return the final classification for one F1 race, keyed by year and round.\n\n    Args:\n        year: Championship year (e.g. 2025).\n        round: Round number within the season (1-based; e.g. 1 for the opener).\n\n    Returns:\n        data.results: Ergast/Jolpica RaceTable payload — finishing order, times,\n            grid positions, points, and fastest laps for the race.\n        meta.source: adapter that served the data.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "year": {
+            "title": "Year",
+            "type": "integer",
+            "description": "Championship year (e.g. 2025)."
+          },
+          "round": {
+            "title": "Round",
+            "type": "integer",
+            "description": "Round number within the season (1-based; e.g. 1 for the opener)."
+          }
+        },
+        "required": [
+          "year",
+          "round"
+        ],
+        "title": "f1_get_race_resultsArguments"
+      }
+    },
+    {
+      "name": "f1_get_weather",
+      "description": "Return weather data for a specific F1 session.\n\n    Args:\n        session_key: OpenF1 session identifier.\n\n    Returns:\n        data.weather: list of weather snapshots with temperature, rainfall, wind.\n        meta.source: adapter that served the data.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_key": {
+            "title": "Session Key",
+            "type": "integer",
+            "description": "OpenF1 session identifier."
+          }
+        },
+        "required": [
+          "session_key"
+        ],
+        "title": "f1_get_weatherArguments"
+      }
+    },
+    {
+      "name": "f1_tyre_degradation",
+      "description": "Fit a tyre degradation model for a driver + compound in a session.\n\n    Args:\n        session_key: OpenF1 session identifier.\n        driver_number: Driver's race number.\n        compound: Tyre compound (SOFT, MEDIUM, HARD, INTER, WET).\n\n    Returns:\n        data: {intercept, slope, residual_std, sample_count}.\n        meta.estimated: true — model output, not telemetry oracle.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_key": {
+            "title": "Session Key",
+            "type": "integer",
+            "description": "OpenF1 session identifier."
+          },
+          "driver_number": {
+            "title": "Driver Number",
+            "type": "integer",
+            "description": "Driver's race number."
+          },
+          "compound": {
+            "title": "Compound",
+            "type": "string",
+            "description": "Tyre compound (SOFT, MEDIUM, HARD, INTER, WET)."
+          }
+        },
+        "required": [
+          "session_key",
+          "driver_number",
+          "compound"
+        ],
+        "title": "f1_tyre_degradationArguments"
+      }
+    },
+    {
+      "name": "f1_undercut_window",
+      "description": "Estimate whether an undercut is viable for the attacker against the target.\n\n    Args:\n        session_key: OpenF1 session identifier.\n        attacker_number: Attacking driver's race number.\n        target_number: Target driver's race number.\n        current_lap: Current lap number in the race.\n\n    Returns:\n        data: {laps_to_clear, viable, marginal}.\n        meta.estimated: true.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_key": {
+            "title": "Session Key",
+            "type": "integer",
+            "description": "OpenF1 session identifier."
+          },
+          "attacker_number": {
+            "title": "Attacker Number",
+            "type": "integer",
+            "description": "Attacking driver's race number."
+          },
+          "target_number": {
+            "title": "Target Number",
+            "type": "integer",
+            "description": "Target driver's race number."
+          },
+          "current_lap": {
+            "title": "Current Lap",
+            "type": "integer",
+            "description": "Current lap number in the race."
+          }
+        },
+        "required": [
+          "session_key",
+          "attacker_number",
+          "target_number",
+          "current_lap"
+        ],
+        "title": "f1_undercut_windowArguments"
+      }
+    },
+    {
+      "name": "f1_head_to_head_pace",
+      "description": "Compare lap-time pace distribution between two drivers in a session.\n\n    Args:\n        session_key: OpenF1 session identifier.\n        driver_a: First driver's race number.\n        driver_b: Second driver's race number.\n\n    Returns:\n        data: {driver_a_avg_s, driver_b_avg_s, delta_s, faster_driver}.\n        meta.estimated: true.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_key": {
+            "title": "Session Key",
+            "type": "integer",
+            "description": "OpenF1 session identifier."
+          },
+          "driver_a": {
+            "title": "Driver A",
+            "type": "integer",
+            "description": "First driver's race number."
+          },
+          "driver_b": {
+            "title": "Driver B",
+            "type": "integer",
+            "description": "Second driver's race number."
+          }
+        },
+        "required": [
+          "session_key",
+          "driver_a",
+          "driver_b"
+        ],
+        "title": "f1_head_to_head_paceArguments"
+      }
+    },
+    {
+      "name": "f1_weather_strategy_impact",
+      "description": "Analyse weather data and recommend compound or pit-window adjustments.\n\n    Args:\n        session_key: OpenF1 session identifier.\n\n    Returns:\n        data: {has_rain, avg_track_temp_c, compound_recommendation, recommendation}.\n        meta.estimated: true.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_key": {
+            "title": "Session Key",
+            "type": "integer",
+            "description": "OpenF1 session identifier."
+          }
+        },
+        "required": [
+          "session_key"
+        ],
+        "title": "f1_weather_strategy_impactArguments"
+      }
+    },
+    {
+      "name": "f1_predict_pit_strategy",
+      "description": "Predict the optimal pit-stop strategy for a driver in an F1 race session.\n\n    Args:\n        session_key: OpenF1 session identifier for a recorded race.\n        driver_number: Driver's race number (e.g. 1 for Verstappen).\n        current_lap: Current lap to project from (default 1 = full race ahead).\n        total_laps: Total race laps. If omitted, inferred from the highest\n            observed lap_number in the fetched laps (correct for Monaco 78 /\n            Spa 44), falling back to 57 when no laps are available. An explicit\n            value always wins.\n\n    Returns:\n        data.stop_laps: recommended pit laps.\n        data.compound_sequence: tyre compounds for each stint.\n        data.expected_finish_position: currently always None (not modelled).\n        data.confidence: 0.0-1.0 model confidence.\n        meta.total_laps: race length used (explicit arg, else inferred from laps).\n        meta.estimated: true.\n\n    Example:\n        f1_predict_pit_strategy(session_key=9158, driver_number=1)\n        f1_predict_pit_strategy(session_key=9158, driver_number=16, current_lap=20, total_laps=78)\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_key": {
+            "title": "Session Key",
+            "type": "integer",
+            "description": "OpenF1 session identifier for a recorded race."
+          },
+          "driver_number": {
+            "title": "Driver Number",
+            "type": "integer",
+            "description": "Driver's race number (e.g. 1 for Verstappen)."
+          },
+          "current_lap": {
+            "default": 1,
+            "title": "Current Lap",
+            "type": "integer",
+            "description": "Current lap to project from (default 1 = full race ahead)."
+          },
+          "total_laps": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Total Laps",
+            "description": "Total race laps. If omitted, inferred from the highest observed lap_number in the fetched laps (correct for Monaco 78 / Spa 44), falling back to 57 when no laps are available. An explicit value always wins."
+          }
+        },
+        "required": [
+          "session_key",
+          "driver_number"
+        ],
+        "title": "f1_predict_pit_strategyArguments"
+      }
+    },
+    {
+      "name": "f1_qualifying_analysis",
+      "description": "Analyse a qualifying session: best lap per driver, gap to pole, projected grid.\n\n    Args:\n        session_key: OpenF1 session identifier for a Qualifying session.\n\n    Returns:\n        data.grid: [{position, driver_number, full_name, team_name, best_lap_gap_s}].\n        data.pole_time_s: pole lap duration in seconds.\n        data.drivers_analysed: count of drivers with valid laps.\n        meta.estimated: true — grid derived from session laps, not official timing.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_key": {
+            "title": "Session Key",
+            "type": "integer",
+            "description": "OpenF1 session identifier for a Qualifying session."
+          }
+        },
+        "required": [
+          "session_key"
+        ],
+        "title": "f1_qualifying_analysisArguments"
+      }
+    },
+    {
+      "name": "f1_race_pace_compare",
+      "description": "Compare race-pace and tyre degradation between two F1 drivers in a session.\n\n    Args:\n        session_key: OpenF1 session identifier.\n        driver_a: First driver's race number.\n        driver_b: Second driver's race number.\n\n    Returns:\n        data: {by_compound, overall_faster, compounds_compared}.\n        meta.estimated: true — degradation model fit, not official timing.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_key": {
+            "title": "Session Key",
+            "type": "integer",
+            "description": "OpenF1 session identifier."
+          },
+          "driver_a": {
+            "title": "Driver A",
+            "type": "integer",
+            "description": "First driver's race number."
+          },
+          "driver_b": {
+            "title": "Driver B",
+            "type": "integer",
+            "description": "Second driver's race number."
+          }
+        },
+        "required": [
+          "session_key",
+          "driver_a",
+          "driver_b"
+        ],
+        "title": "f1_race_pace_compareArguments"
+      }
+    },
+    {
+      "name": "cricket_get_live_matches",
+      "description": "Return all currently live cricket matches across all series.\n\n    Returns:\n        data.matches: list of live match objects (team names, score, status).\n        meta.source: which adapter served the response.\n        meta.is_stale: true if data is from stale cache.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "title": "cricket_get_live_matchesArguments"
+      }
+    },
+    {
+      "name": "cricket_get_scorecard",
+      "description": "Return the full scorecard for a specific match.\n\n    Args:\n        match_id: The match identifier (e.g. from cricket_get_live_matches).\n\n    Returns:\n        data: full scorecard with innings, partnerships, bowling figures.\n        meta.source: adapter that served the data.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "match_id": {
+            "title": "Match Id",
+            "type": "string",
+            "description": "The match identifier (e.g. from cricket_get_live_matches)."
+          }
+        },
+        "required": [
+          "match_id"
+        ],
+        "title": "cricket_get_scorecardArguments"
+      }
+    },
+    {
+      "name": "cricket_get_points_table",
+      "description": "Return the points table / standings for a cricket series.\n\n    Args:\n        series_id: The series identifier (e.g. IPL 2026 series ID from CricAPI).\n\n    Returns:\n        data: points table rows with team, P, W, L, NRR, Points.\n        meta.source: adapter that served the data.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "series_id": {
+            "title": "Series Id",
+            "type": "string",
+            "description": "The series identifier (e.g. IPL 2026 series ID from CricAPI)."
+          }
+        },
+        "required": [
+          "series_id"
+        ],
+        "title": "cricket_get_points_tableArguments"
+      }
+    },
+    {
+      "name": "cricket_get_schedule",
+      "description": "Return the upcoming match schedule, optionally filtered by series.\n\n    Args:\n        series_id: Optional. Filter to a specific series. If omitted, returns\n                   all upcoming fixtures across all active series.\n        limit: Max matches to return, 1..200 (default 50).\n        offset: Number of matches to skip for paging (default 0).\n\n    Returns:\n        data.matches: page of upcoming matches with teams, date, venue.\n        data.pagination: {total, count, offset, limit, has_more, next_offset}.\n        meta.source: adapter that served the data.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "series_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Series Id",
+            "description": "Optional. Filter to a specific series. If omitted, returns all upcoming fixtures across all active series."
+          },
+          "limit": {
+            "default": 50,
+            "title": "Limit",
+            "type": "integer",
+            "description": "Max matches to return, 1..200 (default 50)."
+          },
+          "offset": {
+            "default": 0,
+            "title": "Offset",
+            "type": "integer",
+            "description": "Number of matches to skip for paging (default 0)."
+          }
+        },
+        "title": "cricket_get_scheduleArguments"
+      }
+    },
+    {
+      "name": "cricket_get_squad",
+      "description": "Return the squad roster for a cricket team, optionally for a specific series.\n\n    Args:\n        team: Team code or name (e.g. \"MI\", \"CSK\", \"IND\", \"AUS\").\n        series_id: Optional. Series ID to pull the tournament-specific squad.\n                   If omitted, falls back to static seed data.\n\n    Returns:\n        data.players: list of players with name, role, and credits.\n        meta.source: adapter that served the data (cricapi / static_seed).\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "team": {
+            "title": "Team",
+            "type": "string",
+            "description": "Team code or name (e.g. \"MI\", \"CSK\", \"IND\", \"AUS\")."
+          },
+          "series_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Series Id",
+            "description": "Optional. Series ID to pull the tournament-specific squad. If omitted, falls back to static seed data."
+          }
+        },
+        "required": [
+          "team"
+        ],
+        "title": "cricket_get_squadArguments"
+      }
+    },
+    {
+      "name": "cricket_get_live_odds",
+      "description": "Return live market head-to-head odds for upcoming/live IPL matches.\n\n    IPL only (~March-May). An empty ``events`` list outside that window is a\n    successful empty market, not an outage. Not international/Test/other T20\n    leagues. For World Cup 2026 football odds use ``football_get_odds``.\n\n    Sourced from The Odds API (requires THEODDS_KEY). Without a key the call\n    returns a clean ALL_SOURCES_FAILED envelope rather than crashing.\n\n    Args:\n        team: Optional team name to filter events (case-insensitive substring,\n            matched against both sides). Omit to return every IPL event. The\n            Odds API uses its own opaque event ids, so a CricAPI match_id\n            cannot be resolved to an event yet — filtering is by team name.\n\n    Returns:\n        data.events: list of {event_id, home, away, commence_time, bookmakers:\n            [{name, home, away}]} with decimal h2h prices per bookmaker.\n            Empty when no IPL events are listed (typical off-season).\n        meta.source: adapter that served the data (theodds / cache:stale).\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "team": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Team",
+            "description": "Optional team name to filter events (case-insensitive substring, matched against both sides). Omit to return every IPL event. The Odds API uses its own opaque event ids, so a CricAPI match_id cannot be resolved to an event yet — filtering is by team name."
+          }
+        },
+        "title": "cricket_get_live_oddsArguments"
+      }
+    },
+    {
+      "name": "cricket_build_dream11_team",
+      "description": "Recommend an optimal fantasy XI + captain + vice-captain for one fixture.\n\n    Args:\n        match_id: CricAPI match identifier; resolves team_a/team_b/venue automatically.\n        team_a: First team code/name (e.g. ``MI``). Required if match_id is absent.\n        team_b: Second team code/name (e.g. ``CSK``). Required if match_id is absent.\n        venue: Venue key/name (e.g. ``wankhede``). Required if match_id is absent.\n        strategy: ``\"balanced\"`` only in Phase 2; future variants reserved.\n\n    Returns:\n        data.players: 11 picked players with name/role/credits/team/projected_points.\n        data.captain: name of the chosen captain.\n        data.vice_captain: name of the chosen VC.\n        data.total_credits: sum of credits used (<= 100).\n        data.total_projected_points: fantasy points including C x2 and VC x1.5 boosts.\n        meta.estimated: true — projections are model output, not a fantasy oracle.\n\n    Example:\n        cricket_build_dream11_team(team_a=\"MI\", team_b=\"CSK\", venue=\"wankhede\")\n        cricket_build_dream11_team(match_id=\"abc123\")\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "match_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Match Id",
+            "description": "CricAPI match identifier; resolves team_a/team_b/venue automatically."
+          },
+          "team_a": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Team A",
+            "description": "First team code/name (e.g. ``MI``). Required if match_id is absent."
+          },
+          "team_b": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Team B",
+            "description": "Second team code/name (e.g. ``CSK``). Required if match_id is absent."
+          },
+          "venue": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Venue",
+            "description": "Venue key/name (e.g. ``wankhede``). Required if match_id is absent."
+          },
+          "strategy": {
+            "default": "balanced",
+            "title": "Strategy",
+            "type": "string",
+            "description": "``\"balanced\"`` only in Phase 2; future variants reserved."
+          }
+        },
+        "title": "cricket_build_dream11_teamArguments"
+      }
+    },
+    {
+      "name": "cricket_captain_recommendation",
+      "description": "Return the top-3 captain candidates ranked by projected points.\n\n    IPL venues only (pitch seed is IPL grounds). Test/international matches\n    and unknown venues fail rather than inventing a ranking. Same-role\n    players often tie: projections use default form 55 and default\n    opposition 0.5, not per-player history.\n\n    Args:\n        match_id: CricAPI match identifier; resolves team_a/team_b/venue automatically.\n        team_a: First team code/name. Required if match_id is absent.\n        team_b: Second team code/name. Required if match_id is absent.\n        venue: Venue key/name (IPL ground, e.g. ``wankhede``). Required if match_id is absent.\n\n    Returns:\n        data.candidates: list of 3 dicts with name/role/team/projected_points.\n        meta.source: model:captain_score.\n        meta.estimated: true.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "match_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Match Id",
+            "description": "CricAPI match identifier; resolves team_a/team_b/venue automatically."
+          },
+          "team_a": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Team A",
+            "description": "First team code/name. Required if match_id is absent."
+          },
+          "team_b": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Team B",
+            "description": "Second team code/name. Required if match_id is absent."
+          },
+          "venue": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Venue",
+            "description": "Venue key/name (IPL ground, e.g. ``wankhede``). Required if match_id is absent."
+          }
+        },
+        "title": "cricket_captain_recommendationArguments"
+      }
+    },
+    {
+      "name": "cricket_differential_picks",
+      "description": "Suggest low-ownership picks with positive projected upside.\n\n    Ownership is *estimated* — proxied by credit weight (lower-credit players\n    tend to have lower ownership), not real ownership data. Flagged\n    ``estimated: true`` in the response.\n\n    Args:\n        match_id: CricAPI match identifier; resolves team_a/team_b/venue automatically.\n        team_a: First team code/name. Required if match_id is absent.\n        team_b: Second team code/name. Required if match_id is absent.\n        venue: Venue key/name. Required if match_id is absent.\n        ownership_threshold: percent ownership cap; affects estimated label.\n\n    Returns:\n        data.picks: list of {name, role, team, credits, projected_points,\n            estimated_ownership_pct}.\n        meta.source: model:captain_score (filtered).\n        meta.estimated: true.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "match_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Match Id",
+            "description": "CricAPI match identifier; resolves team_a/team_b/venue automatically."
+          },
+          "team_a": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Team A",
+            "description": "First team code/name. Required if match_id is absent."
+          },
+          "team_b": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Team B",
+            "description": "Second team code/name. Required if match_id is absent."
+          },
+          "venue": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Venue",
+            "description": "Venue key/name. Required if match_id is absent."
+          },
+          "ownership_threshold": {
+            "default": 20,
+            "title": "Ownership Threshold",
+            "type": "integer",
+            "description": "percent ownership cap; affects estimated label."
+          }
+        },
+        "title": "cricket_differential_picksArguments"
+      }
+    },
+    {
+      "name": "cricket_player_form_index",
+      "description": "Report a 0-100 form score for a player using the player_stats chain.\n\n    Args:\n        player_id: Upstream player identifier (CricAPI/Cricbuzz id).\n\n    Returns:\n        data.form_score: 0..100 indicator.\n        data.trend: \"rising\" / \"stable\" / \"falling\".\n        data.samples: how many recent innings were available.\n        meta.source: which adapter served the underlying stats.\n        meta.estimated: true.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "player_id": {
+            "title": "Player Id",
+            "type": "string",
+            "description": "Upstream player identifier (CricAPI/Cricbuzz id)."
+          }
+        },
+        "required": [
+          "player_id"
+        ],
+        "title": "cricket_player_form_indexArguments"
+      }
+    },
+    {
+      "name": "cricket_get_pitch_report",
+      "description": "Summarise pitch characteristics for a venue.\n\n    Args:\n        venue: Venue key (e.g. ``wankhede``), official name, or city.\n\n    Returns:\n        data: {batting_friendly 0..1, expected_first_inn, recommendation,\n            venue, pitch_type}.\n        meta.source: which adapter served the venue record.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "venue": {
+            "title": "Venue",
+            "type": "string",
+            "description": "Venue key (e.g. ``wankhede``), official name, or city."
+          }
+        },
+        "required": [
+          "venue"
+        ],
+        "title": "cricket_get_pitch_reportArguments"
+      }
+    },
+    {
+      "name": "cricket_find_value_bets",
+      "description": "Compare model probabilities against market-implied IPL odds. Requires THEODDS_KEY.\n\n    NOTE: cricket has no calibrated team-strength model wired yet (unlike the\n    football Elo/Poisson path), so this tool currently returns an EMPTY\n    ``value_bets`` list — scoring an edge against a neutral 50/50 prior would flag\n    every market underdog, which would be misleading. It\n    still reports how many events were screened so callers know odds were\n    available. For raw de-vigged prices use ``cricket_get_live_odds``. Real edge\n    detection lands when a cricket win model is wired (see cricket_head_to_head).\n\n    Args:\n        team: Optional team name to filter events (case-insensitive substring).\n            Omit to scan every IPL odds event.\n        min_edge: Minimum edge (model_prob - devigged_market_prob), 0..1.\n            Default 0.05. Currently informational only (no bets emitted).\n\n    Returns:\n        data.value_bets: always ``[]`` until a cricket model is wired.\n        data.events_analysed: count of events screened (both teams present).\n        data.model: ``\"neutral_baseline\"``. data.note: why no bets are emitted.\n        meta.estimated: true.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "team": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Team",
+            "description": "Optional team name to filter events (case-insensitive substring). Omit to scan every IPL odds event."
+          },
+          "min_edge": {
+            "default": 0.05,
+            "title": "Min Edge",
+            "type": "number",
+            "description": "Minimum edge (model_prob - devigged_market_prob), 0..1. Default 0.05. Currently informational only (no bets emitted)."
+          }
+        },
+        "title": "cricket_find_value_betsArguments"
+      }
+    },
+    {
+      "name": "cricket_head_to_head",
+      "description": "Compare two cricket teams head-to-head using squad form and player stats.\n\n    Args:\n        team_a: First team code or name (e.g. \"MI\", \"India\").\n        team_b: Second team code or name (e.g. \"CSK\", \"Australia\").\n\n    Returns:\n        data: {team_a, team_b, team_a_edge_count, team_b_edge_count,\n               key_players_a, key_players_b, h2h_win_rate_a, h2h_win_rate_b,\n               win_prob_a, win_prob_b}.\n        meta.estimated: true.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "team_a": {
+            "title": "Team A",
+            "type": "string",
+            "description": "First team code or name (e.g. \"MI\", \"India\")."
+          },
+          "team_b": {
+            "title": "Team B",
+            "type": "string",
+            "description": "Second team code or name (e.g. \"CSK\", \"Australia\")."
+          }
+        },
+        "required": [
+          "team_a",
+          "team_b"
+        ],
+        "title": "cricket_head_to_headArguments"
+      }
+    },
+    {
+      "name": "cricket_player_matchup",
+      "description": "Analyse the head-to-head matchup between two cricket players based on role and career stats.\n\n    Args:\n        player_a: Player ID or name for the first player.\n        player_b: Player ID or name for the second player.\n\n    Returns:\n        data: {matchup_type, edge_holder, edge_reason, signals, role_a, role_b}.\n        meta.estimated: true — heuristic model, not ball-by-ball H2H data.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "player_a": {
+            "title": "Player A",
+            "type": "string",
+            "description": "Player ID or name for the first player."
+          },
+          "player_b": {
+            "title": "Player B",
+            "type": "string",
+            "description": "Player ID or name for the second player."
+          }
+        },
+        "required": [
+          "player_a",
+          "player_b"
+        ],
+        "title": "cricket_player_matchupArguments"
+      }
+    },
+    {
+      "name": "cross_sport_build_accumulator",
+      "description": "Model the joint probability of multiple outcomes across football and cricket.\n\n    Args:\n        legs: Total legs across both sports (2-8). Default 3.\n        min_edge: Minimum edge per leg. Default 0.05.\n\n    Returns:\n        data: same shape as football_build_accumulator, with sport field per leg.\n        meta.estimated: true.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "legs": {
+            "default": 3,
+            "title": "Legs",
+            "type": "integer",
+            "description": "Total legs across both sports (2-8). Default 3."
+          },
+          "min_edge": {
+            "default": 0.05,
+            "title": "Min Edge",
+            "type": "number",
+            "description": "Minimum edge per leg. Default 0.05."
+          }
+        },
+        "title": "cross_sport_build_accumulatorArguments"
+      }
+    }
+  ],
+  "stderrTail": "Downloading pandas (10.3MiB)\nDownloading pydantic-core (2.0MiB)\nDownloading numpy (15.9MiB)\nDownloading scipy (33.7MiB)\nDownloading cryptography (4.5MiB)\n Downloaded pydantic-core\n Downloaded cryptography\n Downloaded pandas\n Downloaded numpy\n Downloaded scipy\nInstalled 44 packages in 30ms\nProcessing request of type ListToolsRequest\n",
+  "durationMs": 10468,
+  "transport": "stdio"
+}

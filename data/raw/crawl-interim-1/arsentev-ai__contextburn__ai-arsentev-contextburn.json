@@ -1,0 +1,8 @@
+{
+  "serverId": "arsentev-ai__contextburn__ai-arsentev-contextburn",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "Installed 1 package in 0.49ms\n",
+  "durationMs": 2463,
+  "transport": "stdio"
+}

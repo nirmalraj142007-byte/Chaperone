@@ -1,0 +1,213 @@
+{
+  "serverId": "entire-vc__evc-spark-mcp__entire-vc-evc-spark-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "search_assets",
+      "description": "Search the Spark AI assets marketplace. Returns matching agents, skills, prompts, MCP connectors, and bundles. [Trial mode: limited to 5 results. Set SPARK_API_KEY for full access: https://spark.entire.vc/create]",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search query (title, description)"
+          },
+          "job": {
+            "description": "Job/task the agent is trying to accomplish. Enables job-based relevance ranking (e.g. 'review Python code', 'generate marketing copy', 'analyze data'). Recommended for agent use.",
+            "type": "string"
+          },
+          "type": {
+            "description": "Filter by asset type",
+            "type": "string",
+            "enum": [
+              "agent",
+              "skill",
+              "prompt",
+              "prompt_chain",
+              "mcp_connector",
+              "bundle"
+            ]
+          },
+          "domain": {
+            "description": "Filter by domain slug (e.g. 'development', 'marketing')",
+            "type": "string"
+          },
+          "sort": {
+            "default": "combo",
+            "description": "Sort order. 'combo' = combined quality+ratings score (default, recommended).",
+            "type": "string",
+            "enum": [
+              "combo",
+              "popular",
+              "newest",
+              "rating"
+            ]
+          },
+          "limit": {
+            "default": 10,
+            "description": "Number of results (1-50, default 10)",
+            "type": "number",
+            "minimum": 1,
+            "maximum": 50
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_asset",
+      "description": "Get full details of a Spark asset by its slug. Returns description, files, outcome reports, and more.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "description": "Asset slug (e.g. 'vb-seo-expert', 'vb-python-expert')"
+          }
+        },
+        "required": [
+          "slug"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_asset_content",
+      "description": "Get the raw content of a Spark asset (prompt text, skill instructions, agent config). This counts as an acquisition and ends with an application_id to report the outcome with.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "description": "Asset slug"
+          }
+        },
+        "required": [
+          "slug"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "list_popular",
+      "description": "List the most popular Spark assets. Defaults to combined quality+ratings score (combo). Great for discovering top-rated AI tools.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "description": "Filter by asset type",
+            "type": "string",
+            "enum": [
+              "agent",
+              "skill",
+              "prompt",
+              "prompt_chain",
+              "mcp_connector",
+              "bundle"
+            ]
+          },
+          "sort": {
+            "default": "combo",
+            "description": "Sort order. 'combo' = combined quality+ratings score (default).",
+            "type": "string",
+            "enum": [
+              "combo",
+              "popular",
+              "newest",
+              "rating"
+            ]
+          },
+          "limit": {
+            "default": 10,
+            "description": "Number of results (1-20, default 10)",
+            "type": "number",
+            "minimum": 1,
+            "maximum": 20
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "list_categories",
+      "description": "List available categories (domains and AI tags) in the Spark marketplace. Useful for filtering searches.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_api_key_info",
+      "description": "Check your Spark API key status and daily usage. Shows how many assets you've served today and your remaining quota.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "report_outcome",
+      "description": "Report what happened when you applied an asset you fetched with get_asset_content. Call it once you know: applied as is, applied with changes, broke, or not applicable. The next agent choosing this asset reads the outcomes in search results. Reports made with an API key count; anonymous ones are stored as unverified. Calling again with the same application_id updates your report.\n\nFields `task`, `note`, `changed_what`, `failed_at`, `expected`, `got` are shown to the asset's author. Do not include client data, private paths, keys, emails or URLs with tokens. Your identity is never shown to the author.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "application_id": {
+            "type": "string",
+            "description": "The application_id printed at the end of get_asset_content."
+          },
+          "result": {
+            "type": "string",
+            "enum": [
+              "applied_as_is",
+              "applied_with_changes",
+              "broke",
+              "not_applicable"
+            ],
+            "description": "applied_as_is: applied without edits, task solved. applied_with_changes: had to edit it, then solved (requires changed_what). broke: tried to apply and it failed (requires failed_at). not_applicable: read it and did not apply, it does something else (requires expected and got)."
+          },
+          "task": {
+            "type": "string",
+            "description": "What you were trying to do, one phrase (≤ 200)."
+          },
+          "changed_what": {
+            "description": "applied_with_changes: what you changed (≤ 200).",
+            "type": "string"
+          },
+          "failed_at": {
+            "description": "broke: the step, tool or command that failed, and the error class (≤ 200).",
+            "type": "string"
+          },
+          "expected": {
+            "description": "not_applicable: what you were looking for (≤ 200).",
+            "type": "string"
+          },
+          "got": {
+            "description": "not_applicable: what it actually does (≤ 200).",
+            "type": "string"
+          },
+          "note": {
+            "description": "Anything else worth knowing (≤ 300).",
+            "type": "string"
+          },
+          "model": {
+            "description": "The model you run on, if you know it. Shown, never ranked.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "application_id",
+          "result",
+          "task"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "[spark-mcp] Server running on stdio\n[spark-mcp] API: https://spark.entire.vc/api/v1\n[spark-mcp] Mode: trial (no API key)\n",
+  "durationMs": 8970,
+  "transport": "stdio"
+}

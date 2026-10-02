@@ -1,0 +1,945 @@
+{
+  "serverId": "mcpservings__paper-mcp__kangletian-paper-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "paper_get_metadata",
+      "description": "Return comprehensive metadata for an academic paper searched by title.\n\nQueries Semantic Scholar first (richest metadata), then falls back to arXiv.\n\nReturns JSON with: title, authors, abstract, year, venue, doi, arxiv_id,\nsemantic_scholar_id, citation_count, reference_count, fields_of_study,\npublication_types, publication_date, is_open_access, open_access_pdf, tldr.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "description": "{ paper_title: str }",
+            "properties": {
+              "paper_title": {
+                "description": "Full or partial title of the academic paper to search for. Example: 'Attention Is All You Need'",
+                "maxLength": 500,
+                "minLength": 3,
+                "type": "string"
+              }
+            },
+            "required": [
+              "paper_title"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "paper_get_publication_status",
+      "description": "Return where a paper was published and whether a preprint also exists.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "description": "Shared input accepted by every tool in this server.",
+            "properties": {
+              "paper_title": {
+                "description": "Full or partial title of the academic paper to search for. Example: 'Attention Is All You Need'",
+                "maxLength": 500,
+                "minLength": 3,
+                "type": "string"
+              }
+            },
+            "required": [
+              "paper_title"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "paper_get_pdf",
+      "description": "Find the best open-access PDF URL for a paper by title.\n\nSource priority: Semantic Scholar OA → arXiv PDF → Unpaywall → gomcp browser.\n\nReturns JSON with: pdf_url, source, title, year. May include browser_excerpt\nif gomcp fallback was used.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "description": "{ paper_title: str }",
+            "properties": {
+              "paper_title": {
+                "description": "Full or partial title of the academic paper to search for. Example: 'Attention Is All You Need'",
+                "maxLength": 500,
+                "minLength": 3,
+                "type": "string"
+              }
+            },
+            "required": [
+              "paper_title"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "paper_get_fulltext",
+      "description": "Retrieve the full text of a paper by title (up to 50,000 characters).\n\nFetch order: arXiv HTML5 renderer → open-access PDF → gomcp browser → abstract.\n\nReturns JSON with: title, abstract, tldr, fulltext (str|null),\nfulltext_length (int), source.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "description": "{ paper_title: str }",
+            "properties": {
+              "paper_title": {
+                "description": "Full or partial title of the academic paper to search for. Example: 'Attention Is All You Need'",
+                "maxLength": 500,
+                "minLength": 3,
+                "type": "string"
+              }
+            },
+            "required": [
+              "paper_title"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "paper_get_citations",
+      "description": "Return up to 100 papers that cite the given paper (forward citations).\n\nReturns JSON with: paper_title, total_citations, returned,\ncitations (list of {title, authors, year, venue, doi, arxiv_id, citation_count}).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "description": "{ paper_title: str }",
+            "properties": {
+              "paper_title": {
+                "description": "Full or partial title of the academic paper to search for. Example: 'Attention Is All You Need'",
+                "maxLength": 500,
+                "minLength": 3,
+                "type": "string"
+              }
+            },
+            "required": [
+              "paper_title"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "paper_get_references",
+      "description": "Return the bibliography of a paper — the papers it cites (backward citations).\n\nReturns JSON with: paper_title, total_references, returned,\nreferences (list of {title, authors, year, venue, doi, arxiv_id}).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "description": "{ paper_title: str }",
+            "properties": {
+              "paper_title": {
+                "description": "Full or partial title of the academic paper to search for. Example: 'Attention Is All You Need'",
+                "maxLength": 500,
+                "minLength": 3,
+                "type": "string"
+              }
+            },
+            "required": [
+              "paper_title"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "paper_search",
+      "description": "Search selected scholarly sources, then filter and deduplicate the results.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "description": "Keyword search with optional cross-source filters.",
+            "properties": {
+              "query": {
+                "maxLength": 500,
+                "minLength": 2,
+                "type": "string"
+              },
+              "limit": {
+                "default": 10,
+                "maximum": 100,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "sources": {
+                "items": {
+                  "enum": [
+                    "semantic_scholar",
+                    "openalex",
+                    "pubmed",
+                    "dblp"
+                  ],
+                  "type": "string"
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              "year_from": {
+                "anyOf": [
+                  {
+                    "maximum": 2100,
+                    "minimum": 1000,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "year_to": {
+                "anyOf": [
+                  {
+                    "maximum": 2100,
+                    "minimum": 1000,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "venue": {
+                "anyOf": [
+                  {
+                    "maxLength": 200,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "author": {
+                "anyOf": [
+                  {
+                    "maxLength": 200,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "publication_type": {
+                "anyOf": [
+                  {
+                    "maxLength": 100,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "min_citations": {
+                "anyOf": [
+                  {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "open_access_only": {
+                "default": false,
+                "type": "boolean"
+              },
+              "sort_by": {
+                "default": "relevance",
+                "enum": [
+                  "relevance",
+                  "year",
+                  "citations"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "query"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "paper_batch_lookup",
+      "description": "Look up up to 500 S2, DOI, arXiv, Corpus, ACL, or PubMed paper IDs at once.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "description": "Semantic Scholar batch lookup input.",
+            "properties": {
+              "paper_ids": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 500,
+                "minItems": 1,
+                "type": "array"
+              }
+            },
+            "required": [
+              "paper_ids"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "paper_get_bibtex",
+      "description": "Export a paper citation as BibTeX, using Crossref if S2 has no style.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "description": "Shared input accepted by every tool in this server.",
+            "properties": {
+              "paper_title": {
+                "description": "Full or partial title of the academic paper to search for. Example: 'Attention Is All You Need'",
+                "maxLength": 500,
+                "minLength": 3,
+                "type": "string"
+              }
+            },
+            "required": [
+              "paper_title"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "paper_get_similar",
+      "description": "Return Semantic Scholar recommendations related to a paper.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "description": "Paper title plus recommendation count.",
+            "properties": {
+              "paper_title": {
+                "description": "Full or partial title of the academic paper to search for. Example: 'Attention Is All You Need'",
+                "maxLength": 500,
+                "minLength": 3,
+                "type": "string"
+              },
+              "limit": {
+                "default": 10,
+                "maximum": 500,
+                "minimum": 1,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "paper_title"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "author_search",
+      "description": "Resolve an author name to disambiguated Semantic Scholar author records.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "description": "Author lookup input.",
+            "properties": {
+              "author_name": {
+                "maxLength": 200,
+                "minLength": 2,
+                "type": "string"
+              },
+              "limit": {
+                "default": 10,
+                "maximum": 100,
+                "minimum": 1,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "author_name"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "author_get_profile",
+      "description": "Return the best matching author's profile, affiliations, and citation stats.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "description": "Author lookup input.",
+            "properties": {
+              "author_name": {
+                "maxLength": 200,
+                "minLength": 2,
+                "type": "string"
+              },
+              "limit": {
+                "default": 10,
+                "maximum": 100,
+                "minimum": 1,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "author_name"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "author_get_papers",
+      "description": "Return the bibliography of the best matching Semantic Scholar author.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "description": "Author lookup input.",
+            "properties": {
+              "author_name": {
+                "maxLength": 200,
+                "minLength": 2,
+                "type": "string"
+              },
+              "limit": {
+                "default": 10,
+                "maximum": 100,
+                "minimum": 1,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "author_name"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "openalex_search",
+      "description": "Search OpenAlex works; useful as a broad fallback to Semantic Scholar.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "description": "Keyword search with optional cross-source filters.",
+            "properties": {
+              "query": {
+                "maxLength": 500,
+                "minLength": 2,
+                "type": "string"
+              },
+              "limit": {
+                "default": 10,
+                "maximum": 100,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "sources": {
+                "items": {
+                  "enum": [
+                    "semantic_scholar",
+                    "openalex",
+                    "pubmed",
+                    "dblp"
+                  ],
+                  "type": "string"
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              "year_from": {
+                "anyOf": [
+                  {
+                    "maximum": 2100,
+                    "minimum": 1000,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "year_to": {
+                "anyOf": [
+                  {
+                    "maximum": 2100,
+                    "minimum": 1000,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "venue": {
+                "anyOf": [
+                  {
+                    "maxLength": 200,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "author": {
+                "anyOf": [
+                  {
+                    "maxLength": 200,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "publication_type": {
+                "anyOf": [
+                  {
+                    "maxLength": 100,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "min_citations": {
+                "anyOf": [
+                  {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "open_access_only": {
+                "default": false,
+                "type": "boolean"
+              },
+              "sort_by": {
+                "default": "relevance",
+                "enum": [
+                  "relevance",
+                  "year",
+                  "citations"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "query"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "pubmed_search",
+      "description": "Search PubMed and return biomedical article summaries.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "description": "Keyword search with optional cross-source filters.",
+            "properties": {
+              "query": {
+                "maxLength": 500,
+                "minLength": 2,
+                "type": "string"
+              },
+              "limit": {
+                "default": 10,
+                "maximum": 100,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "sources": {
+                "items": {
+                  "enum": [
+                    "semantic_scholar",
+                    "openalex",
+                    "pubmed",
+                    "dblp"
+                  ],
+                  "type": "string"
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              "year_from": {
+                "anyOf": [
+                  {
+                    "maximum": 2100,
+                    "minimum": 1000,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "year_to": {
+                "anyOf": [
+                  {
+                    "maximum": 2100,
+                    "minimum": 1000,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "venue": {
+                "anyOf": [
+                  {
+                    "maxLength": 200,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "author": {
+                "anyOf": [
+                  {
+                    "maxLength": 200,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "publication_type": {
+                "anyOf": [
+                  {
+                    "maxLength": 100,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "min_citations": {
+                "anyOf": [
+                  {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "open_access_only": {
+                "default": false,
+                "type": "boolean"
+              },
+              "sort_by": {
+                "default": "relevance",
+                "enum": [
+                  "relevance",
+                  "year",
+                  "citations"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "query"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "dblp_search",
+      "description": "Search DBLP's curated computer-science bibliography.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "description": "Keyword search with optional cross-source filters.",
+            "properties": {
+              "query": {
+                "maxLength": 500,
+                "minLength": 2,
+                "type": "string"
+              },
+              "limit": {
+                "default": 10,
+                "maximum": 100,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "sources": {
+                "items": {
+                  "enum": [
+                    "semantic_scholar",
+                    "openalex",
+                    "pubmed",
+                    "dblp"
+                  ],
+                  "type": "string"
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              "year_from": {
+                "anyOf": [
+                  {
+                    "maximum": 2100,
+                    "minimum": 1000,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "year_to": {
+                "anyOf": [
+                  {
+                    "maximum": 2100,
+                    "minimum": 1000,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "venue": {
+                "anyOf": [
+                  {
+                    "maxLength": 200,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "author": {
+                "anyOf": [
+                  {
+                    "maxLength": 200,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "publication_type": {
+                "anyOf": [
+                  {
+                    "maxLength": 100,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "min_citations": {
+                "anyOf": [
+                  {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "open_access_only": {
+                "default": false,
+                "type": "boolean"
+              },
+              "sort_by": {
+                "default": "relevance",
+                "enum": [
+                  "relevance",
+                  "year",
+                  "citations"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "query"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "doi_get_metadata",
+      "description": "Resolve a DOI to comprehensive paper metadata from multiple authoritative sources.\n\nThis is the reverse of paper_get_metadata: given a DOI you already know,\nretrieve everything about the paper without needing its title.\n\nData is merged from three complementary sources (all queried in parallel):\n  1. Crossref  — canonical DOI registry; best for bibliographic data,\n                 publisher, volume/issue/page, funders, license.\n  2. Semantic Scholar — adds citation count, references, fields of study,\n                        TL;DR, and open-access PDF link.\n  3. Unpaywall — adds detailed open-access status and every known PDF URL.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "additionalProperties": false,
+            "description": "{ doi: str }\nAccepts bare DOI or full URL, e.g.:\n  \"10.1145/3442188.3445922\"\n  \"https://doi.org/10.1145/3442188.3445922\"",
+            "properties": {
+              "doi": {
+                "description": "The Digital Object Identifier (DOI) of the paper. Accepts bare DOI or full URL form. Examples: '10.1145/3442188.3445922'  or  'https://doi.org/10.1145/3442188.3445922'",
+                "maxLength": 300,
+                "minLength": 5,
+                "type": "string"
+              }
+            },
+            "required": [
+              "doi"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "params"
+        ],
+        "additionalProperties": false
+      }
+    }
+  ],
+  "stderrTail": "Downloading pygments (1.2MiB)\nDownloading cryptography (4.5MiB)\nDownloading pydantic-core (2.0MiB)\nDownloading pymupdf (24.6MiB)\nDownloading beartype (1.3MiB)\n Downloaded pygments\n Downloaded beartype\n Downloaded pydantic-core\n Downloaded cryptography\n Downloaded pymupdf\nInstalled 73 packages in 25ms\n\n\n╭──────────────────────────────────────────────────────────────────────────────╮\n│                                                                              │\n│                                                                              │\n│                         ▄▀▀ ▄▀█ █▀▀ ▀█▀ █▀▄▀█ █▀▀ █▀█                        │\n│                         █▀  █▀█ ▄▄█  █  █ ▀ █ █▄▄ █▀▀                        │\n│                                                                              │\n│                                                                              │\n│                                                                              │\n│                                FastMCP 4.0.10                                │\n│                            https://gofastmcp.com                             │\n│                                                                              │\n│                  🖥  Server:      paper_search_mcp, 4.0.10                    │\n│                  🚀 Deploy free: https://horizon.prefect.io                  │\n│                                                                              │\n╰──────────────────────────────────────────────────────────────────────────────╯\n\n\n[10/02/26 00:12:54] INFO     Starting MCP server                transport.py:242\n                             'paper_search_mcp' with transport                  \n                             'stdio'                                            \n",
+  "durationMs": 11326,
+  "transport": "stdio"
+}

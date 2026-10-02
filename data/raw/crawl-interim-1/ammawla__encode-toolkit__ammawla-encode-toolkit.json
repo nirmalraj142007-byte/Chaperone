@@ -1,0 +1,1289 @@
+{
+  "serverId": "ammawla__encode-toolkit__ammawla-encode-toolkit",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "encode_search_experiments",
+      "description": "Search ENCODE experiments with comprehensive filters.\n\n    Examples:\n    - Find all Histone ChIP-seq on human pancreas tissue:\n      assay_title=\"Histone ChIP-seq\", organ=\"pancreas\", biosample_type=\"tissue\"\n    - Find ATAC-seq on human brain:\n      assay_title=\"ATAC-seq\", organ=\"brain\"\n    - Find RNA-seq on GM12878 cell line:\n      assay_title=\"total RNA-seq\", biosample_term_name=\"GM12878\"\n    - Find ChIP-seq targeting H3K27me3:\n      assay_title=\"Histone ChIP-seq\", target=\"H3K27me3\"\n    - Find all mouse liver experiments:\n      organism=\"Mus musculus\", organ=\"liver\"\n    - Free text search:\n      search_term=\"CRISPR screen pancreatic\"\n\n    Common assay_title values: \"Histone ChIP-seq\", \"TF ChIP-seq\", \"ATAC-seq\",\n    \"DNase-seq\", \"total RNA-seq\", \"polyA plus RNA-seq\", \"WGBS\", \"intact Hi-C\",\n    \"CUT&RUN\", \"CUT&Tag\", \"STARR-seq\", \"MPRA\", \"eCLIP\", \"CRISPR screen\"\n\n    Common organ values: \"pancreas\", \"liver\", \"brain\", \"heart\", \"kidney\",\n    \"lung\", \"intestine\", \"skin of body\", \"blood\", \"spleen\", \"thymus\"\n\n    biosample_type values: \"tissue\", \"cell line\", \"primary cell\",\n    \"in vitro differentiated cells\", \"organoid\"\n\n    WHEN TO USE: Use as the primary entry point when users want to find experiments.\n    Start with encode_get_facets if unsure what filters to use.\n    RELATED TOOLS: encode_get_facets, encode_get_metadata, encode_search_files\n\n    Args:\n        assay_title: Assay type (e.g., \"Histone ChIP-seq\", \"ATAC-seq\", \"total RNA-seq\")\n        organism: Species (default: \"Homo sapiens\"). Also: \"Mus musculus\"\n        organ: Organ/tissue system (e.g., \"pancreas\", \"brain\", \"liver\")\n        biosample_type: Sample classification (\"tissue\", \"cell line\", \"primary cell\", \"organoid\")\n        biosample_term_name: Specific cell/tissue name (e.g., \"GM12878\", \"HepG2\", \"pancreas\")\n        target: ChIP/CUT&RUN target (e.g., \"H3K27me3\", \"CTCF\", \"p300\")\n        status: Data status (default: \"released\"). Also: \"archived\", \"revoked\"\n        lab: Submitting lab name\n        award: Funding project\n        assembly: Genome assembly (e.g., \"GRCh38\", \"mm10\")\n        replication_type: \"isogenic\", \"anisogenic\", or \"unreplicated\"\n        life_stage: \"embryonic\", \"postnatal\", \"child\", \"adult\"\n        sex: \"male\", \"female\", \"mixed\"\n        treatment: Treatment name if perturbation experiment\n        genetic_modification: Modification type (\"CRISPR\", \"RNAi\")\n        perturbed: True for perturbation experiments only\n        search_term: Free text search across all fields\n        date_released_from: Start date (YYYY-MM-DD) for date range filter\n        date_released_to: End date (YYYY-MM-DD) for date range filter\n        limit: Max results to return (default 25, use larger for comprehensive searches)\n        offset: Skip first N results (for pagination)\n\n    Returns:\n        JSON with experiment results, total count, and pagination info.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "assay_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Assay Title"
+          },
+          "organism": {
+            "default": "Homo sapiens",
+            "title": "Organism",
+            "type": "string"
+          },
+          "organ": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Organ"
+          },
+          "biosample_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Biosample Type"
+          },
+          "biosample_term_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Biosample Term Name"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Target"
+          },
+          "status": {
+            "default": "released",
+            "title": "Status",
+            "type": "string"
+          },
+          "lab": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Lab"
+          },
+          "award": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Award"
+          },
+          "assembly": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Assembly"
+          },
+          "replication_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Replication Type"
+          },
+          "life_stage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Life Stage"
+          },
+          "sex": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Sex"
+          },
+          "treatment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Treatment"
+          },
+          "genetic_modification": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Genetic Modification"
+          },
+          "perturbed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Perturbed"
+          },
+          "search_term": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Search Term"
+          },
+          "date_released_from": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Date Released From"
+          },
+          "date_released_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Date Released To"
+          },
+          "limit": {
+            "default": 25,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "default": 0,
+            "title": "Offset",
+            "type": "integer"
+          }
+        },
+        "title": "encode_search_experimentsArguments"
+      }
+    },
+    {
+      "name": "encode_get_experiment",
+      "description": "Get full details for a specific ENCODE experiment by accession ID.\n\n    Returns the experiment's metadata, all associated files, the accessions of its possible\n    controls, replicate counts, and the number of audit flags at each level (ERROR,\n    NOT_COMPLIANT, WARNING, INTERNAL_ACTION). It does not return QC metric values such as\n    FRiP or NSC; those are on the experiment's page at encodeproject.org.\n\n    WHEN TO USE: Use when you have a specific accession and need full details\n    including files, controls, and audit counts.\n    RELATED TOOLS: encode_list_files, encode_track_experiment, encode_compare_experiments\n\n    Args:\n        accession: ENCODE experiment accession (e.g., \"ENCSR133RZO\", \"ENCSR000AKS\")\n\n    Returns:\n        JSON with full experiment details and file listing.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accession": {
+            "title": "Accession",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accession"
+        ],
+        "title": "encode_get_experimentArguments"
+      }
+    },
+    {
+      "name": "encode_list_files",
+      "description": "List all files for a specific ENCODE experiment, with optional filters.\n\n    Examples:\n    - All BED files: experiment_accession=\"ENCSR133RZO\", file_format=\"bed\"\n    - FASTQs only: experiment_accession=\"ENCSR133RZO\", file_format=\"fastq\"\n    - Signal tracks: experiment_accession=\"ENCSR133RZO\", output_category=\"signal\"\n    - Default/recommended files: preferred_default=True\n    - Peaks from GRCh38: file_format=\"bed\", output_type=\"IDR thresholded peaks\", assembly=\"GRCh38\"\n\n    Common file_format values: \"fastq\", \"bam\", \"bed\", \"bigWig\", \"bigBed\", \"tsv\", \"hic\"\n\n    Common output_type values: \"reads\", \"alignments\", \"signal of unique reads\",\n    \"signal of all reads\", \"fold change over control\", \"IDR thresholded peaks\",\n    \"pseudoreplicated peaks\", \"replicated peaks\", \"gene quantifications\",\n    \"transcript quantifications\", \"contact matrix\"\n\n    WHEN TO USE: Use to browse files within a known experiment. Use encode_search_files\n    instead to find files across experiments.\n    RELATED TOOLS: encode_search_files, encode_get_file_info, encode_download_files\n\n    Args:\n        experiment_accession: ENCODE experiment accession (e.g., \"ENCSR133RZO\")\n        file_format: Filter by format (\"fastq\", \"bam\", \"bed\", \"bigWig\", \"bigBed\", etc.)\n        file_type: Filter by specific type (\"bed narrowPeak\", \"bed broadPeak\", etc.)\n        output_type: Filter by output type (\"reads\", \"peaks\", \"signal\", etc.)\n        output_category: Filter by category (\"raw data\", \"alignment\", \"signal\", \"annotation\")\n        assembly: Filter by genome assembly (\"GRCh38\", \"hg19\", \"mm10\")\n        status: Filter by status (\"released\", \"archived\", \"in progress\")\n        preferred_default: If True, return only default/recommended files\n        limit: Max files to return (default 200)\n\n    Returns:\n        JSON list of files with accession, format, size, download URL, and metadata.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "experiment_accession": {
+            "title": "Experiment Accession",
+            "type": "string"
+          },
+          "file_format": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "File Format"
+          },
+          "file_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "File Type"
+          },
+          "output_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Output Type"
+          },
+          "output_category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Output Category"
+          },
+          "assembly": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Assembly"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "preferred_default": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Preferred Default"
+          },
+          "limit": {
+            "default": 200,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "experiment_accession"
+        ],
+        "title": "encode_list_filesArguments"
+      }
+    },
+    {
+      "name": "encode_search_files",
+      "description": "Search files across ALL experiments with combined experiment + file filters.\n\n    This is powerful for finding specific file types across many experiments.\n\n    Examples:\n    - All BED files from human pancreas ChIP-seq:\n      file_format=\"bed\", assay_title=\"Histone ChIP-seq\", organ=\"pancreas\"\n    - FASTQs from mouse liver RNA-seq:\n      file_format=\"fastq\", assay_title=\"total RNA-seq\", organ=\"liver\", organism=\"Mus musculus\"\n    - All IDR peak files for H3K27me3:\n      output_type=\"IDR thresholded peaks\", target=\"H3K27me3\"\n    - BigWig signal tracks from ATAC-seq on brain tissue:\n      file_format=\"bigWig\", assay_title=\"ATAC-seq\", organ=\"brain\", biosample_type=\"tissue\"\n\n    WHEN TO USE: Use to find specific file types across ALL experiments. More powerful\n    than encode_list_files for cross-experiment file discovery.\n    RELATED TOOLS: encode_list_files, encode_batch_download, encode_get_file_info\n\n    Args:\n        file_format: File format (\"fastq\", \"bam\", \"bed\", \"bigWig\", etc.)\n        file_type: Specific file type (\"bed narrowPeak\", \"bed broadPeak\", etc.)\n        output_type: Output type (\"reads\", \"peaks\", \"signal\", etc.)\n        output_category: Output category (\"raw data\", \"alignment\", \"signal\", \"annotation\")\n        assembly: Genome assembly (\"GRCh38\", \"hg19\", \"mm10\")\n        assay_title: Filter by assay type of parent experiment\n        organism: Filter by organism of parent experiment\n        organ: Filter by organ of parent experiment\n        biosample_type: Filter by biosample type (\"tissue\", \"cell line\", etc.)\n        target: Filter by ChIP/CUT&RUN target\n        status: File status (default: \"released\")\n        preferred_default: If True, only default/recommended files\n        search_term: Free text search\n        limit: Max results (default 25)\n        offset: Skip first N results (pagination)\n\n    Returns:\n        JSON with file results, total count, and pagination info.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "file_format": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "File Format"
+          },
+          "file_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "File Type"
+          },
+          "output_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Output Type"
+          },
+          "output_category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Output Category"
+          },
+          "assembly": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Assembly"
+          },
+          "assay_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Assay Title"
+          },
+          "organism": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Organism"
+          },
+          "organ": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Organ"
+          },
+          "biosample_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Biosample Type"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Target"
+          },
+          "status": {
+            "default": "released",
+            "title": "Status",
+            "type": "string"
+          },
+          "preferred_default": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Preferred Default"
+          },
+          "search_term": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Search Term"
+          },
+          "limit": {
+            "default": 25,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "default": 0,
+            "title": "Offset",
+            "type": "integer"
+          }
+        },
+        "title": "encode_search_filesArguments"
+      }
+    },
+    {
+      "name": "encode_download_files",
+      "description": "Download specific ENCODE files by accession to a local directory.\n\n    Downloads files from ENCODE to your local machine. Supports MD5 verification,\n    concurrent downloads, and skip-if-already-downloaded.\n\n    WHEN TO USE: Use for downloading specific files by accession. For bulk downloads,\n    prefer encode_batch_download.\n    RELATED TOOLS: encode_batch_download, encode_search_files, encode_log_derived_file\n\n    Args:\n        file_accessions: List of file accessions to download (e.g., [\"ENCFF635JIA\", \"ENCFF388RZD\"])\n        download_dir: Local directory path to save files (e.g., \"./data/encode\")\n        organize_by: How to organize downloaded files:\n            - \"flat\": All files in download_dir (default)\n            - \"experiment\": download_dir/ENCSR.../filename\n            - \"format\": download_dir/bed/filename\n            - \"experiment_format\": download_dir/ENCSR.../bed/filename\n        verify_md5: Verify file integrity with MD5 checksum (default True)\n\n    Returns:\n        JSON with download results for each file (path, size, success/error, MD5 status).\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "file_accessions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "File Accessions",
+            "type": "array"
+          },
+          "download_dir": {
+            "title": "Download Dir",
+            "type": "string"
+          },
+          "organize_by": {
+            "default": "flat",
+            "enum": [
+              "flat",
+              "experiment",
+              "format",
+              "experiment_format"
+            ],
+            "title": "Organize By",
+            "type": "string"
+          },
+          "verify_md5": {
+            "default": true,
+            "title": "Verify Md5",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "file_accessions",
+          "download_dir"
+        ],
+        "title": "encode_download_filesArguments"
+      }
+    },
+    {
+      "name": "encode_get_metadata",
+      "description": "Get available filter values for ENCODE searches.\n\n    Use this to discover valid values for search parameters.\n\n    WHEN TO USE: Use to discover valid filter values before searching. Helps prevent\n    typos in assay_title, organ, biosample_type etc.\n    RELATED TOOLS: encode_get_facets, encode_search_experiments\n\n    Args:\n        metadata_type: Type of metadata to retrieve. Options:\n            - \"assays\": Available assay types (Histone ChIP-seq, ATAC-seq, total RNA-seq, etc.)\n            - \"organisms\": Available organisms (Homo sapiens, Mus musculus, etc.)\n            - \"organs\": Available organ/tissue systems (pancreas, brain, liver, etc.)\n            - \"biosample_types\": Biosample classifications (tissue, cell line, primary cell, etc.)\n            - \"file_formats\": File format types (fastq, bam, bed, bigWig, etc.)\n            - \"output_types\": Output data types (reads, peaks, signal, etc.)\n            - \"output_categories\": Output categories (raw data, alignment, signal, etc.)\n            - \"assemblies\": Genome assemblies (GRCh38, hg19, mm10, etc.)\n            - \"life_stages\": Life stages (embryonic, adult, child, etc.)\n            - \"replication_types\": Replication types (isogenic, anisogenic, unreplicated)\n            - \"statuses\": Experiment statuses (released, archived, etc.)\n            - \"file_statuses\": File statuses (released, archived, in progress, etc.)\n\n    Returns:\n        JSON list of valid values for the specified metadata type.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "metadata_type": {
+            "enum": [
+              "assays",
+              "organisms",
+              "organs",
+              "biosample_types",
+              "file_formats",
+              "output_types",
+              "output_categories",
+              "assemblies",
+              "life_stages",
+              "replication_types",
+              "statuses",
+              "file_statuses"
+            ],
+            "title": "Metadata Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "metadata_type"
+        ],
+        "title": "encode_get_metadataArguments"
+      }
+    },
+    {
+      "name": "encode_batch_download",
+      "description": "Search for files and download them all in batch.\n\n    First searches for files matching the criteria, then downloads them.\n    By default runs in dry_run mode to preview what would be downloaded.\n    Set dry_run=False to actually download.\n\n    WHEN TO USE: Use for searching and downloading files in one step. Always use\n    dry_run=True first to preview. For specific file accessions, use encode_download_files.\n    RELATED TOOLS: encode_download_files, encode_search_files\n\n    Examples:\n    - Download all BED files from human pancreas ChIP-seq:\n      file_format=\"bed\", assay_title=\"Histone ChIP-seq\", organ=\"pancreas\",\n      download_dir=\"/data/encode\", dry_run=False\n    - Preview FASTQ downloads for mouse brain RNA-seq:\n      file_format=\"fastq\", assay_title=\"total RNA-seq\", organ=\"brain\",\n      organism=\"Mus musculus\", download_dir=\"/data/encode\"\n    - Download IDR peaks for H3K27me3 in GRCh38:\n      output_type=\"IDR thresholded peaks\", target=\"H3K27me3\", assembly=\"GRCh38\",\n      download_dir=\"/data/encode\", dry_run=False\n\n    Args:\n        download_dir: Local directory to save files\n        file_format: File format filter (\"fastq\", \"bam\", \"bed\", \"bigWig\", etc.)\n        output_type: Output type filter (\"reads\", \"peaks\", \"signal\", etc.)\n        output_category: Output category (\"raw data\", \"alignment\", \"annotation\", etc.)\n        assembly: Genome assembly (\"GRCh38\", \"mm10\", etc.)\n        assay_title: Assay type (\"Histone ChIP-seq\", \"ATAC-seq\", \"total RNA-seq\", etc.)\n        organism: Organism (default: \"Homo sapiens\")\n        organ: Organ/tissue (\"pancreas\", \"brain\", \"liver\", etc.)\n        biosample_type: Biosample type (\"tissue\", \"cell line\", \"primary cell\", etc.)\n        target: ChIP/CUT&RUN target (\"H3K27me3\", \"CTCF\", etc.)\n        preferred_default: If True, only download default/recommended files\n        organize_by: File organization (\"flat\", \"experiment\", \"format\", \"experiment_format\")\n        verify_md5: Verify downloads with MD5 checksums (default True)\n        limit: Max files to download (default 100, safety limit)\n        dry_run: If True (default), only preview what would be downloaded. Set False to download.\n        offset: Skip the first N matching files; pass the next_offset of the previous reply to\n            continue a search that has more files than limit\n\n    Returns:\n        JSON with download preview (dry_run=True) or download results (dry_run=False).\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "download_dir": {
+            "title": "Download Dir",
+            "type": "string"
+          },
+          "file_format": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "File Format"
+          },
+          "output_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Output Type"
+          },
+          "output_category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Output Category"
+          },
+          "assembly": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Assembly"
+          },
+          "assay_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Assay Title"
+          },
+          "organism": {
+            "default": "Homo sapiens",
+            "title": "Organism",
+            "type": "string"
+          },
+          "organ": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Organ"
+          },
+          "biosample_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Biosample Type"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Target"
+          },
+          "preferred_default": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Preferred Default"
+          },
+          "organize_by": {
+            "default": "experiment",
+            "enum": [
+              "flat",
+              "experiment",
+              "format",
+              "experiment_format"
+            ],
+            "title": "Organize By",
+            "type": "string"
+          },
+          "verify_md5": {
+            "default": true,
+            "title": "Verify Md5",
+            "type": "boolean"
+          },
+          "limit": {
+            "default": 100,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "dry_run": {
+            "default": true,
+            "title": "Dry Run",
+            "type": "boolean"
+          },
+          "offset": {
+            "default": 0,
+            "title": "Offset",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "download_dir"
+        ],
+        "title": "encode_batch_downloadArguments"
+      }
+    },
+    {
+      "name": "encode_manage_credentials",
+      "description": "Manage ENCODE API credentials for accessing restricted/unreleased data.\n\n    Most ENCODE data is public and requires no authentication.\n    Credentials are only needed for unreleased or restricted datasets.\n\n    Credentials are stored securely in your OS keyring (macOS Keychain,\n    Linux Secret Service, Windows Credential Locker) and never in plaintext.\n\n    WHEN TO USE: Use only for accessing unreleased/restricted ENCODE data.\n    Public data requires no authentication.\n    RELATED TOOLS: encode_search_experiments\n\n    Args:\n        action: What to do:\n            - \"store\": Save new credentials (requires access_key and secret_key)\n            - \"check\": Check if credentials are configured\n            - \"clear\": Remove stored credentials\n        access_key: Your ENCODE access key (only for action=\"store\")\n        secret_key: Your ENCODE secret key (only for action=\"store\")\n\n    Returns:\n        JSON with action result.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "enum": [
+              "store",
+              "check",
+              "clear"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "access_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Access Key"
+          },
+          "secret_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Secret Key"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "title": "encode_manage_credentialsArguments"
+      }
+    },
+    {
+      "name": "encode_get_facets",
+      "description": "Get live filter counts from ENCODE to discover what data is available.\n\n    Returns faceted counts showing how many experiments/files exist for each\n    filter value. Useful for exploring what's available before searching.\n\n    WHEN TO USE: Use to explore what data exists before searching. Shows counts\n    per filter value. Best first step for unknown datasets.\n    RELATED TOOLS: encode_get_metadata, encode_search_experiments\n\n    Examples:\n    - What assays are available for pancreas?\n      organ=\"pancreas\"\n    - What organs have Histone ChIP-seq data?\n      assay_title=\"Histone ChIP-seq\"\n    - What targets are available for mouse brain ChIP-seq?\n      assay_title=\"Histone ChIP-seq\", organism=\"Mus musculus\", organ=\"brain\"\n\n    Args:\n        search_type: Object type (\"Experiment\" or \"File\")\n        assay_title: Pre-filter by assay type\n        organism: Pre-filter by organism\n        organ: Pre-filter by organ\n        biosample_type: Pre-filter by biosample type\n\n    Returns:\n        JSON with facet names and their term counts.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "search_type": {
+            "default": "Experiment",
+            "title": "Search Type",
+            "type": "string"
+          },
+          "assay_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Assay Title"
+          },
+          "organism": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Organism"
+          },
+          "organ": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Organ"
+          },
+          "biosample_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Biosample Type"
+          }
+        },
+        "title": "encode_get_facetsArguments"
+      }
+    },
+    {
+      "name": "encode_get_file_info",
+      "description": "Get detailed information about a specific ENCODE file.\n\n    WHEN TO USE: Use when you need detailed metadata for a specific file\n    (size, md5, assembly, biological replicate info).\n    RELATED TOOLS: encode_download_files, encode_list_files\n\n    Args:\n        accession: File accession ID (e.g., \"ENCFF635JIA\")\n\n    Returns:\n        JSON with file metadata including format, size, download URL, MD5, assembly, etc.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accession": {
+            "title": "Accession",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accession"
+        ],
+        "title": "encode_get_file_infoArguments"
+      }
+    },
+    {
+      "name": "encode_track_experiment",
+      "description": "Track an ENCODE experiment locally with its publications, methods, and pipeline info.\n\n    Fetches full experiment metadata from ENCODE and stores it in a local SQLite\n    database along with any associated publications (PMIDs, DOIs, authors, journal)\n    and pipeline/analysis information (software versions, methods).\n\n    This is like adding an experiment to your \"library\" - similar to Endnote for papers.\n\n    WHEN TO USE: Use to save an experiment to your local library with publications\n    and pipeline info. Required before compare or citations.\n    RELATED TOOLS: encode_compare_experiments, encode_get_citations, encode_export_data\n\n    Args:\n        accession: ENCODE experiment accession (e.g., \"ENCSR133RZO\")\n        fetch_publications: Also fetch and store publications/citations (default True)\n        fetch_pipelines: Also fetch and store pipeline/analysis info (default True)\n        notes: Optional notes to attach to this experiment\n\n    Returns:\n        JSON with tracking result including publications and pipeline info found.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accession": {
+            "title": "Accession",
+            "type": "string"
+          },
+          "fetch_publications": {
+            "default": true,
+            "title": "Fetch Publications",
+            "type": "boolean"
+          },
+          "fetch_pipelines": {
+            "default": true,
+            "title": "Fetch Pipelines",
+            "type": "boolean"
+          },
+          "notes": {
+            "default": "",
+            "title": "Notes",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accession"
+        ],
+        "title": "encode_track_experimentArguments"
+      }
+    },
+    {
+      "name": "encode_list_tracked",
+      "description": "List all experiments you've tracked locally, with optional filters.\n\n    Shows your local library of tracked ENCODE experiments, their metadata,\n    publication counts, and derived file counts.\n\n    WHEN TO USE: Use to see all experiments in your local library. Filter by assay,\n    organism, or organ.\n    RELATED TOOLS: encode_summarize_collection, encode_export_data\n\n    Args:\n        assay_title: Filter by assay type (partial match)\n        organism: Filter by organism (partial match)\n        organ: Filter by organ (partial match)\n\n    Returns:\n        JSON with tracked experiments metadata table and tracker stats.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "assay_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Assay Title"
+          },
+          "organism": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Organism"
+          },
+          "organ": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Organ"
+          }
+        },
+        "title": "encode_list_trackedArguments"
+      }
+    },
+    {
+      "name": "encode_get_citations",
+      "description": "Get publications and citations for tracked experiments.\n\n    Returns publication data with authors, journal, DOI, PMID.\n    Can export as BibTeX or RIS (Endnote/Zotero/Mendeley compatible).\n\n    WHEN TO USE: Use to get publication data for tracked experiments. Supports\n    BibTeX and RIS export for reference managers.\n    RELATED TOOLS: encode_track_experiment, encode_link_reference\n\n    Args:\n        accession: Specific experiment accession. If None, returns all publications.\n        export_format: Output format:\n            - \"json\": Structured data (default)\n            - \"bibtex\": BibTeX format for LaTeX\n            - \"ris\": RIS format (Endnote, Zotero, Mendeley)\n\n    Returns:\n        Publications in the requested format.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accession": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Accession"
+          },
+          "export_format": {
+            "default": "json",
+            "enum": [
+              "json",
+              "bibtex",
+              "ris"
+            ],
+            "title": "Export Format",
+            "type": "string"
+          }
+        },
+        "title": "encode_get_citationsArguments"
+      }
+    },
+    {
+      "name": "encode_compare_experiments",
+      "description": "Analyze whether two ENCODE experiments are compatible for combined analysis.\n\n    Compares organism, genome assembly, assay type, biosample, organ, target,\n    replication strategy, and lab to identify potential issues.\n\n    Both experiments must be tracked first (use encode_track_experiment).\n\n    WHEN TO USE: Use to check if two experiments are compatible for combined analysis.\n    Both must be tracked first.\n    RELATED TOOLS: encode_track_experiment, encode_list_tracked\n\n    Args:\n        accession1: First experiment accession (e.g., \"ENCSR133RZO\")\n        accession2: Second experiment accession (e.g., \"ENCSR000AKS\")\n\n    Returns:\n        JSON compatibility report with verdict, issues, warnings, and recommendations.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accession1": {
+            "title": "Accession1",
+            "type": "string"
+          },
+          "accession2": {
+            "title": "Accession2",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accession1",
+          "accession2"
+        ],
+        "title": "encode_compare_experimentsArguments"
+      }
+    },
+    {
+      "name": "encode_log_derived_file",
+      "description": "Log a file you've derived from ENCODE data for provenance tracking.\n\n    Use this when you create new files from ENCODE data (e.g., running a pipeline,\n    filtering peaks, merging samples). This creates a provenance record linking\n    your derived file back to the original ENCODE source data.\n\n    WHEN TO USE: Use after creating files from ENCODE data (filtered peaks, merged\n    signals). Creates provenance chain back to source.\n    RELATED TOOLS: encode_get_provenance, encode_download_files\n\n    Args:\n        file_path: Path to the derived file you created\n        source_accessions: List of ENCODE accessions this file was derived from\n            (experiment or file accessions, e.g., [\"ENCSR133RZO\", \"ENCFF635JIA\"])\n        description: What this derived file contains\n        file_type: Type of file (e.g., \"filtered_peaks\", \"merged_signal\", \"differential\")\n        tool_used: Tool/software used to create it (e.g., \"bedtools intersect\", \"DESeq2\")\n        parameters: Parameters or command used\n\n    Returns:\n        JSON with the provenance record ID.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "file_path": {
+            "title": "File Path",
+            "type": "string"
+          },
+          "source_accessions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Source Accessions",
+            "type": "array"
+          },
+          "description": {
+            "default": "",
+            "title": "Description",
+            "type": "string"
+          },
+          "file_type": {
+            "default": "",
+            "title": "File Type",
+            "type": "string"
+          },
+          "tool_used": {
+            "default": "",
+            "title": "Tool Used",
+            "type": "string"
+          },
+          "parameters": {
+            "default": "",
+            "title": "Parameters",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file_path",
+          "source_accessions"
+        ],
+        "title": "encode_log_derived_fileArguments"
+      }
+    },
+    {
+      "name": "encode_get_provenance",
+      "description": "Get provenance information for derived files.\n\n    Shows the chain from your derived files back to original ENCODE data,\n    including what tools and parameters were used.\n\n    WHEN TO USE: Use to trace a derived file back to original ENCODE data.\n    Shows tools and parameters used.\n    RELATED TOOLS: encode_log_derived_file\n\n    Args:\n        file_path: Get provenance for a specific derived file\n        source_accession: List all files derived from a specific ENCODE accession\n\n    Returns:\n        JSON provenance chain or list of derived files.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "file_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "File Path"
+          },
+          "source_accession": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Source Accession"
+          }
+        },
+        "title": "encode_get_provenanceArguments"
+      }
+    },
+    {
+      "name": "encode_export_data",
+      "description": "Export tracked experiments as a table (CSV, TSV, or JSON).\n\n    Creates a tabular export of all tracked experiments with metadata,\n    publication counts, PMIDs, and derived file counts. Useful for loading\n    into Excel, R, pandas, or sharing with collaborators.\n\n    PMIDs in the output can be directly used with PubMed MCP tools for\n    further literature analysis.\n\n    WHEN TO USE: Use to create shareable tables of tracked experiments (CSV, TSV, JSON).\n    Good for manuscripts and reports.\n    RELATED TOOLS: encode_list_tracked, encode_summarize_collection\n\n    Args:\n        format: Output format:\n            - \"csv\": Comma-separated values (default, for Excel/spreadsheets)\n            - \"tsv\": Tab-separated values (for R, pandas)\n            - \"json\": JSON array (for programmatic use)\n        assay_title: Filter by assay type (partial match)\n        organism: Filter by organism (partial match)\n        organ: Filter by organ (partial match)\n\n    Returns:\n        Formatted table data in the requested format.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "format": {
+            "default": "csv",
+            "enum": [
+              "csv",
+              "tsv",
+              "json"
+            ],
+            "title": "Format",
+            "type": "string"
+          },
+          "assay_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Assay Title"
+          },
+          "organism": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Organism"
+          },
+          "organ": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Organ"
+          }
+        },
+        "title": "encode_export_dataArguments"
+      }
+    },
+    {
+      "name": "encode_summarize_collection",
+      "description": "Summarize your tracked experiment collection with grouped statistics.\n\n    Provides an overview of tracked experiments grouped by assay type, target,\n    organism, organ, biosample type, and lab. Shows total counts for publications,\n    derived files, and external references.\n\n    Useful when tracking 10+ experiments and needing a bird's-eye view of your\n    research data collection.\n\n    WHEN TO USE: Use for a bird's-eye view of tracked experiments grouped by assay,\n    target, organ. Best for 10+ tracked experiments.\n    RELATED TOOLS: encode_list_tracked, encode_export_data\n\n    Args:\n        assay_title: Filter by assay type (partial match)\n        organism: Filter by organism (partial match)\n        organ: Filter by organ (partial match)\n\n    Returns:\n        JSON summary with experiment counts grouped by multiple dimensions.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "assay_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Assay Title"
+          },
+          "organism": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Organism"
+          },
+          "organ": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Organ"
+          }
+        },
+        "title": "encode_summarize_collectionArguments"
+      }
+    },
+    {
+      "name": "encode_link_reference",
+      "description": "Link an external reference to a tracked ENCODE experiment.\n\n    This is the cross-server bridge. Attach PubMed IDs, bioRxiv DOIs,\n    ClinicalTrials.gov NCT IDs, GEO accessions, or any external identifier\n    to your tracked experiments for provenance and cross-referencing.\n\n    After finding a relevant paper with PubMed MCP or a preprint on bioRxiv,\n    link it to the ENCODE experiment for future reference.\n\n    WHEN TO USE: Use to attach external IDs (PMID, DOI, GEO, NCT) to tracked\n    experiments for cross-referencing.\n    RELATED TOOLS: encode_get_references, encode_get_citations\n\n    Args:\n        experiment_accession: ENCODE experiment accession (e.g., \"ENCSR133RZO\")\n        reference_type: Type of external reference:\n            - \"pmid\": PubMed ID (e.g., \"32728249\")\n            - \"doi\": DOI (e.g., \"10.1038/s41586-020-2493-4\")\n            - \"nct_id\": ClinicalTrials.gov ID (e.g., \"NCT04567890\")\n            - \"preprint_doi\": bioRxiv/medRxiv DOI\n            - \"geo_accession\": GEO accession (e.g., \"GSE123456\")\n            - \"other\": Any other identifier\n        reference_id: The actual identifier value\n        description: Optional description of why this reference is linked\n\n    Returns:\n        JSON with linking result.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "experiment_accession": {
+            "title": "Experiment Accession",
+            "type": "string"
+          },
+          "reference_type": {
+            "enum": [
+              "pmid",
+              "doi",
+              "nct_id",
+              "preprint_doi",
+              "geo_accession",
+              "other"
+            ],
+            "title": "Reference Type",
+            "type": "string"
+          },
+          "reference_id": {
+            "title": "Reference Id",
+            "type": "string"
+          },
+          "description": {
+            "default": "",
+            "title": "Description",
+            "type": "string"
+          }
+        },
+        "required": [
+          "experiment_accession",
+          "reference_type",
+          "reference_id"
+        ],
+        "title": "encode_link_referenceArguments"
+      }
+    },
+    {
+      "name": "encode_get_references",
+      "description": "Get external references linked to tracked experiments.\n\n    Returns PMIDs, DOIs, NCT IDs, GEO accessions and other identifiers\n    linked to experiments. These identifiers can be directly passed to\n    PubMed, bioRxiv, ClinicalTrials.gov, or other MCP tools.\n\n    WHEN TO USE: Use to retrieve external references linked to experiments.\n    PMIDs can be passed to PubMed MCP tools.\n    RELATED TOOLS: encode_link_reference, encode_get_citations\n\n    Args:\n        experiment_accession: Filter by specific experiment (optional)\n        reference_type: Filter by reference type (optional):\n            \"pmid\", \"doi\", \"nct_id\", \"preprint_doi\", \"geo_accession\", \"other\"\n\n    Returns:\n        JSON with linked external references.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "experiment_accession": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Experiment Accession"
+          },
+          "reference_type": {
+            "anyOf": [
+              {
+                "enum": [
+                  "pmid",
+                  "doi",
+                  "nct_id",
+                  "preprint_doi",
+                  "geo_accession",
+                  "other"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Reference Type"
+          }
+        },
+        "title": "encode_get_referencesArguments"
+      }
+    }
+  ],
+  "stderrTail": "Downloading pydantic-core (2.0MiB)\nDownloading cryptography (4.5MiB)\nDownloading pygments (1.2MiB)\n Downloaded pygments\n Downloaded pydantic-core\n Downloaded cryptography\nInstalled 44 packages in 14ms\n[10/02/26 00:04:00] INFO     Processing request of type            server.py:733\n                             ListToolsRequest                                   \n",
+  "durationMs": 8982,
+  "transport": "stdio"
+}

@@ -1,0 +1,8 @@
+{
+  "serverId": "longevity-genie__gget-mcp__longevity-genie-gget-mcp",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "Downloading pandas (10.3MiB)\nDownloading pillow (6.6MiB)\nDownloading pydantic-core (2.0MiB)\nDownloading pygments (1.2MiB)\nDownloading beartype (1.3MiB)\nDownloading numpy (15.9MiB)\nDownloading cryptography (4.5MiB)\nDownloading lxml (5.0MiB)\nDownloading matplotlib (9.4MiB)\nDownloading fonttools (5.1MiB)\nDownloading openmm (13.7MiB)\nDownloading kiwisolver (1.4MiB)\nDownloading jedi (4.7MiB)\nDownloading mysql-connector-python (20.7MiB)\nDownloading widgetsnbextension (2.1MiB)\nDownloading gget (76.0MiB)\nDownloading biopython (3.1MiB)\n Downloaded pygments\n Downloaded beartype\n Downloaded kiwisolver\n Downloaded pydantic-core\n Downloaded widgetsnbextension\n Downloaded biopython\n Downloaded cryptography\n Downloaded jedi\n Downloaded lxml\n Downloaded fonttools\n Downloaded pillow\n Downloaded matplotlib\n Downloaded pandas\n Downloaded openmm\n Downloaded numpy\n Downloaded mysql-connector-python\n Downloaded gget\nInstalled 133 packages in 225ms\nUsage: gget-mcp [OPTIONS] COMMAND [ARGS]...\nTry 'gget-mcp --help' for help.\n╭─ Error ──────────────────────────────────────────────────────────────────────╮\n│ Missing command.                                                             │\n╰──────────────────────────────────────────────────────────────────────────────╯\n",
+  "durationMs": 34933,
+  "transport": "stdio"
+}

@@ -1,0 +1,335 @@
+{
+  "serverId": "fulcradynamics__fulcra-context-mcp__fulcradynamics-fulcra-context-mc",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "get_annotations",
+      "description": "Retrieve an array of all moment annotations the user recorded during a period of time.\nEach item contains the value (except for moment annotations) and the metadata (name, original spec, etc.) describing the annotation.\n\nArgs:\n    ann_type: annotation type (moment, duration, boolean, numeric, scale, etc.)\n    start_time: The starting time of the period. Must include tz (ISO8601).\n    end_time: the ending time of the period. Must include tz (ISO8601).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ann_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "enum": [
+                  "moment",
+                  "duration",
+                  "boolean",
+                  "numeric",
+                  "scale"
+                ],
+                "type": "string"
+              }
+            ]
+          },
+          "start_time": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "end_time": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ann_type",
+          "start_time",
+          "end_time"
+        ]
+      }
+    },
+    {
+      "name": "get_workouts",
+      "description": "Get details about the workouts that the user has done during a period of time.\nResult timestamps will include time zones. Always translate timestamps to the user's local\ntime zone when this is known.\n\nArgs:\n    start_time: The starting time of the period. Must include tz (ISO8601).\n    end_time: the ending time of the period. Must include tz (ISO8601).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "start_time": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "end_time": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start_time",
+          "end_time"
+        ]
+      }
+    },
+    {
+      "name": "annotations_catalog",
+      "description": "Get the list of all annotations the user has defined. This does not get the\nactual values the user has recorded; for that, use the `get_annotations` tool.\nUse this tool to get the IDs and types to pass to `get_annotations`.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "get_metrics_catalog",
+      "description": "Get the catalog of available metrics that can be used in time-series API calls\n(`metric_time_series` and `metric_samples`).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "get_metric_time_series",
+      "description": "Get user's time-series data for a single Fulcra metric.\n\nCovers the time starting at start_time (inclusive) until end_time (exclusive).\nResult timestamps will include tz. Always translate timestamps to the user's local\ntz when this is known.\n\nArgs:\n    metric_name: The name of the time-series metric to retrieve. Use `get_metrics_catalog` to find available metrics.\n    start_time: The starting time period (inclusive). Must include tz (ISO8601).\n    end_time: The ending time (exclusive). Must include tz (ISO8601).\n    sample_rate: Optional. The number of seconds per sample. Default is 60. Can be smaller than 1.\n    replace_nulls: Optional. When true, replace all NA with 0. Default is False.\n    calculations: Optional. A list of additional calculations to perform for each\n    time slice.  Not supported on cumulative metrics.  Options: \"max\", \"min\", \"delta\", \"mean\", \"uniques\", \"allpoints\", \"rollingmean\".\nReturns:\n    A JSON string representing a list of data points for the metric.\n    For time ranges where data is missing, the values will be NA unless replace_nulls is true.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "metric_name": {
+            "type": "string"
+          },
+          "start_time": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "end_time": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "sample_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": 60
+          },
+          "replace_nulls": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": false
+          },
+          "calculations": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "metric_name",
+          "start_time",
+          "end_time"
+        ]
+      }
+    },
+    {
+      "name": "get_metric_samples",
+      "description": "Retrieve the raw samples related to a given metric for the user during a specified period.\n\nIn cases where samples cover ranges and not points in time, a sample will be returned\nif any part of its range intersects with the requested range. For example, if start_time\nis 14:00 and end_time is 15:00, a sample covering 13:30-14:30 will be included.\nResult timestamps will include time zones. Always translate timestamps to the user's local\ntime zone when this is known.\n\nArgs:\n    metric_name: The name of the metric to retrieve samples for. Use `get_metrics_catalog` to find available metrics.\n    start_time: The start of the time range (inclusive), as an ISO 8601 string or datetime object.\n    end_time: The end of the time range (exclusive), as an ISO 8601 string or datetime object.\nReturns:\n    A JSON string representing a list of raw samples for the metric.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "metric_name": {
+            "type": "string"
+          },
+          "start_time": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "end_time": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "metric_name",
+          "start_time",
+          "end_time"
+        ]
+      }
+    },
+    {
+      "name": "get_sleep_cycles",
+      "description": "Return sleep cycles summarized from sleep stages.\n\nProcesses raw sleep data samples into sleep cycles by finding gaps in the\nsleep sample data within a specified time interval.\nResult timestamps will include time zones. Always translate timestamps to the user's local\ntime zone when this is known.\n\nArgs:\n    start_time: The starting timestamp (inclusive), as an ISO 8601 string or datetime object.\n    end_time: The ending timestamp (exclusive), as an ISO 8601 string or datetime object.\n    cycle_gap: Optional. Minimum time interval separating distinct cycles (e.g., \"PT2H\" for 2 hours).\n               Defaults to server-side default if not provided.\n    stages: Optional. Sleep stages to include. Defaults to all stages if not provided.\n    gap_stages: Optional. Sleep stages to consider as gaps in sleep cycles.\n                Defaults to server-side default if not provided.\n    clip_to_range: Optional. Whether to clip the data to the requested date range. Defaults to True.\nReturns:\n    A JSON string representing a pandas DataFrame containing the sleep cycle data.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "start_time": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "end_time": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "cycle_gap": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "stages": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "gap_stages": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "clip_to_range": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": true
+          }
+        },
+        "required": [
+          "start_time",
+          "end_time"
+        ]
+      }
+    },
+    {
+      "name": "get_location_at_time",
+      "description": "Gets the user's location at the given time.\n\nIf no sample is available for the exact time, searches for the closest one up to\nwindow_size seconds back.\n\nResult timestamps will include time zones. Always translate timestamps to the user's local\ntime zone when this is known.\n\nArgs:\n    time: The point in time to get the user's location for. Must include tz (ISO8601).\n    window_size: Optional. The size (in seconds) to look back (and optionally forward) for samples. Defaults to 14400.\n    include_after: Optional. When true, a sample that occurs after the requested time may be returned if it is the closest one. Defaults to False.\nReturns:\n    A JSON string representing the location data.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "time": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "window_size": {
+            "default": 14400,
+            "type": "integer"
+          },
+          "reverse_geocode": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": false
+          }
+        },
+        "required": [
+          "time"
+        ]
+      }
+    },
+    {
+      "name": "get_location_time_series",
+      "description": "Retrieve a time series of locations that the user was at.\nResult timestamps will include time zones. Always translate timestamps to the user's local tz when this is known.\n\nArgs:\n    start_time: The start of the time range (inclusive), as an ISO 8601 string or datetime object.\n    end_time: The end of the range (exclusive), as an ISO 8601 string or datetime object.\n    change_meters: Optional. When specified, subsequent samples that are fewer than this many meters away will not be included.\n    sample_rate: Optional. The length (in seconds) of each sample. Default is 900.\n    reverse_geocode: Optional. When true, Fulcra will attempt to reverse geocode the locations and include the details in the results. Default is False.\nReturns:\n    A JSON string representing a list of location data points.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "start_time": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "end_time": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "change_meters": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "sample_rate": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": 900
+          },
+          "reverse_geocode": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": false
+          }
+        },
+        "required": [
+          "start_time",
+          "end_time"
+        ]
+      }
+    },
+    {
+      "name": "get_user_info",
+      "description": "Return general info about the Context by Fulcra user.\n\nReturns user references such as time zone, calendar ids, and other metadata.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  ],
+  "stderrTail": "Downloading pydantic-core (2.0MiB)\nDownloading beartype (1.3MiB)\nDownloading pyarrow (47.8MiB)\nDownloading cryptography (4.5MiB)\nDownloading pygments (1.2MiB)\nDownloading numpy (15.9MiB)\nDownloading uvloop (4.3MiB)\nDownloading pandas (11.8MiB)\nDownloading burner-redis (1.3MiB)\nDownloading lupa (2.3MiB)\n Downloaded pygments\n Downloaded beartype\n Downloaded burner-redis\n Downloaded pydantic-core\n Downloaded lupa\n Downloaded uvloop\n Downloaded cryptography\n Downloaded pandas\n Downloaded numpy\n Downloaded pyarrow\nInstalled 122 packages in 52ms\n/tmp/uv-cache/archive-v0/RhQ9eARPg-hOoowh/lib/python3.12/site-packages/fastmcp/server/auth/providers/jwt.py:10: AuthlibDeprecationWarning: authlib.jose module is deprecated, please use joserfc instead.\nIt will be compatible before version 2.0.0.\n  from authlib.jose import JsonWebKey, JsonWebToken\n/tmp/uv-cache/archive-v0/RhQ9eARPg-hOoowh/lib/python3.12/site-packages/authlib/integrations/httpx_client/assertion_client.py:5: AuthlibDeprecationWarning: The httpx module is deprecated; please use httpx2 instead.\n  from ._compat import httpx2\n\n\n╭──────────────────────────────────────────────────────────────────────────────╮\n│                                                                              │\n│                                                                              │\n│                         ▄▀▀ ▄▀█ █▀▀ ▀█▀ █▀▄▀█ █▀▀ █▀█                        │\n│                         █▀  █▀█ ▄▄█  █  █ ▀ █ █▄▄ █▀▀                        │\n│                                                                              │\n│                                                                              │\n│                                                                              │\n│                                FastMCP 2.14.7                                │\n│                            https://gofastmcp.com                             │\n│                                                                              │\n│                    🖥  Server:      Fulcra Context Agent                      │\n│                    🚀 Deploy free: https://fastmcp.cloud                     │\n│                                                                              │\n╰──────────────────────────────────────────────────────────────────────────────╯\n╭──────────────────────────────────────────────────────────────────────────────╮\n│                          ✨ FastMCP 3.0 is coming!                           │\n│       Pin `fastmcp < 3` in production, then upgrade when you're ready.       │\n╰──────────────────────────────────────────────────────────────────────────────╯\n╭──────────────────────────────────────────────────────────────────────────────╮\n│                         🎉 Update available: 4.0.10                          │\n│                      Run: pip install --upgrade fastmcp                      │\n╰──────────────────────────────────────────────────────────────────────────────╯\n\n\n[10/02/26 00:10:06] INFO     Starting MCP server 'Fulcra Context  server.py:2506\n                             Agent' with transport 'stdio'                      \n",
+  "durationMs": 15899,
+  "transport": "stdio"
+}
