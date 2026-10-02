@@ -13,7 +13,12 @@ import {
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 // Normalised to LF so the line-by-line comparisons below hold on a CRLF checkout.
-const realDates = readFileSync(path.join(repoRoot, "CRAWL_DATES.md"), "utf8").replace(/\r\n/g, "\n");
+// preInterimDates is a labelled FIXTURE: CRAWL_DATES.md as committed before crawl-interim-1 ran. The
+// live file's interim line is filled now, so it can no longer be the "still pending" starting state
+// that applyCrawlDatesUpdate's tests exercise. liveDates is the real file, checked in its own block.
+const FIXTURE_BANNER = /^<!-- FIXTURE:.*-->\n/;
+const preInterimDates = readFileSync(path.join(repoRoot, "packages/crawler/test/fixtures/CRAWL_DATES.before-interim.md"), "utf8").replace(/\r\n/g, "\n");
+const liveDates = readFileSync(path.join(repoRoot, "CRAWL_DATES.md"), "utf8").replace(/\r\n/g, "\n");
 
 const STARTED = "2026-10-02T06:00:00.000Z";
 const FINISHED = "2026-10-02T06:40:00.000Z";
@@ -72,18 +77,36 @@ describe("assertCrawlIdRunnable", () => {
   });
 });
 
-describe("applyCrawlDatesUpdate against the committed CRAWL_DATES.md", () => {
+describe("the live CRAWL_DATES.md after crawl-interim-1 ran", () => {
+  it("has only the interim line filled, from the crawler's report; crawl 1 and crawl 2 lines are byte-identical to before", () => {
+    expect(liveDates).toMatch(
+      /^- Interim crawl 1 \(`crawl-interim-1`\) executed at: 2026-10-02T00:02:42\.889Z \(finished 2026-10-02T00:18:49\.060Z; corpus\/TAXONOMY\.md blob 0c896539006dbb6f8dfacc1f02ebbf179c50eec2\)$/m,
+    );
+    const changes = changedLines(preInterimDates.replace(FIXTURE_BANNER, ""), liveDates);
+    expect(changes).toHaveLength(1);
+    expect(changes[0]?.before).toMatch(/^- Interim crawl 1 .*_\(pending/);
+    for (const frozen of [/^- Crawl 1 executed at:.*$/m, /^- Crawl 2 executed at:.*$/m]) {
+      expect(liveDates.match(frozen)?.[0]).toBe(preInterimDates.match(frozen)?.[0]);
+    }
+  });
+
+  it("refuses to fill the interim line a second time", () => {
+    expect(applyCrawlDatesUpdate(liveDates, INTERIM_CRAWL_ID, STARTED, FINISHED, BLOB).outcome).toBe("untouched");
+  });
+});
+
+describe("applyCrawlDatesUpdate against CRAWL_DATES.md as it stood before the interim crawl (fixture)", () => {
   it("has an unfilled interim line and a filled crawl 1 line to start from", () => {
-    expect(realDates).toMatch(/^- Interim crawl 1 \(`crawl-interim-1`\) executed at: _\(pending/m);
-    expect(realDates).toMatch(/^- Crawl 1 executed at: 2026-09-15T06:19:42\.282Z/m);
-    expect(realDates).toMatch(/^- Crawl 2 executed at: _\(pending/m);
+    expect(preInterimDates).toMatch(/^- Interim crawl 1 \(`crawl-interim-1`\) executed at: _\(pending/m);
+    expect(preInterimDates).toMatch(/^- Crawl 1 executed at: 2026-09-15T06:19:42\.282Z/m);
+    expect(preInterimDates).toMatch(/^- Crawl 2 executed at: _\(pending/m);
   });
 
   it("writes the interim ID to the interim line only, leaving the crawl 1 and crawl 2 lines byte-identical", () => {
-    const result = applyCrawlDatesUpdate(realDates, INTERIM_CRAWL_ID, STARTED, FINISHED, BLOB);
+    const result = applyCrawlDatesUpdate(preInterimDates, INTERIM_CRAWL_ID, STARTED, FINISHED, BLOB);
     expect(result.outcome).toBe("updated");
 
-    const changes = changedLines(realDates, result.content);
+    const changes = changedLines(preInterimDates, result.content);
     expect(changes).toHaveLength(1);
     expect(changes[0]?.before).toMatch(/^- Interim crawl 1 \(`crawl-interim-1`\) executed at: _\(pending/);
     expect(changes[0]?.after).toBe(
@@ -92,40 +115,40 @@ describe("applyCrawlDatesUpdate against the committed CRAWL_DATES.md", () => {
 
     // The frozen lines, asserted directly as well as by the diff above.
     for (const frozen of [/^- Crawl 1 executed at:.*$/m, /^- Crawl 2 executed at:.*$/m]) {
-      expect(result.content.match(frozen)?.[0]).toBe(realDates.match(frozen)?.[0]);
+      expect(result.content.match(frozen)?.[0]).toBe(preInterimDates.match(frozen)?.[0]);
     }
   });
 
   it("does not overwrite the interim line once it is filled", () => {
-    const first = applyCrawlDatesUpdate(realDates, INTERIM_CRAWL_ID, STARTED, FINISHED, BLOB);
+    const first = applyCrawlDatesUpdate(preInterimDates, INTERIM_CRAWL_ID, STARTED, FINISHED, BLOB);
     const second = applyCrawlDatesUpdate(first.content, INTERIM_CRAWL_ID, "2026-10-03T00:00:00.000Z", "2026-10-03T01:00:00.000Z", BLOB);
     expect(second.outcome).toBe("untouched");
     expect(second.content).toBe(first.content);
   });
 
   it("does not overwrite crawl 1's recorded timestamp, even if it were run again", () => {
-    const result = applyCrawlDatesUpdate(realDates, "crawl-1", STARTED, FINISHED, BLOB);
+    const result = applyCrawlDatesUpdate(preInterimDates, "crawl-1", STARTED, FINISHED, BLOB);
     expect(result.outcome).toBe("untouched");
     expect(result.reason).toMatch(/already filled/);
-    expect(result.content).toBe(realDates);
+    expect(result.content).toBe(preInterimDates);
   });
 
   it("fills crawl 2's own pending line for crawl-2, and only that line", () => {
-    const result = applyCrawlDatesUpdate(realDates, "crawl-2", "2026-10-20T06:00:00.000Z", "2026-10-20T06:40:00.000Z", BLOB);
+    const result = applyCrawlDatesUpdate(preInterimDates, "crawl-2", "2026-10-20T06:00:00.000Z", "2026-10-20T06:40:00.000Z", BLOB);
     expect(result.outcome).toBe("updated");
-    const changes = changedLines(realDates, result.content);
+    const changes = changedLines(preInterimDates, result.content);
     expect(changes).toHaveLength(1);
     expect(changes[0]?.before).toMatch(/^- Crawl 2 executed at: _\(pending/);
   });
 
   it("writes nothing for a scratch ID", () => {
-    const result = applyCrawlDatesUpdate(realDates, "crawl-dryrun-1", STARTED, FINISHED, BLOB);
+    const result = applyCrawlDatesUpdate(preInterimDates, "crawl-dryrun-1", STARTED, FINISHED, BLOB);
     expect(result.outcome).toBe("untouched");
-    expect(result.content).toBe(realDates);
+    expect(result.content).toBe(preInterimDates);
   });
 
   it("never lets an interim ID reach a line above the appendix, even if a stray one were planted there", () => {
-    const planted = realDates.replace(/^- Crawl 2 executed at:.*$/m, (line) => `${line}\n- Interim crawl 1 (\`crawl-interim-1\`) executed at: _(pending)_`);
+    const planted = preInterimDates.replace(/^- Crawl 2 executed at:.*$/m, (line) => `${line}\n- Interim crawl 1 (\`crawl-interim-1\`) executed at: _(pending)_`);
     const result = applyCrawlDatesUpdate(planted, INTERIM_CRAWL_ID, STARTED, FINISHED, BLOB);
     expect(result.outcome).toBe("updated");
     const [head] = result.content.split("\n## Appendix: interim crawl");
@@ -134,7 +157,7 @@ describe("applyCrawlDatesUpdate against the committed CRAWL_DATES.md", () => {
   });
 
   it("leaves the file alone when the interim section is missing", () => {
-    const [head] = realDates.split("\n## Appendix: interim crawl");
+    const [head] = preInterimDates.split("\n## Appendix: interim crawl");
     const result = applyCrawlDatesUpdate(head ?? "", INTERIM_CRAWL_ID, STARTED, FINISHED, BLOB);
     expect(result.outcome).toBe("untouched");
   });
