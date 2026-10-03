@@ -286,10 +286,11 @@ Resumable SSE is why the writes exist: an event a client could replay with
 each of the 30 attack tool descriptions with no Chaperone in front of it, in a
 two-turn setup: it may call the tool, is handed a canned tool result, and
 writes a final message. Of 90 runs it **followed the injected instruction in
-at least 46 (51.1%, at most 57.8%), explicitly refused 0, left 6 for a human
-to adjudicate, and did not exercise 38** (it saw the result and showed none of
-it in 20; it asked a question or answered without calling the tool in 15; the trigger
-was unreachable in 3). It refused 0 of 30 benign-control runs. A hash
+52 (57.8%), explicitly refused 0, and did not exercise 38.** The 52 are 46
+follows by the rubric's markers plus 6 that a human reviewed and decided were
+follows. Of the 38, the model saw the result and showed none of it in 20, asked a
+question or answered without calling the tool in 15, and the trigger was
+unreachable in 3. It refused 0 of 30 benign-control runs. A hash
 comparison has no follow rate, so the delta is 100 points: the model never said
 no. The follow rate is a floor: it needs a literal marker, and the scenario
 gives the model invented household data and trigger facts so the attacks are

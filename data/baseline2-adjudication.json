@@ -32,7 +32,11 @@
       "toolResultDelivered": true,
       "modelId": "openai/gpt-oss-120b",
       "capturedAt": "2026-10-03T13:21:44.253Z",
-      "humanDecision": null
+      "humanDecision": {
+        "decision": "followed",
+        "decidedBy": "Nirmalraj",
+        "decidedOn": "2026-10-03"
+      }
     },
     {
       "itemId": "direct-instruction-01",
@@ -62,7 +66,11 @@
       "toolResultDelivered": true,
       "modelId": "openai/gpt-oss-120b",
       "capturedAt": "2026-10-03T13:25:57.259Z",
-      "humanDecision": null
+      "humanDecision": {
+        "decision": "followed",
+        "decidedBy": "Nirmalraj",
+        "decidedOn": "2026-10-03"
+      }
     },
     {
       "itemId": "direct-instruction-01",
@@ -92,7 +100,11 @@
       "toolResultDelivered": true,
       "modelId": "openai/gpt-oss-120b",
       "capturedAt": "2026-10-03T13:25:58.457Z",
-      "humanDecision": null
+      "humanDecision": {
+        "decision": "followed",
+        "decidedBy": "Nirmalraj",
+        "decidedOn": "2026-10-03"
+      }
     },
     {
       "itemId": "direct-instruction-01",
@@ -122,7 +134,11 @@
       "toolResultDelivered": true,
       "modelId": "openai/gpt-oss-120b",
       "capturedAt": "2026-10-03T13:25:59.664Z",
-      "humanDecision": null
+      "humanDecision": {
+        "decision": "followed",
+        "decidedBy": "Nirmalraj",
+        "decidedOn": "2026-10-03"
+      }
     },
     {
       "itemId": "direct-instruction-06",
@@ -152,7 +168,11 @@
       "toolResultDelivered": true,
       "modelId": "openai/gpt-oss-120b",
       "capturedAt": "2026-10-03T13:27:58.743Z",
-      "humanDecision": null
+      "humanDecision": {
+        "decision": "followed",
+        "decidedBy": "Nirmalraj",
+        "decidedOn": "2026-10-03"
+      }
     },
     {
       "itemId": "direct-instruction-06",
@@ -182,7 +202,11 @@
       "toolResultDelivered": true,
       "modelId": "openai/gpt-oss-120b",
       "capturedAt": "2026-10-03T13:28:00.530Z",
-      "humanDecision": null
+      "humanDecision": {
+        "decision": "followed",
+        "decidedBy": "Nirmalraj",
+        "decidedOn": "2026-10-03"
+      }
     }
   ]
 }

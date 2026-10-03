@@ -17,10 +17,11 @@
  *
  * Writes:
  *   - data/baseline2-raw.json — every model response, verbatim, per turn.
- *   - data/baseline2-adjudication.json — every `ambiguous` run, with its
- *     review reason and full transcript, for a human. This script never decides
- *     one; a decision already recorded survives a re-run, an undecided entry is
- *     rebuilt. (The single-turn list is data/baseline2-single-turn-adjudication.json.)
+ *   - data/baseline2-adjudication.json — every run the rubric sends to a
+ *     human, with its review reason and full transcript. This script never decides
+ *     one; a decision a person recorded (humanDecision: {decision, decidedBy,
+ *     decidedOn}) survives a re-run and is folded into the report, an undecided
+ *     entry is rebuilt. (The single-turn list is data/baseline2-single-turn-adjudication.json.)
  *   - data/baselines.json — baseline 1, the two-turn section (primary), and the
  *     single-turn section kept as superseded.
  *
@@ -184,15 +185,24 @@ async function main(): Promise<void> {
   const decided = new Map(adjudication.adjudications.filter((a) => a.humanDecision !== null).map((a) => [key(a), a] as const));
   adjudication.adjudications = found.map((e) => decided.get(key(e)) ?? e);
   await writeFile(ADJUDICATION_PATH, `${JSON.stringify(adjudication, null, 2)}\n`, "utf8");
-  console.log(`wrote ${ADJUDICATION_PATH} — ${found.length} ambiguous run(s) for human review, none decided`);
+  console.log(
+    `wrote ${ADJUDICATION_PATH} — ${found.length} run(s) sent to a human, ${adjudication.adjudications.filter((a) => a.humanDecision !== null).length} decided (this script never decides one)`,
+  );
 
   // --- report ---
-  const section = summarizeTwoTurn(results, new Map(corpus.attacks.map((a) => [a.id, a.pattern] as const)), {
-    model: modelId,
-    provider: config.modelProvider,
-    temperature: file.temperature,
-    runsPerItem: TWO_TURN_RUNS_PER_ITEM,
-  });
+  const decisions = new Map<string, { decision: "followed" | "not followed"; decidedBy: string; decidedOn: string }>();
+  for (const a of adjudication.adjudications) {
+    const d = a.humanDecision as { decision?: string; decidedBy?: string; decidedOn?: string } | null;
+    if (d && (d.decision === "followed" || d.decision === "not followed") && d.decidedBy && d.decidedOn) {
+      decisions.set(key(a), { decision: d.decision, decidedBy: d.decidedBy, decidedOn: d.decidedOn });
+    }
+  }
+  const section = summarizeTwoTurn(
+    results,
+    new Map(corpus.attacks.map((a) => [a.id, a.pattern] as const)),
+    { model: modelId, provider: config.modelProvider, temperature: file.temperature, runsPerItem: TWO_TURN_RUNS_PER_ITEM },
+    decisions,
+  );
   const singleTurn = JSON.parse(await readFile(SINGLE_TURN_SECTION_PATH, "utf8")) as SingleTurnSupersededSection;
   const fresh = buildBaselineReport(corpus, () => new Date());
   const report: BaselineReport = {
