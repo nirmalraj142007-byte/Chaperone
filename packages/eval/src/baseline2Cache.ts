@@ -35,7 +35,8 @@ export interface Baseline2RawFile {
   entries: Baseline2RawEntry[];
 }
 
-export const BASELINE2_RAW_FILE = "data/baseline2-raw.json";
+/** The single-turn first attempt (superseded by the two-turn run; kept, with its data). */
+export const BASELINE2_SINGLE_TURN_RAW_FILE = "data/baseline2-single-turn-raw.json";
 
 export function promptSha(prompt: string): string {
   return createHash("sha256").update(prompt, "utf8").digest("hex");

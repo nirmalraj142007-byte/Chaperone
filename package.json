@@ -48,7 +48,7 @@
     "advisory:live-check": "node --env-file-if-exists=.env --import tsx packages/advisory/scripts/live-check.ts",
     "advisory:run-local": "node --env-file-if-exists=.env --import tsx packages/advisory/scripts/run-local.ts",
     "eval:report": "tsx packages/eval/scripts/build-report.ts",
-    "eval:baseline2": "node --env-file-if-exists=.env --import tsx packages/eval/scripts/run-baseline2.ts",
+    "eval:baseline2:single-turn": "node --env-file-if-exists=.env --import tsx packages/eval/scripts/run-baseline2-single-turn.ts",
     "analyse:drift": "node --env-file-if-exists=.env --import tsx packages/analysis/scripts/analyse-drift.ts",
     "analyse:label": "tsx packages/analysis/scripts/label.ts",
     "bench": "tsx packages/bench/scripts/bench.ts",

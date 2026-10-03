@@ -6,20 +6,20 @@
  * Two modes, because a model call is the expensive part and classification is
  * not:
  *   --capture   call the model for every prompt that has no stored response
- *               yet, writing each response to data/baseline2-raw.json the
+ *               yet, writing each response to data/baseline2-single-turn-raw.json the
  *               moment it arrives. Also resumes a run that died part-way.
- *   (default)   replay data/baseline2-raw.json. Zero model calls. Reclassifies
+ *   (default)   replay data/baseline2-single-turn-raw.json. Zero model calls. Reclassifies
  *               and rebuilds the report, so the classifier can be revisited
  *               against the real responses and anyone can re-derive the number.
  *
  * Writes:
- *   - data/baseline2-raw.json — the model's responses, verbatim.
- *   - data/baseline2-adjudication.json — every `ambiguous` verdict with its raw
+ *   - data/baseline2-single-turn-raw.json — the model's responses, verbatim.
+ *   - data/baseline2-single-turn-adjudication.json — every `ambiguous` verdict with its raw
  *     text, for a human. This script never decides one. A decision already
  *     recorded in that file survives a re-run; an undecided entry is rebuilt
  *     from the current classifier, so a better classifier shrinks the list
  *     rather than leaving stale entries behind.
- *   - data/baselines.json — regenerated with the measured baseline 2 numbers.
+ *   - data/baseline2-single-turn-report.json — the measured single-turn numbers, marked superseded.
  *
  * Total model calls with --capture: (30 attacks + 10 controls) * 3 runs = 120,
  * plus any Groq retries after a 429 (counted and printed as "http attempts").
@@ -32,7 +32,7 @@ import { buildBaseline2Prompt, runBaseline2Corpus, type Baseline2RawResponseList
 import { buildBaseline2ControlPrompt, runBaseline2ControlCorpus } from "../src/baseline2Controls.js";
 import { classifyBaseline2ControlResponse, judgeBaseline2Response } from "../src/baseline2Classify.js";
 import {
-  BASELINE2_RAW_FILE,
+  BASELINE2_SINGLE_TURN_RAW_FILE,
   CachedModelProvider,
   loadRawFile,
   promptSha,
@@ -42,8 +42,9 @@ import {
 import { loadAttackCorpus } from "../src/corpus.js";
 import { buildBaselineReport, summarizeBaseline2ForReport } from "../src/report.js";
 
-const ADJUDICATION_PATH = path.join("data", "baseline2-adjudication.json");
-const BASELINES_PATH = path.join("data", "baselines.json");
+const ADJUDICATION_PATH = path.join("data", "baseline2-single-turn-adjudication.json");
+/** The single-turn section of the report, written on its own; the combined data/baselines.json is built by the two-turn script. */
+const SECTION_PATH = path.join("data", "baseline2-single-turn-report.json");
 
 /**
  * Sampling temperature for the baseline. Baseline 2 asks what an unaided model
@@ -95,19 +96,19 @@ async function main(): Promise<void> {
     promptIndex.set(promptSha(buildBaseline2ControlPrompt(item)), { itemId: item.id, kind: "control" });
   }
 
-  const existing = loadRawFile(BASELINE2_RAW_FILE);
+  const existing = loadRawFile(BASELINE2_SINGLE_TURN_RAW_FILE);
   if (existing && existing.modelId !== modelId) {
     throw new Error(
-      `${BASELINE2_RAW_FILE} holds responses from ${existing.modelId}, not ${modelId}. Move it aside to start a new capture.`,
+      `${BASELINE2_SINGLE_TURN_RAW_FILE} holds responses from ${existing.modelId}, not ${modelId}. Move it aside to start a new capture.`,
     );
   }
   if (!existing && !capture) {
-    throw new Error(`${BASELINE2_RAW_FILE} does not exist yet. Run with --capture to call the model.`);
+    throw new Error(`${BASELINE2_SINGLE_TURN_RAW_FILE} does not exist yet. Run with --capture to call the model.`);
   }
   const file: Baseline2RawFile = existing ?? {
     schemaVersion: 1,
     description:
-      "Verbatim model responses for baseline 2 (data/baselines.json), one per (item, run). Re-classifiable with `pnpm eval:baseline2` with no model calls.",
+      "Verbatim model responses for baseline 2 (data/baselines.json), one per (item, run). Re-classifiable with `pnpm eval:baseline2:single-turn` with no model calls.",
     provider: config.modelProvider,
     modelId,
     temperature,
@@ -129,7 +130,7 @@ async function main(): Promise<void> {
     file,
     promptIndex,
     onNewEntry: (f) => {
-      saveRawFile(BASELINE2_RAW_FILE, f);
+      saveRawFile(BASELINE2_SINGLE_TURN_RAW_FILE, f);
       process.stdout.write(`\r${f.entries.length}/${(corpus.attacks.length + corpus.controls.length) * 3} responses stored`);
     },
   });
@@ -180,7 +181,7 @@ async function main(): Promise<void> {
     captureAmbiguous("control"),
   );
   console.log(`\nattack items scored: ${attackSummaries.length}; control items scored: ${controlSummaries.length}`);
-  console.log(`model calls this run: ${provider.liveCalls} live, ${provider.cacheHits} replayed from ${BASELINE2_RAW_FILE}`);
+  console.log(`model calls this run: ${provider.liveCalls} live, ${provider.cacheHits} replayed from ${BASELINE2_SINGLE_TURN_RAW_FILE}`);
   if (inner instanceof GroqModelProvider) {
     console.log(
       `groq http attempts: ${inner.httpAttempts} (429 responses: ${inner.rateLimited}, time spent waiting out limits: ${(inner.waitedMs / 1000).toFixed(0)}s)`,
@@ -200,8 +201,8 @@ async function main(): Promise<void> {
     temperature: file.temperature,
   });
   const report = buildBaselineReport(corpus, () => new Date(), realBaseline2);
-  await writeFile(BASELINES_PATH, `${JSON.stringify(report, null, 2)}\n`, "utf8");
-  console.log(`wrote ${BASELINES_PATH}`);
+  await writeFile(SECTION_PATH, `${JSON.stringify({ superseded: true, ...realBaseline2 }, null, 2)}\n`, "utf8");
+  console.log(`wrote ${SECTION_PATH}`);
 
   const pct = (n: number): string => `${(n * 100).toFixed(1)}%`;
   console.log(
