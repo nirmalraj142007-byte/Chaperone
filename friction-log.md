@@ -2451,3 +2451,32 @@ tested against a loopback server.
 **Actionable suggestion:** The headers are what made this easy. Documenting
 that the tokens bucket counts `max_tokens` up front (the provider assumes it
 does and so over-waits slightly) would let a client pace exactly.
+
+## Entry 047 — 2026-10-03
+
+**Task attempted:** Capture 120 two-turn baseline-2 runs, writing each model
+response to `data/baseline2-raw.json` the moment it arrived, so a crash cannot
+lose paid-for responses.
+
+**Steps taken:** Wrote each save as write-to-`.tmp`-then-`renameSync`, the same
+pattern the single-turn capture had used without trouble. Ran the capture.
+
+**Expected versus actual:** Expected the rename to succeed. Actual: after 151
+stored responses it failed with `EPERM: operation not permitted, rename ...
+baseline2-raw.json.tmp -> baseline2-raw.json`, killing the run. The repository
+lives in a OneDrive-synced folder; the sync client briefly held the target
+open. The response being saved at that moment (one call) was in memory only and
+was lost, and had to be requested again on resume.
+
+**Severity:** minor. One repeated call and a resumed run; the resume design
+(stored turns reused, a request hash guarding against a changed scenario) is
+what kept it that small.
+
+**Workaround:** `saveTwoTurnRaw` retries the rename on `EPERM`/`EBUSY` with a
+short backoff and, if it never succeeds, writes the target directly. A stored
+response is never lost to a sync lock again.
+
+**Actionable suggestion:** For anyone running long, billed jobs from a
+OneDrive folder: keep the output directory outside the synced tree, or write
+atomically with a retry. Nothing in the repo's README says the project folder
+should not be synced.

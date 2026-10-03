@@ -51,8 +51,23 @@ export function loadTwoTurnRaw(path: string): TwoTurnRawFile | undefined {
 /** Write-then-rename so a crash cannot leave a truncated file that the next run resumes from. */
 export function saveTwoTurnRaw(path: string, file: TwoTurnRawFile): void {
   const temp = `${path}.tmp`;
-  writeFileSync(temp, `${JSON.stringify(file, null, 2)}\n`, "utf8");
-  renameSync(temp, path);
+  const body = `${JSON.stringify(file, null, 2)}\n`;
+  writeFileSync(temp, body, "utf8");
+  // OneDrive (this repo lives in a synced folder) can briefly hold the target open and fail the
+  // rename with EPERM. Retry, and if it never lets go, write the target directly: a stored
+  // response must never be lost to a sync lock.
+  for (let attempt = 0; attempt < 5; attempt++) {
+    try {
+      renameSync(temp, path);
+      return;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "EPERM" && (error as NodeJS.ErrnoException).code !== "EBUSY") {
+        throw error;
+      }
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 100 * (attempt + 1));
+    }
+  }
+  writeFileSync(path, body, "utf8");
 }
 
 export interface RunSpec {

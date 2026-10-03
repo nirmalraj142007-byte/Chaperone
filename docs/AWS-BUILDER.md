@@ -163,8 +163,8 @@ The row `advisory:run-local` wrote (the `advisory` table, in `ddb-dump.json`):
 
 Per-diff output, including a prompt injection aimed at the advisory model
 itself (it scored 80, so it was not talked into 0), is in
-`data/advisory-live-check.json`. Baseline 2's real run is described in
-`docs/LIMITATIONS.md`.
+`data/advisory-live-check.json`. Baseline 2's real runs (two-turn, primary; single-turn,
+superseded) are described in `docs/LIMITATIONS.md`.
 
 ## Bedrock model availability (historical; not used)
 

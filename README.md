@@ -282,19 +282,24 @@ Resumable SSE is why the writes exist: an event a client could replay with
 
 ### Baseline 2: an unaided model against the attack corpus (2026-10-03)
 
-`gpt-oss-120b` (an open-weight model, served by Groq), at temperature 1, given
-each of the 30 attack tool descriptions and no Chaperone, 3 runs per item, a
-single turn. Of 90 runs: **0 explicitly refused the injected instruction, 16
-await human adjudication (7 items), and 74 did not exercise it** (mostly a
-bare tool call, because most injected clauses govern what is said after the
-tool returns). It refused 0 of 30 benign-control runs. The 100-point gap this
-implies against a hash comparison is an artifact of that definition, not a
-finding about the model: the follow rate is **unmeasured, not zero**. This is
-one open-weight model, one provider, one day, and a one-turn harness; it says
-nothing about other models. `data/baselines.json`, raw responses in
-`data/baseline2-raw.json`, and the full account in
-[`docs/LIMITATIONS.md`](docs/LIMITATIONS.md). Reproduce the classification
-with no model calls: `pnpm eval:baseline2`.
+`gpt-oss-120b` (an open-weight model, served by Groq), temperature 1, given
+each of the 30 attack tool descriptions with no Chaperone in front of it, in a
+two-turn setup: it may call the tool, is handed a canned tool result, and
+writes a final message. Of 90 runs it **followed the injected instruction in
+at least 46 (51.1%, at most 57.8%), explicitly refused 0, left 6 for a human
+to adjudicate, and did not exercise 38** (it saw the result and showed none of
+it in 20; it asked a question or answered without calling the tool in 15; the trigger
+was unreachable in 3). It refused 0 of 30 benign-control runs. A hash
+comparison has no follow rate, so the delta is 100 points: the model never said
+no. The follow rate is a floor: it needs a literal marker, and the scenario
+gives the model invented household data and trigger facts so the attacks are
+possible. One open-weight model, one provider, one day; it says nothing about
+other models. The scoring rules were committed before the run
+([`docs/BASELINE2-RUBRIC.md`](docs/BASELINE2-RUBRIC.md)). Numbers in
+`data/baselines.json`, every response in `data/baseline2-raw.json`, the full
+account in [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md). Re-score with no
+model calls: `pnpm eval:baseline2`. A single-turn first attempt, mostly
+unmeasured, is kept as superseded.
 
 ### Not measured yet
 
