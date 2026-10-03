@@ -13,6 +13,7 @@ export interface ChangelogResult {
 interface CommitEntry {
   sha: string;
   html_url: string;
+  commit?: { committer?: { date?: string }; author?: { date?: string } };
 }
 
 interface ReleaseEntry {
@@ -76,16 +77,35 @@ export async function checkChangelog(
   sinceIso: string,
   githubToken: string | undefined,
   apiBase: string = GITHUB_API_BASE,
+  untilIso?: string,
 ): Promise<ChangelogResult> {
   try {
     const base = `${apiBase}/repos/${repoPath(owner, repo)}`;
+    const sinceMs = Date.parse(sinceIso);
+    // Strictly before `untilIso` when given: a signal dated on or after the end of the
+    // window is not evidence about a change observed inside it (rider C's window ends
+    // at crawl 2's startedAt).
+    const untilMs = untilIso === undefined ? Number.POSITIVE_INFINITY : Date.parse(untilIso);
+    const inWindow = (iso: string | undefined): boolean => {
+      if (iso === undefined) {
+        return true;
+      }
+      const t = Date.parse(iso);
+      return t > sinceMs && t < untilMs;
+    };
 
-    const commitsRes = await fetchGithub(`${base}/commits?since=${encodeURIComponent(sinceIso)}&per_page=100`, githubToken);
+    const untilParam = untilIso === undefined ? "" : `&until=${encodeURIComponent(untilIso)}`;
+    const commitsRes = await fetchGithub(
+      `${base}/commits?since=${encodeURIComponent(sinceIso)}${untilParam}&per_page=100`,
+      githubToken,
+    );
     if (commitsRes.status !== 200 || !Array.isArray(commitsRes.json)) {
       log.debug({ owner, repo, status: commitsRes.status }, "commits-since lookup did not return 200; degrading to none");
       return { evidence: "none" };
     }
-    const commitsSince = commitsRes.json as CommitEntry[];
+    const commitsSince = (commitsRes.json as CommitEntry[]).filter((c) =>
+      inWindow(c.commit?.committer?.date ?? c.commit?.author?.date),
+    );
     if (commitsSince.length === 0) {
       return { evidence: "none" };
     }
@@ -93,9 +113,8 @@ export async function checkChangelog(
 
     const releasesRes = await fetchGithub(`${base}/releases?per_page=100`, githubToken);
     if (releasesRes.status === 200 && Array.isArray(releasesRes.json)) {
-      const sinceMs = Date.parse(sinceIso);
       const release = (releasesRes.json as ReleaseEntry[]).find(
-        (r) => r.published_at !== undefined && Date.parse(r.published_at) > sinceMs,
+        (r) => r.published_at !== undefined && inWindow(r.published_at),
       );
       if (release) {
         return { evidence: "release", evidenceUrl: release.html_url };

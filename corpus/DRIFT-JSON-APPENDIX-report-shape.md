@@ -254,7 +254,7 @@ time-to-first-change bins, and reversions.
     "gateReason": null,
     "shareWithSignalOfDrifted": null,
     "verdict": null,
-    "windowEndEnforced": false,
+    "windowEndEnforced": true,
     "checkedAt": null,
     "perServer": null
   },
@@ -362,11 +362,10 @@ reversion under this definition.
 the lower bound, with unverifiable servers counted as not signalling.
 `verdict` is `confirmed` if both it and `shareWithSignalOfCheckable` are
 below 0.30, `refuted` if both are at or above 0.30, and `inconclusive`
-otherwise, including when `checkable` is 0. `checkChangelog` takes a start
-date and no end date, so a signal published after `crawl2StartedAt` but
-before the check runs is counted. `windowEndEnforced: false` records that.
-Any such leak can only push the result toward "publishes a signal", which is
-against the prediction. `perServer` lists
+otherwise, including when `checkable` is 0. `checkChangelog` now takes an end date
+(2026-10-03; it did not when this appendix was first written), so only signals
+dated strictly before `crawl2StartedAt` are counted, and
+`windowEndEnforced: true` records that. `perServer` lists
 `{ serverId, repoOwner, repoName, evidence, evidenceUrl }` for each checkable
 drifted server.
 

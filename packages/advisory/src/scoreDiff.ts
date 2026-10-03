@@ -16,12 +16,15 @@ const PER_CALL_TIMEOUT_MS = 8_000;
 /** The first response plus one retry — CLAUDE.md's "retry-once-on-parse-failure", not an open-ended loop. */
 const MAX_PARSE_ATTEMPTS = 2;
 
-/** Bedrock/AWS exception names ScoreDiff treats as transient — matches CLAUDE.md's "retries ... on throttling and timeouts". Anything else in an `UpstreamError` is terminal (bad prompt, no access, no such model) and is never retried. */
+/** Bedrock/AWS (and Groq) exception names ScoreDiff treats as transient — matches CLAUDE.md's "retries ... on throttling and timeouts". Anything else in an `UpstreamError` is terminal (bad prompt, no access, no such model) and is never retried. */
 const THROTTLING_ERROR_NAMES = new Set([
   "ThrottlingException",
   "ServiceUnavailableException",
   "ModelNotReadyException",
   "TooManyRequestsException",
+  // Groq (providers/groq.ts): a rate limit that outlasted the provider's own wait budget, or a 5xx that survived its internal retries.
+  "RateLimitError",
+  "ServiceUnavailable",
 ]);
 
 function isRetryableProviderError(error: unknown): boolean {

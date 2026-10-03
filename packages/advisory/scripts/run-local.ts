@@ -1,37 +1,30 @@
 import { loadConfig } from "@chaperone/config";
-import type { ModelProvider } from "../src/provider.js";
-import { MockModelProvider } from "../src/providers/mock.js";
-import { BedrockModelProvider } from "../src/providers/bedrock.js";
-import { runLocalAdvisoryPipeline } from "../src/localRunner.js";
+import {
+  createModelProvider,
+  GroqModelProvider,
+  MockModelProvider,
+  resolveModelId,
+  runLocalAdvisoryPipeline,
+  type ModelProvider,
+} from "../src/index.js";
 
 /**
  * `pnpm advisory:run-local` — the in-process stand-in for the AWS-01 Step
- * Functions pipeline, run against a real (local) DynamoDB. Defaults to
- * `ADVISORY_PROVIDER=mock`: CLAUDE.md's "no working model provider yet...
- * stop short of the one real invocation" means this script must not reach
- * Bedrock by default. `ADVISORY_PROVIDER=bedrock` constructs the real
- * provider for whoever picks this up once Bedrock access clears, but
- * nothing in this phase sets that env var.
+ * Functions pipeline, run against a real (local) DynamoDB. The provider is
+ * `MODEL_PROVIDER` (groq by default, bedrock as a config-only switch back);
+ * `ADVISORY_PROVIDER=mock` is kept for runs that must not touch the network.
+ * The model is `ADVISORY_MODEL_ID`, defaulting to openai/gpt-oss-120b on Groq.
  */
 function resolveProvider(): { provider: ModelProvider; kind: string } {
-  const kind = (process.env.ADVISORY_PROVIDER ?? "mock").toLowerCase();
-
-  if (kind === "mock") {
-    return { provider: new MockModelProvider(), kind };
+  if ((process.env.ADVISORY_PROVIDER ?? "").toLowerCase() === "mock") {
+    return { provider: new MockModelProvider(), kind: "mock" };
   }
-
-  if (kind === "bedrock") {
-    const { advisoryModelId, awsRegion } = loadConfig();
-    if (!advisoryModelId) {
-      throw new Error("ADVISORY_PROVIDER=bedrock requires ADVISORY_MODEL_ID to be set.");
-    }
-    return { provider: new BedrockModelProvider({ modelId: advisoryModelId, region: awsRegion }), kind };
-  }
-
-  throw new Error(
-    `Unknown ADVISORY_PROVIDER "${kind}". Expected "mock" or "bedrock" ` +
-      `(direct Anthropic API backing is not implemented yet — see docs/AWS-BUILDER.md).`,
-  );
+  const { modelProvider, advisoryModelId, groqApiKey, awsRegion } = loadConfig();
+  const modelId = resolveModelId(modelProvider, advisoryModelId, "ADVISORY_MODEL_ID");
+  return {
+    provider: createModelProvider({ kind: modelProvider, modelId, groqApiKey, awsRegion }),
+    kind: `${modelProvider} (${modelId})`,
+  };
 }
 
 async function main(): Promise<void> {
@@ -41,6 +34,9 @@ async function main(): Promise<void> {
   console.log(`advisory:run-local — provider=${kind} household=${householdId}`);
   const result = await runLocalAdvisoryPipeline(householdId, provider);
   console.log(JSON.stringify(result, null, 2));
+  if (provider instanceof GroqModelProvider) {
+    console.log(`groq http attempts: ${provider.httpAttempts} (rate-limited: ${provider.rateLimited})`);
+  }
 
   if (result.errored > 0) {
     process.exitCode = 1;

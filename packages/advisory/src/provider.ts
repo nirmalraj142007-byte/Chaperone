@@ -12,6 +12,15 @@ export interface ModelInvocationRequest {
   maxTokens: number;
   /** Milliseconds this single call may take before the provider must abort and throw `UpstreamTimeoutError`. */
   timeoutMs: number;
+  /**
+   * Tools the model may call, name and description only (the baseline-2 corpus
+   * has no parameter schemas). A provider that supports tool calling declares
+   * them with a permissive object schema and renders any call the model makes
+   * into `text` as `[tool call] name(arguments)`, so a model that acts on a
+   * tool is distinguishable from one that only talks about it. Providers that
+   * don't support tools ignore this.
+   */
+  tools?: readonly { name: string; description: string }[];
 }
 
 export interface ModelInvocationResult {

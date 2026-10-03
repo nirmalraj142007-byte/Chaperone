@@ -169,6 +169,35 @@ pointer to where it can be appealed; document the verification hold next to
 the per-model use-case gate, since a builder who clears one can still be
 surprised by the other; expose a model-access status API.
 
+## Groq (OpenAI-compatible API, `openai/gpt-oss-120b`)
+
+**Used for:** the advisory line and baseline 2, after Bedrock was declined. 136
+chat-completion requests in one day, 134 answered.
+
+**Friction:**
+
+- *A prompt that merely mentions a tool is a 400 unless a tool is declared.*
+  `gpt-oss-120b` tried to call the tool the prompt described, and Groq
+  answered `400 tool_use_failed: "Tool choice is none, but model called a
+  tool"`. The error is accurate and is what led to the fix (declare the tool),
+  but it arrives on the very first request of a plain-text eval, and the cause
+  is the model's behaviour, not the request's (Entry 045).
+- *The free tier's limit is tokens per minute, and it is visible only in
+  headers.* 8,000 tokens a minute for this model, with
+  `x-ratelimit-remaining-tokens` and `reset-tokens` on every response. Pacing
+  from those headers meant 0 of 120 calls were rate-limited, at a cost of 214
+  seconds of waiting (Entry 046). It is good that the headers exist; the limit
+  itself is not on the model listing.
+- *Reasoning tokens count against `max_tokens`.* The hidden reasoning of a
+  gpt-oss model shares the budget with the visible answer, so a small
+  `max_tokens` can return an empty answer. This provider adds headroom and
+  sets `reasoning_effort: low`; nothing in `GET /models` says which models
+  reason.
+
+**Asks:** list per-model rate limits and whether a model reasons in the models
+endpoint; say in the tool-use docs what happens when a model emits a tool call
+and no tools were sent; document whether `max_tokens` includes reasoning.
+
 ## AWS CDK
 
 **Used for:** one stack, the advisory pipeline (DynamoDB Stream, EventBridge

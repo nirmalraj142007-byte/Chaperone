@@ -131,13 +131,13 @@ describe("the rider C gate (semanticDriftRate >= 0.20 && n >= 100)", () => {
     const check = vi.fn(async () => ({ evidence: calls < 3 ? evidence[calls++]! : ("none" as const), evidenceUrl: "https://example.invalid/fixture" }));
     const { report } = await complete({ ...input, checkSignal: check });
     expect(check).toHaveBeenCalledTimes(16);
-    expect(check).toHaveBeenCalledWith("fixture-owner", "fixture-server-004", CRAWL1_AT);
+    expect(check).toHaveBeenCalledWith("fixture-owner", "fixture-server-004", CRAWL1_AT, "2026-10-20T06:00:00.000Z");
     expect(report.riderC).toMatchObject({
       status: "evaluated",
       gateMet: true,
       windowStart: CRAWL1_AT,
       windowEnd: "2026-10-20T06:00:00.000Z",
-      windowEndEnforced: false,
+      windowEndEnforced: true,
       driftedServers: 20,
       checkable: 16,
       unverifiable: 4,

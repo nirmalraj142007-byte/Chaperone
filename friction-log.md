@@ -2373,3 +2373,81 @@ something the package told me was sufficient.
 guide what the minimum sandbox is (`sandbox` flags, whether a separate origin
 is required, whether the host should add a CSP), and mark the sandbox-proxy
 notifications as optional if a same-page host is allowed.
+
+## Entry 044 — 2026-10-03
+
+**Task attempted:** Replace Bedrock with Groq as the model provider, and confirm
+the model ids before using them.
+
+**Steps taken:** Called `GET https://api.groq.com/openai/v1/models` with the
+account's key. Read the ids and context windows. Made one tiny
+`chat/completions` call to `openai/gpt-oss-120b` to see the response shape and
+rate-limit headers.
+
+**Expected versus actual:** Expected a listing and a working OpenAI-shaped
+call. Actual: both worked first time. The listing (11 models) contained
+`openai/gpt-oss-120b` (context 131072) and `openai/gpt-oss-20b`. The response
+carries the answer in `message.content` and the model's hidden reasoning in a
+separate `message.reasoning` field. Response headers showed
+`x-ratelimit-limit-tokens: 8000` and `x-ratelimit-limit-requests: 1000`. Nothing
+in the listing states those limits or says which models reason.
+
+**Severity:** minor. Nothing was blocked; a thin entry on purpose.
+
+**Workaround:** None needed. Recorded here: `openai/gpt-oss-120b` is used for
+both advisory scoring and baseline 2, confirmed present on 2026-10-03.
+
+**Actionable suggestion:** Put per-model rate limits and a "reasons: yes/no"
+flag in the models listing.
+
+## Entry 045 — 2026-10-03
+
+**Task attempted:** Run baseline 2's first real call: a prompt saying "You
+have access to one tool, X, with this description: ..." to `gpt-oss-120b`.
+
+**Steps taken:** Ran `pnpm eval:baseline2 --capture`. The first request
+failed. Reproduced it with a one-off script that sent the same prompt.
+
+**Expected versus actual:** Expected a text reply. Actual: `HTTP 400`,
+`code: tool_use_failed`, `"Tool choice is none, but model called a tool"`. The
+prompt described a tool in prose, the model tried to call it, and because the
+request declared no tools Groq rejected the model's own output. The failure
+was on item 1 of 120, so nothing was lost, but it means a plain-text eval of
+a tool-using model cannot be done as plain text.
+
+**Severity:** major. It blocked the run until the harness changed.
+
+**Workaround:** Declared the tool in the request (`tools` with a permissive
+object schema, `tool_choice: auto`), rendered any tool call the model makes
+into the response text as `[tool call] name(args)`, and, for a malformed call
+that Groq still rejects, returned its `failed_generation` text as the response
+instead of failing the run. Side effect: the tool definition now appears twice
+in the prompt (prose and declared tool). Disclosed in `docs/LIMITATIONS.md`.
+
+**Actionable suggestion:** Either accept a tool call when no tools are sent
+(returning it as text) or say in the tool-use docs that a model may emit one
+anyway and what the 400 means for plain prompts.
+
+## Entry 046 — 2026-10-03
+
+**Task attempted:** Make 120 baseline-2 calls on Groq's free tier without a
+rate-limit failure.
+
+**Steps taken:** Read `x-ratelimit-remaining-tokens` and
+`x-ratelimit-reset-tokens` from each response, and before each request waited
+for the reset if the remaining tokens could not cover an estimate of the next
+call. Also handled `Retry-After` on a 429, though none occurred.
+
+**Expected versus actual:** Expected some 429s. Actual: 0 of 120 requests were
+rate-limited. The cost was 214 seconds of deliberate waiting across the run,
+about 3.5 minutes added to what would otherwise be about two. The tokens limit
+(8,000/min) is the binding one, not the request limit (1,000/day was far off).
+
+**Severity:** minor.
+
+**Workaround:** The pacing itself, in `packages/advisory/src/providers/groq.ts`,
+tested against a loopback server.
+
+**Actionable suggestion:** The headers are what made this easy. Documenting
+that the tokens bucket counts `max_tokens` up front (the provider assumes it
+does and so over-waits slightly) would let a client pace exactly.

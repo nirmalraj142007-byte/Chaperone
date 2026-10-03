@@ -147,7 +147,8 @@ async function main(): Promise<void> {
     taxonomy: { firstCommitAt, workingTreeBlobSha: workingTreeTaxonomyBlob() },
     candidates: await loadCandidates(path.join(REPO_ROOT, "corpus", "candidates.json")),
     scheduled: parseScheduledDates(await readFile(path.join(REPO_ROOT, "CRAWL_DATES.md"), "utf8")),
-    checkSignal: (owner, repo, since) => checkChangelog(owner, repo, since, process.env["GITHUB_TOKEN"]),
+    checkSignal: (owner, repo, since, until) =>
+      checkChangelog(owner, repo, since, process.env["GITHUB_TOKEN"], undefined, until),
     now: new Date(),
   });
 

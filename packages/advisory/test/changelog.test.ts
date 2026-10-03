@@ -18,9 +18,11 @@ interface RouteMap {
 }
 
 /** A real loopback server standing in for api.github.com, matching packages/crawler's real-server test convention. */
-function startGithubServer(routes: RouteMap): Promise<{ url: string; close: () => Promise<void> }> {
+function startGithubServer(routes: RouteMap): Promise<{ url: string; urls: string[]; close: () => Promise<void> }> {
+  const urls: string[] = [];
   return new Promise((resolve) => {
     const server = http.createServer((req, res) => {
+      urls.push(req.url ?? "");
       const url = new URL(req.url ?? "/", "http://localhost");
       if (url.pathname.endsWith("/commits")) {
         res.writeHead(routes.commitsStatus ?? 200, { "content-type": "application/json" });
@@ -38,7 +40,7 @@ function startGithubServer(routes: RouteMap): Promise<{ url: string; close: () =
     });
     server.listen(0, "127.0.0.1", () => {
       const { port } = server.address() as AddressInfo;
-      resolve({ url: `http://127.0.0.1:${port}`, close: () => new Promise((r) => server.close(() => r())) });
+      resolve({ url: `http://127.0.0.1:${port}`, urls, close: () => new Promise((r) => server.close(() => r())) });
     });
   });
 }
@@ -137,5 +139,85 @@ describe("checkChangelog", () => {
   it("never throws, even against an unreachable host", async () => {
     const result = await checkChangelog("o", "r", SINCE, undefined, "http://127.0.0.1:1");
     expect(result).toEqual({ evidence: "none" });
+  });
+});
+
+describe("checkChangelog with a window end (rider C: only signals dated before crawl 2 started)", () => {
+  const UNTIL = "2026-10-20T06:00:00.000Z";
+  const inside = "2026-09-20T00:00:00.000Z";
+  const after = "2026-10-21T00:00:00.000Z";
+
+  it("sends the end of the window to GitHub as `until`", async () => {
+    const server = await startGithubServer({ commits: [] });
+    try {
+      await checkChangelog("o", "r", SINCE, undefined, server.url, UNTIL);
+      expect(server.urls[0]).toContain(`until=${encodeURIComponent(UNTIL)}`);
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("does not count a release published after the window ended", async () => {
+    const server = await startGithubServer({
+      commits: [{ sha: "a", html_url: "https://github.com/o/r/commit/a", commit: { committer: { date: inside } } }],
+      releases: [{ published_at: after, html_url: "https://github.com/o/r/releases/tag/late" }],
+      tags: [],
+    });
+    try {
+      const result = await checkChangelog("o", "r", SINCE, undefined, server.url, UNTIL);
+      expect(result).toEqual({ evidence: "commit-message", evidenceUrl: "https://github.com/o/r/commit/a" });
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("counts a release published inside the window", async () => {
+    const server = await startGithubServer({
+      commits: [{ sha: "a", html_url: "https://github.com/o/r/commit/a", commit: { committer: { date: inside } } }],
+      releases: [{ published_at: inside, html_url: "https://github.com/o/r/releases/tag/ok" }],
+    });
+    try {
+      const result = await checkChangelog("o", "r", SINCE, undefined, server.url, UNTIL);
+      expect(result.evidence).toBe("release");
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("returns 'none' when the only activity is a commit dated after the window ended", async () => {
+    const server = await startGithubServer({
+      commits: [{ sha: "a", html_url: "https://github.com/o/r/commit/a", commit: { committer: { date: after } } }],
+      releases: [{ published_at: after, html_url: "https://github.com/o/r/releases/tag/late" }],
+      tags: [{ name: "late", commit: { sha: "a" } }],
+    });
+    try {
+      expect(await checkChangelog("o", "r", SINCE, undefined, server.url, UNTIL)).toEqual({ evidence: "none" });
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("treats a signal dated exactly at the window end as outside it", async () => {
+    const server = await startGithubServer({
+      commits: [{ sha: "a", html_url: "https://github.com/o/r/commit/a", commit: { committer: { date: UNTIL } } }],
+    });
+    try {
+      expect(await checkChangelog("o", "r", SINCE, undefined, server.url, UNTIL)).toEqual({ evidence: "none" });
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("without a window end, behaves as before (no until param, late signals count)", async () => {
+    const server = await startGithubServer({
+      commits: [{ sha: "a", html_url: "https://github.com/o/r/commit/a", commit: { committer: { date: after } } }],
+    });
+    try {
+      const result = await checkChangelog("o", "r", SINCE, undefined, server.url);
+      expect(result.evidence).toBe("commit-message");
+      expect(server.urls[0]).not.toContain("until=");
+    } finally {
+      await server.close();
+    }
   });
 });

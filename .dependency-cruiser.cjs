@@ -9,7 +9,7 @@ module.exports = {
         "No LLM or model-runtime client may ever enter its import graph.",
       from: { path: "^packages/policy" },
       to: {
-        path: "client-bedrock-runtime|@anthropic-ai|^openai|@aws-sdk/client-sagemaker",
+        path: "client-bedrock-runtime|@anthropic-ai|^openai|^groq|groq-sdk|@aws-sdk/client-sagemaker",
       },
     },
     {

@@ -68,6 +68,14 @@ const envSchema = z.object({
   // is not decided"), so neither has a default here.
   ADVISORY_MODEL_ID: z.string().min(1).optional(),
   BASELINE_MODEL_ID: z.string().min(1).optional(),
+  // Which ModelProvider backs both uses. Bedrock access was declined for this
+  // account (docs/LIMITATIONS.md), so the default is Groq; BedrockModelProvider
+  // is untouched and "bedrock" is a config-only switch back.
+  MODEL_PROVIDER: z.enum(["groq", "bedrock"]).default("groq"),
+  // A secret: never logged (packages/logger redacts /key/), never in the template.
+  // Optional here because only the model-calling scripts need it; they fail with
+  // a ConfigError at provider construction, not at gateway boot.
+  GROQ_API_KEY: z.string().min(1).optional(),
   GITHUB_TOKEN: z.string().min(1).optional(),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace"]).default("info"),
   PORT: z.coerce.number().int().positive().default(3000),
@@ -111,6 +119,8 @@ export interface Config {
   upstreams: UpstreamConfig[];
   advisoryModelId?: string;
   baselineModelId?: string;
+  modelProvider: "groq" | "bedrock";
+  groqApiKey?: string;
   githubToken?: string;
   logLevel: string;
   port: number;
@@ -128,8 +138,10 @@ const EXPECTED_SHAPE: Record<string, string> = {
   DDB_TABLE_PREFIX: 'string (default "chaperone")',
   HOUSEHOLD_ID: 'string (default "household-demo")',
   CHAPERONE_UPSTREAMS: "JSON array of {id: string, url: string, label: string}",
-  ADVISORY_MODEL_ID: "string, optional (Bedrock model/inference-profile id for advisory diff scoring)",
-  BASELINE_MODEL_ID: "string, optional (Bedrock model/inference-profile id for eval baseline 2)",
+  ADVISORY_MODEL_ID: "string, optional (model id for advisory diff scoring, e.g. openai/gpt-oss-120b on Groq)",
+  BASELINE_MODEL_ID: "string, optional (model id for eval baseline 2, e.g. openai/gpt-oss-120b on Groq)",
+  MODEL_PROVIDER: 'one of "groq" | "bedrock" (default "groq")',
+  GROQ_API_KEY: "string, optional (only the model-calling scripts need it)",
   GITHUB_TOKEN: "string, optional",
   LOG_LEVEL: 'one of "fatal" | "error" | "warn" | "info" | "debug" | "trace" (default "info")',
   PORT: "positive integer (default 3000)",
@@ -169,6 +181,7 @@ export function loadConfig(): Config {
     ddbTablePrefix: env.DDB_TABLE_PREFIX,
     householdId: env.HOUSEHOLD_ID,
     upstreams: env.CHAPERONE_UPSTREAMS,
+    modelProvider: env.MODEL_PROVIDER,
     logLevel: env.LOG_LEVEL,
     port: env.PORT,
     originAllowlist: env.GATEWAY_ORIGIN_ALLOWLIST,
@@ -180,6 +193,7 @@ export function loadConfig(): Config {
     ...(env.DDB_ENDPOINT !== undefined ? { ddbEndpoint: env.DDB_ENDPOINT } : {}),
     ...(env.ADVISORY_MODEL_ID !== undefined ? { advisoryModelId: env.ADVISORY_MODEL_ID } : {}),
     ...(env.BASELINE_MODEL_ID !== undefined ? { baselineModelId: env.BASELINE_MODEL_ID } : {}),
+    ...(env.GROQ_API_KEY !== undefined ? { groqApiKey: env.GROQ_API_KEY } : {}),
     ...(env.GITHUB_TOKEN !== undefined ? { githubToken: env.GITHUB_TOKEN } : {}),
   };
 

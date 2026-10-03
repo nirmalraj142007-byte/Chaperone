@@ -4,7 +4,7 @@
  * IAM role to audit. This test is the audit CLAUDE.md's non-negotiable #6
  * (the ledger is append-only, no UpdateItem/DeleteItem, IAM denies them in
  * production) and this phase's own instruction ("assert in a test that the
- * Bedrock role's action list contains no write verb against the
+ * model-calling role's action list contains no write verb against the
  * ledger-event, pin, or quarantine tables") actually have behind them,
  * rather than being claims with nothing checking them.
  */
@@ -47,10 +47,10 @@ function tableArnFragment(logicalName: string): string {
 }
 
 describe("infra/iam-advisory.json", () => {
-  it("parses as valid JSON with at least a gateway role and a Bedrock role", () => {
+  it("parses as valid JSON with at least a gateway role and a model-calling role", () => {
     const policy = loadPolicy();
     expect(policy.roles.length).toBeGreaterThanOrEqual(2);
-    expect(policy.roles.map((r) => r.name)).toContain("chaperone-bedrock-advisory-role");
+    expect(policy.roles.map((r) => r.name)).toContain("chaperone-model-advisory-role");
   });
 
   it("every table name referenced anywhere in the policy is a real logical table name, current prefix", () => {
@@ -68,21 +68,21 @@ describe("infra/iam-advisory.json", () => {
     }
   });
 
-  it("the Bedrock role's action list contains no DynamoDB write verb at all", () => {
+  it("the model-calling role's action list contains no DynamoDB write verb at all", () => {
     const policy = loadPolicy();
-    const bedrockRole = policy.roles.find((r) => r.name === "chaperone-bedrock-advisory-role");
-    expect(bedrockRole).toBeDefined();
-    const allActions = bedrockRole!.statements.flatMap((s) => s.actions);
+    const modelRole = policy.roles.find((r) => r.name === "chaperone-model-advisory-role");
+    expect(modelRole).toBeDefined();
+    const allActions = modelRole!.statements.flatMap((s) => s.actions);
     for (const verb of DYNAMODB_WRITE_VERBS) {
       expect(allActions).not.toContain(verb);
     }
   });
 
-  it("the Bedrock role's action list contains no write verb against ledger-event, pin, or quarantine specifically", () => {
+  it("the model-calling role's action list contains no write verb against ledger-event, pin, or quarantine specifically", () => {
     const policy = loadPolicy();
-    const bedrockRole = policy.roles.find((r) => r.name === "chaperone-bedrock-advisory-role");
+    const modelRole = policy.roles.find((r) => r.name === "chaperone-model-advisory-role");
     const protectedTables = ["ledger-event", "pin", "quarantine"];
-    for (const statement of bedrockRole!.statements) {
+    for (const statement of modelRole!.statements) {
       const touchesProtectedTable = statement.resources.some((resource) =>
         protectedTables.some((t) => resource.includes(tableArnFragment(t))),
       );
@@ -95,12 +95,39 @@ describe("infra/iam-advisory.json", () => {
     }
   });
 
-  it("the Bedrock role has no statement naming ledger-event or pin at all — not even read access", () => {
+  it("the model-calling role has no statement naming ledger-event or pin at all — not even read access", () => {
     const policy = loadPolicy();
-    const bedrockRole = policy.roles.find((r) => r.name === "chaperone-bedrock-advisory-role");
-    const allResources = bedrockRole!.statements.flatMap((s) => s.resources).join(" ");
+    const modelRole = policy.roles.find((r) => r.name === "chaperone-model-advisory-role");
+    const allResources = modelRole!.statements.flatMap((s) => s.resources).join(" ");
     expect(allResources).not.toContain(tableArnFragment("ledger-event"));
     expect(allResources).not.toContain(tableArnFragment("pin"));
+  });
+
+  it("the model-calling role can read exactly one secret and call no Bedrock action", () => {
+    const policy = loadPolicy();
+    const modelRole = policy.roles.find((r) => r.name === "chaperone-model-advisory-role");
+    const actions = modelRole!.statements.flatMap((s) => s.actions);
+    expect(actions.filter((a) => a.startsWith("bedrock:"))).toEqual([]);
+    const secretStatements = modelRole!.statements.filter((s) => s.actions.some((a) => a.startsWith("secretsmanager:")));
+    expect(secretStatements).toHaveLength(1);
+    expect(secretStatements[0]!.actions.sort()).toEqual(["secretsmanager:DescribeSecret", "secretsmanager:GetSecretValue"]);
+    expect(secretStatements[0]!.resources).toEqual(["arn:aws:secretsmanager:*:*:secret:chaperone/groq-api-key-*"]);
+  });
+
+  it("the changelog-check role has no write verb, no secret and no model access, and reads only quarantine and pin", () => {
+    const policy = loadPolicy();
+    const role = policy.roles.find((r) => r.name === "chaperone-changelog-check-role");
+    expect(role).toBeDefined();
+    const actions = role!.statements.flatMap((s) => s.actions);
+    for (const verb of DYNAMODB_WRITE_VERBS) {
+      expect(actions).not.toContain(verb);
+    }
+    expect(actions.filter((a) => a.startsWith("secretsmanager:") || a.startsWith("bedrock:"))).toEqual([]);
+    const resources = role!.statements.flatMap((s) => s.resources).join(" ");
+    expect(resources).not.toContain(tableArnFragment("ledger-event"));
+    expect(resources).not.toContain(tableArnFragment("advisory"));
+    expect(resources).toContain(tableArnFragment("quarantine"));
+    expect(resources).toContain(tableArnFragment("pin"));
   });
 
   it("the gateway role's ledger-event statement grants no write verb beyond PutItem — no UpdateItem, no DeleteItem, no BatchWriteItem", () => {

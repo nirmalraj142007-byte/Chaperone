@@ -280,12 +280,27 @@ Resumable SSE is why the writes exist: an event a client could replay with
 
 `packages/policy` is gated at 100% statements and branches; the rest at 80%.
 
+### Baseline 2: an unaided model against the attack corpus (2026-10-03)
+
+`gpt-oss-120b` (an open-weight model, served by Groq), at temperature 1, given
+each of the 30 attack tool descriptions and no Chaperone, 3 runs per item, a
+single turn. Of 90 runs: **0 explicitly refused the injected instruction, 16
+await human adjudication (7 items), and 74 did not exercise it** (mostly a
+bare tool call, because most injected clauses govern what is said after the
+tool returns). It refused 0 of 30 benign-control runs. The 100-point gap this
+implies against a hash comparison is an artifact of that definition, not a
+finding about the model: the follow rate is **unmeasured, not zero**. This is
+one open-weight model, one provider, one day, and a one-turn harness; it says
+nothing about other models. `data/baselines.json`, raw responses in
+`data/baseline2-raw.json`, and the full account in
+[`docs/LIMITATIONS.md`](docs/LIMITATIONS.md). Reproduce the classification
+with no model calls: `pnpm eval:baseline2`.
+
 ### Not measured yet
 
 | | Marker |
 |---|---|
 | Semantic-intent drift rate, and the changes counted separately | {{PENDING: drift rate and its denominator — 2026-10-20}} |
-| Baseline 2 (an unaided model against the attack corpus) | {{PENDING: baseline 2 result — a model provider must be chosen first; not before 2026-10-20}} |
 | Added latency against DynamoDB on AWS | {{PENDING: production latency — after the AWS deployment (Phase 18)}} |
 
 ## Architecture

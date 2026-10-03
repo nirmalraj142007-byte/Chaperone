@@ -6,6 +6,8 @@ export * from "./retry.js";
 export * from "./provider.js";
 export * from "./providers/mock.js";
 export * from "./providers/bedrock.js";
+export * from "./providers/groq.js";
+export * from "./providers/factory.js";
 export * from "./scoreDiff.js";
 export * from "./env.js";
 export * from "./githubClient.js";

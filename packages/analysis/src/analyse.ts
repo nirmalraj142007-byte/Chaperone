@@ -95,7 +95,7 @@ export interface RiderCReport {
   predictedShareBelow: number;
   windowStart: string | null;
   windowEnd: string | null;
-  windowEndEnforced: false;
+  windowEndEnforced: true;
   checkedAt: string | null;
   driftedServers: number | null;
   checkable: number | null;
@@ -432,7 +432,7 @@ export async function analyseDrift(input: AnalyseInput): Promise<AnalyseResult> 
     predictedShareBelow: 0.3,
     windowStart: crawl1.startedAt,
     windowEnd: later.startedAt,
-    windowEndEnforced: false,
+    windowEndEnforced: true,
     checkedAt: null,
     driftedServers: null,
     checkable: null,
@@ -449,7 +449,7 @@ export async function analyseDrift(input: AnalyseInput): Promise<AnalyseResult> 
     if (input.checkSignal === null) {
       throw new AnalysisError("rider C's gate is met but no changelog checker was supplied; rider C cannot be omitted once its gate is met", {});
     }
-    const evaluation = await evaluateRiderC([...driftedSet].sort(), input.candidates, crawl1.startedAt, input.checkSignal);
+    const evaluation = await evaluateRiderC([...driftedSet].sort(), input.candidates, crawl1.startedAt, later.startedAt, input.checkSignal);
     riderC = {
       ...riderC,
       status: "evaluated",

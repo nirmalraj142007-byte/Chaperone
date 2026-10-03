@@ -10,6 +10,13 @@ export interface Advisory {
   modelId: string;
   generatedAt: string;
   promptSha: string;
+  /**
+   * From the changelog-check branch (no model): did the vendor leave any public
+   * trace between the pin and the change? Absent when that branch could not
+   * look, which is not the same as `none`.
+   */
+  changelogEvidence?: "release" | "tag" | "commit-message" | "none";
+  changelogEvidenceUrl?: string;
 }
 
 function partitionKey(quarantineId: string): string {

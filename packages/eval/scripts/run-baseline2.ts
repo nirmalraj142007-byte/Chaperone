@@ -1,40 +1,57 @@
 /**
- * `pnpm --filter @chaperone/eval exec tsx scripts/run-baseline2.ts` — the
- * real baseline-2 run: the full attack corpus (30 items) plus all 10 benign
- * controls, 3 runs per item, against `BASELINE_MODEL_ID` via Bedrock's
- * Converse API (no model is chosen yet — see docs/LIMITATIONS.md, "The model
- * provider is not decided"). Requires `BASELINE_MODEL_ID` and `AWS_REGION` to be
- * set (see .env.example) and a Bedrock-reachable AWS credential in the
- * environment already — this script never constructs or prints one.
+ * `pnpm eval:baseline2` — baseline 2: the full attack corpus (30 items) plus
+ * all 10 benign controls, 3 runs per item, against `BASELINE_MODEL_ID` (default
+ * openai/gpt-oss-120b, served by Groq; `MODEL_PROVIDER=bedrock` switches back).
  *
- * Writes two files, and only these two:
- *   - data/baseline2-adjudication.json — every `ambiguous` verdict from
- *     either half of the run, with its full raw response text, for human
- *     review. This script never decides an ambiguous case itself; it only
- *     ever appends new entries with `humanDecision: null`. Existing
- *     entries (any prior human decisions) are preserved.
- *   - data/baselines.json — regenerated via buildBaselineReport with the
- *     real baseline2 numbers this run measured, replacing the
- *     null/"pending" placeholders. Overwrites the file `pnpm eval:report`
- *     also writes; this script is the one to run last.
+ * Two modes, because a model call is the expensive part and classification is
+ * not:
+ *   --capture   call the model for every prompt that has no stored response
+ *               yet, writing each response to data/baseline2-raw.json the
+ *               moment it arrives. Also resumes a run that died part-way.
+ *   (default)   replay data/baseline2-raw.json. Zero model calls. Reclassifies
+ *               and rebuilds the report, so the classifier can be revisited
+ *               against the real responses and anyone can re-derive the number.
  *
- * Total model calls this makes: (30 attack items + 10 control items) * 3
- * runs = 120 Converse calls to BASELINE_MODEL_ID, plus whatever
- * `withRetry` adds on a throttle/timeout (retried calls only, not a
- * multiplier on every call).
+ * Writes:
+ *   - data/baseline2-raw.json — the model's responses, verbatim.
+ *   - data/baseline2-adjudication.json — every `ambiguous` verdict with its raw
+ *     text, for a human. This script never decides one. A decision already
+ *     recorded in that file survives a re-run; an undecided entry is rebuilt
+ *     from the current classifier, so a better classifier shrinks the list
+ *     rather than leaving stale entries behind.
+ *   - data/baselines.json — regenerated with the measured baseline 2 numbers.
+ *
+ * Total model calls with --capture: (30 attacks + 10 controls) * 3 runs = 120,
+ * plus any Groq retries after a 429 (counted and printed as "http attempts").
  */
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { loadConfig } from "@chaperone/config";
-import { BedrockModelProvider } from "@chaperone/advisory";
-import { runBaseline2Corpus, type Baseline2RawResponseListener } from "../src/baseline-model.js";
-import { runBaseline2ControlCorpus } from "../src/baseline2Controls.js";
-import { classifyBaseline2Response, classifyBaseline2ControlResponse } from "../src/baseline2Classify.js";
+import { createModelProvider, GroqModelProvider, resolveModelId, type ModelProvider } from "@chaperone/advisory";
+import { buildBaseline2Prompt, runBaseline2Corpus, type Baseline2RawResponseListener } from "../src/baseline-model.js";
+import { buildBaseline2ControlPrompt, runBaseline2ControlCorpus } from "../src/baseline2Controls.js";
+import { classifyBaseline2ControlResponse, judgeBaseline2Response } from "../src/baseline2Classify.js";
+import {
+  BASELINE2_RAW_FILE,
+  CachedModelProvider,
+  loadRawFile,
+  promptSha,
+  saveRawFile,
+  type Baseline2RawFile,
+} from "../src/baseline2Cache.js";
 import { loadAttackCorpus } from "../src/corpus.js";
 import { buildBaselineReport, summarizeBaseline2ForReport } from "../src/report.js";
 
 const ADJUDICATION_PATH = path.join("data", "baseline2-adjudication.json");
 const BASELINES_PATH = path.join("data", "baselines.json");
+
+/**
+ * Sampling temperature for the baseline. Baseline 2 asks what an unaided model
+ * does, and a deployed assistant samples. Groq's default for this model is 1;
+ * at 0 the three runs per item would be near-copies and "spread across runs"
+ * would measure nothing. Overridable with BASELINE_TEMPERATURE.
+ */
+const DEFAULT_BASELINE_TEMPERATURE = 1;
 
 interface AdjudicationEntry {
   itemId: string;
@@ -44,7 +61,9 @@ interface AdjudicationEntry {
   rawResponseText: string;
   modelId: string;
   capturedAt: string;
-  humanDecision: null;
+  /** Why the classifier could not place it, so the reviewer knows what to look at. */
+  classifierNote?: string;
+  humanDecision: unknown;
 }
 
 interface AdjudicationFile {
@@ -54,52 +73,105 @@ interface AdjudicationFile {
 }
 
 async function loadAdjudicationFile(): Promise<AdjudicationFile> {
-  const raw = await readFile(ADJUDICATION_PATH, "utf8");
-  return JSON.parse(raw) as AdjudicationFile;
+  return JSON.parse(await readFile(ADJUDICATION_PATH, "utf8")) as AdjudicationFile;
+}
+
+function adjudicationKey(e: { itemId: string; kind: string; runIndex: number }): string {
+  return `${e.kind}:${e.itemId}:${e.runIndex}`;
 }
 
 async function main(): Promise<void> {
-  const { awsRegion, baselineModelId } = loadConfig();
-  if (!baselineModelId) {
-    throw new Error("BASELINE_MODEL_ID must be set to run baseline 2 for real — see .env.example.");
+  const capture = process.argv.includes("--capture");
+  const config = loadConfig();
+  const modelId = resolveModelId(config.modelProvider, config.baselineModelId, "BASELINE_MODEL_ID");
+  const temperature = Number(process.env["BASELINE_TEMPERATURE"] ?? DEFAULT_BASELINE_TEMPERATURE);
+
+  const corpus = loadAttackCorpus();
+  const promptIndex = new Map<string, { itemId: string; kind: "attack" | "control" }>();
+  for (const item of corpus.attacks) {
+    promptIndex.set(promptSha(buildBaseline2Prompt(item)), { itemId: item.id, kind: "attack" });
+  }
+  for (const item of corpus.controls) {
+    promptIndex.set(promptSha(buildBaseline2ControlPrompt(item)), { itemId: item.id, kind: "control" });
   }
 
-  const provider = new BedrockModelProvider({ modelId: baselineModelId, region: awsRegion });
-  const corpus = loadAttackCorpus();
-  const capturedAt = new Date().toISOString();
+  const existing = loadRawFile(BASELINE2_RAW_FILE);
+  if (existing && existing.modelId !== modelId) {
+    throw new Error(
+      `${BASELINE2_RAW_FILE} holds responses from ${existing.modelId}, not ${modelId}. Move it aside to start a new capture.`,
+    );
+  }
+  if (!existing && !capture) {
+    throw new Error(`${BASELINE2_RAW_FILE} does not exist yet. Run with --capture to call the model.`);
+  }
+  const file: Baseline2RawFile = existing ?? {
+    schemaVersion: 1,
+    description:
+      "Verbatim model responses for baseline 2 (data/baselines.json), one per (item, run). Re-classifiable with `pnpm eval:baseline2` with no model calls.",
+    provider: config.modelProvider,
+    modelId,
+    temperature,
+    entries: [],
+  };
 
-  const newAdjudications: AdjudicationEntry[] = [];
+  let inner: ModelProvider | undefined;
+  if (capture) {
+    inner = createModelProvider({
+      kind: config.modelProvider,
+      modelId,
+      groqApiKey: config.groqApiKey,
+      awsRegion: config.awsRegion,
+      groq: { temperature },
+    });
+  }
+  const provider = new CachedModelProvider({
+    ...(inner ? { inner } : {}),
+    file,
+    promptIndex,
+    onNewEntry: (f) => {
+      saveRawFile(BASELINE2_RAW_FILE, f);
+      process.stdout.write(`\r${f.entries.length}/${(corpus.attacks.length + corpus.controls.length) * 3} responses stored`);
+    },
+  });
+
+  const capturedAt = new Date().toISOString();
+  const found: AdjudicationEntry[] = [];
+  const attackById = new Map(corpus.attacks.map((a) => [a.id, a] as const));
   const captureAmbiguous =
     (kind: "attack" | "control"): Baseline2RawResponseListener =>
     (info) => {
       if (info.verdict !== "ambiguous") {
         return;
       }
-      newAdjudications.push({
+      const stored = file.entries.find((e) => e.itemId === info.itemId && e.kind === kind && e.runIndex === info.runIndex);
+      found.push({
         itemId: info.itemId,
         kind,
         runIndex: info.runIndex,
         verdict: "ambiguous",
         rawResponseText: info.text,
-        modelId: baselineModelId,
-        capturedAt,
+        modelId,
+        capturedAt: stored?.capturedAt ?? capturedAt,
+        classifierNote:
+          kind === "attack"
+            ? judgeBaseline2Response(attackById.get(info.itemId)!, info.text).note
+            : "empty response from a benign control",
         humanDecision: null,
       });
     };
 
   console.log(
-    `run-baseline2 — model=${baselineModelId} region=${awsRegion} attacks=${corpus.attacks.length} controls=${corpus.controls.length}`,
+    `run-baseline2 — mode=${capture ? "capture" : "replay"} provider=${config.modelProvider} model=${modelId} temperature=${file.temperature} ` +
+      `attacks=${corpus.attacks.length} controls=${corpus.controls.length}`,
   );
 
   const attackSummaries = await runBaseline2Corpus(
     provider,
     corpus.attacks,
-    classifyBaseline2Response,
+    (item, text) => judgeBaseline2Response(item, text).verdict,
     undefined,
     captureAmbiguous("attack"),
   );
-  console.log(`attack corpus scored: ${attackSummaries.length} items`);
-
   const controlSummaries = await runBaseline2ControlCorpus(
     provider,
     corpus.controls,
@@ -107,32 +179,41 @@ async function main(): Promise<void> {
     undefined,
     captureAmbiguous("control"),
   );
-  console.log(`benign controls scored: ${controlSummaries.length} items`);
+  console.log(`\nattack items scored: ${attackSummaries.length}; control items scored: ${controlSummaries.length}`);
+  console.log(`model calls this run: ${provider.liveCalls} live, ${provider.cacheHits} replayed from ${BASELINE2_RAW_FILE}`);
+  if (inner instanceof GroqModelProvider) {
+    console.log(
+      `groq http attempts: ${inner.httpAttempts} (429 responses: ${inner.rateLimited}, time spent waiting out limits: ${(inner.waitedMs / 1000).toFixed(0)}s)`,
+    );
+  }
 
   const adjudicationFile = await loadAdjudicationFile();
-  adjudicationFile.adjudications.push(...newAdjudications);
+  const decided = new Map(
+    adjudicationFile.adjudications.filter((a) => a.humanDecision !== null).map((a) => [adjudicationKey(a), a] as const),
+  );
+  adjudicationFile.adjudications = found.map((entry) => decided.get(adjudicationKey(entry)) ?? entry);
   await writeFile(ADJUDICATION_PATH, `${JSON.stringify(adjudicationFile, null, 2)}\n`, "utf8");
-  console.log(`wrote ${ADJUDICATION_PATH} — ${newAdjudications.length} new ambiguous case(s) for human review`);
+  console.log(`wrote ${ADJUDICATION_PATH} — ${found.length} ambiguous run(s) for human review`);
 
-  const realBaseline2 = summarizeBaseline2ForReport(attackSummaries, controlSummaries, baselineModelId);
+  const realBaseline2 = summarizeBaseline2ForReport(attackSummaries, controlSummaries, modelId, {
+    provider: config.modelProvider,
+    temperature: file.temperature,
+  });
   const report = buildBaselineReport(corpus, () => new Date(), realBaseline2);
   await writeFile(BASELINES_PATH, `${JSON.stringify(report, null, 2)}\n`, "utf8");
   console.log(`wrote ${BASELINES_PATH}`);
 
+  const pct = (n: number): string => `${(n * 100).toFixed(1)}%`;
   console.log(
-    `baseline 2 (${baselineModelId}) refusal rate: ${(realBaseline2.detectionRate * 100).toFixed(1)}% ` +
-      `(per-run: ${realBaseline2.perRunRefusalRate.map((r) => `${(r * 100).toFixed(1)}%`).join(", ")}), ` +
-      `false-positive rate on benign controls: ${(realBaseline2.falsePositiveRate * 100).toFixed(1)}%, ` +
-      `delta vs Chaperone's structural 100% catch rate: ${(report.delta! * 100).toFixed(1)} points`,
+    `baseline 2 (${modelId}, ${config.modelProvider}): refused ${pct(realBaseline2.detectionRate)} of attack runs ` +
+      `(per-run: ${realBaseline2.perRunRefusalRate.map(pct).join(", ")}); of ${realBaseline2.attackRuns} attack runs: ` +
+      `${realBaseline2.followedRuns} followed, ${realBaseline2.ambiguousRuns} ambiguous (awaiting adjudication), ` +
+      `${realBaseline2.notExercisedRuns} not exercised; ` +
+      `refused ${pct(realBaseline2.falsePositiveRate)} of benign-control runs, delta ${(report.delta! * 100).toFixed(1)} points`,
   );
-  if (newAdjudications.length > 0) {
-    console.log(
-      `${newAdjudications.length} ambiguous case(s) await human review in ${ADJUDICATION_PATH} before these numbers should be treated as final.`,
-    );
-  }
 }
 
 main().catch((e: unknown) => {
-  console.error("run-baseline2 failed —", e instanceof Error ? e.stack : e);
+  console.error("\nrun-baseline2 failed —", e instanceof Error ? e.stack : e);
   process.exitCode = 1;
 });

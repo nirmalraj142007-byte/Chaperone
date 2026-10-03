@@ -1,6 +1,6 @@
 # AWS Builder — the advisory pipeline
 
-Phase 12, completed in a later Phase 12/13 session. Before Phase 12, `putAdvisory`
+Phase 12, completed in a later Phase 12/13 session, and moved onto Groq on 2026-10-03. Before Phase 12, `putAdvisory`
 existed in `packages/ledger` (the storage shape) but nothing in the repo ever
 called it — no producer. Phase 12's first session built that producer:
 everything that turns one quarantined tool's before/after description into
@@ -109,30 +109,64 @@ not recalled from training data:
   `ValidationException`, `AccessDeniedException`, `ResourceNotFoundException`,
   `ModelErrorException`.
 
-## Model choice: PENDING (provider not decided)
+## Model choice: Groq, `openai/gpt-oss-120b`
 
-**Status as of 2026-09-24: no provider or model is chosen for either use.**
-An earlier version of this section named Amazon Nova Lite and Nova Pro on
-Bedrock as decided defaults. That was a working assumption made while
-Bedrock access looked recoverable, and it is withdrawn: Bedrock access for
-this account was declined (see `docs/LIMITATIONS.md`, "The model provider is
-not decided", and friction-log Entries 037 and 038).
-
-Two separate uses still want a model, and they are still separate knobs, so
-the eventual choice can differ between them:
+Bedrock access for this account was declined (`docs/LIMITATIONS.md`, friction-log
+Entries 037 and 038), so both uses run on **`openai/gpt-oss-120b` served by
+Groq**, an open-weight model, through `GroqModelProvider`
+(`packages/advisory/src/providers/groq.ts`). `MODEL_PROVIDER=groq|bedrock`
+chooses (default `groq`); `BedrockModelProvider` is untouched.
 
 | Use | Env var | Model |
 |---|---|---|
-| Advisory diff scoring (`scoreDiff`) | `ADVISORY_MODEL_ID` | not chosen |
-| Eval baseline 2 (`packages/eval/src/baseline-model.ts`) | `BASELINE_MODEL_ID` | not chosen |
+| Advisory diff scoring (`scoreDiff`) | `ADVISORY_MODEL_ID` | default `openai/gpt-oss-120b` |
+| Eval baseline 2 (`packages/eval/src/baseline-model.ts`) | `BASELINE_MODEL_ID` | default `openai/gpt-oss-120b` |
 
-Nothing in this repo has ever produced a model-written advisory or a
-baseline-2 number. The `ModelProvider` interface described above is the seam
-a chosen provider plugs into; `BedrockModelProvider` is written against the
-Bedrock Converse API and unit-tested at the SDK boundary, and has never made
-a successful live call.
+The id was confirmed against Groq's live models endpoint on 2026-10-03. The
+advisory model stayed on gpt-oss-120b: across 12 varied diffs it returned
+valid JSON on the first attempt every time (0 of 12 parse failures), so there
+was no reason to switch to a smaller model.
 
-## Bedrock model availability (CLAUDE.md's separate verification rule)
+**The provider** is plain `fetch` against the OpenAI-compatible endpoint, not
+`groq-sdk`: it is one POST, the rate-limit handling has to be ours either way,
+and it avoids a dependency. `pnpm depcruise` forbids `groq`/`groq-sdk` in
+`packages/policy` regardless. It paces itself from Groq's
+`x-ratelimit-remaining-tokens` / `reset-tokens` headers (the free tier showed
+8,000 tokens per minute for this model), honours `Retry-After` on a 429, and
+retries a 5xx, so a rate limit costs time, not a failed run. Past a
+configurable wait budget it throws `RateLimitError`; the Lambda sets a short
+one, the eval harness a five-minute one. Reasoning tokens count against
+`max_tokens`, so the provider adds 512 tokens of headroom and sets
+`reasoning_effort: low`.
+
+## Real runs (2026-10-03)
+
+```
+$ pnpm advisory:live-check          # 12 diffs: 6 frozen-corpus pairs, 6 hand-written
+12 diffs, 12 model calls, first-attempt parse failures: 0/12 (0.0%)
+$ pnpm advisory:run-local           # against DynamoDB Local, the demo mutation
+{ "candidates": 1, "scored": 1, ... }
+```
+
+The row `advisory:run-local` wrote (the `advisory` table, in `ddb-dump.json`):
+
+```json
+{
+  "quarantineId": "01M40W5S1MFY8Y7KGXB9Z5XP0J",
+  "summary": "The tool now also looks at your household calendar for the next week and tells you about any events, which it didn't do before.",
+  "score": 45,
+  "promptSha": "6f824b90eba361700af72671af6c2c8e5d2d20a27ea85606dec8993d76bb7d02",
+  "modelId": "openai/gpt-oss-120b",
+  "generatedAt": "2026-10-03T12:35:25.233Z"
+}
+```
+
+Per-diff output, including a prompt injection aimed at the advisory model
+itself (it scored 80, so it was not talked into 0), is in
+`data/advisory-live-check.json`. Baseline 2's real run is described in
+`docs/LIMITATIONS.md`.
+
+## Bedrock model availability (historical; not used)
 
 **Attempted this phase, blocked on a different gate than expected.** A
 `ConverseCommand` call to both `us.amazon.nova-lite-v1:0` and
@@ -241,20 +275,30 @@ section used to describe:
    ▼
  Step Functions (chaperone-advisory-pipeline, STANDARD)
    │
-   ├─ ScoreAdvisoryTask (Lambda: chaperone-advisory-score)
-   │    getQuarantine(householdId, quarantineId) -> scoreDiff() -> Bedrock
-   │    IAM: bedrock:Converse/InvokeModel + GetItem/Query on
-   │    chaperone-quarantine ONLY. Zero DynamoDB write verbs anywhere on
-   │    this role — verified by packages/ledger/test/iam-advisory.test.ts
-   │    against infra/iam-advisory.json's "chaperone-bedrock-advisory-role".
+   ├─ Parallel: ScoreAndCheckChangelog   (the two branches run at once)
+   │    ├─ ScoreAdvisoryTask (Lambda: chaperone-advisory-score)
+   │    │    getQuarantine -> scoreDiff() -> Groq (openai/gpt-oss-120b)
+   │    │    key read from Secrets Manager at runtime, by name, never in
+   │    │    the template. IAM: GetSecretValue on that ONE secret +
+   │    │    GetItem/Query on chaperone-quarantine. Zero DynamoDB write
+   │    │    verbs — packages/ledger/test/iam-advisory.test.ts, against
+   │    │    infra/iam-advisory.json's "chaperone-model-advisory-role".
+   │    └─ ChangelogCheckTask (Lambda: chaperone-advisory-changelog) — NO MODEL
+   │         quarantine + the pin it replaces -> checkChangelog(pin date ->
+   │         detection date) -> release | tag | commit-message | none, or
+   │         `unresolved` when the upstream has no repo in UPSTREAM_REPOS
+   │         (never `none`: "could not look" is not "said nothing").
+   │         IAM: GetItem on quarantine and pin only. A Catch turns a
+   │         Lambda error into `unresolved` so it cannot lose the score.
    │
-   ├─ Choice: $.status == "scored"?
+   ├─ Choice: $[0].status == "scored"?
    │    no  -> Succeed (AdvisoryUnavailable) — never a pipeline failure,
    │           matches scoreDiff's own "caller renders without one" contract
    │    yes ↓
    │
    └─ WriteAdvisoryTask (Lambda: chaperone-advisory-write)
-        getAdvisory() idempotency check, then putAdvisory()
+        input is the joined [score, changelog]; getAdvisory() idempotency
+        check, then putAdvisory() with `changelogEvidence` when checked
         IAM: GetItem/PutItem on chaperone-advisory ONLY — no Bedrock
         permission, no ledger-event/pin access, no quarantine access.
         infra/iam-advisory.json's new "chaperone-advisory-writer-role".
@@ -313,8 +357,10 @@ scope) imports these two tables cross-stack or the reverse.
 
 ## Other remaining TODOs (explicit, not silently deferred)
 
-1. **Wiring `checkChangelog` into a real caller** once `packages/analysis`
-   exists (see above).
+1. ~~Wiring `checkChangelog` into a real caller.~~ Done twice: rider C
+   (`packages/analysis`, with a window end) and the pipeline's changelog
+   branch above. Not wired into `localRunner.ts` (a quarantine carries no
+   repo); the pipeline branch gets it from `UPSTREAM_REPOS`.
 2. **A direct (non-Bedrock) Anthropic provider.** The interface
    (`provider.ts`) is already shaped for it; no implementation exists yet
    because nothing in this phase's scope calls for one. Claude Haiku 4.5

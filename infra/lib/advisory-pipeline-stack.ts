@@ -8,6 +8,7 @@ import * as lambda from "aws-cdk-lib/aws-lambda";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as pipes from "aws-cdk-lib/aws-pipes";
+import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as sfn from "aws-cdk-lib/aws-stepfunctions";
 import * as tasks from "aws-cdk-lib/aws-stepfunctions-tasks";
 import { TABLE_SCHEMAS, type KeyAttribute, type TableSchema } from "@chaperone/ledger";
@@ -58,12 +59,16 @@ function findTableSchema(logicalName: string): TableSchema {
 export interface AdvisoryPipelineStackProps extends StackProps {
   /** Single hardcoded household, per CLAUDE.md's "out of scope: multi-tenancy... one household, one resident identity." */
   householdId?: string;
-  /**
-   * Placeholder default only: the model provider is NOT decided (docs/LIMITATIONS.md,
-   * "The model provider is not decided"). This stack is `cdk synth`-only and has
-   * never been deployed; the default id keeps the template valid.
-   */
+  /** Model id on Groq. Default openai/gpt-oss-120b, an open-weight model served by Groq. */
   advisoryModelId?: string;
+  /**
+   * Name of the Secrets Manager secret holding the Groq key. The stack only
+   * references it; it never creates it, so no key value can enter the template.
+   * Create it out of band: `aws secretsmanager create-secret --name chaperone/groq-api-key --secret-string ...`.
+   */
+  groqSecretName?: string;
+  /** upstreamId -> GitHub repo, for the changelog-check branch. An upstream not listed gets `unresolved`, never `none`. */
+  upstreamRepos?: Record<string, { owner: string; repo: string }>;
 }
 
 /**
@@ -92,7 +97,9 @@ export class AdvisoryPipelineStack extends Stack {
     super(scope, id, props);
 
     const householdId = props.householdId ?? "household-demo";
-    const advisoryModelId = props.advisoryModelId ?? "us.amazon.nova-lite-v1:0";
+    const advisoryModelId = props.advisoryModelId ?? "openai/gpt-oss-120b";
+    const groqSecretName = props.groqSecretName ?? "chaperone/groq-api-key";
+    const upstreamRepos = props.upstreamRepos ?? {};
 
     // --- Tables -----------------------------------------------------------
 
@@ -131,13 +138,18 @@ export class AdvisoryPipelineStack extends Stack {
       HOUSEHOLD_ID: householdId,
     };
 
-    // --- ScoreAdvisory Lambda: Bedrock invoke + read-only quarantine -------
+    // --- ScoreAdvisory Lambda: Groq call + read-only quarantine ------------
     //
-    // Matches infra/iam-advisory.json's "chaperone-bedrock-advisory-role"
-    // exactly: BedrockInvoke + GetItem/Query on chaperone-quarantine only.
-    // No DynamoDB write action anywhere on this function's role — audited
+    // Matches infra/iam-advisory.json's "chaperone-model-advisory-role"
+    // exactly: read of ONE secret + GetItem/Query on chaperone-quarantine only.
+    // No DynamoDB write action anywhere on this function's role � audited
     // by packages/ledger/test/iam-advisory.test.ts against that same JSON
     // document, which this stack's grants are written to match.
+    //
+    // The Groq key is not in this template. The secret is referenced by name
+    // (`fromSecretNameV2`), and the function reads its value at runtime.
+
+    const groqSecret = secretsmanager.Secret.fromSecretNameV2(this, "GroqApiKeySecret", groqSecretName);
 
     const scoreAdvisoryFn = new NodejsFunction(this, "ScoreAdvisoryFunction", {
       functionName: "chaperone-advisory-score",
@@ -148,22 +160,50 @@ export class AdvisoryPipelineStack extends Stack {
       timeout: Duration.seconds(25),
       memorySize: 256,
       logRetention: logs.RetentionDays.ONE_MONTH,
-      environment: { ...sharedLambdaEnv, ADVISORY_MODEL_ID: advisoryModelId },
+      environment: { ...sharedLambdaEnv, ADVISORY_MODEL_ID: advisoryModelId, GROQ_SECRET_ARN: groqSecret.secretArn },
     });
 
-    scoreAdvisoryFn.addToRolePolicy(
+    groqSecret.grantRead(scoreAdvisoryFn);
+    quarantineTable.grantReadData(scoreAdvisoryFn);
+
+    // --- ChangelogCheck Lambda: no model, read-only ------------------------
+    //
+    // The parallel branch. Reads the quarantine and the pin it replaces (for the
+    // date the household approved the old definition), then asks GitHub whether
+    // the vendor published any release, tag or commit in that window. GetItem
+    // on those two tables and nothing else: no write verb, no secret, no model.
+    // The pin table is not CDK-managed in this stack, so its ARN is built from
+    // the table prefix; infra/iam-advisory.json carries the same statement.
+
+    const changelogFn = new NodejsFunction(this, "ChangelogCheckFunction", {
+      functionName: "chaperone-advisory-changelog",
+      entry: path.join(HERE, "..", "lambda", "changelogCheck.ts"),
+      handler: "handler",
+      runtime: lambda.Runtime.NODEJS_20_X,
+      architecture: lambda.Architecture.ARM_64,
+      timeout: Duration.seconds(25),
+      memorySize: 256,
+      logRetention: logs.RetentionDays.ONE_MONTH,
+      environment: {
+        ...sharedLambdaEnv,
+        UPSTREAM_REPOS: JSON.stringify(upstreamRepos),
+        // Lambda's filesystem is read-only outside /tmp; githubClient.ts caches there.
+        ADVISORY_GITHUB_CACHE_DIR: "/tmp/github-cache",
+      },
+    });
+    quarantineTable.grantReadData(changelogFn);
+    changelogFn.addToRolePolicy(
       new iam.PolicyStatement({
-        sid: "BedrockInvoke",
-        actions: ["bedrock:InvokeModel", "bedrock:Converse"],
-        resources: ["arn:aws:bedrock:*::foundation-model/*"],
+        sid: "ReadPinForApprovalDate",
+        actions: ["dynamodb:GetItem"],
+        resources: [this.formatArn({ service: "dynamodb", resource: "table", resourceName: `${TABLE_PREFIX}-pin` })],
       }),
     );
-    quarantineTable.grantReadData(scoreAdvisoryFn);
 
     // --- WriteAdvisory Lambda: PutItem on chaperone-advisory only ----------
     //
-    // No Bedrock permission, no access to chaperone-ledger-event or
-    // chaperone-pin, and — unlike the Bedrock role above — this one *can*
+    // No model or secret permission, no access to chaperone-ledger-event or
+    // chaperone-pin, and — unlike the scoring role above — this one *can*
     // write, but only to chaperone-advisory. Splitting scoring and writing
     // into separate functions under separate roles is what makes "the
     // Bedrock-calling Lambda has zero DynamoDB write permission" true
@@ -185,12 +225,31 @@ export class AdvisoryPipelineStack extends Stack {
     // DeleteItem, and BatchWriteItem it never calls.
     advisoryTable.grant(writeAdvisoryFn, "dynamodb:GetItem", "dynamodb:PutItem");
 
-    // --- Step Functions: score -> (scored? write : no-op) ------------------
+    // --- Step Functions: Parallel(score, changelog) -> (scored? write : no-op)
 
     const scoreTask = new tasks.LambdaInvoke(this, "ScoreAdvisoryTask", {
       lambdaFunction: scoreAdvisoryFn,
       payloadResponseOnly: true,
     });
+
+    const changelogTask = new tasks.LambdaInvoke(this, "ChangelogCheckTask", {
+      lambdaFunction: changelogFn,
+      payloadResponseOnly: true,
+    });
+    // The changelog branch is a decoration on a decoration: if its Lambda errors,
+    // the score must still be written, so the failure becomes an `unresolved` result.
+    changelogTask.addCatch(
+      new sfn.Pass(this, "ChangelogCheckFailed", {
+        result: sfn.Result.fromObject({ status: "unresolved", reason: "changelog-lambda-error" }),
+      }),
+      { resultPath: sfn.JsonPath.DISCARD },
+    );
+
+    const parallel = new sfn.Parallel(this, "ScoreAndCheckChangelog", {
+      comment: "The model branch and the no-model branch run at the same time; the join is an array [score, changelog].",
+    })
+      .branch(scoreTask)
+      .branch(changelogTask);
 
     const writeTask = new tasks.LambdaInvoke(this, "WriteAdvisoryTask", {
       lambdaFunction: writeAdvisoryFn,
@@ -198,12 +257,12 @@ export class AdvisoryPipelineStack extends Stack {
     });
 
     const noAdvisory = new sfn.Succeed(this, "AdvisoryUnavailable", {
-      comment: "scoreDiff returned unavailable — the quarantined tool is rendered without an advisory, per its own contract. Never treated as a pipeline failure.",
+      comment: "scoreDiff returned unavailable � the quarantined tool is rendered without an advisory, per its own contract. Never treated as a pipeline failure. The changelog result is in this execution's output but is not written without a score.",
     });
 
-    const definition = scoreTask.next(
+    const definition = parallel.next(
       new sfn.Choice(this, "WasScored")
-        .when(sfn.Condition.stringEquals("$.status", "scored"), writeTask)
+        .when(sfn.Condition.stringEquals("$[0].status", "scored"), writeTask)
         .otherwise(noAdvisory),
     );
 

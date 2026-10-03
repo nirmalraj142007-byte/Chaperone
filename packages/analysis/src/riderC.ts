@@ -8,7 +8,7 @@ import type { Candidate } from "./types.js";
 
 export type SignalEvidence = "release" | "tag" | "commit-message" | "none";
 
-export type SignalChecker = (owner: string, repo: string, sinceIso: string) => Promise<{ evidence: SignalEvidence; evidenceUrl?: string }>;
+export type SignalChecker = (owner: string, repo: string, sinceIso: string, untilIso: string) => Promise<{ evidence: SignalEvidence; evidenceUrl?: string }>;
 
 /** PREDICTIONS.md prediction 3: "fewer than 30%". */
 export const RIDER_C_PREDICTED_SHARE_BELOW = 0.3;
@@ -37,6 +37,7 @@ export async function evaluateRiderC(
   driftedServerIds: readonly string[],
   candidates: readonly Candidate[],
   windowStart: string,
+  windowEnd: string,
   check: SignalChecker,
 ): Promise<RiderCEvaluation> {
   const byId = new Map(candidates.map((c) => [c.serverId, c]));
@@ -52,7 +53,7 @@ export async function evaluateRiderC(
       unverifiable++;
       continue;
     }
-    const result = await check(owner, repo, windowStart);
+    const result = await check(owner, repo, windowStart, windowEnd);
     evidenceCounts[result.evidence]++;
     perServer.push({ serverId, repoOwner: owner, repoName: repo, evidence: result.evidence, evidenceUrl: result.evidenceUrl ?? null });
   }
