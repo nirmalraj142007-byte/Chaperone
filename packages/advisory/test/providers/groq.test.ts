@@ -308,6 +308,54 @@ describe("GroqModelProvider", () => {
     expect((await provider.invoke(REQUEST)).text).toBe("[tool call, rejected by Groq as malformed] <tool>x</tool>");
   });
 
+  it("sends a conversation, with the assistant's tool call and the tool result, instead of the prompt, and returns tool calls with ids", async () => {
+    responder = (_r, i, res) => {
+      if (i === 0) {
+        res.writeHead(200, { "content-type": "application/json" });
+        res.end(
+          JSON.stringify({
+            choices: [{ message: { content: null, tool_calls: [{ id: "call_9", function: { name: "t", arguments: '{"a":1}' } }] }, finish_reason: "tool_calls" }],
+          }),
+        );
+        return;
+      }
+      ok(res, "final answer");
+    };
+    const { provider } = makeProvider();
+    const first = await provider.invoke({
+      ...REQUEST,
+      conversation: [
+        { role: "system", content: "sys" },
+        { role: "user", content: "hi" },
+      ],
+      tools: [{ name: "t", description: "d" }],
+    });
+    expect(first.toolCalls).toEqual([{ id: "call_9", name: "t", arguments: '{"a":1}' }]);
+
+    const second = await provider.invoke({
+      ...REQUEST,
+      conversation: [
+        { role: "system", content: "sys" },
+        { role: "user", content: "hi" },
+        { role: "assistant", content: "", toolCalls: first.toolCalls! },
+        { role: "tool", toolCallId: "call_9", content: '{"ok":true}' },
+      ],
+      tools: [{ name: "t", description: "d" }],
+    });
+    expect(second.text).toBe("final answer");
+    expect(second.toolCalls).toBeUndefined();
+    expect(seen[0]!.body["messages"]).toEqual([
+      { role: "system", content: "sys" },
+      { role: "user", content: "hi" },
+    ]);
+    expect(seen[1]!.body["messages"]).toEqual([
+      { role: "system", content: "sys" },
+      { role: "user", content: "hi" },
+      { role: "assistant", content: null, tool_calls: [{ id: "call_9", type: "function", function: { name: "t", arguments: '{"a":1}' } }] },
+      { role: "tool", tool_call_id: "call_9", content: '{"ok":true}' },
+    ]);
+  });
+
   it("throws UpstreamError for a non-JSON body", async () => {
     responder = (_r, _i, res) => {
       res.writeHead(200, { "content-type": "text/plain" });

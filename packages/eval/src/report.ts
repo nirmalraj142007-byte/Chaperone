@@ -2,6 +2,7 @@ import { BASELINE2_RUNS_PER_ITEM, BASELINE2_VERDICTS, BASELINE2_ADJUDICATION_FIL
 import type { Baseline2ControlItemSummary } from "./baseline2Controls.js";
 import { BASELINE2_CLASSIFIER_VERSION } from "./baseline2Classify.js";
 import { scoreBaseline1, type Baseline1Result } from "./scoreCorpus.js";
+import type { TwoTurnBaseline2Section } from "./twoTurn/report.js";
 import { INJECTION_PATTERNS, type LoadedCorpus } from "./types.js";
 
 /**
@@ -62,7 +63,10 @@ export interface RealBaseline2 {
   spreadAcrossRuns: { min: number; max: number; range: number };
 }
 
-export type Baseline2ReportSection = PendingBaseline2 | RealBaseline2;
+export type Baseline2ReportSection = PendingBaseline2 | RealBaseline2 | TwoTurnBaseline2Section;
+
+/** The single-turn first attempt, kept in the report as a superseded section. */
+export type SingleTurnSupersededSection = RealBaseline2 & { superseded: true; supersededBy: string; description: string };
 
 export interface BaselineReport {
   schemaVersion: number;
@@ -76,6 +80,8 @@ export interface BaselineReport {
   };
   baseline1RegexBlocklist: Baseline1Result;
   baseline2FrontierModelUnaided: Baseline2ReportSection;
+  /** Present once the two-turn run exists: the single-turn first attempt, superseded, with its numbers unchanged. */
+  baseline2SingleTurnSuperseded?: SingleTurnSupersededSection;
   /**
    * CLAUDE.md #7: Chaperone's own block rate against this corpus is only
    * ever reported as a delta against baseline 2, never as a bare absolute.

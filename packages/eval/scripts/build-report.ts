@@ -1,7 +1,7 @@
 /**
  * `pnpm eval:report` — regenerates data/baselines.json from the committed
  * corpus and baseline 1. Also the only writer of data/baselines.json other
- * than `pnpm eval:baseline2` (packages/eval/scripts/run-baseline2.ts) —
+ * than `pnpm eval:baseline2` (packages/eval/scripts/run-baseline2.ts, the two-turn run) —
  * never hand-edit the file directly, the same way
  * packages/crawler/scripts/boot-rate.ts is the only writer of
  * data/boot-rate.json. If a real baseline-2 result is already on disk (a
@@ -14,7 +14,21 @@
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { loadAttackCorpus } from "../src/corpus.js";
-import { buildBaselineReport, type RealBaseline2 } from "../src/report.js";
+import { buildBaselineReport, type BaselineReport, type RealBaseline2 } from "../src/report.js";
+
+/** The two-turn report is not rebuilt here (it needs a replay of the raw responses): if one is on disk, carry its sections through unchanged and refresh only baseline 1 and the corpus stats. */
+async function loadExistingTwoTurn(outPath: string): Promise<Partial<BaselineReport> | undefined> {
+  try {
+    const existing = JSON.parse(await readFile(outPath, "utf8")) as Partial<BaselineReport>;
+    const section = existing.baseline2FrontierModelUnaided as { design?: string } | undefined;
+    if (section?.design === "two-turn") {
+      return existing;
+    }
+  } catch {
+    // fall through
+  }
+  return undefined;
+}
 
 async function loadExistingRealBaseline2(outPath: string): Promise<RealBaseline2 | undefined> {
   try {
@@ -33,8 +47,17 @@ async function loadExistingRealBaseline2(outPath: string): Promise<RealBaseline2
 async function main(): Promise<void> {
   const corpus = loadAttackCorpus();
   const outPath = path.join("data", "baselines.json");
-  const existingRealBaseline2 = await loadExistingRealBaseline2(outPath);
-  const report = buildBaselineReport(corpus, undefined, existingRealBaseline2);
+  const twoTurn = await loadExistingTwoTurn(outPath);
+  const existingRealBaseline2 = twoTurn ? undefined : await loadExistingRealBaseline2(outPath);
+  const fresh = buildBaselineReport(corpus, undefined, existingRealBaseline2);
+  const report: BaselineReport = twoTurn
+    ? {
+        ...fresh,
+        baseline2FrontierModelUnaided: twoTurn.baseline2FrontierModelUnaided!,
+        ...(twoTurn.baseline2SingleTurnSuperseded ? { baseline2SingleTurnSuperseded: twoTurn.baseline2SingleTurnSuperseded } : {}),
+        delta: twoTurn.delta ?? null,
+      }
+    : fresh;
 
   await writeFile(outPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
 

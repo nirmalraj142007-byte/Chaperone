@@ -7,8 +7,27 @@
  * Swapping the backing provider is a config change (which implementation
  * gets constructed), never a rewrite of the scoring logic.
  */
+export interface ConversationToolCall {
+  id: string;
+  name: string;
+  /** The raw JSON string the model produced for the arguments. */
+  arguments: string;
+}
+
+/**
+ * A multi-turn conversation, for providers that support it (Groq). The first
+ * two-turn baseline-2 call is `[system, user]`; the second appends the model's
+ * own tool call and the harness's canned `tool` result.
+ */
+export type ConversationMessage =
+  | { role: "system" | "user"; content: string }
+  | { role: "assistant"; content: string; toolCalls?: readonly ConversationToolCall[] }
+  | { role: "tool"; toolCallId: string; content: string };
+
 export interface ModelInvocationRequest {
   prompt: string;
+  /** When present, a provider that supports it sends this instead of `prompt` as a single user message. `prompt` stays required as the human-readable summary and the budget estimate. */
+  conversation?: readonly ConversationMessage[];
   maxTokens: number;
   /** Milliseconds this single call may take before the provider must abort and throw `UpstreamTimeoutError`. */
   timeoutMs: number;
@@ -26,6 +45,8 @@ export interface ModelInvocationRequest {
 export interface ModelInvocationResult {
   text: string;
   modelId: string;
+  /** Tool calls the model made, with ids, for a provider that supports tools. `text` also carries them rendered as `[tool call] name(args)`. */
+  toolCalls?: readonly ConversationToolCall[];
 }
 
 export interface ModelProvider {

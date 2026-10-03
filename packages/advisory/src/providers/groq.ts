@@ -1,5 +1,11 @@
 import { UpstreamError, UpstreamTimeoutError } from "@chaperone/errors";
-import type { ModelInvocationRequest, ModelInvocationResult, ModelProvider } from "../provider.js";
+import type {
+  ConversationMessage,
+  ConversationToolCall,
+  ModelInvocationRequest,
+  ModelInvocationResult,
+  ModelProvider,
+} from "../provider.js";
 
 export const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
 
@@ -80,10 +86,37 @@ function parseRetryAfterMs(raw: string | null): number | undefined {
 
 interface ChatCompletionBody {
   choices?: {
-    message?: { content?: string | null; tool_calls?: { function?: { name?: string; arguments?: string } }[] };
+    message?: {
+      content?: string | null;
+      tool_calls?: { id?: string; function?: { name?: string; arguments?: string } }[];
+    };
     finish_reason?: string;
   }[];
   error?: { message?: string; type?: string; code?: string; failed_generation?: string };
+}
+
+function toWireMessage(m: ConversationMessage): Record<string, unknown> {
+  if (m.role === "tool") {
+    return { role: "tool", tool_call_id: m.toolCallId, content: m.content };
+  }
+  if (m.role === "assistant") {
+    return {
+      role: "assistant",
+      content: m.content === "" ? null : m.content,
+      ...(m.toolCalls && m.toolCalls.length > 0
+        ? { tool_calls: m.toolCalls.map((c) => ({ id: c.id, type: "function", function: { name: c.name, arguments: c.arguments } })) }
+        : {}),
+    };
+  }
+  return { role: m.role, content: m.content };
+}
+
+function extractToolCalls(message: NonNullable<NonNullable<ChatCompletionBody["choices"]>[number]["message"]>): ConversationToolCall[] {
+  return (message.tool_calls ?? []).map((c, i) => ({
+    id: c.id ?? `call_${i}`,
+    name: c.function?.name ?? "",
+    arguments: c.function?.arguments ?? "",
+  }));
 }
 
 /**
@@ -156,7 +189,8 @@ export class GroqModelProvider implements ModelProvider {
 
   async invoke(request: ModelInvocationRequest): Promise<ModelInvocationResult> {
     const maxTokens = request.maxTokens + this.headroom;
-    const estimatedTokens = Math.ceil(request.prompt.length / CHARS_PER_TOKEN) + maxTokens;
+    const promptChars = request.conversation ? JSON.stringify(request.conversation).length : request.prompt.length;
+    const estimatedTokens = Math.ceil(promptChars / CHARS_PER_TOKEN) + maxTokens;
     const tools =
       request.tools && request.tools.length > 0
         ? request.tools.map((t) => ({
@@ -166,7 +200,9 @@ export class GroqModelProvider implements ModelProvider {
         : undefined;
     const body = JSON.stringify({
       model: this.modelId,
-      messages: [{ role: "user", content: request.prompt }],
+      messages: request.conversation
+        ? request.conversation.map(toWireMessage)
+        : [{ role: "user", content: request.prompt }],
       max_tokens: maxTokens,
       temperature: this.temperature,
       reasoning_effort: this.reasoningEffort,
@@ -264,7 +300,8 @@ export class GroqModelProvider implements ModelProvider {
           finishReason: choice?.finish_reason,
         });
       }
-      return { text, modelId: this.modelId };
+      const toolCalls = choice?.message ? extractToolCalls(choice.message) : [];
+      return { text, modelId: this.modelId, ...(toolCalls.length > 0 ? { toolCalls } : {}) };
     }
   }
 
