@@ -1,9 +1,9 @@
 /**
- * `pnpm audit --audit-level=high` fails today (exit 1) on two real, current
+ * `pnpm audit --audit-level=high` fails today (exit 1) on real, current
  * advisories in dev-only tooling — see docs/SECURITY.md for the full
  * reasoning and expiry dates. A CI gate that's already red before anyone's
  * change is a gate nobody looks at, so this wraps the raw audit: pass when
- * every high/critical finding is one of the two documented exceptions
+ * every high/critical finding is one of the four documented exceptions
  * below, fail loudly (a new, unaudited high/critical dependency
  * vulnerability, or a documented one whose severity changed) otherwise.
  *
@@ -26,7 +26,14 @@ interface AuditReport {
 }
 
 /** Keep in sync with the "Dependency audit exceptions" table in docs/SECURITY.md. */
-const DOCUMENTED_EXCEPTIONS = new Set(["GHSA-fx2h-pf6j-xcff", "GHSA-5xrq-8626-4rwp"]);
+const DOCUMENTED_EXCEPTIONS = new Set([
+  "GHSA-fx2h-pf6j-xcff",
+  "GHSA-5xrq-8626-4rwp",
+  // tinypool, dev-only via vitest 2.1.9. Added 2026-10-06; expires 2026-11-30 (upgrade vitest after the hackathon).
+  // This script does not enforce the date: the expiry lives in docs/SECURITY.md and is a note to a person.
+  "GHSA-5gmw-xhrv-c9v3",
+  "GHSA-85c8-ppgw-ccpr",
+]);
 
 function runAudit(): AuditReport {
   try {
