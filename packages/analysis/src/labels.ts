@@ -27,6 +27,11 @@ export const labelRecordSchema = z.object({
   labeledBy: z.string().min(1),
   labeledAt: z.string(),
   taxonomyBlobSha: z.string(),
+  /**
+   * Present only when one answer was applied to several tools at once because their edit is identical
+   * (see labelGroups.ts). groupSize is the number of tools that single answer covered.
+   */
+  appliedByGroup: z.object({ groupId: z.string(), groupSize: z.number().int().min(2) }).optional(),
 });
 export type LabelRecord = z.infer<typeof labelRecordSchema>;
 

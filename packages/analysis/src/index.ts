@@ -2,6 +2,7 @@ export * from "./types.js";
 export * from "./load.js";
 export * from "./pair.js";
 export * from "./classify.js";
+export * from "./labelGroups.js";
 export * from "./labels.js";
 export * from "./gates.js";
 export * from "./riderC.js";

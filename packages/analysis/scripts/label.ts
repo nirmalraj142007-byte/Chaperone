@@ -4,8 +4,13 @@
  *   pnpm analyse:label                         walk data/labels-todo.json; answers go to data/labels.json
  *   pnpm analyse:label --prevalence            walk the 150-tool prevalence sample; answers go to data/prevalence.json
  *   pnpm analyse:label --prevalence --draw-only  draw the sample (if data/prevalence.json does not exist yet) and stop
+ *   --no-group                                 one prompt per change, even where the edit is identical on several tools
  *   --by=<name>                                who is labelling. Defaults to `git config user.name`. Never "model".
  *   --data-dir=<dir>                           read and write there instead of data/ (for rehearsing on a scratch copy)
+ *
+ * By default, changes whose edit is identical (same words added and removed, same input-schema change) are
+ * shown once and one answer is applied to every tool in the group; data/labels.json records appliedByGroup.
+ * No proposed class is shown in that mode.
  *
  * Type one letter and press Enter. Every answer is saved before the next item
  * is shown, so quitting (q, Ctrl+C, closing the window) loses nothing, and the
@@ -72,7 +77,7 @@ async function prevalence(argv: readonly string[], dataDir: string, labeledBy: s
   }
 }
 
-async function changes(dataDir: string, labeledBy: string | null): Promise<void> {
+async function changes(dataDir: string, labeledBy: string | null, groupIdentical: boolean): Promise<void> {
   const todoJson = await readJsonIfExists(path.join(dataDir, "labels-todo.json"));
   if (todoJson === undefined) {
     console.log("data/labels-todo.json does not exist: run pnpm analyse:drift first (it writes the list of pairs that need a label).");
@@ -96,6 +101,7 @@ async function changes(dataDir: string, labeledBy: string | null): Promise<void>
       style: makeStyle(colorEnabled()),
       now: () => new Date(),
       save: (l) => writeJsonAtomic(labelsPath, l),
+      groupIdentical,
     });
   } finally {
     close();
@@ -109,7 +115,7 @@ async function main(): Promise<void> {
   if (argv.includes("--prevalence")) {
     await prevalence(argv, dataDir, labeledBy);
   } else {
-    await changes(dataDir, labeledBy);
+    await changes(dataDir, labeledBy, !argv.includes("--no-group"));
   }
 }
 

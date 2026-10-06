@@ -80,19 +80,17 @@ export function describeSchemaChange(before: unknown, after: unknown): string[] 
   return lines.length > 0 ? lines : ["(no property-level difference; key order or formatting only)"];
 }
 
-export function renderTodoItem(item: TodoItem, position: number, total: number, style: Style, previouslySkipped: boolean): string {
-  const diff = describeDiff(
+function diffOf(item: TodoItem): ReturnType<typeof describeDiff> {
+  return describeDiff(
     { name: item.toolName, description: item.before.description, inputSchema: item.before.inputSchema },
     { name: item.toolName, description: item.after.description, inputSchema: item.after.inputSchema },
   );
+}
+
+/** The description before/after with the changed words marked, and the schema change. Says nothing about what the change should be called. */
+function renderEditBody(item: TodoItem, style: Style): string[] {
+  const diff = diffOf(item);
   const lines: string[] = [];
-  lines.push("");
-  lines.push(style.bold(`[${position}/${total}] ${item.serverId}  ::  ${item.toolName}`) + (previouslySkipped ? style.dim("  (skipped before)") : ""));
-  lines.push(style.dim(`compared in: ${item.comparisons.join(", ")}`));
-  lines.push(
-    `proposed: ${style.bold(item.proposed)}  (${item.reason})` +
-      (item.capabilityBefore !== item.capabilityAfter ? `\ncapability class moved: ${item.capabilityBefore} -> ${style.bold(item.capabilityAfter)}` : `\ncapability class: ${item.capabilityBefore}`),
-  );
   if (item.descriptionChange === "none") {
     lines.push("description: unchanged");
     lines.push(`  ${item.after.description}`);
@@ -120,6 +118,47 @@ export function renderTodoItem(item: TodoItem, position: number, total: number, 
       lines.push(`  ${line}`);
     }
   }
+  return lines;
+}
+
+/**
+ * One labelling unit: a single item, or a group of items whose edit is identical.
+ * Deliberately shows no proposed class, reason or capability verdict: the person's
+ * label is their own judgement. For a group, the description and schema are shown
+ * once, for the first member; the edit is identical in all of them, the text around
+ * it may differ.
+ */
+export function renderLabelUnit(items: readonly TodoItem[], groupId: string, position: number, total: number, style: Style, previouslySkipped: boolean): string {
+  const first = items[0];
+  if (first === undefined) {
+    throw new Error("renderLabelUnit: empty unit");
+  }
+  const lines: string[] = [""];
+  const skipped = previouslySkipped ? style.dim("  (skipped before)") : "";
+  if (items.length === 1) {
+    lines.push(style.bold(`[${position}/${total}] ${first.serverId}  ::  ${first.toolName}`) + skipped);
+  } else {
+    lines.push(style.bold(`[${position}/${total}] the same edit on ${items.length} tools (group ${groupId})`) + skipped);
+    for (const member of items) {
+      lines.push(`  - ${member.serverId}  ::  ${member.toolName}`);
+    }
+    lines.push(style.dim(`shown below for ${first.toolName}; the edit is identical in every tool listed, the text around it may differ`));
+  }
+  lines.push(style.dim(`compared in: ${[...new Set(items.flatMap((i) => i.comparisons))].join(", ")}`));
+  lines.push(...renderEditBody(first, style));
+  return lines.join("\n");
+}
+
+export function renderTodoItem(item: TodoItem, position: number, total: number, style: Style, previouslySkipped: boolean): string {
+  const lines: string[] = [];
+  lines.push("");
+  lines.push(style.bold(`[${position}/${total}] ${item.serverId}  ::  ${item.toolName}`) + (previouslySkipped ? style.dim("  (skipped before)") : ""));
+  lines.push(style.dim(`compared in: ${item.comparisons.join(", ")}`));
+  lines.push(
+    `proposed: ${style.bold(item.proposed)}  (${item.reason})` +
+      (item.capabilityBefore !== item.capabilityAfter ? `\ncapability class moved: ${item.capabilityBefore} -> ${style.bold(item.capabilityAfter)}` : `\ncapability class: ${item.capabilityBefore}`),
+  );
+  lines.push(...renderEditBody(item, style));
   return lines.join("\n");
 }
 

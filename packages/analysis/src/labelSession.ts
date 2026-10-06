@@ -11,7 +11,8 @@
 import { AnalysisError } from "@chaperone/errors";
 import { type HumanChoice, type LabelRecord, type LabelsFile, type LabelsTodoFile, assertHumanLabeler } from "./labels.js";
 import { PREVALENCE_QUESTION, type PrevalenceFile, summarizePrevalence } from "./prevalence.js";
-import { type Style, renderTodoItem } from "./render.js";
+import { groupTodoItems } from "./labelGroups.js";
+import { type Style, renderLabelUnit, renderTodoItem } from "./render.js";
 
 export interface LabelIo {
   /** Prints `prompt` and resolves the next input line, or null at end of input. */
@@ -52,6 +53,12 @@ export interface ChangeSessionOptions {
   style: Style;
   now: () => Date;
   save(labels: LabelsFile): Promise<void>;
+  /**
+   * Show each set of items with an identical edit once, and apply the one answer to every item in it
+   * (recorded as `appliedByGroup`). Off by default; `pnpm analyse:label` turns it on unless given --no-group.
+   * In this mode nothing proposed by the classifier is shown: the label is the person's own judgement.
+   */
+  groupIdentical?: boolean;
 }
 
 export async function runChangeLabelSession(opts: ChangeSessionOptions): Promise<SessionSummary> {
@@ -72,16 +79,29 @@ export async function runChangeLabelSession(opts: ChangeSessionOptions): Promise
     opts.io.print(`Nothing to label: all ${opts.todo.items.length} items in labels-todo.json have a decision.`);
     return summary;
   }
-  opts.io.print(`${open.length} of ${opts.todo.items.length} items need a decision. Labelling as "${opts.labeledBy}".`);
+  const grouped = opts.groupIdentical === true;
+  // A unit is what one answer covers: a group of identical edits, or a single item.
+  const units = grouped ? groupTodoItems(open).map((g) => ({ id: g.id, items: g.items })) : open.map((item) => ({ id: "", items: [item] }));
+  opts.io.print(
+    `${open.length} of ${opts.todo.items.length} items need a decision` +
+      (grouped ? `, in ${units.length} groups of identical edits (one answer covers every tool in a group)` : "") +
+      `. Labelling as "${opts.labeledBy}".`,
+  );
   opts.io.print(CHANGE_HELP);
 
-  for (const [index, item] of open.entries()) {
-    const previouslySkipped = byKey.get(item.key)?.label === "skip";
-    opts.io.print(renderTodoItem(item, index + 1, open.length, opts.style, previouslySkipped));
-    summary.shown++;
+  for (const [index, unit] of units.entries()) {
+    const first = unit.items[0]!;
+    const previouslySkipped = unit.items.some((item) => byKey.get(item.key)?.label === "skip");
+    opts.io.print(
+      grouped
+        ? renderLabelUnit(unit.items, unit.id, index + 1, units.length, opts.style, previouslySkipped)
+        : renderTodoItem(first, index + 1, units.length, opts.style, previouslySkipped),
+    );
+    summary.shown += unit.items.length;
+    const prompt = unit.items.length > 1 ? `label for all ${unit.items.length} tools [c/a/i/s/q, ? for help]: ` : "label [c/a/i/s/q, ? for help]: ";
     let choice: HumanChoice | "quit" | undefined;
     while (choice === undefined) {
-      const answer = await opts.io.ask("label [c/a/i/s/q, ? for help]: ");
+      const answer = await opts.io.ask(prompt);
       if (answer === null) {
         choice = "quit";
         break;
@@ -101,26 +121,31 @@ export async function runChangeLabelSession(opts: ChangeSessionOptions): Promise
       summary.quit = true;
       break;
     }
-    const record: LabelRecord = {
-      key: item.key,
-      serverId: item.serverId,
-      toolName: item.toolName,
-      beforeSha256: item.beforeSha256,
-      afterSha256: item.afterSha256,
-      label: choice,
-      proposed: item.proposed,
-      labeledBy: opts.labeledBy,
-      labeledAt: opts.now().toISOString(),
-      taxonomyBlobSha: opts.taxonomyBlobSha,
-    };
-    byKey.set(item.key, record);
+    const labeledAt = opts.now().toISOString();
+    for (const item of unit.items) {
+      const record: LabelRecord = {
+        key: item.key,
+        serverId: item.serverId,
+        toolName: item.toolName,
+        beforeSha256: item.beforeSha256,
+        afterSha256: item.afterSha256,
+        label: choice,
+        proposed: item.proposed,
+        labeledBy: opts.labeledBy,
+        labeledAt,
+        taxonomyBlobSha: opts.taxonomyBlobSha,
+        // A skip is not an applied label, so it carries no group record.
+        ...(unit.items.length > 1 && choice !== "skip" ? { appliedByGroup: { groupId: unit.id, groupSize: unit.items.length } } : {}),
+      };
+      byKey.set(item.key, record);
+    }
     opts.labels = { ...opts.labels, labels: [...byKey.values()].sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0)) };
     await opts.save(opts.labels);
     if (choice === "skip") {
-      summary.skipped++;
+      summary.skipped += unit.items.length;
     } else {
-      summary.decided++;
-      summary.remaining--;
+      summary.decided += unit.items.length;
+      summary.remaining -= unit.items.length;
     }
   }
   opts.io.print(
