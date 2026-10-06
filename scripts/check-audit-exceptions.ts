@@ -27,6 +27,8 @@ interface AuditReport {
 
 /** Keep in sync with the "Dependency audit exceptions" table in docs/SECURITY.md. */
 const DOCUMENTED_EXCEPTIONS = new Set([
+  // vite and vitest. Expiry extended 2026-10-06 from 2026-10-15 to 2026-11-30 (see docs/SECURITY.md): the vitest major
+  // upgrade is deferred past the 2026-10-22 submission. Not enforced here; the date is a note to a person.
   "GHSA-fx2h-pf6j-xcff",
   "GHSA-5xrq-8626-4rwp",
   // tinypool, dev-only via vitest 2.1.9. Added 2026-10-06; expires 2026-11-30 (upgrade vitest after the hackathon).
