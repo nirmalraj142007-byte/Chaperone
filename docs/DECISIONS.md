@@ -505,3 +505,11 @@ would wait forever) and reports its height with `ui/notifications/size-changed`
   are behind a toggle that starts off; typed input is primary.
 - *Amazon or Alexa branding of any kind.* The design is original, and the page
   states that it is not made by or affiliated with Amazon.
+
+### Note, 2026-10-07 (appended; the entry above is left as written)
+
+The sentence "No model provider is chosen" in the 2026-09-26 entry was true
+that day. The provider was later decided as Groq (`openai/gpt-oss-120b`) for
+the advisory line and baseline 2; see `docs/LIMITATIONS.md`, "The model provider: Bedrock was declined, Groq is used", and
+`docs/AWS-BUILDER.md`, "Model choice: Groq". The decision above stands: the
+simulated assistant still has no model.

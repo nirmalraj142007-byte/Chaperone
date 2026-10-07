@@ -2,8 +2,9 @@
  * The whole "assistant" of this simulation, in one file.
  *
  * There is no model here. A real assistant would hand the resident's words
- * to a language model and let it pick a tool. No model provider has been
- * chosen for this project (docs/LIMITATIONS.md), so this stand-in matches a
+ * to a language model and let it pick a tool. The project's model provider is
+ * Groq (docs/LIMITATIONS.md) for the advisory line and baseline 2, but this
+ * page deliberately has no model, so this stand-in matches a
  * small, fixed list of phrasings with regular expressions and maps each to
  * exactly one tool call. Nothing here is learned, nothing is probabilistic,
  * and the same words always produce the same call.

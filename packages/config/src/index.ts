@@ -63,9 +63,9 @@ const envSchema = z.object({
   // Bedrock calls answering different questions, so they are separately
   // configurable rather than forced to move together. Both are consumed by
   // the same BedrockModelProvider (packages/advisory/src/providers/bedrock.ts)
-  // — the model id, not the provider class, is what differs. No provider or
-  // model is chosen for either use (docs/LIMITATIONS.md, "The model provider
-  // is not decided"), so neither has a default here.
+  // — the model id, not the provider class, is what differs. The provider
+  // is Groq (docs/LIMITATIONS.md, "The model provider: Bedrock was declined, Groq is used"),
+  // but the model id has no default here.
   ADVISORY_MODEL_ID: z.string().min(1).optional(),
   BASELINE_MODEL_ID: z.string().min(1).optional(),
   // Which ModelProvider backs both uses. Bedrock access was declined for this

@@ -20,9 +20,10 @@ could be misled by.
 The card has a short summary line under the before/after text, and the
 console's queue detail has the same line with a 0-100 score. In a normal
 run a language model writes them. **No model wrote the ones in this demo.**
-Real model output does not exist: no model provider has been chosen. Bedrock
-access for this AWS account was declined (friction-log Entries 037 and 038;
-`docs/LIMITATIONS.md`, "The model provider is not decided").
+A real model can write them: the provider is Groq (`openai/gpt-oss-120b`),
+since Bedrock access for this AWS account was declined (friction-log Entries
+037 and 038; `docs/LIMITATIONS.md`, "The model provider: Bedrock was declined, Groq is used"). But the row this demo shows
+was written by hand, not by that model.
 
 | | |
 |---|---|
@@ -32,7 +33,7 @@ access for this AWS account was declined (friction-log Entries 037 and 038;
 | Model ID stored | `fixture:hand-written-not-model-output` |
 | How it is labelled where you see it | Card (text): `Advisory (fixture: hand-written for the offline demo, not model output): ...`. Card (HTML): the same words as the section label. Console detail: `Advisory · fixture, hand-written, not model output · not the decision`. Console queue: a `fixture` tag beside the score. |
 | What it cannot do | It cannot decide anything. The gate never reads an advisory. The card and console say so, and `packages/policy` has no import path to any of this. |
-| Its TODO | Blocker: no model provider is chosen (Bedrock access for this account was declined). Resolves when one is chosen and a live call works, before the 2026-10-22 cutoff: run `pnpm advisory:run-local` on the demo mutation and either replace the row with the real output, or delete the file and let the card show its no-advisory state. If no provider is chosen by then, the fixture stays, labelled, and the submission says so. The same text is in the file. |
+| Its TODO | Blocker: none on the provider (Groq, `gpt-oss-120b`, is chosen and `data/advisory-live-check.json` holds a real run); the offline demo keeps a hand-written row so it needs no network. Resolves before the 2026-10-22 cutoff: either run `pnpm advisory:run-local` on the demo mutation and replace the row with the real output, or leave the fixture, labelled, and say so in the submission. The file's `todo` field says the same in fewer words. |
 
 The fixture is attached to a hash, not to a quarantine, and the hash is read
 from the running upstream after it has really been mutated (see "how reset
@@ -64,7 +65,7 @@ real time.
 The primary demo surface is a web page titled "Simulated Alexa+ experience"
 (`packages/assistant-sim`, `pnpm demo:assistant`, port 5174). A real
 assistant would give the resident's words to a language model and let it pick
-a tool. No model provider has been chosen, so this page has none.
+a tool. The provider for the advisory line and baseline 2 is Groq (`gpt-oss-120b`), but this page is deliberately model-free, so it has none.
 
 | | |
 |---|---|
@@ -74,7 +75,7 @@ a tool. No model provider has been chosen, so this page has none.
 | What is real about it | it speaks MCP Streamable HTTP to the real gateway with the official SDK client (`initialize`, `tools/list`, `tools/call`, and `notifications/tools/list_changed`), and it hosts the consent card as an MCP App: the `ui/initialize` handshake of `@modelcontextprotocol/ext-apps` (its `AppBridge`) with the card in a sandboxed frame. Approve and Keep blocked are real calls to `chaperone/approve_change`; the ledger records them as the resident's |
 | Not used, on purpose | speech *recognition*: browsers send that audio to a vendor's cloud, which would break "runs with the network off". Spoken *replies* (`speechSynthesis`) are behind a toggle, off by default |
 | Branding | an original design. No Amazon or Alexa logos, no device styling, and the page says it is not made by or affiliated with Amazon |
-| Its TODO | Blocker: no model provider is chosen. Resolves when one is, before 2026-10-22: the stand-in's `interpret()` is the one function a model call would replace. If none is chosen, the stand-in stays, labelled, and the submission says so |
+| Its TODO | Not a blocker: a choice. The stand-in's `interpret()` is the one function a model call would replace, and no model is wired in. Unless that changes before 2026-10-22, the stand-in stays, labelled, and the submission says so |
 
 There is no other fixture in the demo path. If you see something on screen
 that looks like one and is not in this list, that is a bug; please say so.

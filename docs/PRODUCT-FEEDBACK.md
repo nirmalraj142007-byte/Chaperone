@@ -145,7 +145,7 @@ measurement; make an unwritable data directory fail fast instead of hanging.
 provider seam (one request shape across model families) and
 `@aws-sdk/client-bedrock-runtime` 3.1134.0's surface was read from its type
 definitions; unit tests run at the SDK boundary. **No live Bedrock call has
-ever succeeded from this project**, and no model provider is currently chosen
+ever succeeded from this project**, and the model provider is now Groq
 (`docs/LIMITATIONS.md`).
 
 **Friction:**

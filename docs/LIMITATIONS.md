@@ -253,7 +253,7 @@ schema-additive changes are counted and published separately.
 `packages/eval/src/baseline2Classify.ts`'s `classifyBaseline2Response` /
 `classifyBaseline2ControlResponse` were built and unit-tested only against
 hand-authored synthetic response strings, never against a real model
-call (see "The model provider is not decided" above). The heuristic — refusal-language
+call (see "The model provider: Bedrock was declined, Groq is used" above). The heuristic — refusal-language
 regex vs. an item-specific keyword extracted from the diff between
 `attackVersion` and `benignVersion` — is a reasoned starting point, not a
 tuned classifier. Every response it cannot confidently place (both signals,
