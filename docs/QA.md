@@ -124,7 +124,7 @@ What "the rest" means for the drift claim:
 ## 4. Why does drift in the open ecosystem matter for a curated catalogue?
 
 Because **curation binds who you trust, not what they said when you trusted
-them.**
+them.** (The README FAQ carries the two-sentence version of this answer.)
 
 A catalogue reviews a tool at one moment: the listing. What the assistant
 reads is the tool's definition, served by the publisher, every time it
@@ -181,14 +181,19 @@ hashes differently, so the block rate against a corpus of changed definitions
 cannot come out any other way. It is **tautological**, so it is cut from every
 claim, and `packages/eval` has a test that fails if an absolute block rate
 appears in a report. The meaningful comparison is the delta against baseline 2
-(an unaided model), which is unmeasured. See the README, "What this does not
-prove".
+(an unaided model), which is measured for one model only: `gpt-oss-120b` on
+Groq followed the injected instruction in 52 of 90 two-turn runs (57.8%) and
+refused 0, so the delta is 100 points and means "the model never said no", not
+"always complied". See the README, "What this does not prove", and
+[`LIMITATIONS.md`](LIMITATIONS.md).
 
-**Which model does the advisory line use?** None. No model provider is chosen,
-and Bedrock access for this AWS account was declined. The advisory line in
-the demo is a hand-written fixture, labelled as such. The gate never reads an
-advisory. See [`LIMITATIONS.md`](LIMITATIONS.md), "The model provider is not
-decided".
+**Which model does the advisory line use?** `openai/gpt-oss-120b`, an
+open-weight model served by Groq, in the advisory pipeline and in baseline 2.
+Bedrock access for this AWS account was declined. The advisory line *in the
+demo* is still a hand-written fixture, labelled as such, unless a real row
+exists for that change. The gate never reads an advisory. See
+[`LIMITATIONS.md`](LIMITATIONS.md), "The model provider: Bedrock was
+declined, Groq is used".
 
 **What is the latency cost?** Every gated call performs four DynamoDB writes.
 Measured against DynamoDB Local it added a median of 480.53 ms, which is a

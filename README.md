@@ -1,18 +1,21 @@
-An assistant re-reads the instructions for every tool it owns, every time it
-connects, and remembers nothing about what they said last time. Chaperone is
-that memory. It sits alongside the assistant's connections to third-party
-tool servers, keeps a record of what each tool claimed the last time a
-resident approved it, and tells the household, in one sentence, the moment
-that claim changes.
-
-It is built for Alexa+ households: a context-aware add-on that maintains state
-across sessions, so when a tool the assistant uses changes its own wording, the
-resident sees the old and the new sentence side by side before anything runs.
-The demo is a *simulated* Alexa+ experience, a web page in which a rule-based
-stand-in plays the assistant (see the quickstart below); it is not made by or
-affiliated with Amazon.
-
 # Chaperone
+
+An Alexa+ assistant re-reads the instructions for every tool it owns, every
+time it connects, and remembers nothing about what they said last time.
+Chaperone is that memory: a context-aware add-on for Alexa+ households that
+maintains state across sessions. It keeps a record of what each tool claimed
+the last time a resident approved it, and when a tool's own wording changes,
+the resident sees the old and the new sentence side by side before anything
+runs. The demo is a *simulated* Alexa+ experience, a web page in which a
+rule-based stand-in plays the assistant (see the quickstart below); it is not
+made by or affiliated with Amazon.
+
+**Start here:** the MCP session handling, the part a reader checks first, is in
+[`packages/gateway/src/session.ts`](packages/gateway/src/session.ts): one
+`StreamableHTTPServerTransport` per session in a map, the session persisted to
+DynamoDB, an unknown session answered `404`. The gateway's entry point,
+[`packages/gateway/src/index.ts`](packages/gateway/src/index.ts), is 52 lines
+and hands off to it.
 
 ## What it does
 
@@ -22,6 +25,25 @@ words have changed, the assistant is not allowed to use it, and the resident
 sees a short card with the sentence they approved beside the sentence that
 replaced it. They choose to approve the change or keep it blocked, and until
 they do, every other tool carries on working.
+
+## Why it matters beyond one household
+
+This is a working implementation of the update gate a platform would want
+before opening a commerce-capable assistant to third-party tools: approve a
+tool once, keep exactly what it said, and hold it the moment those words
+change. The staged grocery tool in the demo can place an order, which is the
+case that makes a silently reworded description more than a curiosity.
+
+It has a measured cost, and the part that transfers between environments is
+the count: every gated call performs **four DynamoDB write operations**, one
+pin read plus two resumable-SSE events, each an `UpdateItem` and a `PutItem`
+(see [Cost per call](#cost-per-call-four-dynamodb-writes)). The milliseconds
+do not transfer. The only latency measured so far is against DynamoDB Local,
+a single-writer process, where it exceeds the 30 ms budget. Added latency
+against DynamoDB on AWS is {{PENDING: added p50/p95/p99 against DynamoDB on AWS — after the AWS deployment (Phase 18)}}.
+
+What it is not: there is no household that has used it, it covers one
+hard-coded household, and it detects changed claims, not malicious behaviour.
 
 ## Quickstart (no AWS account)
 
@@ -179,9 +201,10 @@ This is the audit of the claims this project could have made and does not.
 - **The drift rate is not measured yet.** Crawl 2 runs on 2026-10-20, 35 days
   after crawl 1. The prediction (20 to 40%) was committed before crawl 1 and
   will be reported against whatever comes out, including if it is low.
-- **Baseline 2 is not measured.** No model provider is chosen, and Bedrock
-  access for this AWS account was declined. Nothing in this repo states a
-  provider as chosen.
+- **Baseline 2 is one model, one provider, one day.** `gpt-oss-120b` on Groq
+  (Bedrock access for this AWS account was declined), 90 attack runs. Its
+  57.8% follow rate is a floor and says nothing about any other model, and
+  "AI models" is never the subject of a sentence about it.
 - **The sample is the servers that boot without credentials**, 152 of 947
   candidates. That likely understates drift.
 - **Classifying a change is one person's reading.** Detecting that a change
@@ -324,7 +347,7 @@ flowchart TB
   up2["Upstream tool server B"]
   card["Consent card<br/>(MCP App + text)"]
   advisory["Advisory pipeline<br/>one-line summary of the change"]
-  model["model provider (configurable)<br/>NOT CHOSEN"]
+  model["model provider (configurable)<br/>gpt-oss-120b on Groq"]
 
   host <-->|"tools/list, tools/call"| session
   session --> gate
@@ -392,6 +415,14 @@ never in an edit. See [`CRAWL_DATES.md`](CRAWL_DATES.md),
 [`docs/DECISIONS.md`](docs/DECISIONS.md) and
 [`friction-log.md`](friction-log.md), which is a submission artifact in its own
 right.
+
+## FAQ
+
+**Alexa+ integrations are curated, so why does this matter?** Curation binds
+who you trust, not what they said when you trusted them: a listing is reviewed
+once, but the assistant re-reads the publisher's words on every connect, and
+nothing in the protocol ties the second to the first. More in
+[`docs/QA.md`](docs/QA.md), question 4.
 
 ## Licence
 
