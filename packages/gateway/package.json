@@ -25,7 +25,7 @@
     "@chaperone/policy": "workspace:*",
     "@chaperone/upstream": "workspace:*",
     "@modelcontextprotocol/ext-apps": "1.7.5",
-    "@modelcontextprotocol/sdk": "^1.17.0",
+    "@modelcontextprotocol/sdk": "^1.31.0",
     "express": "^5.1.0",
     "ulid": "^3.0.2"
   },

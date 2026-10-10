@@ -19,7 +19,7 @@
     "@chaperone/errors": "workspace:*",
     "@chaperone/logger": "workspace:*",
     "@chaperone/policy": "workspace:*",
-    "@modelcontextprotocol/sdk": "^1.17.0"
+    "@modelcontextprotocol/sdk": "^1.31.0"
   },
   "devDependencies": {
     "typescript": "^5.6.3",

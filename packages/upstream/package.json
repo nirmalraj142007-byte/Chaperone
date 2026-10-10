@@ -18,7 +18,7 @@
   "dependencies": {
     "@chaperone/errors": "workspace:*",
     "@chaperone/logger": "workspace:*",
-    "@modelcontextprotocol/sdk": "^1.17.0"
+    "@modelcontextprotocol/sdk": "^1.31.0"
   },
   "devDependencies": {
     "@chaperone/demo-upstream": "workspace:*",
