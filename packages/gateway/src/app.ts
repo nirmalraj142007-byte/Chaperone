@@ -76,14 +76,14 @@ export function buildApp(
     storageBackend: build.storageBackend ?? "dynamodb-local",
   };
   const app = express();
-  // Trust exactly one hop: the deployed topology is ECS Fargate behind a
-  // single ALB (CLAUDE.md — "not App Runner"), so `req.ip` should be the
-  // first address in X-Forwarded-For, not the ALB's own. Without this,
-  // every request behind the ALB reports the same IP and per-IP rate
+  // Trust exactly one hop: the deployed topology is one EC2 host with Caddy
+  // in front (CLAUDE.md, "Deliberate choices"), so `req.ip` should be the
+  // first address in X-Forwarded-For, not Caddy's own. Without this,
+  // every request behind the proxy reports the same IP and per-IP rate
   // limiting below buckets all real clients together. Trusting exactly one
   // hop (not `true`, which trusts the whole chain) means a client still
   // can't spoof its way past the limiter by forging its own X-Forwarded-For
-  // — the ALB overwrites that header with the real edge before this app
+  // — Caddy replaces that header with the real client before this app
   // ever sees it.
   app.set("trust proxy", 1);
   const mcpRateLimiter = new TokenBucketLimiter(MCP_RATE_LIMIT);

@@ -1,0 +1,38 @@
+# Caddy in front of the gateway on the EC2 host (docs/RUNBOOK.md).
+#
+# What this file must keep true: a long-lived SSE stream is never cut or
+# held back by the proxy. The resumable-stream claim is only as good as the
+# hop in front of it.
+#   - No `encode` directive. Compression buffers; nothing here enables it.
+#   - `flush_interval -1` flushes every write to the client immediately,
+#     instead of relying on Caddy's content-type sniffing for text/event-stream.
+#   - No write timeout (Caddy's default is none) and no response-header
+#     timeout, so a stream that is quiet between events is not closed.
+#   - `idle` only bounds a *keep-alive connection with no request in flight*;
+#     it never cuts an active stream. 10m is generous on purpose.
+#
+# CADDY_SITE is the public hostname in production (Caddy then obtains and
+# renews a Let's Encrypt certificate by itself, over ports 80/443) and
+# `:8080` in the local verification stack (plain HTTP, no certificate).
+{
+	servers {
+		timeouts {
+			read_header 30s
+			idle 10m
+		}
+	}
+}
+
+{$CADDY_SITE} {
+	reverse_proxy gateway:3000 {
+		flush_interval -1
+		transport http {
+			dial_timeout 5s
+		}
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}

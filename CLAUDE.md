@@ -86,7 +86,8 @@ packages/
 spec/            25+ conformance assertions. output gets filmed — keep it legible.
 corpus/          FROZEN: TAXONOMY.md, PREDICTIONS.md, candidates.json, attacks/
 data/            crawl reports, drift.json, labels.json. committed. the evidence.
-infra/           CDK v2. Fargate + ALB, not App Runner (see below).
+infra/           CDK v2. One EC2 host running Docker Compose + Caddy, not App Runner or Fargate + ALB (see below).
+  deploy/        what runs on that host: Caddyfile, docker-compose.yml, deploy.sh; docker-compose.local.yml verifies Caddy offline.
 docs/            DECISIONS, QA, RUNBOOK, SCORECARD, RUBRIC-MAP, LIMITATIONS, PRODUCT-FEEDBACK
 demo/            SCRIPT.md, OFFLINE.md, SUBMISSION.md
 ```
@@ -215,7 +216,7 @@ When you hit real friction with the MCP SDK, Bedrock, a registry API, Docker, CD
 
 ## Deliberate choices — do not "fix" these
 
-- **ECS Fargate + ALB, not App Runner.** App Runner caps request duration at 120 seconds. Resumable SSE is the flagship technical claim and gets 20 seconds of the demo video. ALB idle timeout is set to 300s with stickiness enabled so a resumed stream returns to the task holding the in-flight call registry.
+- **One EC2 instance with Docker Compose + Caddy, not App Runner and not Fargate + ALB.** App Runner caps request duration at 120 seconds, and resumable SSE is the flagship technical claim (20 seconds of the demo video). An ECS Fargate + ALB stack was written first and replaced on 2026-10-10 for cost: the ALB and per-IP charges dominate a one-task service. Caddy terminates TLS itself (no ALB, no ACM) and is configured not to buffer or compress, with no write timeout, so a quiet SSE stream is never cut; `pnpm test:resume` and `spec/long-stream.test.ts` passed through it locally (docs/RUNBOOK.md). Do not reintroduce the Fargate stack or mix the two designs.
 - **Multi-table DynamoDB, not single-table.** A solo builder on a deadline should be able to read a table and know what it is.
 - **The crawler runs locally in Docker, not in the cloud.** It runs twice. There is no reason to pay for or debug cloud compute for that.
 - **Denied tools are excluded from `tools/list`, not annotated.** A tool the model can see is a tool the model can be talked into calling.

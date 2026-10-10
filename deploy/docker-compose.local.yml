@@ -1,0 +1,50 @@
+# Verification only. Layers on deploy/docker-compose.yml so the REAL Caddyfile
+# and the REAL service definitions run against a locally built gateway, a
+# local DynamoDB and the staged demo upstream, with Caddy on plain HTTP :8080.
+# This is how "resumable SSE passes through Caddy" is checked without AWS.
+#
+#   docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.local.yml \
+#     --env-file deploy/local.env -p chaperone-caddy up -d --build
+#   (then migrate + pin, and run the suites with TARGET=http://localhost:8080/mcp;
+#    docs/RUNBOOK.md, "Verify Caddy locally")
+services:
+  ddb:
+    image: amazon/dynamodb-local:latest
+    user: root
+    working_dir: /home/dynamodblocal
+    command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-dbPath", "./data"]
+    ports:
+      - "8000:8000"
+    volumes:
+      - ddb-data:/home/dynamodblocal/data
+
+  demo-upstream:
+    build:
+      context: ..
+      dockerfile: docker/demo-upstream.Dockerfile
+    environment:
+      PORT: "4000"
+    ports:
+      - "4000:4000"
+
+  gateway:
+    build:
+      context: ..
+      dockerfile: docker/gateway.Dockerfile
+    depends_on:
+      - ddb
+      - demo-upstream
+    environment:
+      DDB_ENDPOINT: http://ddb:8000
+      # Dummy credentials for DynamoDB Local; the EC2 role supplies real ones.
+      AWS_ACCESS_KEY_ID: local
+      AWS_SECRET_ACCESS_KEY: local
+    logging: !override
+      driver: json-file
+
+  caddy:
+    ports: !override
+      - "8080:8080"
+
+volumes:
+  ddb-data:

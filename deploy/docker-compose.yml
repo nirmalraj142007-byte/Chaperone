@@ -1,0 +1,59 @@
+# What runs on the EC2 host: the gateway and Caddy. Written to /opt/chaperone
+# by the instance's first-boot script (infra/lib/ec2-gateway-stack.ts); values
+# come from /opt/chaperone/.env. Not for local development: use the repo-root
+# docker-compose.yml for that. The same file, with deploy/docker-compose.local.yml
+# layered on top, is what verifies Caddy against the resumability suite locally.
+services:
+  gateway:
+    image: ${GATEWAY_IMAGE}
+    restart: unless-stopped
+    environment:
+      PORT: "3000"
+      # 0.0.0.0 inside the container; only Caddy shares its network, and the
+      # port is not published to the host.
+      BIND_ALL: "true"
+      AWS_REGION: ${AWS_REGION}
+      DDB_TABLE_PREFIX: chaperone
+      HOUSEHOLD_ID: ${HOUSEHOLD_ID}
+      CHAPERONE_ENV: production
+      CHAPERONE_UPSTREAMS: ${CHAPERONE_UPSTREAMS}
+      GATEWAY_ORIGIN_ALLOWLIST: ${GATEWAY_ORIGIN_ALLOWLIST}
+      # No DDB_ENDPOINT on purpose: its absence is how /healthz reports "dynamodb-aws".
+    expose:
+      - "3000"
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ${AWS_REGION}
+        awslogs-group: /chaperone/gateway
+        awslogs-stream: gateway
+
+  caddy:
+    image: caddy:2.8.4-alpine
+    restart: unless-stopped
+    # Start order only. Not `service_healthy`: if storage is down at boot the
+    # gateway is unhealthy, and Caddy should then answer 502 rather than be
+    # absent and refuse connections.
+    depends_on:
+      - gateway
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      CADDY_SITE: ${CADDY_SITE}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Certificates and the ACME account live here. It survives a stop/start
+      # and a redeploy; losing it means re-issuing (rate-limited by Let's Encrypt).
+      - caddy_data:/data
+      - caddy_config:/config
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  caddy_data:
+  caddy_config:

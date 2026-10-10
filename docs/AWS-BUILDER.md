@@ -352,8 +352,9 @@ unmodified against it.
 
 **What's left for Phase 18 (deployment), not this phase:** `cdk bootstrap`
 + `cdk deploy` against a real AWS environment; wiring `CDK_DEFAULT_ACCOUNT`;
-deciding whether the Fargate/ALB gateway stack (CLAUDE.md's other `infra/`
-scope) imports these two tables cross-stack or the reverse.
+deciding how the gateway stack reaches these two tables. Decided: the EC2 gateway
+stack (`infra/lib/ec2-gateway-stack.ts`) addresses them by name-derived ARN, with
+no cross-stack reference.
 
 ## Other remaining TODOs (explicit, not silently deferred)
 

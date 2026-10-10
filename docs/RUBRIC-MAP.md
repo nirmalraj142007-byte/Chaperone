@@ -19,7 +19,7 @@ Status key: **Delivered** (the evidence runs and says what the row claims) ·
 | An older protocol revision is refused, naming both versions | Delivered | the same suite |
 | Transport hygiene: 406 without the required `Accept`, 403 on a disallowed `Origin`, bind to loopback by default | Delivered | `packages/gateway/src/security.ts`; conformance suite |
 | Resumable SSE: every event durable before it is sent, `Last-Event-ID` replays | Delivered locally | `packages/gateway/src/event-store.ts`; `spec/resumption.test.ts` (ten kill-and-resume iterations, `place_order` invoked exactly once each time, counted by the upstream); `pnpm resume-demo` for one narrated run |
-| The same suites pass against a deployed environment | **Not delivered** | `TARGET=https://<host>/mcp` is supported by `pnpm spec` and `pnpm test:resume`, but there is no deployed environment to point them at. `infra/` contains the advisory pipeline stack only; there is no ECS/ALB stack |
+| The same suites pass against a deployed environment | **Not delivered** | `TARGET=https://<host>/mcp` is supported by `pnpm spec` and `pnpm test:resume`, but there is no deployed environment to point them at. Both did pass through Caddy locally (`deploy/docker-compose.local.yml`), which is not the same as passing on AWS. The EC2 + Caddy stack is synthesized, not deployed |
 | Progress notifications, cancellation, `list_changed` | Delivered | conformance suite; `e2e/consent-flow.spec.ts` for `list_changed` |
 | Honest friction with the SDK, recorded as it happened | Delivered | `friction-log.md`; `docs/PRODUCT-FEEDBACK.md`, section "MCP TypeScript SDK" |
 
@@ -75,6 +75,6 @@ connect and keeps nothing; Chaperone is the memory.
 |---|---|---|
 | Friction log in the required six-field form | Delivered | `friction-log.md` |
 | Product feedback for each tool used | Partial | `docs/PRODUCT-FEEDBACK.md`. The CDK deploy section and the Kiro section are open placeholders: nothing was deployed, and Kiro was not used |
-| Public HTTPS deployment | **Not delivered** | no ECS/ALB stack in `infra/`; no deployed URL |
+| Public HTTPS deployment | **Not delivered** | EC2 + Caddy stack is written and synthesized in `infra/`, never applied; no deployed URL |
 | Multi-service AWS pipeline | Partial | `infra/lib/advisory-pipeline-stack.ts` synthesises (`pnpm infra:synth`); it has never been deployed, so there is no execution-graph screenshot |
 | Added latency against real DynamoDB | **Not measured yet** | {{PENDING: added p50/p95/p99 against DynamoDB on AWS — after the AWS deployment (Phase 18)}}. Against DynamoDB Local the 30 ms p95 budget fails (591.89 ms), and `pnpm bench` exits 1 on purpose |

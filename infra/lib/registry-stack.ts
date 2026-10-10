@@ -3,9 +3,10 @@ import type { Construct } from "constructs";
 import * as ecr from "aws-cdk-lib/aws-ecr";
 
 /**
- * The ECR repository, deployed on its own and first. A Fargate service
- * cannot reach steady state against an empty repository, so the image has to
- * be pushed between this stack and GatewayStack (docs/RUNBOOK.md, steps 3-4).
+ * The ECR repository, deployed on its own and first. The host pulls from
+ * here, and `deploy.sh <sha>` has nothing to pull until an image is pushed,
+ * so the image goes up between this stack and the first rollout
+ * (docs/RUNBOOK.md, Deploy).
  *
  * Kept alive while the gateway is paused: the image for the redeploy is
  * already here, so resuming is one `cdk deploy`, not a rebuild.

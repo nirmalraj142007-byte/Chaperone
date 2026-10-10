@@ -58,7 +58,8 @@ change, so re-check rather than trust it.
 ## 5. The deployed URL
 
 Known state: **not deployed.** `infra/` has the advisory pipeline stack only;
-there is no ECS, ALB or domain stack, so there is no URL.
+there is no gateway stack deployed, so there is no URL. The EC2 + Caddy stack is
+written and synthesized (docs/RUNBOOK.md) but never applied.
 
 - [ ] Either: a deployed gateway whose `/healthz` returns 200, with `TARGET=https://<host>/mcp pnpm spec` and `TARGET=https://<host>/mcp pnpm test:resume` both passing against it (pasted output)
 - [ ] Or: the README, the Devpost description and the video all say plainly that it is not deployed and the demo runs on the local stack, and the production-latency marker is replaced by a sentence saying it was not measured against DynamoDB on AWS. Do not leave a dangling pending marker, and do not state a number that came from DynamoDB Local as if it were production
