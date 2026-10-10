@@ -28,5 +28,20 @@ ENV CHAPERONE_COMMIT=$CHAPERONE_COMMIT
 ENV CHAPERONE_VERSION=$CHAPERONE_VERSION
 
 COPY --from=build /repo /repo
+
+# Run as the unprivileged `node` user (uid 1000, ships with the base image).
+# The tree stays root-owned and world-readable: the gateway writes nothing
+# under /repo, so it has no need to own any of it.
+USER node
 EXPOSE 3000
+
+# node:24-slim has no curl, so the probe is node's own fetch. It reads the
+# PORT the process was configured with and hits loopback, which the process
+# is reachable on whether or not BIND_ALL is set. /healthz is 200 unless
+# storage is down; a dead upstream is a 200 `degraded` (see health.ts).
+# ECS ignores this instruction; the same probe is declared in the task
+# definition (infra/lib/gateway-stack.ts).
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD ["node", "-e", "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/healthz').then(r=>process.exit(r.status===200?0:1)).catch(()=>process.exit(1))"]
+
 CMD ["node", "packages/gateway/dist/index.js"]

@@ -45,6 +45,12 @@ against DynamoDB on AWS is {{PENDING: added p50/p95/p99 against DynamoDB on AWS 
 What it is not: there is no household that has used it, it covers one
 hard-coded household, and it detects changed claims, not malicious behaviour.
 
+> **Live deployment:** a hosted copy runs on AWS during judging (2026-11-09 to
+> 2026-11-20) and is taken down after submission and redeployed for that window,
+> so it is not expected to be up at other times. The local `docker compose` path
+> below works any time and needs no AWS account. Deploy, pause and resume steps
+> are in [docs/RUNBOOK.md](docs/RUNBOOK.md); nothing there has been applied yet.
+
 ## Quickstart (no AWS account)
 
 You need Git, Node 24 (see `.nvmrc`), pnpm 12.4.1 (`corepack enable` picks it

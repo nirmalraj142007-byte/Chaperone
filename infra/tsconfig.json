@@ -3,8 +3,12 @@
   "compilerOptions": {
     "composite": false,
     "noEmit": true,
+    // aws-cdk-lib's own Vpc/Cluster classes are not assignable to its IVpc/ICluster
+    // under exactOptionalPropertyTypes (TS2375, inside the library's .d.ts).
+    // Relaxed for this project only; every other package keeps it on.
+    "exactOptionalPropertyTypes": false,
     "module": "NodeNext",
     "moduleResolution": "NodeNext"
   },
-  "include": ["bin", "lib", "lambda"]
+  "include": ["bin", "lib", "lambda", "test"]
 }
