@@ -16,10 +16,11 @@
  * One `StreamableHTTPServerTransport` per session, kept in an in-memory
  * map keyed by session ID — the same pattern as the SDK's own
  * simpleStreamableHttp.ts example and this repo's
- * packages/mcp-app/src/spike-server.ts. ALB stickiness (infra/) keeps a
- * resumed stream on the task instance holding that map entry; a request
- * that lands on a different task for a session this process never saw
- * fails closed as 404 rather than guessing.
+ * packages/mcp-app/src/spike-server.ts. The deployment runs one gateway
+ * process (infra/lib/ec2-gateway-stack.ts), so a resumed stream always
+ * reaches the process holding that map entry; a request for a session this
+ * process never saw (it restarted, or a second instance was added without
+ * sticky routing) fails closed as 404 rather than guessing.
  */
 import { ulid } from "ulid";
 import type { Request, Response } from "express";

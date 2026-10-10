@@ -1,12 +1,23 @@
-# What runs on the EC2 host: the gateway and Caddy. Written to /opt/chaperone
-# by the instance's first-boot script (infra/lib/ec2-gateway-stack.ts); values
-# come from /opt/chaperone/.env. Not for local development: use the repo-root
-# docker-compose.yml for that. The same file, with deploy/docker-compose.local.yml
-# layered on top, is what verifies Caddy against the resumability suite locally.
+# What runs on the EC2 host: the gateway, the staged demo upstream and Caddy.
+# Written to /opt/chaperone by the instance's first-boot script
+# (infra/lib/ec2-gateway-stack.ts); values come from /opt/chaperone/.env. Not for
+# local development: use the repo-root docker-compose.yml for that. The same
+# file, with deploy/docker-compose.local.yml layered on top, is what verifies
+# Caddy against the resumability suite locally.
+#
+# Exposure, deliberately: only Caddy publishes ports. The gateway and the demo
+# upstream use `expose`, which is reachable on the compose network and nowhere
+# else. The demo upstream's /control/* routes (mutate, reset, stats,
+# place-order-delay) have no authentication, so they must never be routable
+# from the internet: Caddy proxies to the gateway only, and the demo upstream
+# has no `ports:` entry. deploy/demo-control.sh is the way in, over SSM.
 services:
   gateway:
     image: ${GATEWAY_IMAGE}
     restart: unless-stopped
+    # Start order only: the gateway retries its upstreams with backoff.
+    depends_on:
+      - demo-upstream
     environment:
       PORT: "3000"
       # 0.0.0.0 inside the container; only Caddy shares its network, and the
@@ -18,15 +29,37 @@ services:
       CHAPERONE_ENV: production
       CHAPERONE_UPSTREAMS: ${CHAPERONE_UPSTREAMS}
       GATEWAY_ORIGIN_ALLOWLIST: ${GATEWAY_ORIGIN_ALLOWLIST}
+      # Bounds the V8 heap well under the container's memory limit, so a leak
+      # shows up as a GC-bound node and not as the kernel killing the host's
+      # other processes. Sized from the measurement in docs/RUNBOOK.md.
+      NODE_OPTIONS: --max-old-space-size=160
       # No DDB_ENDPOINT on purpose: its absence is how /healthz reports "dynamodb-aws".
     expose:
       - "3000"
+    mem_limit: 300m
     logging:
       driver: awslogs
       options:
         awslogs-region: ${AWS_REGION}
         awslogs-group: /chaperone/gateway
         awslogs-stream: gateway
+
+  demo-upstream:
+    image: ${DEMO_UPSTREAM_IMAGE}
+    restart: unless-stopped
+    environment:
+      PORT: "4000"
+      NODE_OPTIONS: --max-old-space-size=96
+    # NOT published. No `ports:`, and no route from Caddy.
+    expose:
+      - "4000"
+    mem_limit: 160m
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ${AWS_REGION}
+        awslogs-group: /chaperone/gateway
+        awslogs-stream: demo-upstream
 
   caddy:
     image: caddy:2.8.4-alpine
@@ -42,6 +75,7 @@ services:
       - "443:443/udp"
     environment:
       CADDY_SITE: ${CADDY_SITE}
+    mem_limit: 96m
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       # Certificates and the ACME account live here. It survives a stop/start

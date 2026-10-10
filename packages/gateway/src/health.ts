@@ -9,10 +9,11 @@
  * is a constant, present on healthy and unhealthy responses alike, because
  * the property it describes does not depend on the current check result.
  *
- * Every probe is read-only. `/healthz` is the endpoint an ALB hits every
- * few seconds for the life of the service; a health check that wrote to
- * the ledger would make the append-only evidence chain a function of how
- * long the load balancer has been running.
+ * Every probe is read-only. `/healthz` is the endpoint the container
+ * HEALTHCHECK (docker/gateway.Dockerfile) hits every few seconds for the life
+ * of the service; a health check that wrote to the ledger would make the
+ * append-only evidence chain a function of how long the container has been
+ * running.
  *
  * `degraded` is deliberately a 200. A dead upstream is normal operation
  * for a proxy — the gateway is doing its job, and the pool's own backoff
@@ -32,7 +33,7 @@ import { childLogger } from "@chaperone/logger";
 
 const log = childLogger({ component: "gateway-health" });
 
-/** Bounds a single probe, well under a typical ALB health-check timeout. */
+/** Bounds a single probe, well under the container HEALTHCHECK's 5 s timeout. */
 const PROBE_TIMEOUT_MS = 2_000;
 
 export type ComponentState = "ok" | "unreachable";

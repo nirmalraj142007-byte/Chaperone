@@ -1,0 +1,3 @@
+# Files that are copied onto the Linux host verbatim must keep LF endings even
+# when checked out on Windows (deploy/ is embedded in the instance's boot script).
+deploy/** text eol=lf

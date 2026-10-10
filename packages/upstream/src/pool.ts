@@ -37,7 +37,7 @@ const LIST_TOOLS_TIMEOUT_MS = 3_000;
  * Without an explicit `timeout`, `Client.callTool` applies
  * `DEFAULT_REQUEST_TIMEOUT_MSEC` (60_000ms — shared/protocol.js) to *this*
  * hop, independent of and much shorter than anything the downstream side
- * (session.ts's resumable SSE, a 300s ALB idle timeout) is built to
+ * (session.ts's resumable SSE, streams held open for minutes behind Caddy) is built to
  * tolerate — a real upstream call genuinely running past a minute (e.g.
  * demo-upstream's `track_delivery` driven for spec/long-stream.test.ts's
  * ~180s) would otherwise fail right here, inside the pool, well before the

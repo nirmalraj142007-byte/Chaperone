@@ -1,7 +1,7 @@
 /**
  * `pnpm resume-demo` — a single, verbose kill-and-resume, meant to be
  * screen-recorded for the demo's 20-second resumability beat (see
- * CLAUDE.md's ALB-idle-timeout / Fargate note and the proposal's 90-second
+ * CLAUDE.md's "Deliberate choices" note on the EC2 + Caddy deployment and the proposal's 90-second
  * script). Exercises the exact same real gateway + real demo-upstream +
  * real DynamoDB path spec/resumption.test.ts's 10 independent iterations
  * do, just once, with every step narrated to stdout instead of asserted

@@ -22,10 +22,13 @@ services:
     build:
       context: ..
       dockerfile: docker/demo-upstream.Dockerfile
-    environment:
-      PORT: "4000"
+    # Published to the host here, and only here, so the test harness can drive
+    # /control/* (resumption.test.ts). deploy/docker-compose.yml publishes
+    # nothing for this service, and that is what runs on the instance.
     ports:
       - "4000:4000"
+    logging: !override
+      driver: json-file
 
   gateway:
     build:

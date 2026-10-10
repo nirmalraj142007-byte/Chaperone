@@ -1,13 +1,14 @@
 /**
- * Phase 9 — the early-warning system for the ALB idle-timeout risk noted in
- * infra/ (CLAUDE.md: "ECS Fargate + ALB, not App Runner... ALB idle timeout
- * is set to 300s"). Holds one real SSE stream open for ~180s against a real,
+ * Phase 9 — the early-warning system for the reverse-proxy idle-timeout risk
+ * (CLAUDE.md, "Deliberate choices": one EC2 host with Caddy in front, whose
+ * Caddyfile sets no write timeout and no buffering). Holds one
+ * real SSE stream open for ~180s against a real,
  * already-running gateway (`docker compose up -d`; `TARGET=https://<host>/mcp`
  * points this at a deployed environment instead) with periodic progress
  * notifications, and asserts it never disconnects. Run via
  * `pnpm test -- spec/long-stream.test.ts` (see CLAUDE.md's VERIFY commands) —
  * deliberately not part of the default `pnpm spec` run, which is
- * in-process and has no ALB in front of it to test against.
+ * in-process and has no proxy in front of it to test against.
  */
 import { describe, expect, it } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -20,7 +21,7 @@ const GATEWAY_URL = process.env["TARGET"] ?? "http://localhost:3000/mcp";
 
 // 36 checkpoints × 5s = 180s of a single held-open SSE stream, each
 // checkpoint a real `notifications/progress` — real time, not simulated,
-// because the ALB idle-timeout risk this test guards against is itself a
+// because the proxy idle-timeout risk this test guards against is itself a
 // real-time behaviour (a proxy silently dropping an SSE connection after N
 // seconds of it looking idle) that a compressed or mocked clock can't
 // exercise.
@@ -53,7 +54,7 @@ describe("long-lived SSE stream", () => {
             // (`DEFAULT_REQUEST_TIMEOUT_MSEC`, shared/protocol.js) — far
             // short of this test's ~180s call. `resetTimeoutOnProgress`
             // means each of the 36 checkpoints (one every 5s) re-arms it,
-            // so what's actually under test is the transport/ALB path, not
+            // so what's actually under test is the transport/proxy path, not
             // this client-side ceiling; `timeout` is still raised well
             // past the nominal duration as a backstop.
             timeout: TOTAL_DURATION_MS + 30_000,

@@ -37,14 +37,18 @@ const COMPOSE_VERSION = "v2.29.7";
 
 export interface Ec2GatewayStackProps extends StackProps {
   repository: ecr.IRepository;
+  /** The staged demo upstream's image, run beside the gateway on the same host. */
+  demoRepository: ecr.IRepository;
   householdId?: string;
 }
 
 /**
- * One small EC2 instance running the gateway and Caddy under Docker Compose.
- * Replaces the Fargate + ALB design (see docs/RUNBOOK.md, "Why not Fargate +
- * ALB"): no ALB, no ACM, no NAT, no load-balancer hourly charge. Caddy
- * obtains and renews its own certificate for `DomainName`.
+ * One small EC2 instance running the gateway, the staged demo upstream and
+ * Caddy under Docker Compose. No load balancer, no ACM and no NAT (the
+ * reasoning is in docs/RUNBOOK.md). Caddy obtains and renews its own
+ * certificate for `DomainName`. Only Caddy publishes ports, and it routes to
+ * the gateway alone: the demo upstream's unauthenticated /control routes stay
+ * on the internal compose network (asserted in infra/test).
  *
  * The stack builds the host and does not deploy the application. The image
  * is rolled out and rolled back by `/opt/chaperone/deploy.sh <sha>` over SSM
@@ -79,9 +83,11 @@ export class Ec2GatewayStack extends Stack {
     });
     const upstreamsJson = new CfnParameter(this, "UpstreamsJson", {
       type: "String",
+      // The demo upstream running on this host, reached over the compose network by service name.
+      default: '[{"id":"grocery","url":"http://demo-upstream:4000/mcp","label":"Household Grocery"}]',
       // Must not contain a single quote: it is written into a single-quoted .env value.
       allowedPattern: "^[^']*$",
-      description: 'CHAPERONE_UPSTREAMS: JSON array of {"id","url","label"}.',
+      description: 'CHAPERONE_UPSTREAMS: JSON array of {"id","url","label"}. Defaults to the demo upstream on this host.',
     });
     const instanceType = new CfnParameter(this, "InstanceType", {
       type: "String",
@@ -143,6 +149,7 @@ export class Ec2GatewayStack extends Stack {
       );
     }
     props.repository.grantPull(role);
+    props.demoRepository.grantPull(role);
     logGroup.grantWrite(role);
 
     // --- First-boot script: install Docker, lay down /opt/chaperone ---------------
@@ -151,7 +158,8 @@ export class Ec2GatewayStack extends Stack {
     // deployed until `deploy.sh <sha>` runs (RUNBOOK), so a first boot never
     // fails on an image that does not exist yet.
 
-    const read = (name: string): string => fs.readFileSync(path.join(DEPLOY_DIR, name), "utf8");
+    // LF only: a CRLF checkout on Windows would put \r into the scripts and break them under bash on the host.
+    const read = (name: string): string => fs.readFileSync(path.join(DEPLOY_DIR, name), "utf8").replace(/\r\n/g, "\n");
     const userData = ec2.UserData.forLinux();
     userData.addCommands(
       "set -euxo pipefail",
@@ -165,14 +173,17 @@ export class Ec2GatewayStack extends Stack {
       "cat > /opt/chaperone/docker-compose.yml <<'CHAPERONE_EOF'\n" + read("docker-compose.yml") + "CHAPERONE_EOF",
       "cat > /opt/chaperone/Caddyfile <<'CHAPERONE_EOF'\n" + read("Caddyfile") + "CHAPERONE_EOF",
       "cat > /opt/chaperone/deploy.sh <<'CHAPERONE_EOF'\n" + read("deploy.sh") + "CHAPERONE_EOF",
-      "chmod 755 /opt/chaperone/deploy.sh",
+      "cat > /opt/chaperone/demo-control.sh <<'CHAPERONE_EOF'\n" + read("demo-control.sh") + "CHAPERONE_EOF",
+      "chmod 755 /opt/chaperone/deploy.sh /opt/chaperone/demo-control.sh",
       // Values only, no secrets: the role supplies every credential.
       "cat > /opt/chaperone/.env <<'CHAPERONE_EOF'\n" +
         [
           "COMPOSE_PROJECT_NAME=chaperone",
           `AWS_REGION=${this.region}`,
           `ECR_REPO=${props.repository.repositoryUri}`,
+          `DEMO_ECR_REPO=${props.demoRepository.repositoryUri}`,
           `GATEWAY_IMAGE=${props.repository.repositoryUri}:unset`,
+          `DEMO_UPSTREAM_IMAGE=${props.demoRepository.repositoryUri}:unset`,
           `HOUSEHOLD_ID=${householdId}`,
           `CADDY_SITE=${domainName.valueAsString}`,
           `GATEWAY_ORIGIN_ALLOWLIST=https://${domainName.valueAsString}`,
@@ -219,5 +230,6 @@ export class Ec2GatewayStack extends Stack {
     new CfnOutput(this, "ElasticIp", { value: eip.attrPublicIp });
     new CfnOutput(this, "LogGroupName", { value: logGroup.logGroupName });
     new CfnOutput(this, "RepositoryUri", { value: props.repository.repositoryUri });
+    new CfnOutput(this, "DemoRepositoryUri", { value: props.demoRepository.repositoryUri });
   }
 }

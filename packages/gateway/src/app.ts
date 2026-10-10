@@ -143,7 +143,7 @@ export function buildApp(
    *
    * Both sit *behind* the Origin allowlist, which costs a health check
    * nothing — `originAllowed` returns true when there is no Origin header
-   * at all, which is every ALB probe and every `curl` — while keeping a
+   * at all, which is every container HEALTHCHECK probe and every `curl` — while keeping a
    * browser on a disallowed origin from scraping `/metrics` through a
    * rebinding attack. Deliberately outside `/api`: that is the console's
    * surface and its 503 means "this view is unavailable", which is a
@@ -152,7 +152,7 @@ export function buildApp(
   app.get("/healthz", (_req: Request, res: Response, next: NextFunction) => {
     void (async () => {
       const report = await buildHealthReport(pool, identity);
-      // No caching anywhere between here and the load balancer: a cached
+      // No caching anywhere between here and the reverse proxy: a cached
       // 200 outliving the outage it was measured before is the one way a
       // health endpoint can actively mislead.
       res.setHeader("Cache-Control", "no-store");

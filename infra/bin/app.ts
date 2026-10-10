@@ -21,4 +21,7 @@ const registry = new RegistryStack(app, "ChaperoneRegistry");
 // would need AWS credentials. Env-agnostic, CloudFormation resolves the AZs at
 // deploy time and the region is whatever the deploying credentials target
 // (docs/RUNBOOK.md pins us-east-1 via AWS_REGION).
-new Ec2GatewayStack(app, "ChaperoneGateway", { repository: registry.repository });
+new Ec2GatewayStack(app, "ChaperoneGateway", {
+  repository: registry.repository,
+  demoRepository: registry.demoRepository,
+});

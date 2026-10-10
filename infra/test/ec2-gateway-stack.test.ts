@@ -1,3 +1,6 @@
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { App } from "aws-cdk-lib";
 import { Template } from "aws-cdk-lib/assertions";
 import { describe, expect, it } from "vitest";
@@ -5,10 +8,15 @@ import { Ec2GatewayStack } from "../lib/ec2-gateway-stack.js";
 import { RegistryStack } from "../lib/registry-stack.js";
 import { TablesStack } from "../lib/tables-stack.js";
 
+const DEPLOY = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "deploy");
+
 // One App per template: an App can be synthesized only once.
 const gatewayApp = new App();
 const registry = new RegistryStack(gatewayApp, "Registry");
-const gateway = Template.fromStack(new Ec2GatewayStack(gatewayApp, "Gateway", { repository: registry.repository }));
+const gateway = Template.fromStack(new Ec2GatewayStack(gatewayApp, "Gateway", {
+    repository: registry.repository,
+    demoRepository: registry.demoRepository,
+  }));
 const tables = Template.fromStack(new TablesStack(new App(), "Tables"));
 
 interface Statement {
@@ -86,6 +94,38 @@ describe("Ec2GatewayStack", () => {
     expect(params).toEqual(
       expect.arrayContaining(["DomainName", "HostedZoneId", "HostedZoneName", "UpstreamsJson", "InstanceType"]),
     );
+  });
+
+  it("keeps the demo upstream's /control routes off the internet", () => {
+    const compose = fs.readFileSync(path.join(DEPLOY, "docker-compose.yml"), "utf8").replace(/\r\n/g, "\n");
+    const caddyfile = fs.readFileSync(path.join(DEPLOY, "Caddyfile"), "utf8").replace(/\r\n/g, "\n");
+    // The service block runs from its header to the next top-level service or key.
+    const block = (name: string): string => {
+      const m = compose.match(new RegExp(`^  ${name}:\\n([\\s\\S]*?)(?=^  \\S|^\\S|(?![\\s\\S]))`, "m"));
+      expect(m, `service ${name} not found`).not.toBeNull();
+      return m?.[1] ?? "";
+    };
+    const demo = block("demo-upstream");
+    expect(demo).not.toMatch(/^\s+ports:/m); // `expose` only: no host port
+    expect(demo).toMatch(/^\s+expose:/m);
+    expect(block("gateway")).not.toMatch(/^\s+ports:/m);
+    expect(block("caddy")).toMatch(/^\s+ports:/m);
+
+    // Caddy proxies to the gateway and to nothing else.
+    const upstreams = [...caddyfile.matchAll(/^\s*reverse_proxy\s+(\S+)/gm)].map((m) => m[1]);
+    expect(upstreams).toEqual(["gateway:3000"]);
+    expect(caddyfile).not.toMatch(/demo-upstream/);
+    expect(caddyfile).not.toMatch(/\/control/);
+  });
+
+  it("defaults UpstreamsJson to the demo upstream on this host and can pull both images", () => {
+    const params = gateway.toJSON().Parameters as Record<string, { Default?: string }>;
+    expect(JSON.parse(params["UpstreamsJson"]?.Default ?? "null")).toEqual([
+      { id: "grocery", url: "http://demo-upstream:4000/mcp", label: "Household Grocery" },
+    ]);
+    const userData = JSON.stringify(gateway.findResources("AWS::EC2::Instance"));
+    expect(userData).toContain("demo-control.sh");
+    expect(userData).toContain("DEMO_UPSTREAM_IMAGE=");
   });
 
   it("embeds a Caddyfile with no compression and no write timeout", () => {

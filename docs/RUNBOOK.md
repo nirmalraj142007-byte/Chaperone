@@ -32,13 +32,26 @@ and the tables survive because they live in their own stack.
 |---|---|---|
 | `ChaperoneAdvisoryPipeline` | `chaperone-quarantine`, `chaperone-advisory`, the Step Functions advisory pipeline | Stays up. Owns those two tables. |
 | `ChaperoneTables` | the other 7 tables, from `TABLE_SCHEMAS`; every one `RETAIN` | **Never destroyed**, so data survives anything below. |
-| `ChaperoneRegistry` | ECR repo `chaperone-gateway`, immutable tags | Stays up. The image for every rollout and rollback is here. |
+| `ChaperoneRegistry` | ECR repos `chaperone-gateway` and `chaperone-demo-upstream`, immutable tags | Stays up. The images for every rollout and rollback are here. |
 | `ChaperoneGateway` | VPC (one public subnet, no NAT), `t3.micro` host, Elastic IP, Route 53 A record, security group, instance role, 30-day log group | Pause = *stop the instance*, not destroy the stack. |
+
+Three containers run on the host under Docker Compose: the gateway, the staged
+demo upstream (`demo-upstream`) and Caddy. Both images carry the same git-sha
+tag and move together.
 
 `ChaperoneGateway` addresses the tables by name-derived ARN, not by
 cross-stack reference. The host exposes only 80/tcp, 443/tcp and 443/udp. There
 is **no SSH**: shell access is SSM Session Manager and rollouts are SSM Run
-Command. IMDSv2 is required with a hop limit of 2; the default of 1 would stop
+Command.
+
+**The demo upstream's `/control/*` routes are not reachable from the internet.**
+They are unauthenticated (`mutate`, `reset`, `stats`, `place-order-delay`), so
+three things keep them private, each asserted by `infra/test`: `demo-upstream`
+has no `ports:` entry in `deploy/docker-compose.yml` (it uses `expose`, which is
+reachable on the compose network only); Caddy has one route, to `gateway:3000`,
+and none to `demo-upstream`; and the security group admits nothing but 80/443.
+A request for `/control/mutate` through Caddy lands on the gateway, which
+answers 404. The way in is `demo-control.sh` over SSM (below). IMDSv2 is required with a hop limit of 2; the default of 1 would stop
 the gateway container reaching the instance role's credentials, and every
 DynamoDB call would then fail closed.
 
@@ -73,11 +86,11 @@ the AWS-managed `AmazonSSMManagedInstanceCore`.
    completed without an AMI id the identity could not look up.
 2. **A Route 53 hosted zone** for the domain, in the same account. The stack
    writes the A record into it.
-3. **An upstream the gateway can reach.** `UpstreamsJson` is a JSON array of
-   `{"id","url","label"}` and must not contain a single quote. **Open item:**
-   nothing here deploys the staged `demo-upstream`. Point it at a reachable MCP
-   server, or host `demo-upstream` separately first. Without one the gateway
-   serves, but every upstream tool is withheld.
+3. **An upstream.** `UpstreamsJson` defaults to the demo upstream that runs on
+   the same host, `[{"id":"grocery","url":"http://demo-upstream:4000/mcp",...}]`,
+   so for the demo you pass nothing. To point the gateway at a different MCP
+   server instead, override it: a JSON array of `{"id","url","label"}` with no
+   single quote in it.
 4. Docker running; `corepack pnpm install`; `export AWS_REGION=us-east-1`.
 
 ## Deploy
@@ -86,7 +99,9 @@ the AWS-managed `AmazonSSMManagedInstanceCore`.
 cd infra
 SHA=$(git rev-parse HEAD)
 ACCOUNT=<ACCOUNT_ID>
-REPO=$ACCOUNT.dkr.ecr.us-east-1.amazonaws.com/chaperone-gateway
+REGISTRY=$ACCOUNT.dkr.ecr.us-east-1.amazonaws.com
+REPO=$REGISTRY/chaperone-gateway
+DEMO_REPO=$REGISTRY/chaperone-demo-upstream
 
 # 1. Bootstrap once per account/region. (Not run yet: this creates resources.)
 corepack pnpm exec cdk bootstrap aws://$ACCOUNT/us-east-1
@@ -94,17 +109,18 @@ corepack pnpm exec cdk bootstrap aws://$ACCOUNT/us-east-1
 # 2. Data and registry first. Tables are created once and never destroyed.
 corepack pnpm exec cdk deploy ChaperoneAdvisoryPipeline ChaperoneTables ChaperoneRegistry
 
-# 3. Build and push the image, tagged with the git sha. linux/amd64: the host is x86.
-aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin "${REPO%%/*}"
+# 3. Build and push both images, tagged with the same git sha. linux/amd64: the host is x86.
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin "$REGISTRY"
 docker build --platform linux/amd64 -f ../docker/gateway.Dockerfile --build-arg CHAPERONE_COMMIT=$SHA -t $REPO:$SHA ..
-docker push $REPO:$SHA
+docker build --platform linux/amd64 -f ../docker/demo-upstream.Dockerfile -t $DEMO_REPO:$SHA ..
+docker push $REPO:$SHA && docker push $DEMO_REPO:$SHA
 
 # 4. The host. First boot installs Docker and lays down /opt/chaperone; it does not start the gateway.
 corepack pnpm exec cdk deploy ChaperoneGateway \
   --parameters DomainName=gateway.example.com \
   --parameters HostedZoneId=Z0123456789ABC \
-  --parameters HostedZoneName=example.com \
-  --parameters UpstreamsJson='[{"id":"grocery","url":"https://<upstream>/mcp","label":"Household Grocery"}]'
+  --parameters HostedZoneName=example.com
+# UpstreamsJson is left at its default: the demo upstream on this host.
 ID=$(aws cloudformation describe-stacks --stack-name ChaperoneGateway --query "Stacks[0].Outputs[?OutputKey=='InstanceId'].OutputValue" --output text)
 
 # 5. Wait for first boot, then roll the image out over SSM.
@@ -118,10 +134,12 @@ aws ssm get-command-invocation --command-id $CMD --instance-id $ID --query '[Sta
 
 Deploy time: *not yet measured.*
 
-`deploy.sh` logs in to ECR, points `/opt/chaperone/.env` at `<repo>:<sha>`,
-pulls, runs `docker compose up -d`, and waits up to 120 s for the gateway
-container's HEALTHCHECK to pass. If it does not, it restores the previous image
-and exits non-zero.
+`deploy.sh` logs in to ECR, points `/opt/chaperone/.env` at `<repo>:<sha>` for
+both images, pulls, runs `docker compose up -d`, and waits up to 120 s for the
+gateway's and the demo upstream's HEALTHCHECKs to pass. If either does not, it
+restores the previous images and exits non-zero. After a good rollout it prunes
+unused images (each is about 1.1 GB; the disk is 20 GB), so a rollback re-pulls
+the old tag from ECR.
 
 ### DNS
 
@@ -137,12 +155,58 @@ rollouts. Destroying and recreating the host loses them and re-issues
 
 ### Pin the upstream's tools
 
-A tool with no pin is refused as unpinned. From a machine with deployer
-credentials, against the real tables (no `DDB_ENDPOINT`):
+A tool with no pin is refused as unpinned. `pnpm pin:bootstrap` is a `tsx`
+entry point (`packages/gateway/scripts/pin-bootstrap.ts`) that is not in the
+runtime image, and the demo upstream is not published, so it runs from your
+machine through an SSM port-forward to the demo-upstream container, writing to
+the real tables with your deployer credentials (no `DDB_ENDPOINT`). Needs the
+Session Manager plugin for the AWS CLI.
 
 ```bash
-CHAPERONE_UPSTREAMS='<same JSON>' corepack pnpm pin:bootstrap
+# the container's address on the host's bridge network (reachable from the host, not the internet)
+CMD=$(run "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' chaperone-demo-upstream-1")
+aws ssm wait command-executed --command-id $CMD --instance-id $ID
+IP=$(aws ssm get-command-invocation --command-id $CMD --instance-id $ID --query StandardOutputContent --output text | tr -d '[:space:]')
+
+aws ssm start-session --target $ID --document-name AWS-StartPortForwardingSessionToRemoteHost \
+  --parameters "host=$IP,portNumber=4000,localPortNumber=4000" &
+CHAPERONE_UPSTREAMS='[{"id":"grocery","url":"http://localhost:4000/mcp","label":"Household Grocery"}]' \
+  corepack pnpm pin:bootstrap
+kill %1
 ```
+
+Pins are keyed by upstream id, tool name and definition hash, not by URL, so
+pinning through `localhost:4000` is valid for a gateway that reaches the same
+server as `demo-upstream:4000`; the local verification below did exactly this.
+**The port-forward itself has not been run against AWS.** If it fails, record
+what worked in its place.
+
+## Trigger the demo mutation (over SSM)
+
+The demo's one scripted change, `add_item`'s description, is made by
+`/opt/chaperone/demo-control.sh`, which sends the request from inside the
+`demo-upstream` container to its own loopback. Nothing outside the host can do
+this.
+
+```bash
+ID=$(aws cloudformation describe-stacks --stack-name ChaperoneGateway --query "Stacks[0].Outputs[?OutputKey=='InstanceId'].OutputValue" --output text)
+ctl() { CMD=$(aws ssm send-command --instance-ids $ID --document-name AWS-RunShellScript \
+  --parameters "commands=[\"/opt/chaperone/demo-control.sh $1\"]" --query Command.CommandId --output text)
+  aws ssm wait command-executed --command-id $CMD --instance-id $ID
+  aws ssm get-command-invocation --command-id $CMD --instance-id $ID --query '[Status,StandardOutputContent]' --output text; }
+
+ctl stats    # 200 {"mutated":false,...}
+ctl mutate   # 200 {"mutated":true,"sessionsUpdated":1}   add_item's description has changed
+ctl reset    # 200 {"mutated":false,...}                    and back
+```
+
+The next `tools/list` through the gateway then shows the changed definition, and
+the gateway freezes `add_item` and raises the consent card, which is the demo.
+For a shell on the host instead: `aws ssm start-session --target $ID`, then
+`/opt/chaperone/demo-control.sh mutate`. Reset between takes with `ctl reset`.
+The same script was run for real against the local stack: `stats`, `mutate`,
+`stats`, `reset` all answered 200 with the state flipping as shown, and an
+unknown argument exits 2.
 
 ## Smoke test
 
@@ -151,6 +215,11 @@ D=https://gateway.example.com
 curl -s -o /dev/null -w '%{http_code}\n' http://gateway.example.com/healthz   # 308: Caddy redirects to HTTPS
 curl -s $D/healthz | jq '{status, storageBackend, gateWhenUnhealthy}'
 #   expect storageBackend "dynamodb-aws"; a 503 means storage is failing and every gated tool is withheld
+
+for p in /control/stats /control/mutate /control/reset; do
+  curl -s -X POST -o /dev/null -w "$p -> %{http_code}\n" $D$p     # all three must be 404 (the gateway's, not the demo upstream's)
+done
+nc -zv -w3 <ELASTIC_IP> 4000; nc -zv -w3 <ELASTIC_IP> 3000        # both must fail: only 80 and 443 are open
 
 TARGET=$D/mcp corepack pnpm spec            # 27 named assertions, against the deployed gateway
 TARGET=$D/mcp corepack pnpm test:resume     # 10-iteration kill-and-resume loop; must be 10/10
@@ -162,6 +231,35 @@ Until these have run against the deployment, "resumable SSE works through
 Caddy on AWS" is **not demonstrated**; only the local result below is. Added
 latency against DynamoDB on AWS is also unmeasured: run `corepack pnpm bench`
 against `$D` and put the result in the README's "Not measured yet" table.
+
+## Memory budget on a `t3.micro`
+
+A `t3.micro` has 1 GiB, about 0.9 GiB usable. Three containers run beside the
+OS, Docker and the SSM agent. Container memory is **measured** (the local stack,
+`docker stats` every second for about a minute under the 10-iteration resume
+loop, then every 4 s during the 180 s stream); host overhead is **estimated**,
+not measured, because there has been no EC2 host.
+
+| Component | Idle | Peak under load | Compose limit | Source |
+|---|---|---|---|---|
+| gateway | 49 MiB | 71 MiB | 300 MiB (V8 heap capped at 160) | measured |
+| demo-upstream | 36 MiB | 55 MiB | 160 MiB (heap capped at 96) | measured |
+| caddy | 14 MiB | 16 MiB | 96 MiB | measured |
+| **Containers, sum of peaks** | | **142 MiB** | 556 MiB if every limit were hit | measured |
+| OS, dockerd, containerd, SSM agent | | about 300-400 MiB | | estimate |
+| **Expected total** | | **about 450-550 MiB of about 900** | | |
+
+So it fits with roughly 350 MiB of headroom, plus the 1 GiB swapfile the
+first-boot script adds. No container was OOM-killed. The compose limits sit well
+above the measured peaks and well under the host's total, so a runaway container
+is killed on its own and does not take down Docker or SSM with it. During a
+rollout the old and new containers briefly overlap (`docker compose up -d`
+recreates in place, not side by side, so this is short).
+
+**Check on the first real deploy** and write the numbers here: `free -m` and
+`docker stats --no-stream` over SSM, once idle and once during `test:resume`. If
+available memory drops under about 150 MiB or swap is being used steadily, set
+the `InstanceType` parameter to `t3.small` (about +$0.25/day).
 
 ## Verify Caddy locally
 
@@ -186,10 +284,15 @@ The `unset` matters: compose gives shell variables priority over `--env-file`,
 and an exported `CHAPERONE_UPSTREAMS=localhost:4000` makes the gateway
 container look for its upstream on its own loopback.
 
-**Result, 2026-10-10:** `test:resume` 10/10 iterations passed through Caddy, and
-`long-stream.test.ts` held a single SSE stream for 180.4 s (36 progress
-notifications) without being cut. The gateway container ran as `uid=1000(node)`
-and its HEALTHCHECK passed. What this does not cover: TLS, HTTP/2 and HTTP/3,
+**Result, 2026-10-10**, with the full three-service layout (gateway, demo
+upstream, Caddy, memory limits applied): `test:resume` 10/10 iterations passed
+through Caddy, and `long-stream.test.ts` held a single SSE stream for 180.7 s
+(36 progress notifications) without being cut. Both application containers ran
+as `uid=1000(node)` with their HEALTHCHECKs passing, and none was OOM-killed or
+restarted. `/control/stats`, `/control/mutate`, `/control/reset` and
+`/control/place-order-delay` through Caddy all returned the gateway's 404, and
+`demo-control.sh` drove the real demo upstream (`stats`, `mutate`, `stats`,
+`reset` all 200, with `mutated` flipping true then false). What this does not cover: TLS, HTTP/2 and HTTP/3,
 the public internet, a real EC2 network path, and DynamoDB on AWS.
 
 ## Rollback
@@ -298,7 +401,7 @@ Credits and Free Tier before relying on them.
 | CloudWatch Logs ingest | $0.50/GB, assumed under 50 MB/day | 0.03 |
 | DynamoDB on-demand + PITR | cents at this volume | 0.01 |
 | Route 53 zone (if new) | $0.50/month | 0.02 |
-| ECR storage | about 1 GB at $0.10/GB-month | 0.00 |
+| ECR storage, two repos | about 2 GB compressed at $0.10/GB-month | 0.01 |
 | Data transfer out | first 100 GB/month free | 0.00 |
 | ALB, ACM, NAT gateway | not used | 0.00 |
 | **Total while running** | | **about $0.48** |

@@ -148,7 +148,8 @@ export function registerGroceryTools(server: McpServer): () => void {
       inputSchema: {
         // Both optional and defaulted to the real product's own constants —
         // only spec/long-stream.test.ts overrides them, to hold a real SSE
-        // stream open for ~180s (the ALB idle-timeout risk in infra/) without
+        // stream open for ~180s (the proxy idle-timeout risk in front of the
+        // gateway, deploy/Caddyfile) without
         // making every other caller of this tool wait that long too.
         checkpoints: z.number().int().positive().max(120).optional().describe("Number of checkpoints to report. Defaults to 4."),
         tickMs: z.number().int().positive().max(10_000).optional().describe("Milliseconds between checkpoints. Defaults to 150."),

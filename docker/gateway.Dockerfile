@@ -39,8 +39,9 @@ EXPOSE 3000
 # PORT the process was configured with and hits loopback, which the process
 # is reachable on whether or not BIND_ALL is set. /healthz is 200 unless
 # storage is down; a dead upstream is a 200 `degraded` (see health.ts).
-# ECS ignores this instruction; the same probe is declared in the task
-# definition (infra/lib/gateway-stack.ts).
+# On the EC2 host, deploy/deploy.sh waits on this probe's result (via
+# `docker inspect`) before it calls a rollout good, and restores the previous
+# image if it never turns healthy.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD ["node", "-e", "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/healthz').then(r=>process.exit(r.status===200?0:1)).catch(()=>process.exit(1))"]
 
