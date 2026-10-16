@@ -64,6 +64,8 @@ export interface LatencyFile {
   budgetOk: boolean;
   /** Plain-English statement of what `addedLatency` is a difference of. Published so the file explains itself. */
   method: string;
+  /** Calls started per second across all sessions, when the run was paced (`--rate`); absent when unpaced. */
+  ratePerSecond?: number;
   /**
    * What produced these numbers. Recorded because "added latency" is not
    * a property of the gateway alone: most of it is storage, and the
@@ -195,8 +197,9 @@ export function buildLatencyFile(input: {
   concurrency: number;
   warmup: number;
   environment: Environment;
+  ratePerSecond?: number;
 }): LatencyFile {
-  const { proxied, direct, added, budget, budgetOk, commit, dirty, concurrency, warmup, environment } = input;
+  const { proxied, direct, added, budget, budgetOk, commit, dirty, concurrency, warmup, environment, ratePerSecond } = input;
   // Throws rather than defaulting — see assertEnvironment.
   assertEnvironment(environment);
   return {
@@ -218,6 +221,7 @@ export function buildLatencyFile(input: {
     direct: roundResult(direct),
     budgetOk,
     method: METHOD_NOTE,
+    ...(ratePerSecond !== undefined ? { ratePerSecond } : {}),
     environment,
   };
 }
@@ -300,6 +304,7 @@ export function renderConsolidated(input: ConsolidatedInput): string {
   lines.push("");
   lines.push(
     `  ${latency.n} measured samples per mode · concurrency ${latency.concurrency} · ` +
+      (latency.ratePerSecond !== undefined ? `paced at ${latency.ratePerSecond}/s · ` : "") +
       `${latency.warmupDiscarded} warm-up iterations discarded`,
   );
   lines.push(`  budget: ${budgetCheck.ok ? "PASS" : "FAIL"}`);

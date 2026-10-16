@@ -10,6 +10,7 @@ export {
   DEFAULT_DIRECT_URL,
   type LatencyResult,
   type RunLatencyOptions,
+  createPacer,
   type Mode,
 } from "./latency.js";
 export {

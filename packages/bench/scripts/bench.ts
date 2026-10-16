@@ -53,6 +53,7 @@ interface Args {
   directUrl: string;
   resetSse: boolean;
   ledger: boolean;
+  ratePerSecond: number | undefined;
   vantage: Vantage | undefined;
   instanceType: string | undefined;
 }
@@ -88,6 +89,8 @@ function parseArgs(argv: readonly string[]): Args {
     // `--no-ledger` is for a run with no tsx to spawn verify-ledger (the
     // on-host run). The block then says NOT RUN; walk the chain separately.
     ledger: !argv.includes("--no-ledger"),
+    // --rate=<calls/s> paces both modes identically; see RunLatencyOptions.ratePerSecond.
+    ratePerSecond: read("rate") === undefined ? undefined : int("rate", 0) || undefined,
     vantage: readVantage(process.env["BENCH_VANTAGE"]),
     instanceType: process.env["BENCH_INSTANCE_TYPE"] || undefined,
   };
@@ -254,6 +257,7 @@ async function main(): Promise<void> {
     gatewayUrl: args.gatewayUrl,
     directUrl: args.directUrl,
     commit,
+    ...(args.ratePerSecond !== undefined ? { ratePerSecond: args.ratePerSecond } : {}),
   });
   console.error(`bench: direct   p50 ${direct.p50.toFixed(2)}ms  p95 ${direct.p95.toFixed(2)}ms`);
 
@@ -265,6 +269,7 @@ async function main(): Promise<void> {
     gatewayUrl: args.gatewayUrl,
     directUrl: args.directUrl,
     commit,
+    ...(args.ratePerSecond !== undefined ? { ratePerSecond: args.ratePerSecond } : {}),
   });
   console.error(`bench: proxied  p50 ${proxied.p50.toFixed(2)}ms  p95 ${proxied.p95.toFixed(2)}ms`);
 
@@ -281,6 +286,7 @@ async function main(): Promise<void> {
     dirty,
     concurrency: args.concurrency,
     warmup: args.warmup,
+    ...(args.ratePerSecond !== undefined ? { ratePerSecond: args.ratePerSecond } : {}),
     environment: {
       backend,
       storageWritesPerToolCall: STORAGE_WRITES_PER_TOOL_CALL,

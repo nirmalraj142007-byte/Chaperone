@@ -70,6 +70,15 @@ export interface RunLatencyOptions {
   directUrl?: string;
   /** `git rev-parse HEAD`, resolved by the caller — this module runs no subprocesses. */
   commit?: string;
+  /**
+   * Caps the calls started per second across all sessions; unset means as
+   * fast as the sessions go. The gateway rate-limits each client IP to
+   * 10 requests/second (MCP_RATE_LIMIT, packages/gateway/src/rateLimit.ts),
+   * and one bench process is one IP: once calls are fast enough to exceed
+   * that, an unpaced run measures the limiter's 429, not a tool call. Both
+   * modes take the same rate, so the difference stays like for like.
+   */
+  ratePerSecond?: number;
 }
 
 /**
@@ -149,6 +158,33 @@ async function connect(url: string): Promise<Client> {
   return client;
 }
 
+/**
+ * A shared start schedule: each call to the returned function resolves at
+ * the next slot, 1000/rate ms after the previous one, so `concurrency`
+ * sessions together start at most `rate` calls per second. The wait happens
+ * before the clock starts and is never part of a measured duration.
+ * `now` and `sleep` are injected so the schedule is testable without time.
+ */
+export function createPacer(
+  ratePerSecond: number,
+  now: () => number = () => performance.now(),
+  sleep: (ms: number) => Promise<void> = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+): () => Promise<void> {
+  if (!(ratePerSecond > 0) || !Number.isFinite(ratePerSecond)) {
+    throw new BenchError("ratePerSecond must be a positive number", { ratePerSecond });
+  }
+  const interval = 1000 / ratePerSecond;
+  let next = Number.NEGATIVE_INFINITY;
+  return async () => {
+    const at = now();
+    const slot = Math.max(at, next);
+    next = slot + interval;
+    if (slot > at) {
+      await sleep(slot - at);
+    }
+  };
+}
+
 /** One timed call. Returns milliseconds as a float; `performance.now()` is sub-microsecond here. */
 async function timedCall(client: Client, toolName: string, mode: Mode): Promise<number> {
   const startedAt = performance.now();
@@ -170,7 +206,13 @@ async function timedCall(client: Client, toolName: string, mode: Mode): Promise<
  * after the others finished, measuring a different, less-loaded machine
  * for its tail.
  */
-async function drive(clients: readonly Client[], toolName: string, mode: Mode, total: number): Promise<number[]> {
+async function drive(
+  clients: readonly Client[],
+  toolName: string,
+  mode: Mode,
+  total: number,
+  pace: (() => Promise<void>) | undefined,
+): Promise<number[]> {
   const durations: number[] = [];
   let issued = 0;
 
@@ -181,6 +223,9 @@ async function drive(clients: readonly Client[], toolName: string, mode: Mode, t
           return;
         }
         issued += 1;
+        if (pace !== undefined) {
+          await pace();
+        }
         durations.push(await timedCall(client, toolName, mode));
       }
     }),
@@ -198,6 +243,7 @@ export async function runLatency(opts: RunLatencyOptions): Promise<LatencyResult
     gatewayUrl = DEFAULT_GATEWAY_URL,
     directUrl = DEFAULT_DIRECT_URL,
     commit = "unknown",
+    ratePerSecond,
   } = opts;
 
   if (!Number.isInteger(n) || n <= 0) {
@@ -207,6 +253,7 @@ export async function runLatency(opts: RunLatencyOptions): Promise<LatencyResult
     throw new BenchError("concurrency must be a positive integer", { concurrency });
   }
 
+  const pace = ratePerSecond === undefined ? undefined : createPacer(ratePerSecond);
   const { url, toolName } = targetFor(mode, gatewayUrl, directUrl);
   const startedAt = new Date().toISOString();
   const clients = await Promise.all(Array.from({ length: concurrency }, () => connect(url)));
@@ -214,9 +261,9 @@ export async function runLatency(opts: RunLatencyOptions): Promise<LatencyResult
   try {
     if (warmup > 0) {
       // Return value dropped on purpose — this is the discard.
-      await drive(clients, toolName, mode, warmup);
+      await drive(clients, toolName, mode, warmup, pace);
     }
-    const durations = await drive(clients, toolName, mode, n);
+    const durations = await drive(clients, toolName, mode, n, pace);
     if (durations.length !== n) {
       throw new BenchError("collected a different number of samples than requested", {
         requested: n,
