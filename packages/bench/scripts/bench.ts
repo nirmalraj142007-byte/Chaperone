@@ -30,6 +30,7 @@ import {
   STORAGE_NOTE,
   STORAGE_BACKENDS,
   STORAGE_WRITES_PER_TOOL_CALL,
+  VANTAGES,
   DEFAULT_CONCURRENCY,
   DEFAULT_N,
   DEFAULT_WARMUP,
@@ -38,6 +39,7 @@ import {
   type BootRateFinding,
   type BootRateSource,
   type StorageBackend,
+  type Vantage,
 } from "../src/index.js";
 import { BenchError } from "@chaperone/errors";
 
@@ -49,6 +51,9 @@ interface Args {
   gatewayUrl: string;
   directUrl: string;
   resetSse: boolean;
+  ledger: boolean;
+  vantage: Vantage | undefined;
+  instanceType: string | undefined;
 }
 
 function parseArgs(argv: readonly string[]): Args {
@@ -79,7 +84,20 @@ function parseArgs(argv: readonly string[]): Args {
     // whatever the table already holds, which is what you want only when
     // investigating the growth effect itself.
     resetSse: !argv.includes("--no-reset-sse"),
+    // `--no-ledger` is for a run with no tsx to spawn verify-ledger (the
+    // on-host run). The block then says NOT RUN; walk the chain separately.
+    ledger: !argv.includes("--no-ledger"),
+    vantage: readVantage(process.env["BENCH_VANTAGE"]),
+    instanceType: process.env["BENCH_INSTANCE_TYPE"] || undefined,
   };
+}
+
+function readVantage(raw: string | undefined): Vantage | undefined {
+  if (raw === undefined || raw === "") return undefined;
+  if (!VANTAGES.includes(raw as Vantage)) {
+    throw new BenchError(`BENCH_VANTAGE must be one of ${VANTAGES.join(" | ")}, got "${raw}"`, { raw });
+  }
+  return raw as Vantage;
 }
 
 function git(args: readonly string[]): string {
@@ -96,6 +114,13 @@ function resolveCommit(): { commit: string; dirty: boolean } {
   try {
     return { commit: git(["rev-parse", "HEAD"]), dirty: git(["status", "--porcelain"]).length > 0 };
   } catch {
+    // No checkout (the on-host run is a bundle, not a clone). BENCH_COMMIT is
+    // the commit the bundle was built from, and it can only claim a clean
+    // tree if the builder says so with BENCH_DIRTY=false.
+    const commit = process.env["BENCH_COMMIT"];
+    if (commit !== undefined && /^[0-9a-f]{40}$/.test(commit)) {
+      return { commit, dirty: process.env["BENCH_DIRTY"] !== "false" };
+    }
     return { commit: "unknown", dirty: true };
   }
 }
@@ -264,6 +289,8 @@ async function main(): Promise<void> {
       platform: `${process.platform}-${process.arch}`,
       cpus: os.cpus().length,
       storageNote: STORAGE_NOTE,
+      ...(args.vantage !== undefined ? { vantage: args.vantage } : {}),
+      ...(args.instanceType !== undefined ? { instanceType: args.instanceType } : {}),
     },
   });
 
@@ -275,7 +302,9 @@ async function main(): Promise<void> {
     await writeFile(path.join("benchmarks", "boot-rate.json"), `${JSON.stringify(bootRate, null, 2)}\n`, "utf8");
   }
 
-  const ledger = verifyLedger();
+  const ledger = args.ledger
+    ? verifyLedger()
+    : { ok: true, skipped: true, summary: "not run in this invocation (--no-ledger); run pnpm verify-ledger separately" };
 
   console.log(renderConsolidated({ latency: latencyFile, budgetCheck, bootRate, ledger }));
 
@@ -286,7 +315,7 @@ async function main(): Promise<void> {
     process.exitCode = 1;
     return;
   }
-  if (!ledger.ok) {
+  if (!ledger.ok && ledger.skipped !== true) {
     console.error("bench: ledger chain verification failed");
     process.exitCode = 1;
     return;

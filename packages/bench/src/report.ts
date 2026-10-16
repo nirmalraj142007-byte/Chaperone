@@ -94,6 +94,22 @@ export type StorageBackend = "dynamodb-local" | "dynamodb-aws";
 
 export const STORAGE_BACKENDS: readonly StorageBackend[] = ["dynamodb-local", "dynamodb-aws"];
 
+/**
+ * Where the bench process ran relative to the gateway and the upstream.
+ *
+ * Added latency is a difference of two paths, and it only isolates the
+ * gateway when both paths share everything else. `same-machine` is the
+ * local compose stack. `on-host` is the bench inside the deployed host's
+ * compose network, so both calls stay on the instance and only the
+ * gateway's own DynamoDB calls leave it. `ssm-tunnel` reached the deployed
+ * containers from a remote laptop through SSM port-forwards: the tunnel's
+ * round trip is in both paths, but its jitter is not cancelled, and on
+ * 2026-10-16 it dominated the tail. A file without this field predates it.
+ */
+export type Vantage = "same-machine" | "on-host" | "ssm-tunnel";
+
+export const VANTAGES: readonly Vantage[] = ["same-machine", "on-host", "ssm-tunnel"];
+
 export interface Environment {
   /** Required. See StorageBackend. */
   backend: StorageBackend;
@@ -111,6 +127,10 @@ export interface Environment {
   storageWritesPerToolCall: number;
   /** Names the storage caveat in the file itself, not only in the README. */
   storageNote: string;
+  /** See Vantage. Optional only because files written before it existed lack it. */
+  vantage?: Vantage;
+  /** The EC2 instance type the gateway ran on, for a deployed measurement. */
+  instanceType?: string;
 }
 
 /**
@@ -127,6 +147,12 @@ export function assertEnvironment(environment: Environment | undefined): asserts
     throw new BenchError(
       `refusing to write benchmarks/latency.json: environment.backend must be one of ${STORAGE_BACKENDS.join(" | ")}`,
       { backend: environment.backend },
+    );
+  }
+  if (environment.vantage !== undefined && !VANTAGES.includes(environment.vantage)) {
+    throw new BenchError(
+      `refusing to write benchmarks/latency.json: environment.vantage must be one of ${VANTAGES.join(" | ")}`,
+      { vantage: environment.vantage },
     );
   }
 }
@@ -227,7 +253,12 @@ export interface ConsolidatedInput {
   latency: LatencyFile;
   budgetCheck: BudgetCheck;
   bootRate: BootRateFinding | null;
-  ledger: { ok: boolean; summary: string };
+  /**
+   * `skipped` is a run that did not walk the chain (`--no-ledger`, for the
+   * on-host run, which has no tsx). It renders NOT RUN, never OK: a check
+   * that was not performed must not read as one that passed.
+   */
+  ledger: { ok: boolean; summary: string; skipped?: boolean };
 }
 
 /**
@@ -275,8 +306,10 @@ export function renderConsolidated(input: ConsolidatedInput): string {
   lines.push("");
   // On screen as well as in the file: a viewer reading a latency number
   // has to know what was underneath it.
+  const where = [latency.environment.vantage, latency.environment.instanceType].filter((v) => v !== undefined);
   lines.push(
     `  backend: ${latency.environment.backend} · ` +
+      (where.length > 0 ? `${where.join(" ")} · ` : "") +
       `${latency.environment.storageWritesPerToolCall} storage writes per tools/call`,
   );
   lines.push("");
@@ -296,12 +329,15 @@ export function renderConsolidated(input: ConsolidatedInput): string {
 
   lines.push("  LEDGER CHAIN");
   lines.push(rule());
-  lines.push(`  ${ledger.ok ? "OK" : "BROKEN"} — ${ledger.summary}`);
+  const ledgerState = ledger.skipped === true ? "NOT RUN" : ledger.ok ? "OK" : "BROKEN";
+  lines.push(`  ${ledgerState} — ${ledger.summary}`);
   lines.push("");
 
   lines.push(rule("═"));
-  const verdict = budgetCheck.ok && ledger.ok ? "PASS" : "FAIL";
-  lines.push(`  ${verdict}   latency budget ${budgetCheck.ok ? "met" : "exceeded"} · ledger chain ${ledger.ok ? "intact" : "broken"}`);
+  const ledgerOk = ledger.skipped === true || ledger.ok;
+  const verdict = budgetCheck.ok && ledgerOk ? "PASS" : "FAIL";
+  const ledgerWord = ledger.skipped === true ? "not checked" : ledger.ok ? "intact" : "broken";
+  lines.push(`  ${verdict}   latency budget ${budgetCheck.ok ? "met" : "exceeded"} · ledger chain ${ledgerWord}`);
   lines.push(rule("═"));
 
   return lines.join("\n");

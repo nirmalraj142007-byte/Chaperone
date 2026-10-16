@@ -158,6 +158,16 @@ describe("the environment is a required field", () => {
   });
 });
 
+describe("environment.vantage", () => {
+  it("is recorded when given, and rejected when it is not a known vantage", () => {
+    const onHost = file({ environment: { ...ENVIRONMENT, backend: "dynamodb-aws", vantage: "on-host", instanceType: "t3.micro" } });
+    expect(onHost.environment.vantage).toBe("on-host");
+    expect(onHost.environment.instanceType).toBe("t3.micro");
+    const bad = { ...ENVIRONMENT, vantage: "laptop" } as unknown as Environment;
+    expect(() => file({ environment: bad })).toThrow(/same-machine \| on-host \| ssm-tunnel/);
+  });
+});
+
 describe("renderConsolidated", () => {
   const block = (over: Partial<Parameters<typeof renderConsolidated>[0]> = {}): string =>
     renderConsolidated({
@@ -229,5 +239,22 @@ describe("renderConsolidated", () => {
   it("names the commit, and flags a dirty tree", () => {
     expect(block()).toContain(COMMIT);
     expect(block({ latency: file({ dirty: true }) })).toContain("working tree dirty");
+  });
+});
+
+describe("renderConsolidated: vantage and a skipped ledger", () => {
+  const base = { latency: file(), budgetCheck: checkBudget(added), bootRate };
+
+  it("puts the vantage and instance type beside the backend", () => {
+    const latency = file({ environment: { ...ENVIRONMENT, backend: "dynamodb-aws", vantage: "on-host", instanceType: "t3.micro" } });
+    const text = renderConsolidated({ ...base, latency, ledger: { ok: true, summary: "chain OK" } });
+    expect(text).toContain("backend: dynamodb-aws · on-host t3.micro · 4 storage writes per tools/call");
+  });
+
+  it("says NOT RUN, never OK, for a ledger check that was skipped", () => {
+    const text = renderConsolidated({ ...base, ledger: { ok: true, skipped: true, summary: "not run (--no-ledger)" } });
+    expect(text).toContain("NOT RUN — not run (--no-ledger)");
+    expect(text).not.toMatch(/^\s+OK — /m);
+    expect(text).toContain("ledger chain not checked");
   });
 });

@@ -28,9 +28,11 @@ export {
   STORAGE_NOTE,
   STORAGE_BACKENDS,
   STORAGE_WRITES_PER_TOOL_CALL,
+  VANTAGES,
   assertEnvironment,
   type Environment,
   type StorageBackend,
+  type Vantage,
   type LatencyFile,
   type ConsolidatedInput,
 } from "./report.js";
