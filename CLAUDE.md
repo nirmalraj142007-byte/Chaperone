@@ -122,7 +122,7 @@ pnpm analyse:label            # human change-class labelling (data/labels-todo.j
 pnpm analyse:label --prevalence  # M14: label the committed 150-tool sample in data/prevalence.json
 ```
 
-`TARGET=https://<host>/mcp` points `test:resume` and `spec` at a deployed environment. Both must pass there, not just locally.
+`TARGET=https://<host>/mcp` points `test:resume` and the long-stream test (`spec/long-stream.test.ts`) at a deployed environment. Both must pass there, not just locally. It does **not** apply to `pnpm spec`: the conformance suite always builds its own in-process gateway and demo upstream and never reads `TARGET`, so it passes whatever `TARGET` says (27/27 against an unresolvable host, 2026-10-16). The conformance suite has not been run against the deployment.
 
 ---
 
