@@ -40,6 +40,19 @@ const UNUSED_UPSTREAMS_PLACEHOLDER = JSON.stringify([
   { id: "unused", url: "http://localhost:0/mcp", label: "unused by the advisory pipeline Lambdas" },
 ]);
 
+/**
+ * Shared by all three Lambdas. `@chaperone/policy`'s jcs.ts loads
+ * `canonicalize` through `createRequire(import.meta.url)`, which cannot work in
+ * a CommonJS bundle (`import.meta.url` is undefined there, and esbuild does not
+ * bundle through a locally bound `require`). Every execution failed on that at
+ * module load on the first real deploy. `node:module` is aliased, in these
+ * bundles only, to a shim whose `createRequire` hands back the bundled
+ * `canonicalize` itself (infra/lambda/node-module-shim.ts).
+ */
+export const LAMBDA_BUNDLING = {
+  esbuildArgs: { "--alias:node:module": path.join(HERE, "..", "lambda", "node-module-shim.ts") },
+};
+
 function attributeType(type: KeyAttribute["type"]): dynamodb.AttributeType {
   return type === "S" ? dynamodb.AttributeType.STRING : dynamodb.AttributeType.NUMBER;
 }
@@ -154,6 +167,7 @@ export class AdvisoryPipelineStack extends Stack {
     const scoreAdvisoryFn = new NodejsFunction(this, "ScoreAdvisoryFunction", {
       functionName: "chaperone-advisory-score",
       entry: path.join(HERE, "..", "lambda", "scoreAdvisory.ts"),
+      bundling: LAMBDA_BUNDLING,
       handler: "handler",
       runtime: lambda.Runtime.NODEJS_20_X,
       architecture: lambda.Architecture.ARM_64,
@@ -178,6 +192,7 @@ export class AdvisoryPipelineStack extends Stack {
     const changelogFn = new NodejsFunction(this, "ChangelogCheckFunction", {
       functionName: "chaperone-advisory-changelog",
       entry: path.join(HERE, "..", "lambda", "changelogCheck.ts"),
+      bundling: LAMBDA_BUNDLING,
       handler: "handler",
       runtime: lambda.Runtime.NODEJS_20_X,
       architecture: lambda.Architecture.ARM_64,
@@ -212,6 +227,7 @@ export class AdvisoryPipelineStack extends Stack {
     const writeAdvisoryFn = new NodejsFunction(this, "WriteAdvisoryFunction", {
       functionName: "chaperone-advisory-write",
       entry: path.join(HERE, "..", "lambda", "writeAdvisory.ts"),
+      bundling: LAMBDA_BUNDLING,
       handler: "handler",
       runtime: lambda.Runtime.NODEJS_20_X,
       architecture: lambda.Architecture.ARM_64,
@@ -247,6 +263,12 @@ export class AdvisoryPipelineStack extends Stack {
 
     const parallel = new sfn.Parallel(this, "ScoreAndCheckChangelog", {
       comment: "The model branch and the no-model branch run at the same time; the join is an array [score, changelog].",
+      // An EventBridge Pipe always hands Step Functions a *batch*, an array,
+      // even at batchSize 1: the input is `[{householdId, quarantineId}]`.
+      // Without this unwrap both Lambdas read `quarantineId` off the array,
+      // get undefined, and the run "succeeds" down the AdvisoryUnavailable
+      // branch with nothing written. Found on the first real deploy, 2026-10-16.
+      inputPath: "$[0]",
     })
       .branch(scoreTask)
       .branch(changelogTask);

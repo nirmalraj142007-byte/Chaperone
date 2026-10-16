@@ -8,13 +8,14 @@
     "typecheck": "tsc --noEmit -p ."
   },
   "dependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.1134.0",
     "@chaperone/advisory": "workspace:*",
     "@chaperone/config": "workspace:*",
     "@chaperone/errors": "workspace:*",
     "@chaperone/ledger": "workspace:*",
     "@chaperone/logger": "workspace:*",
-    "@aws-sdk/client-secrets-manager": "^3.1134.0",
     "aws-cdk-lib": "^2.170.0",
+    "canonicalize": "^2.1.0",
     "constructs": "^10.4.2"
   },
   "devDependencies": {

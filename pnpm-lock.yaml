@@ -259,6 +259,9 @@ importers:
       aws-cdk-lib:
         specifier: ^2.170.0
         version: 2.270.0(constructs@10.8.1)
+      canonicalize:
+        specifier: ^2.1.0
+        version: 2.1.0
       constructs:
         specifier: ^10.4.2
         version: 10.8.1
