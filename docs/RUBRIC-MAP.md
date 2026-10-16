@@ -19,7 +19,7 @@ Status key: **Delivered** (the evidence runs and says what the row claims) ·
 | An older protocol revision is refused, naming both versions | Delivered | the same suite |
 | Transport hygiene: 406 without the required `Accept`, 403 on a disallowed `Origin`, bind to loopback by default | Delivered | `packages/gateway/src/security.ts`; conformance suite |
 | Resumable SSE: every event durable before it is sent, `Last-Event-ID` replays | Delivered locally | `packages/gateway/src/event-store.ts`; `spec/resumption.test.ts` (ten kill-and-resume iterations, `place_order` invoked exactly once each time, counted by the upstream); `pnpm resume-demo` for one narrated run |
-| The same suites pass against a deployed environment | **Not delivered** | `TARGET=https://<host>/mcp` is supported by `pnpm spec` and `pnpm test:resume`, but there is no deployed environment to point them at. Both did pass through Caddy locally (`deploy/docker-compose.local.yml`), which is not the same as passing on AWS. The EC2 + Caddy stack is synthesized, not deployed |
+| The same suites pass against a deployed environment | **Partial** | `test:resume` passed 10/10 and the long stream held for 182.8 s against https://chaperone-demo.duckdns.org on the EC2 + Caddy host (2026-10-16), after both passed through Caddy locally (`deploy/docker-compose.local.yml`). `pnpm spec` has **not** been run with `TARGET=` set against the deployed host. Decision record: `docs/DECISIONS.md`, "Deployment: one EC2 host with Caddy, on a free DuckDNS hostname" |
 | Progress notifications, cancellation, `list_changed` | Delivered | conformance suite; `e2e/consent-flow.spec.ts` for `list_changed` |
 | Honest friction with the SDK, recorded as it happened | Delivered | `friction-log.md`; `docs/PRODUCT-FEEDBACK.md`, section "MCP TypeScript SDK" |
 
@@ -67,6 +67,7 @@ connect and keeps nothing; Chaperone is the memory.
 | The drift rate | **Not measured yet** | {{PENDING: semantic-intent drift rate and its denominator — 2026-10-20}} |
 | An unaided-model comparison, reported as a delta, never an absolute block rate | Delivered, one model | `gpt-oss-120b` on Groq, two-turn: followed in 52 of 90 attack runs (57.8%), refused 0, 0 of 30 benign controls refused. `docs/BASELINE2-RUBRIC.md` was committed before the run; `data/baseline2-raw.json` holds every response; `pnpm eval:baseline2` re-scores with no model call |
 | The tautology is stated, not hidden | Delivered | README "What this does not prove"; the guard test in `packages/eval/test/guards.test.ts` fails if an absolute Chaperone block rate enters a report |
+| The dataset is published | Delivered | There is no separate dataset repository, by decision (`docs/DECISIONS.md`, "Dataset: the committed `data/` folder is the dataset"): the committed `data/` folder is the dataset, with third-party descriptions kept verbatim in `data/raw/`. `data/labels.json` and `data/labels-todo.json` are not yet committed (rehearsal labels, final ones land with `data/drift.json`) |
 | An ecosystem finding independent of the product | Delivered | 139 of 291 attempted servers (47.8%) did not start from their own setup instructions; `data/boot-rate.json` |
 
 ## 6. Hackathon-adjacent deliverables
@@ -74,7 +75,7 @@ connect and keeps nothing; Chaperone is the memory.
 | Item | Status | Evidence |
 |---|---|---|
 | Friction log in the required six-field form | Delivered | `friction-log.md` |
-| Product feedback for each tool used | Partial | `docs/PRODUCT-FEEDBACK.md`. The CDK deploy section and the Kiro section are open placeholders: nothing was deployed, and Kiro was not used |
-| Public HTTPS deployment | **Not delivered** | EC2 + Caddy stack is written and synthesized in `infra/`, never applied; no deployed URL |
+| Product feedback for each tool used | Partial | `docs/PRODUCT-FEEDBACK.md`. The CDK section is filled from the real deployment (2026-10-16). The Kiro section is an open placeholder: the repository records no Kiro usage |
+| Public HTTPS deployment | Delivered | One `t3.micro` with Docker Compose and Caddy, deployed 2026-10-16 at https://chaperone-demo.duckdns.org (a free DuckDNS name, not a registered domain); `infra/lib/ec2-gateway-stack.ts`, `docs/RUNBOOK.md`; why EC2 and not Fargate + ALB: `docs/DECISIONS.md` |
 | Multi-service AWS pipeline | Partial | `infra/lib/advisory-pipeline-stack.ts` synthesises (`pnpm infra:synth`); it has never been deployed, so there is no execution-graph screenshot |
 | Added latency against real DynamoDB | **Not measured yet** | {{PENDING: added p50/p95/p99 against DynamoDB on AWS — after the AWS deployment (Phase 18)}}. Against DynamoDB Local the 30 ms p95 budget fails (591.89 ms), and `pnpm bench` exits 1 on purpose |

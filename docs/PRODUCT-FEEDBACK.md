@@ -200,14 +200,57 @@ and no tools were sent; document whether `max_tokens` includes reasoning.
 
 ## AWS CDK
 
-**Used for:** one stack, the advisory pipeline (DynamoDB Stream, EventBridge
-Pipe, Step Functions, two Lambdas, a table), synthesised with `cdk synth` and
-its IAM statements inspected in the output.
+**Used for:** four stacks, all deployed on 2026-10-16 with a separate deployer
+identity: the DynamoDB tables, the two ECR repositories, the EC2 host that runs the
+gateway (Elastic IP, security group, instance role, boot script), and the advisory
+pipeline (DynamoDB Stream, EventBridge Pipe, Step Functions, two `NodejsFunction`
+Lambdas). Before deploying, the stacks were checked with `cdk synth` and by reading
+the IAM statements in the output.
 
-**Friction recorded:** none. **It has never been deployed**: no `cdk
-bootstrap`, no `cdk deploy`, so there is no feedback here on the deploy path,
-and none is claimed. See `docs/AWS-BUILDER.md` and `docs/LIMITATIONS.md`.
-{{PENDING: CDK bootstrap and deploy feedback — after the AWS deployment (Phase 18)}}
+**Friction (Entries 048-052; the deployment-design entries 053-055 were written
+after the event and say so):**
+
+- *`cdk synth` and the stack tests passed on Lambda bundles that could not load.*
+  `NodejsFunction` bundles to CommonJS by default, where esbuild turns `import.meta`
+  into an empty object; `createRequire(import.meta.url)` in a shared package then
+  threw at module load, and every pipeline execution failed in about a second.
+  Nothing before the first real execution loads the bundled file (Entry 050,
+  major).
+- *A green Step Functions execution that did nothing.* An EventBridge Pipe always
+  hands a Step Functions target an **array**, even with a batch size of 1, and the
+  `inputTemplate` is applied per record inside it. Both Lambdas read the field off
+  the array, got `undefined`, and returned the designed "advisory unavailable"
+  result, so the execution ended `SUCCEEDED` with nothing written (Entry 051,
+  major). Reading the output, not the status, is what found it.
+- *A Docker Compose precedence rule broke the first deploy.* A deploy script that
+  sources its own `.env` exported an image tag into its shell, and Docker Compose
+  gives the shell priority over `.env`, so the rewritten file was ignored (Entry 048,
+  major).
+- *The SSM port-forward hung silently from a Git Bash background job.* It printed
+  "Starting session" and nothing else; the same command as a detached Windows
+  process worked (Entry 049, minor).
+- *The AWS CLI failed to print a successful command's output on Windows.* Box-drawing
+  characters in the remote output raised a `charmap` encoding error until
+  `PYTHONUTF8=1` was set (Entry 052, minor).
+- *The day-to-day IAM user could not tell us whether the account could deploy.* It
+  was denied on almost every read, so the question had to wait for a second
+  identity (Entry 054, written after the event, major).
+- *Files read into boot-script user data carry the author's line endings.* A Windows
+  checkout can embed CRLF in shell scripts bound for Linux; found before first boot
+  and fixed with `.gitattributes` plus normalising on read (Entry 055, written after
+  the event, minor).
+
+**Not a source of friction, as recorded:** `cdk bootstrap` and `cdk deploy`
+themselves. No entry records a problem with either, and none is invented here.
+
+**Asks:** have `NodejsFunction` fail or warn loudly when a CommonJS bundle still
+references `import.meta`, or default to ESM output on current Node runtimes; say in
+the first paragraph of the Pipes documentation for a Step Functions target that the
+input is always an array, with an example; make the Session Manager plugin fail when
+it cannot open its local listener, and add itself to the `PATH` Git Bash inherits;
+write UTF-8 from the AWS CLI when stdout is not a console; warn when a Compose
+variable is set differently in the shell and in `.env`; note in the CDK guide for
+user data that line endings come from the author's checkout.
 
 ## Docker and Docker Desktop for Windows
 

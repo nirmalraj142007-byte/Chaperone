@@ -2644,3 +2644,104 @@ process, then re-fetch; the output came back intact. Written into
 console, or fall back to replacing unencodable characters rather than failing
 the whole command. A failure on *printing* a successful command's output reads
 like the remote command failed.
+
+## Entry 053 — 2026-10-16
+
+*Written 2026-10-16, after the event; reconstructed from commit history
+(`8d6194b`, `3b531d2`, both 2026-10-10). Not a live entry.*
+
+**Task attempted:** Choose and write the Phase 18 deployment for a gateway whose
+flagship claim is a resumable SSE stream that stays open for minutes
+(`spec/long-stream.test.ts` holds one for 180 s).
+
+**Steps taken:** Wrote an ECS Fargate + ALB gateway stack (idle timeout 300 s,
+session stickiness) and pushed it in `8d6194b`. Priced it against the alternative
+and replaced it the same day, in `3b531d2`, with one `t3.micro` running Docker
+Compose and Caddy (Elastic IP, SSM instead of SSH, no ALB, no ACM, no NAT).
+Verified the replacement locally through the real `Caddyfile`: `test:resume`
+10/10 and the 180 s long-stream test passed.
+
+**Expected versus actual:** Expected Fargate + ALB to be the ordinary shape for
+one containerised HTTP service. Actual: for a single task the ALB and public-IPv4
+charges dominate the bill, about $1.65/day against about $0.48/day for the EC2
+host (list-price estimates, not Cost Explorer), and there were no hackathon
+credits to absorb it at the time. App Runner had already been ruled out because
+it caps request duration at 120 seconds, which a quiet SSE stream exceeds. So the
+managed options were either too short-lived or too expensive for this workload,
+and the cheap one was a hand-run VM.
+
+**Severity:** minor. About a day of rework; nothing had been deployed.
+
+**Workaround:** One EC2 host, Caddy terminating TLS itself with compression and
+write timeouts off. The Fargate/ALB code was deleted rather than kept beside it.
+
+**Actionable suggestion:** For AWS: there is no obvious cheap managed home for a
+small service that must hold long-lived HTTP streams; the App Runner duration cap
+and the ALB's fixed hourly cost each rule out a different half of it. A
+prominent note on both product pages would have saved the first design. For
+this repo: price the design before writing the stack.
+
+## Entry 054 — 2026-10-16
+
+*Written 2026-10-16, after the event; reconstructed from commit history and the
+2026-10-10 preflight notes. Not a live entry.*
+
+**Task attempted:** Before deploying, find out with the `chaperone-dev` IAM user
+(us-east-1) whether the account could create the EC2, CloudFormation, ECR and
+Route 53 resources the new stack needs.
+
+**Steps taken:** On 2026-10-10 ran read-only calls as `chaperone-dev`: EC2
+describes, address allocation, CloudFormation, ECS, ECR, ACM, Route 53, DynamoDB
+`ListTables`, SSM parameters, Service Quotas, and the cost, billing, free-tier and
+pricing APIs.
+
+**Expected versus actual:** Expected at least the read calls to work for the
+account's only IAM user. Actual: nearly everything was denied. Only
+`describe-vpcs` and `describe-subnets` succeeded (which showed a default VPC
+exists). The denials answered nothing about the real question: whether this
+account could launch an instance, and what credits or free-tier plan it had. Those
+stayed unknown until a separate identity was used.
+
+**Severity:** major. No deployment was possible with that user, so Phase 18 waited
+on a second identity (`chaperone-deployer`, in use from 2026-10-16).
+
+**Workaround:** A separate deployer profile with real permissions, checked first
+with `aws sts get-caller-identity --profile deployer`; `docs/RUNBOOK.md` now says
+the dev user cannot deploy.
+
+**Actionable suggestion:** For AWS: a denied read says "no" without saying
+"because of this policy"; a way to ask what an identity may do, without the
+permissions needed to simulate it, would let a builder find this out in one call.
+For this repo: create the deployer identity at the start of the project, not at
+the deploy.
+
+## Entry 055 — 2026-10-16
+
+*Written 2026-10-16, after the event; reconstructed from commit history
+(`8e8ba33`, 2026-10-10). Not a live entry.*
+
+**Task attempted:** Embed the files under `deploy/` (Caddyfile, compose file,
+`deploy.sh`) in the EC2 instance's boot script, from a Windows checkout.
+
+**Steps taken:** The stack reads each file from the working tree and writes it into
+the instance's user data. While writing the runbook it became clear that a Windows
+checkout can hold those files with CRLF endings.
+
+**Expected versus actual:** Expected the files to reach the Linux host byte for
+byte. Actual (by reading the code, not by a failed boot): CRLF endings would put a
+`\r` into shell scripts and config files embedded in user data, and a script with
+`\r` on every line does not run correctly under bash. The record does not show an
+instance that failed to boot because of it; it was found before the first launch.
+
+**Severity:** minor. Caught before anything ran on a host, but it would have
+produced a first boot that failed for a reason invisible in the editor.
+
+**Workaround:** `.gitattributes` pins `deploy/** text eol=lf`, and the stack's file
+reader normalises `\r\n` to `\n` on read, so a checkout with other settings still
+embeds LF. The same care applies when writing a fixed script to the live host over
+SSM (Entry 048 was fixed by sending the base64 of the LF file).
+
+**Actionable suggestion:** For AWS CDK: the docs for building user data from files
+could warn that line endings come from the author's checkout. A `.gitattributes`
+line in the `cdk init` template would cover it. For this repo: a test that
+synthesised user data contains no `\r` would hold the property against a regression.

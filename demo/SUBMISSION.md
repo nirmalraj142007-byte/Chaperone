@@ -36,11 +36,11 @@ change, so re-check rather than trust it.
 - [ ] `README.md` opens with the resident-facing sentence (Alexa+, simulated demo, state across sessions), and its numbers match the data files they cite
 - [ ] `docs/RUBRIC-MAP.md` is current. Its Agent Skills row says **Not delivered** unless a skill has since been added; do not change the wording to hide a gap
 - [ ] `LICENSE` present, and `corpus/TAXONOMY.md` and `corpus/PREDICTIONS.md` unchanged since 2026-09-12: `git log --follow --oneline corpus/TAXONOMY.md corpus/PREDICTIONS.md` shows only the original commit
-- [ ] Dataset repository (a separate MIT repo for the crawl data): decided and recorded in `docs/DECISIONS.md`, including whether third-party descriptions are republished verbatim or as hashes plus a fetch script. Known state: **not decided, no repo exists**
+- [ ] Dataset: there is **no separate dataset repository**, by decision (`docs/DECISIONS.md`, "Dataset: the committed `data/` folder is the dataset", 2026-10-16). The committed `data/` folder is the published dataset, and third-party descriptions are republished verbatim in `data/raw/`. Before submitting, check that the Devpost text points at `data/` and does not mention a dataset repo, and that `data/labels.json` and `data/labels-todo.json` are committed with `data/drift.json` (they are untracked until crawl 2's labelling is final)
 
 ## 3. Devpost
 
-- [ ] **Product Feedback field completed for every tool used**, drawn from `docs/PRODUCT-FEEDBACK.md`: MCP TypeScript SDK, MCP Apps (`ext-apps`) and Inspector, DynamoDB and DynamoDB Local, Bedrock, Groq, CDK, Docker, Kiro, the registry APIs. Known state: the CDK-deploy section and the Kiro section still carry pending markers (nothing was deployed; the repository records no Kiro usage). If Kiro was not used, the section says so in one plain sentence rather than being padded
+- [ ] **Product Feedback field completed for every tool used**, drawn from `docs/PRODUCT-FEEDBACK.md`: MCP TypeScript SDK, MCP Apps (`ext-apps`) and Inspector, DynamoDB and DynamoDB Local, Bedrock, Groq, CDK, Docker, Kiro, the registry APIs. Known state: the Kiro section still carries a pending marker (the CDK-deploy section was filled on 2026-10-16 from the real deployment; the repository records no Kiro usage). If Kiro was not used, the section says so in one plain sentence rather than being padded
 - [ ] **Friction log attached**: `friction-log.md`, every entry in the six-field form
 - [ ] The description opens with the add-on framing, not with "proxy", "security layer" or "guardrail"
 - [ ] The description repeats no number that is not in a committed file, and no absolute block rate
@@ -50,16 +50,20 @@ change, so re-check rather than trust it.
 
 - [ ] `CRAWL_DATES.md` is accurate: the Crawl 2 line is machine-written (it matches `jq .startedAt data/crawl-2-report.json`), the Crawl 1 line is unchanged, and the stated interval is still **35 days** (a crawl that ran late would make it 36 or more, and the prose would have to say so)
 - [ ] `pnpm check-claims` passes (no rounded-week language)
-- [ ] `pnpm check-placeholders` passes: no pending marker left in any committed prose. This is the last gate that cannot be satisfied early; it fails today by design (drift rate, production latency, CDK and Kiro feedback)
+- [ ] `pnpm check-placeholders` passes: no pending marker left in any committed prose. This is the last gate that cannot be satisfied early; it fails today by design (drift rate, production latency, Kiro feedback)
 - [ ] `data/drift.json`, `data/labels.json` and `data/labels-todo.json` are committed and agree; the headline counts `semantic-intent` only, and cosmetic and schema-additive changes are published separately
 - [ ] `pnpm analyse:drift --dry-run` still reports 0 drift and 0 classifier artifacts
 - [ ] The prevalence sample (`data/prevalence.json`) is labelled or its absence is stated. `corpus/PREDICTIONS.md` committed to testing it
 
 ## 5. The deployed URL
 
-Known state: **not deployed.** `infra/` has the advisory pipeline stack only;
-there is no gateway stack deployed, so there is no URL. The EC2 + Caddy stack is
-written and synthesized (docs/RUNBOOK.md) but never applied.
+Known state (2026-10-16): **deployed.** https://chaperone-demo.duckdns.org is one
+`t3.micro` running the gateway, the demo upstream and Caddy under Docker Compose
+(`docs/DECISIONS.md`, "Deployment: one EC2 host with Caddy, on a free DuckDNS
+hostname"). The hostname is a free DuckDNS name pointed at the stack's Elastic IP
+by hand, not a registered domain. On the host: `/healthz` ok on `dynamodb-aws`,
+`test:resume` 10/10, a 182.8 s long stream, and `verify-ledger` OK. Not yet run:
+`pnpm spec` against `TARGET`.
 
 - [ ] Either: a deployed gateway whose `/healthz` returns 200, with `TARGET=https://<host>/mcp pnpm spec` and `TARGET=https://<host>/mcp pnpm test:resume` both passing against it (pasted output)
 - [ ] Or: the README, the Devpost description and the video all say plainly that it is not deployed and the demo runs on the local stack, and the production-latency marker is replaced by a sentence saying it was not measured against DynamoDB on AWS. Do not leave a dangling pending marker, and do not state a number that came from DynamoDB Local as if it were production

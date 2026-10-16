@@ -513,3 +513,92 @@ that day. The provider was later decided as Groq (`openai/gpt-oss-120b`) for
 the advisory line and baseline 2; see `docs/LIMITATIONS.md`, "The model provider: Bedrock was declined, Groq is used", and
 `docs/AWS-BUILDER.md`, "Model choice: Groq". The decision above stands: the
 simulated assistant still has no model.
+
+---
+
+## Deployment: one EC2 host with Caddy, on a free DuckDNS hostname — 2026-10-16
+
+*Recorded 2026-10-16 for a decision made on 2026-10-10 (commits `8d6194b`,
+`3b531d2`) and carried out on 2026-10-16 (`c4ed3d5`, `19baa84`). The Fargate
+design is not described as current anywhere; this entry supersedes it.*
+
+**Decision.** The gateway, the staged demo upstream and Caddy run under Docker
+Compose on one `t3.micro` in `us-east-1`. Caddy terminates TLS itself and obtains
+its own certificate. There is no ALB, no ACM, no NAT, and no Route 53 hosted
+zone. The hostname is the free DuckDNS name `chaperone-demo.duckdns.org`, pointed
+by hand, once, at the stack's Elastic IP.
+
+**Why.**
+- *Cost, with no credits at the time.* An ECS Fargate + ALB stack was written and
+  pushed first (`8d6194b`). For one task the ALB and public-IPv4 charges dominate:
+  about $1.65/day against about $0.48/day for the host (list-price estimates, not
+  Cost Explorer; the deployed host is about $0.47/day running and $0.18/day
+  stopped, also at list price). There were no hackathon credits to cover it when
+  the choice was made.
+- *App Runner was never an option.* It caps request duration at 120 seconds, and
+  a resumable SSE stream is the flagship technical claim.
+- *A paid domain was not worth its cost.* A registered domain and a hosted zone
+  cost money, and nothing in the evidence depends on the name. DuckDNS gave a real
+  `https://` name for nothing. `DomainName` stays a CloudFormation parameter, so
+  moving to a paid name later changes one value and one DNS record.
+
+**What was checked, in order.** First locally, through the real `Caddyfile`
+(`deploy/docker-compose.local.yml`): `pnpm test:resume` 10/10 and the 180 s
+`spec/long-stream.test.ts`, with two-service and three-service layouts. Then on
+the real host, over HTTPS: `test:resume` 10/10, the long stream held for 182.8 s,
+and `pnpm verify-ledger` reporting the chain intact (7 events at the time). The
+sequence matters: the local run was a prediction, and the deployed run is the
+evidence.
+
+**Costs of the choice, stated.**
+- One host is one failure domain. A rollout takes about 86 s and the public URL is
+  down for about 16 s of it; the measured rollback took 87.7 s with 15.9 s of
+  downtime (`docs/RUNBOOK.md`). Nothing about this affects fail-closed: while the
+  host is down the assistant simply has no tools.
+- Memory is tight on a `t3.micro`: 203 MiB available under load, with 19-45 MiB of
+  swap in use.
+- DuckDNS is a third party that sits in front of name resolution. It cannot change
+  what an allow decision is, but it can make the demo unreachable by name; the
+  Elastic IP does not change, so the address stays valid if the name does not.
+- The Elastic IP and EBS volume keep billing while the instance is stopped.
+
+**Not decided here.** Whether `pnpm spec` has passed against `TARGET=https://…` is
+not claimed by this entry; see the RUNBOOK for what has and has not been run on
+the host.
+
+---
+
+## Dataset: the committed `data/` folder is the dataset — 2026-10-16
+
+**Decision.** There is no separate dataset repository. The `data/` folder of this
+repository, committed and public under the same history as the code, is the
+published dataset. Nothing is mirrored elsewhere.
+
+**Why.**
+- *The timestamps are the evidence.* `data/raw/crawl-1/` has been committed since
+  the first crawl (2026-09-15), and the 35-day interval depends on that commit
+  history. A second repository would hold a copy with its own, later, timestamps.
+- *One source of truth.* The crawler, the analysis and the dataset already share
+  one hashing implementation in this repo; a second repository would have to be
+  kept in step with it by hand.
+- *Time.* With the submission cutoff days away, a dataset repo is a second
+  thing to maintain and keep correct for no gain a reviewer needs.
+
+**What is in it, as committed (2026-10-16).** 1,912 tracked files under `data/`:
+18 report and analysis files at the top level, and 947 per-server raw captures for
+each of `crawl-1` and `crawl-interim-1`. Crawl 2's captures and `data/drift.json`
+will land in the same folder.
+
+**Third-party text is republished verbatim.** The raw captures contain each
+server's tool descriptions and metadata exactly as fetched. This answers the
+question the submission checklist asked (verbatim, or hashes plus a fetch script):
+verbatim, because the product's claim is about exact bytes and the before/after
+text of a changed tool cannot be reproduced from a hash, and because a refetch in
+October cannot recover what a server said in September. The text is quoted as
+evidence of what each server published. This record does not claim to relicense
+it, and no per-server licence review has been done.
+
+**Known gaps.** `data/labels.json` and `data/labels-todo.json` are present but not
+committed: they hold interim-crawl rehearsal labels that crawl 2's labelling will
+overwrite, and are committed with `data/drift.json` once the labels are final. Until
+then the published dataset lacks its human-label files.
