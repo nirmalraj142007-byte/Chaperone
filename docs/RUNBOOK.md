@@ -161,7 +161,10 @@ Image push dominates and is bound by this machine's upload bandwidth, not AWS.
 The gateway image is 228 MB in ECR.
 
 `deploy.sh` logs in to ECR, points `/opt/chaperone/.env` at `<repo>:<sha>` for
-both images, pulls, runs `docker compose up -d`, and waits up to 120 s for the
+both images, pulls, installs the host's `Caddyfile`, `docker-compose.yml`,
+`demo-control.sh` and `site/` (the landing page) from the new gateway image's
+`/repo/deploy`, runs `docker compose up -d` (recreating Caddy if its
+Caddyfile changed), and waits up to 120 s for the
 gateway's and the demo upstream's HEALTHCHECKs to pass. If either does not, it
 restores the previous images and exits non-zero. After a good rollout it prunes
 unused images (each is about 1.1 GB; the disk is 20 GB), so a rollback re-pulls
@@ -330,7 +333,9 @@ for p in /control/stats /control/mutate /control/reset; do
 done
 nc -zv -w3 <ELASTIC_IP> 4000; nc -zv -w3 <ELASTIC_IP> 3000        # both must fail: only 80 and 443 are open
 
-TARGET=$D/mcp corepack pnpm spec            # 27 named assertions, against the deployed gateway
+curl -s -o /dev/null -w '%{http_code} %{content_type}\n' $D/   # 200 text/html: the landing page, the only path Caddy serves from disk
+# Not `TARGET=$D/mcp pnpm spec`: the conformance suite ignores TARGET and tests an
+# in-process gateway, so it passes whatever TARGET says (checked 2026-10-16).
 TARGET=$D/mcp corepack pnpm test:resume     # 10-iteration kill-and-resume loop; must be 10/10
 TARGET=$D/mcp corepack pnpm exec vitest run --config spec/stack.vitest.config.ts spec/long-stream.test.ts   # 180 s stream
 corepack pnpm verify-ledger                 # deployer credentials, no DDB_ENDPOINT
@@ -354,7 +359,24 @@ the gateway answers an older one with a 400 that says so.
 | `pnpm verify-ledger` (deployer credentials) | chain OK, 7 events verified |
 
 So "resumable SSE works through Caddy on AWS" is now demonstrated, for one run
-of each. `pnpm spec` against the deployment was not run on 2026-10-16.
+of each. The conformance suite has not run against the deployment: `pnpm spec`
+ignores `TARGET` (see the comment in the block above).
+
+**The landing page rollout, 2026-10-16** (image `1397669`). The new `deploy.sh`
+was written to the host over SSM first (SHA-256 `08f071b8…e061` on the host,
+matching the commit), then `deploy.sh 1397669…` ran: 89 s from `send-command`
+to SSM `Success`, both containers healthy, and the Caddyfile, compose file,
+`demo-control.sh` and `site/index.html` installed from the image. Afterwards,
+over HTTPS:
+
+| Check | Result |
+|---|---|
+| `GET /` | 200 `text/html`, byte-identical to `deploy/site/index.html` at `1397669` (SHA-256 `a1715033…3798`), with the hash-pinned CSP |
+| `GET /healthz`, `/metrics` | 200 from the gateway, `commit` `1397669…`, `storageBackend` `dynamodb-aws` |
+| `initialize` / `tools/list` / `DELETE` on `/mcp` | session minted, `2025-11-25` echoed, 4 grocery tools + 2 first-party, session deleted (200) |
+| `/index.html`, `/control/*` (GET and POST) | the gateway's 404; only the exact path `/` is served from disk |
+| TLS certificate | **unchanged**: serial `05CDF12E62D685FCCDDEEC614F0F7E4379AC`, SHA-256 fingerprint `9B:EB:74:7B:…:54:8B:DD:1C`, the same before and after Caddy was recreated |
+| The page in a browser | status line "Running", `dynamodb-aws`, build `1397669`; no console errors, so both CSP hashes match |
 
 ### Latency against DynamoDB on AWS
 
@@ -520,12 +542,23 @@ unreachable. A rollout is therefore about 90 s, of which about 16 s is
 downtime: `docker compose up -d` replaces the containers in place, so the old
 ones are gone before the new ones are healthy.
 
-**Changing a file under `deploy/` does not reach the running host.** The host's
-copy is written once, by the first-boot script. The `deploy.sh` fix of
-2026-10-16 was written to the live host over SSM. A `cdk deploy
-ChaperoneGateway` after such a change alters the instance's user data, which
-CloudFormation applies by stopping and starting the instance (the Elastic IP is
-kept); review `cdk diff` first.
+**A change under `deploy/` ships with `deploy.sh <sha>`, except `deploy.sh`
+itself.** The gateway image is built from the whole repository, so it carries
+that commit's `deploy/` at `/repo/deploy`; `deploy.sh` copies the `Caddyfile`,
+`docker-compose.yml`, `demo-control.sh` and `site/` from it onto the host before
+`docker compose up -d`, and a rollback copies the previous image's. A changed
+Caddyfile recreates the Caddy container (a single-file bind mount does not see
+a replaced file); the certificate is in the `caddy_data` volume and is kept.
+`site/` is emptied and refilled in place, because Caddy's bind mount holds the
+directory. `deploy.sh` does not replace itself: a rollback to an older image
+would otherwise install a script that cannot sync. A change to `deploy.sh` is
+still written to the host over SSM, as the fixes of 2026-10-16 were (the second
+added this sync; the host keeps the previous copy as
+`deploy.sh.before-landing-page`). The first-boot script still embeds these
+files for a fresh host, so a `cdk deploy ChaperoneGateway` after any change
+under `deploy/` alters the instance's user data, which CloudFormation applies by
+stopping and starting the instance (the Elastic IP is kept); review `cdk diff`
+first. Nothing requires that deploy for a file to reach the running host.
 
 ## Stop (pause), after submission on 2026-10-22
 

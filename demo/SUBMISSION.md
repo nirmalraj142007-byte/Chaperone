@@ -62,8 +62,11 @@ Known state (2026-10-16): **deployed.** https://chaperone-demo.duckdns.org is on
 (`docs/DECISIONS.md`, "Deployment: one EC2 host with Caddy, on a free DuckDNS
 hostname"). The hostname is a free DuckDNS name pointed at the stack's Elastic IP
 by hand, not a registered domain. On the host: `/healthz` ok on `dynamodb-aws`,
-`test:resume` 10/10, a 182.8 s long stream, and `verify-ledger` OK. Not yet run:
-`pnpm spec` against `TARGET`.
+`test:resume` 10/10, a 182.8 s long stream, and `verify-ledger` OK. Not run, and
+not runnable as written: `pnpm spec` against `TARGET`. The conformance suite
+ignores `TARGET` and tests an in-process gateway; it passed 27/27 on 2026-10-16
+with `TARGET` set to the live host and to `https://does-not-exist.invalid/mcp`
+alike (`docs/RUBRIC-MAP.md`, section 1).
 
 - [ ] Either: a deployed gateway whose `/healthz` returns 200, with `TARGET=https://<host>/mcp pnpm spec` and `TARGET=https://<host>/mcp pnpm test:resume` both passing against it (pasted output)
 - [ ] Or: the README, the Devpost description and the video all say plainly that it is not deployed and the demo runs on the local stack, and the production-latency marker is replaced by a sentence saying it was not measured against DynamoDB on AWS. Do not leave a dangling pending marker, and do not state a number that came from DynamoDB Local as if it were production

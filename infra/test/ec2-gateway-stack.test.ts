@@ -131,6 +131,18 @@ describe("Ec2GatewayStack", () => {
     expect(userData).toContain("DEMO_UPSTREAM_IMAGE=");
   });
 
+  it("keeps the first-boot user data under EC2's 16 KB limit", () => {
+    // EC2 rejects user data over 16384 bytes before base64. The literal parts
+    // are counted exactly; the few tokens (repository URIs, region, domain)
+    // are allowed 512 bytes, well over their resolved length.
+    const instance = Object.values(gateway.findResources("AWS::EC2::Instance"))[0] as {
+      Properties: { UserData: { "Fn::Base64": { "Fn::Join": [string, unknown[]] } } };
+    };
+    const parts = instance.Properties.UserData["Fn::Base64"]["Fn::Join"][1];
+    const literal = parts.filter((p): p is string => typeof p === "string").join("");
+    expect(Buffer.byteLength(literal, "utf8") + 512).toBeLessThan(16384);
+  });
+
   it("embeds a Caddyfile with no compression and no write timeout", () => {
     const userData = JSON.stringify(gateway.findResources("AWS::EC2::Instance"));
     expect(userData).toContain("flush_interval -1");
