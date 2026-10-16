@@ -1,13 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { CfnOutput, CfnParameter, Duration, Fn, RemovalPolicy, Stack, type StackProps } from "aws-cdk-lib";
+import { CfnOutput, CfnParameter, Fn, RemovalPolicy, Stack, type StackProps } from "aws-cdk-lib";
 import type { Construct } from "constructs";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import type * as ecr from "aws-cdk-lib/aws-ecr";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as logs from "aws-cdk-lib/aws-logs";
-import * as route53 from "aws-cdk-lib/aws-route53";
 import { TABLE_SCHEMAS, type TableLogicalName } from "@chaperone/ledger";
 import { TABLE_PREFIX } from "./tables-stack.js";
 
@@ -54,7 +53,11 @@ export interface Ec2GatewayStackProps extends StackProps {
  * is rolled out and rolled back by `/opt/chaperone/deploy.sh <sha>` over SSM
  * (RUNBOOK), so a new image never requires touching CloudFormation or
  * replacing the instance. Pausing is `aws ec2 stop-instances`; the Elastic IP
- * and Route 53 record are part of the stack so DNS survives a stop/start.
+ * is part of the stack so the address, and therefore DNS, survives a stop/start.
+ *
+ * DNS is external: the stack creates no hosted zone and no record. The
+ * hostname is a parameter, and its A record (a free DuckDNS name for the
+ * demo) is pointed at the `ElasticIp` output by hand, once (RUNBOOK, DNS).
  *
  * Holds no data: the tables live in TablesStack and are addressed by
  * name-derived ARN, so this stack can be destroyed and redeployed freely.
@@ -69,17 +72,9 @@ export class Ec2GatewayStack extends Stack {
 
     const domainName = new CfnParameter(this, "DomainName", {
       type: "String",
-      description: "Public hostname for the gateway, e.g. gateway.example.com. Must sit inside the hosted zone below.",
+      description: "Public hostname for the gateway, e.g. chaperone-demo.duckdns.org. DNS is managed outside this stack: point its A record at the ElasticIp output.",
       allowedPattern: "^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$",
       constraintDescription: "must be a lowercase DNS hostname",
-    });
-    const hostedZoneId = new CfnParameter(this, "HostedZoneId", {
-      type: "AWS::Route53::HostedZone::Id",
-      description: "Route 53 hosted zone that contains DomainName. The A record to the Elastic IP is written here.",
-    });
-    const hostedZoneName = new CfnParameter(this, "HostedZoneName", {
-      type: "String",
-      description: "The hosted zone's name, e.g. example.com.",
     });
     const upstreamsJson = new CfnParameter(this, "UpstreamsJson", {
       type: "String",
@@ -94,11 +89,6 @@ export class Ec2GatewayStack extends Stack {
       default: "t3.micro",
       allowedValues: ["t3.micro", "t3.small", "t3.medium"],
       description: "x86 only: the image is built for linux/amd64. t3.micro is the smallest that fits; use t3.small if the account's free tier does not cover t3.micro.",
-    });
-
-    const zone = route53.HostedZone.fromHostedZoneAttributes(this, "Zone", {
-      hostedZoneId: hostedZoneId.valueAsString,
-      zoneName: hostedZoneName.valueAsString,
     });
 
     // --- Network: one public subnet, no NAT -----------------------------------
@@ -219,15 +209,8 @@ export class Ec2GatewayStack extends Stack {
 
     const eip = new ec2.CfnEIP(this, "Eip", { domain: "vpc", instanceId: instance.instanceId });
 
-    new route53.ARecord(this, "Record", {
-      zone,
-      recordName: domainName.valueAsString,
-      target: route53.RecordTarget.fromIpAddresses(eip.attrPublicIp),
-      ttl: Duration.seconds(60),
-    });
-
     new CfnOutput(this, "InstanceId", { value: instance.instanceId });
-    new CfnOutput(this, "ElasticIp", { value: eip.attrPublicIp });
+    new CfnOutput(this, "ElasticIp", { value: eip.attrPublicIp, description: "Point DomainName's A record here (DNS is external)." });
     new CfnOutput(this, "LogGroupName", { value: logGroup.logGroupName });
     new CfnOutput(this, "RepositoryUri", { value: props.repository.repositoryUri });
     new CfnOutput(this, "DemoRepositoryUri", { value: props.demoRepository.repositoryUri });

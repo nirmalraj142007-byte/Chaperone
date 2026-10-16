@@ -89,11 +89,14 @@ describe("Ec2GatewayStack", () => {
     }
   });
 
-  it("takes the domain, zone and upstreams as parameters", () => {
+  it("takes the domain and upstreams as parameters, and leaves DNS external", () => {
     const params = Object.keys(gateway.toJSON().Parameters as object);
     expect(params).toEqual(
-      expect.arrayContaining(["DomainName", "HostedZoneId", "HostedZoneName", "UpstreamsJson", "InstanceType"]),
+      expect.arrayContaining(["DomainName", "UpstreamsJson", "InstanceType"]),
     );
+    expect(params).not.toContain("HostedZoneId");
+    gateway.resourceCountIs("AWS::Route53::RecordSet", 0);
+    gateway.resourceCountIs("AWS::EC2::EIP", 1);
   });
 
   it("keeps the demo upstream's /control routes off the internet", () => {
