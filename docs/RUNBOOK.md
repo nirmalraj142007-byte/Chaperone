@@ -247,7 +247,75 @@ For a shell on the host instead: `aws ssm start-session --target $ID`, then
 `/opt/chaperone/demo-control.sh mutate`. Reset between takes with `ctl reset`.
 The same script was run for real against the local stack: `stats`, `mutate`,
 `stats`, `reset` all answered 200 with the state flipping as shown, and an
-unknown argument exits 2.
+unknown argument exits 2. Against AWS on 2026-10-16, `stats`, `mutate`, `stats`
+answered 200, with `mutated` flipping to true and 6 upstream sessions notified.
+
+### Clear a pending demo quarantine before a take
+
+`ctl reset` puts the upstream back, but the quarantine the mutation opened
+stays `pending` in `chaperone-quarantine`. The next `mutate` produces the same
+hash, so the gateway *reuses* that quarantine: the card shows the old detection
+time, and no new INSERT reaches the advisory Pipe. Do **not** clear it with the
+card's buttons. Approving pins the mutated text, so the demo mutation stops
+being a change. Keeping it blocked records a refusal, and a refused change is
+never asked about again, so the demo stops raising a card. Both are a
+resident's decisions, and neither is yours to make for a take.
+
+Instead remove the staged row and its advisory. This is the narrow AWS
+equivalent of `pnpm demo:reset`, which drops the quarantine table locally. The
+ledger is not touched: its `TOOL_QUARANTINED` event stays, as the record that
+the change was detected.
+
+```bash
+Q=<quarantineId>   # from chaperone/pending_changes
+K="{\"pk\":{\"S\":\"HOUSEHOLD#household-demo\"},\"sk\":{\"S\":\"QUAR#$Q\"}}"
+aws dynamodb get-item --table-name chaperone-quarantine --key "$K" > quarantine-$Q.json   # keep a copy
+aws dynamodb delete-item --table-name chaperone-quarantine --key "$K" \
+  --condition-expression "#s = :p" --expression-attribute-names '{"#s":"status"}' \
+  --expression-attribute-values '{":p":{"S":"pending"}}'          # only ever a pending one
+aws dynamodb delete-item --table-name chaperone-advisory --key "{\"pk\":{\"S\":\"QUAR#$Q\"}}"
+```
+
+Done on 2026-10-16 for `01M51BEM84CAZJH85SS1531TNK`, the quarantine from the
+first AWS demo mutation. Afterwards `chaperone/pending_changes` over HTTPS
+answered "No tool-definition changes are currently pending review.",
+`add_item` was back in `tools/list`, and `verify-ledger` still reported chain OK
+with 7 events. The next `mutate` opens a fresh quarantine, and the Pipe scores it
+by itself.
+
+### Advisory pipeline smoke test (Pipe-started, no household involved)
+
+```bash
+DDB_TABLE_PREFIX=chaperone HOUSEHOLD_ID=household-demo \
+  CHAPERONE_UPSTREAMS='[{"id":"unused","url":"http://localhost:0/mcp","label":"unused"}]' \
+  corepack pnpm advisory:pipe-smoke
+```
+
+`scripts/advisory-pipe-smoke.ts` inserts one labelled fixture quarantine into a
+throwaway household (`pipe-smoke-<ulid>`), with no ledger event and no usable
+approval token. It starts nothing itself: the EventBridge Pipe must start the
+execution from the stream INSERT. The script waits for the advisory row, then
+deletes both rows it created (the delete is a stream REMOVE, which the Pipe
+ignores). One Groq call per run.
+
+**Result, 2026-10-16:** the Pipe started execution
+`7617cada-068c-48b8-99a3-e448bc373a87` by itself, from the fixture insert in
+`pipe-smoke-01M51EGQ5KWTB51ZD2876MZKK0`. It `SUCCEEDED` in 5.3 s:
+`ScoreAdvisoryTask` `scored` (Groq `openai/gpt-oss-120b`, score 60, summary
+naming the new "send a copy of every note" clause), `ChangelogCheckTask`
+`unresolved` (`upstream-has-no-repo`), and `WriteAdvisoryTask` `written: true`.
+The advisory row appeared 7.0 s after the insert, and both fixture rows were then
+deleted. The first attempt timed out on the ledger client's 5 s request timeout
+before the insert, and wrote nothing (a scan for `pipe-smoke-` rows returned 0).
+
+To view it in the console: Step Functions, region us-east-1, State machines,
+`chaperone-advisory-pipeline`, then the execution named above. The Graph view
+shows the Parallel branch and the write. Its input is the Pipe's batch array,
+`[{"householdId": "pipe-smoke-…", "quarantineId": "01M51EGQ5M25XZ4NGVB7ZKGWC5"}]`.
+The earlier executions on the same machine are `ba17bd94-…` (Pipe-started from the
+real demo mutation; failed on friction log 050, then redriven into 051's hollow
+success) and `phase18-pipe-input-01M51BEM84CAZJH85SS1531TNK` (started by hand
+with Pipe-identical input, after both fixes).
 
 ## Smoke test
 
@@ -290,30 +358,67 @@ of each. `pnpm spec` against the deployment was not run on 2026-10-16.
 
 ### Latency against DynamoDB on AWS
 
-`pnpm bench` needs a direct path to the upstream, which is not public, so
-both sides go through an SSM tunnel from this machine: the gateway container
-(`172.18.0.3:3000` -> `localhost:13000`) and the demo upstream
-(`172.18.0.2:4000` -> `localhost:4000`). The tunnel's own round trip sits in
-both sides and cancels in the difference; its jitter does not.
+Run the bench **on the instance**, inside the compose network, so the direct
+and the proxied call are both local to the host and only the gateway's
+DynamoDB calls leave it. The host has no checkout and no `tsx`, so the bench is
+bundled into one file, shipped through a presigned URL from the CDK assets
+bucket (the instance role needs no new permission), and run in a `node`
+container on `chaperone_default`:
 
 ```bash
-BENCH_GATEWAY_URL=http://localhost:13000/mcp BENCH_DIRECT_URL=http://localhost:4000/mcp \
-  corepack pnpm bench --no-reset-sse     # reset-sse refuses without DDB_ENDPOINT; TTL evicts on AWS anyway
+SHA=$(git rev-parse HEAD)   # from a clean tree, or the file says dirty
+infra/node_modules/.bin/esbuild packages/bench/scripts/bench.ts --bundle --platform=node --format=esm \
+  --target=node24 --outfile=bench.mjs --alias:node:module=./infra/lambda/node-module-shim.ts \
+  --banner:js="import { createRequire as __cr } from 'module'; const require = __cr(import.meta.url);"
+B=cdk-hnb659fds-assets-$ACCOUNT-us-east-1
+aws s3 cp bench.mjs s3://$B/chaperone-bench/bench-$SHA.mjs
+URL=$(aws s3 presign s3://$B/chaperone-bench/bench-$SHA.mjs --expires-in 900)
+# then over SSM (send the commands as a file:// parameters JSON; the URL holds '&'):
+#   curl -fsS "$URL" -o /opt/chaperone/bench/bench.mjs
+#   docker run --rm --network chaperone_default -m 256m -v /opt/chaperone/bench:/b -w /b \
+#     -e BENCH_GATEWAY_URL=http://gateway:3000/mcp -e BENCH_DIRECT_URL=http://demo-upstream:4000/mcp \
+#     -e BENCH_VANTAGE=on-host -e BENCH_INSTANCE_TYPE=t3.micro -e BENCH_COMMIT=$SHA -e BENCH_DIRTY=false \
+#     node:24.14.1-alpine node bench.mjs --no-reset-sse --no-ledger --rate=8
+#   cat /opt/chaperone/bench/benchmarks/latency.json      # copy it back into the repo
 ```
 
-**Result, 2026-10-16, image `c4ed3d5`, 1000 samples per mode, concurrency 4:
-added p50 53.30 ms, p95 835.78 ms, p99 1500.58 ms. Over the 30 ms p95 budget;
-`pnpm bench` exited 1.** Direct p50/p95 was 249.70/353.77 ms (that is the
-tunnel), proxied 303.00/1189.54 ms. `benchmarks/latency.json` records it with
-`environment.backend` `dynamodb-aws`.
+The flags each have a reason. `--rate=8`: the gateway rate-limits each client
+IP to 10 requests/s (`MCP_RATE_LIMIT`); on the host a call takes a few ms, so an
+unpaced run at concurrency 4 is cut off with `-32000 Too many requests` (the
+first on-host attempt was). Both modes are paced the same. `--no-ledger`: the
+bundle cannot spawn `verify-ledger`, so the block says NOT RUN; run `pnpm
+verify-ledger` from a workstation. `--no-reset-sse`: `reset-sse` refuses
+without `DDB_ENDPOINT`, and TTL evicts on AWS anyway. The `node:module` alias
+is the same shim as the Lambdas, for the same `canonicalize` load. Fetch the
+SSM output with `PYTHONUTF8=1` set on Windows (friction log 052).
 
-As a cross-check without the tunnel, the gateway's own `durationMs` for the
-`tools/call` requests in that window, read from CloudWatch (n=1222), was p50
-47 ms, p95 95 ms, p99 334 ms. That is the gateway's whole handling time
-including the in-host upstream call, not an added-latency figure, but it is
-also over 30 ms at p95. The budget is not met on a `t3.micro` against real
-DynamoDB. The four writes per call are the likely cost; that is not
-established beyond this one run.
+**Result, 2026-10-16, gateway image `60e5967`, bench `502d3d0` (clean tree),
+1000 samples per mode, concurrency 4, paced at 8/s: added p50 33.10 ms, p95
+53.82 ms, p99 129.25 ms. Over the 30 ms p95 budget by 23.82 ms; `pnpm bench`
+exited 1.** Direct p50/p95 2.60/3.83 ms, proxied 35.70/57.65 ms.
+`benchmarks/latency.json` records `backend` `dynamodb-aws`, `vantage`
+`on-host`, `instanceType` `t3.micro`, `ratePerSecond` 8.
+
+CPU credits were **not** a factor. The instance is in T3 `unlimited` mode,
+which never throttles; over the run (04:06-04:11 UTC) `CPUCreditBalance` rose
+from 8.0 to 8.2, `CPUSurplusCreditBalance` and `CPUSurplusCreditsCharged` stayed
+0, and `CPUUtilization` peaked at 14% (5-minute averages 5-12%).
+
+Where the time goes, as far as measured: DynamoDB's own
+`SuccessfulRequestLatency` in that window was 2.07 ms average per `PutItem` and
+2.29 ms per `UpdateItem` on `chaperone-sse-event` (2230 of each), and 0.90 ms per
+`GetItem` on `chaperone-pin` (1212). The pin read and four sse-event writes are
+roughly 9 ms of server time per call before any network round trip. The rest of
+the 33 ms is not attributed; nothing here establishes how much is round trips
+and how much is the gateway itself.
+
+**Superseded:** the first AWS run, earlier the same day, went through two SSM
+port-forwards from a laptop in India to the gateway and demo-upstream
+containers. It reported added p95 835.78 ms, but its direct p50 was 249.70 ms
+of tunnel, and the tunnel's jitter, which does not cancel, made the tail. That
+number measured the tunnel. The file is kept unedited in
+`benchmarks/superseded/latency-2026-10-16-ssm-tunnel.json`, with
+`benchmarks/superseded/README.md` saying why.
 
 ## Memory budget on a `t3.micro`
 

@@ -53,6 +53,7 @@
     "analyse:drift": "node --env-file-if-exists=.env --import tsx packages/analysis/scripts/analyse-drift.ts",
     "analyse:label": "tsx packages/analysis/scripts/label.ts",
     "bench": "tsx packages/bench/scripts/bench.ts",
+    "advisory:pipe-smoke": "tsx scripts/advisory-pipe-smoke.ts",
     "infra:synth": "pnpm --filter @chaperone/infra synth"
   },
   "devDependencies": {
@@ -79,5 +80,8 @@
     "ulid": "^3.0.2",
     "vitest": "^2.1.4",
     "zod": "^3.25.76"
+  },
+  "dependencies": {
+    "@chaperone/errors": "workspace:*"
   }
 }

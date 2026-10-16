@@ -2617,3 +2617,30 @@ then showed the model-generated advisory.
 in the first paragraph that the input is always an array, with an example. An
 `inputTemplate` that reads like a single-record shape is easy to take literally.
 For this repo: an execution's *output* is the evidence, not its status.
+
+## Entry 052 — 2026-10-16
+
+**Task attempted:** Read the output of the on-host `pnpm bench` run, which
+ran on the EC2 host through SSM Run Command, back on a Windows workstation.
+
+**Steps taken:** `aws ssm get-command-invocation --command-id … --query
+StandardOutputContent --output text`, from Git Bash on Windows 11, AWS CLI v2.
+
+**Expected versus actual:** Expected the command's stdout. Actual: the
+command reported `Success`, but the CLI itself failed with `aws: [ERROR]:
+'charmap' codec can't encode characters in position 519-596: character maps to
+<undefined>`, and printed nothing. The bench's summary block uses box-drawing
+characters (`═`, `─`), and the CLI encodes its output with the Windows console
+code page, not UTF-8, even when stdout is redirected to a file. The run's
+result was retrievable but invisible.
+
+**Severity:** minor. One retry.
+
+**Workaround:** Set `PYTHONUTF8=1` (and `PYTHONIOENCODING=utf-8`) for the CLI
+process, then re-fetch; the output came back intact. Written into
+`docs/RUNBOOK.md` beside the on-host bench steps.
+
+**Actionable suggestion:** The AWS CLI could write UTF-8 when stdout is not a
+console, or fall back to replacing unencodable characters rather than failing
+the whole command. A failure on *printing* a successful command's output reads
+like the remote command failed.

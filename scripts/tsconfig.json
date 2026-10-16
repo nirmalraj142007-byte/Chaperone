@@ -16,6 +16,7 @@
     "demo-ledger.ts",
     "demo-mutate.ts",
     "demo-assistant.ts",
+    "advisory-pipe-smoke.ts",
     "demo/**/*.ts",
     "test/**/*.ts",
     "../e2e/**/*.ts",

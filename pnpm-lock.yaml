@@ -165,6 +165,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      '@chaperone/errors':
+        specifier: workspace:*
+        version: link:packages/errors
     devDependencies:
       '@aws-sdk/client-dynamodb':
         specifier: 3.1131.0

@@ -38,9 +38,10 @@ It has a measured cost, and the part that transfers between environments is
 the count: every gated call performs **four DynamoDB write operations**, one
 pin read plus two resumable-SSE events, each an `UpdateItem` and a `PutItem`
 (see [Cost per call](#cost-per-call-four-dynamodb-writes)). The milliseconds
-do not transfer. Against DynamoDB on AWS (a `t3.micro` in us-east-1, measured
-2026-10-16), the added latency is **p50 53.30 ms, p95 835.78 ms, p99
-1500.58 ms: over the 30 ms p95 budget**, as it is against DynamoDB Local.
+do not transfer. Against DynamoDB on AWS, measured on the deployed `t3.micro`
+in us-east-1 on 2026-10-16 with the bench running on the host itself, the added
+latency is **p50 33.10 ms, p95 53.82 ms, p99 129.25 ms: over the 30 ms p95
+budget**, as it is against DynamoDB Local.
 
 What it is not: there is no household that has used it, it covers one
 hard-coded household, and it detects changed claims, not malicious behaviour.
@@ -217,8 +218,8 @@ This is the audit of the claims this project could have made and does not.
   happened is not: it is a hash comparison. Deciding whether it was cosmetic,
   additive or a change of meaning is the author reading it.
 - **The 30 ms latency budget is not met.** It fails against DynamoDB Local
-  and against DynamoDB on AWS (added p95 835.78 ms, measured through an SSM
-  tunnel; the gateway's own server-side p95 was 95 ms).
+  and against DynamoDB on AWS, measured on the deployed host (added p95
+  53.82 ms, 23.82 ms over).
 - **It detects changed claims, not malicious behaviour.**
 
 The reasoning behind each is in [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md),
@@ -290,21 +291,31 @@ second), on one machine, at commit `e7a453b` on a dirty tree:
 | Backend | Added p50 | Added p95 | Added p99 |
 |---|---:|---:|---:|
 | `dynamodb-local` | 480.53 ms | 591.89 ms | 635.63 ms |
-| `dynamodb-aws` | 53.30 ms | 835.78 ms | 1500.58 ms |
+| `dynamodb-aws`, on the host | 33.10 ms | 53.82 ms | 129.25 ms |
 
 The `dynamodb-local` row is Chaperone's added latency against a single-writer
 local backend, not its added latency.
 
-The `dynamodb-aws` row was measured on 2026-10-16 against the deployed
-`t3.micro` in us-east-1, at commit `3c910e5` on a dirty tree (an uncommitted friction-log entry; no code) with image `c4ed3d5`, at
-concurrency 4 with 1000 samples per mode. The direct upstream is not public, so
-both modes ran through an SSM tunnel from a laptop: the tunnel's round trip
-(direct p50 249.70 ms) cancels in the difference, but its jitter does not, and
-it widens the tail. As a cross-check with no tunnel, the gateway's own logged
-handling time for the same window's `tools/call` requests was p50 47 ms, p95
-95 ms, p99 334 ms (n=1222, CloudWatch). That includes the in-host upstream
-call, so it is not an added-latency figure. Either way the 30 ms budget is not
-met. Method and caveats: [`docs/RUNBOOK.md`](docs/RUNBOOK.md#latency-against-dynamodb-on-aws). The 30 ms p95 budget is enforced by exit code: `pnpm bench`
+The `dynamodb-aws` row was measured on 2026-10-16 on the deployed `t3.micro`
+in us-east-1 (gateway image `60e5967`), by the bench at commit `502d3d0` on a
+clean tree, running in a container on the host's own compose network: the
+direct call goes to `demo-upstream:4000` and the proxied one to `gateway:3000`,
+so both stay on the instance and only the gateway's DynamoDB calls leave it.
+Direct p50 was 2.60 ms. 1000 samples per mode at concurrency 4, **paced at 8
+calls per second**: the gateway rate-limits each client IP to 10/s, and one
+bench process is one IP, so an unpaced run on the host measures the limiter's
+"Too many requests", not a tool call. A household's assistant is one client
+too. CPU credits were not a factor (`unlimited` mode, balance rising through
+the run, no surplus spent, CPU at most 14%). DynamoDB itself reported 2.1 ms
+per `PutItem`, 2.3 ms per `UpdateItem` and 0.9 ms per pin `GetItem` in that
+window, roughly 9 ms of server time per call; where the rest of the 33 ms goes
+is not established. `benchmarks/latency.json` records `environment.vantage`
+`on-host` and `instanceType` `t3.micro`.
+
+An earlier run the same day reported added p95 835.78 ms. It measured an SSM
+tunnel from a laptop in India, not Chaperone, and is kept, unedited, as
+superseded in [`benchmarks/superseded/`](benchmarks/superseded/README.md).
+Method: [`docs/RUNBOOK.md`](docs/RUNBOOK.md#latency-against-dynamodb-on-aws). The 30 ms p95 budget is enforced by exit code: `pnpm bench`
 exits 1 over budget, and **it currently exits 1 against both backends.** The bench file records the
 backend as a required field so a number cannot be quoted without it.
 Resumable SSE is why the writes exist: an event a client could replay with
