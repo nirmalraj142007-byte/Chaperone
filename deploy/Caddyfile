@@ -24,10 +24,32 @@
 }
 
 {$CADDY_SITE} {
-	reverse_proxy gateway:3000 {
-		flush_interval -1
-		transport http {
-			dial_timeout 5s
+	# The exact path "/" is the static landing page (deploy/site/index.html,
+	# mounted at /srv/site). Nothing else is served from disk. The page's
+	# inline <style> and <script> are pinned by hash below, and
+	# infra/test/landing-page.test.ts fails if either changes without this
+	# policy following.
+	handle / {
+		root * /srv/site
+		rewrite * /index.html
+		header {
+			Content-Security-Policy "default-src 'none'; style-src 'sha256-8EodjawKRhepH5kDUdgJ2KqMmvyPl0KP/tQDterXbGk='; script-src 'sha256-ScH3CxrhkE9ZDQJRGkQuBw7rJ7vzWntodhYUYpSHTtU='; connect-src 'self'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+			X-Content-Type-Options nosniff
+			Referrer-Policy no-referrer
+			Strict-Transport-Security "max-age=63072000; includeSubDomains"
+			Cache-Control no-cache
+		}
+		file_server
+	}
+
+	# Every other path, /mcp, /healthz, /metrics and /api included, goes to
+	# the gateway exactly as before.
+	handle {
+		reverse_proxy gateway:3000 {
+			flush_interval -1
+			transport http {
+				dial_timeout 5s
+			}
 		}
 	}
 

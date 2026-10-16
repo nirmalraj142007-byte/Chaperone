@@ -7,8 +7,9 @@
  * to miss in review, so this is a grep gate, not a style suggestion.
  *
  * Scans every file `git ls-files` reports for the pathspec `*.md`, `demo`,
- * `docs` — i.e. all committed (or staged) Markdown anywhere in the repo,
- * plus every committed file under demo/ or docs/ regardless of extension,
+ * `docs`, `deploy/site` — i.e. all committed (or staged) Markdown anywhere in
+ * the repo, plus every committed file under demo/ or docs/ regardless of
+ * extension, plus the public landing page under deploy/site/,
  * since either directory could grow non-.md prose (a transcript, a script)
  * that ought to be held to the same bar. Reading from `git ls-files`
  * rather than walking the filesystem means this only ever sees committed
@@ -45,7 +46,7 @@ interface Violation {
 }
 
 function trackedProseFiles(): string[] {
-  const output = execFileSync("git", ["ls-files", "--", "*.md", "demo", "docs"], {
+  const output = execFileSync("git", ["ls-files", "--", "*.md", "demo", "docs", "deploy/site"], {
     cwd: ROOT,
     encoding: "utf8",
   });

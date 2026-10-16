@@ -10,7 +10,8 @@
  * value that cannot exist yet would teach everyone to ignore CI.
  *
  * Scans the same set of files `check-claims` does: every committed `*.md`,
- * plus everything committed under demo/ and docs/. Reading from
+ * plus everything committed under demo/, docs/ and deploy/site/ (the public
+ * landing page, whose demo-video line is a marker until Oct 22). Reading from
  * `git ls-files` means it only sees committed prose, never node_modules/ or
  * an untracked scratch file. It reads the working-tree content of each
  * tracked file, so a staged-but-uncommitted marker is caught too.
@@ -24,7 +25,7 @@ import { findPlaceholders } from "./demo/placeholders.js";
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 
 function trackedProseFiles(): string[] {
-  const output = execFileSync("git", ["ls-files", "--", "*.md", "demo", "docs"], {
+  const output = execFileSync("git", ["ls-files", "--", "*.md", "demo", "docs", "deploy/site"], {
     cwd: ROOT,
     encoding: "utf8",
   });

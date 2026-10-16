@@ -78,6 +78,9 @@ services:
     mem_limit: 96m
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # The landing page at "/". deploy.sh refreshes this directory's contents
+      # in place from the gateway image it rolls out, so the mount stays valid.
+      - ./site:/srv/site:ro
       # Certificates and the ACME account live here. It survives a stop/start
       # and a redeploy; losing it means re-issuing (rate-limited by Let's Encrypt).
       - caddy_data:/data
