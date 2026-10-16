@@ -40,6 +40,7 @@ import {
   type BootRateSource,
   type StorageBackend,
   type Vantage,
+  type ConsolidatedInput,
 } from "../src/index.js";
 import { BenchError } from "@chaperone/errors";
 
@@ -302,7 +303,7 @@ async function main(): Promise<void> {
     await writeFile(path.join("benchmarks", "boot-rate.json"), `${JSON.stringify(bootRate, null, 2)}\n`, "utf8");
   }
 
-  const ledger = args.ledger
+  const ledger: ConsolidatedInput["ledger"] = args.ledger
     ? verifyLedger()
     : { ok: true, skipped: true, summary: "not run in this invocation (--no-ledger); run pnpm verify-ledger separately" };
 
