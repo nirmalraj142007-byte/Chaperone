@@ -1,11 +1,13 @@
 # Runbook: deploying, pausing and resuming the gateway on AWS
 
-Status: **written, synthesized and partly verified locally; never applied.**
-`cdk synth` passes and `infra/test/ec2-gateway-stack.test.ts` asserts the
-properties below. Caddy has been run against the resumability suites on a local
-machine (see "Verify Caddy locally"). No stack in this file has been deployed,
-so nothing here has been tested on AWS. Every timing marked *not yet measured*
-is exactly that; fill it in during the first real deploy and remove the marker.
+Status: **deployed to AWS on 2026-10-16** (account 856820205068, us-east-1),
+at `https://chaperone-demo.duckdns.org`, running image `60e5967`. Every timing
+below marked *measured 2026-10-16* comes from that deploy; anything still
+*not yet measured* is exactly that. The first real deploy found three bugs that
+local verification could not: `deploy.sh` pulled `:unset` (friction log 048),
+the advisory Lambdas threw at module load (050), and the Pipe's batch array
+made the pipeline "succeed" with nothing written (051). All three are fixed,
+and the two in `infra/` are asserted by test.
 
 The local path (`docker compose up -d --build`, README Quickstart) works any
 time and needs no AWS account. The live deployment exists for judging
@@ -33,7 +35,7 @@ and the tables survive because they live in their own stack.
 | `ChaperoneAdvisoryPipeline` | `chaperone-quarantine`, `chaperone-advisory`, the Step Functions advisory pipeline | Stays up. Owns those two tables. |
 | `ChaperoneTables` | the other 7 tables, from `TABLE_SCHEMAS`; every one `RETAIN` | **Never destroyed**, so data survives anything below. |
 | `ChaperoneRegistry` | ECR repos `chaperone-gateway` and `chaperone-demo-upstream`, immutable tags | Stays up. The images for every rollout and rollback are here. |
-| `ChaperoneGateway` | VPC (one public subnet, no NAT), `t3.micro` host, Elastic IP, Route 53 A record, security group, instance role, 30-day log group | Pause = *stop the instance*, not destroy the stack. |
+| `ChaperoneGateway` | VPC (one public subnet, no NAT), `t3.micro` host, Elastic IP, security group, instance role, 30-day log group. **No DNS record:** DNS is external (below). | Pause = *stop the instance*, not destroy the stack. |
 
 Three containers run on the host under Docker Compose: the gateway, the staged
 demo upstream (`demo-upstream`) and Caddy. Both images carry the same git-sha
@@ -55,9 +57,10 @@ answers 404. The way in is `demo-control.sh` over SSM (below). IMDSv2 is require
 the gateway container reaching the instance role's credentials, and every
 DynamoDB call would then fail closed.
 
-Stack parameters, supplied at deploy time: `DomainName`, `HostedZoneId`,
-`HostedZoneName`, `UpstreamsJson`, and `InstanceType` (default `t3.micro`;
-x86 only).
+Stack parameters, supplied at deploy time: `DomainName`, `UpstreamsJson`, and
+`InstanceType` (default `t3.micro`; x86 only). There is no hosted-zone
+parameter: the stack creates no Route 53 zone or record, and `DomainName` is
+only written into Caddy's site address and the gateway's origin allowlist.
 
 Instance role grants (read off the repos; asserted by test):
 
@@ -76,38 +79,47 @@ the AWS-managed `AmazonSSMManagedInstanceCore`.
 
 ## Before you start
 
-1. **Credentials.** The `chaperone-dev` IAM user cannot do this. The 2026-10-10
-   read-only preflight showed it is denied on EC2 describe calls, EC2 address
-   allocation, CloudFormation, ECS, ECR, ACM, Route 53, DynamoDB listing, SSM
-   parameters, billing, Cost Explorer and Service Quotas. Deploy as a user or
-   role that can create EC2, IAM roles, Route 53 records, CloudWatch log groups,
-   DynamoDB tables and ECR repositories. Whether this account can launch an EC2
-   instance at all is **not established**: a dry-run launch could not be
-   completed without an AMI id the identity could not look up.
-2. **A Route 53 hosted zone** for the domain, in the same account. The stack
-   writes the A record into it.
-3. **An upstream.** `UpstreamsJson` defaults to the demo upstream that runs on
+1. **Credentials.** Use the `deployer` profile (IAM user `chaperone-deployer`),
+   and check it first: `aws sts get-caller-identity --profile deployer` must
+   show that user in account 856820205068. The `chaperone-dev` user cannot
+   deploy (the 2026-10-10 preflight showed it denied on EC2, CloudFormation,
+   ECR, DynamoDB listing and more). The account can launch a `t3.micro`:
+   established 2026-10-16.
+2. **A hostname you control, with any DNS provider.** The live deployment uses
+   the free DuckDNS name `chaperone-demo.duckdns.org`. You point its A record at
+   the stack's `ElasticIp` output by hand, once (DNS, below).
+3. **The Groq key in Secrets Manager** before `ChaperoneAdvisoryPipeline` runs
+   its first execution. The stack only references the secret by name; Deploy
+   step 2 creates it from `.env` without printing it.
+4. **An upstream.** `UpstreamsJson` defaults to the demo upstream that runs on
    the same host, `[{"id":"grocery","url":"http://demo-upstream:4000/mcp",...}]`,
    so for the demo you pass nothing. To point the gateway at a different MCP
    server instead, override it: a JSON array of `{"id","url","label"}` with no
    single quote in it.
-4. Docker running; `corepack pnpm install`; `export AWS_REGION=us-east-1`.
+5. Docker running; `corepack pnpm install`; `export AWS_PROFILE=deployer AWS_REGION=us-east-1`;
+   and the **Session Manager plugin** for the AWS CLI (for the pinning port-forward).
 
 ## Deploy
 
 ```bash
 cd infra
 SHA=$(git rev-parse HEAD)
-ACCOUNT=<ACCOUNT_ID>
+ACCOUNT=856820205068
+export CDK_DEFAULT_ACCOUNT=$ACCOUNT   # the advisory stack takes a concrete env
 REGISTRY=$ACCOUNT.dkr.ecr.us-east-1.amazonaws.com
 REPO=$REGISTRY/chaperone-gateway
 DEMO_REPO=$REGISTRY/chaperone-demo-upstream
 
-# 1. Bootstrap once per account/region. (Not run yet: this creates resources.)
+# 1. Bootstrap once per account/region.
 corepack pnpm exec cdk bootstrap aws://$ACCOUNT/us-east-1
 
 # 2. Data and registry first. Tables are created once and never destroyed.
-corepack pnpm exec cdk deploy ChaperoneAdvisoryPipeline ChaperoneTables ChaperoneRegistry
+#    The advisory stack owns chaperone-quarantine and chaperone-advisory, so it
+#    must exist before the first rollout or the gateway cannot open a quarantine.
+#    Its Groq secret first, read from .env and never echoed:
+umask 077; grep -m1 '^GROQ_API_KEY=' ../.env | cut -d= -f2- | tr -d '\r\n"' > /tmp/g
+aws secretsmanager create-secret --name chaperone/groq-api-key --secret-string file:///tmp/g; rm -f /tmp/g
+corepack pnpm exec cdk deploy ChaperoneTables ChaperoneRegistry ChaperoneAdvisoryPipeline --require-approval never
 
 # 3. Build and push both images, tagged with the same git sha. linux/amd64: the host is x86.
 aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin "$REGISTRY"
@@ -116,14 +128,13 @@ docker build --platform linux/amd64 -f ../docker/demo-upstream.Dockerfile -t $DE
 docker push $REPO:$SHA && docker push $DEMO_REPO:$SHA
 
 # 4. The host. First boot installs Docker and lays down /opt/chaperone; it does not start the gateway.
-corepack pnpm exec cdk deploy ChaperoneGateway \
-  --parameters DomainName=gateway.example.com \
-  --parameters HostedZoneId=Z0123456789ABC \
-  --parameters HostedZoneName=example.com
+corepack pnpm exec cdk deploy ChaperoneGateway --exclusively --require-approval never \
+  --parameters DomainName=chaperone-demo.duckdns.org
 # UpstreamsJson is left at its default: the demo upstream on this host.
 ID=$(aws cloudformation describe-stacks --stack-name ChaperoneGateway --query "Stacks[0].Outputs[?OutputKey=='InstanceId'].OutputValue" --output text)
 
-# 5. Wait for first boot, then roll the image out over SSM.
+# 5. Point DNS at the ElasticIp output (DNS, below) and wait until it resolves.
+# 6. Wait for first boot, then roll the image out over SSM.
 aws ec2 wait instance-status-ok --instance-ids $ID
 run() { aws ssm send-command --instance-ids $ID --document-name AWS-RunShellScript \
   --parameters "commands=[\"$1\"]" --query Command.CommandId --output text; }
@@ -132,7 +143,22 @@ aws ssm wait command-executed --command-id $CMD --instance-id $ID
 aws ssm get-command-invocation --command-id $CMD --instance-id $ID --query '[Status,StandardOutputContent,StandardErrorContent]'
 ```
 
-Deploy time: *not yet measured.*
+Deploy time, *measured 2026-10-16* (wall clock, from this machine):
+
+| Step | Time |
+|---|---|
+| `cdk bootstrap` | 1 m 16 s |
+| `ChaperoneTables` + `ChaperoneRegistry` | 2 m 10 s |
+| Build and push both images, first time (no layer cache in ECR) | 13 m 26 s |
+| Build and push both images, second commit | 9 m 58 s |
+| `ChaperoneGateway` (VPC, instance, Elastic IP; includes a ~50 s synth) | 4 m 51 s |
+| `ChaperoneAdvisoryPipeline`, first deploy (bundles three Lambdas) | 3 m 38 s |
+| `ChaperoneAdvisoryPipeline`, an update | 1 m 13 s |
+| First rollout, `deploy.sh` over SSM, to both containers healthy | 80 s |
+| Let's Encrypt certificate, after DNS resolved | issued during that first rollout; the first HTTPS request after it succeeded |
+
+Image push dominates and is bound by this machine's upload bandwidth, not AWS.
+The gateway image is 228 MB in ECR.
 
 `deploy.sh` logs in to ECR, points `/opt/chaperone/.env` at `<repo>:<sha>` for
 both images, pulls, runs `docker compose up -d`, and waits up to 120 s for the
@@ -143,12 +169,15 @@ the old tag from ECR.
 
 ### DNS
 
-The stack creates the A record from `DomainName` to the Elastic IP (TTL 60 s).
-If the domain is not registered with Route 53, delegate the hosted zone's NS
-records at the registrar once, up front. Caddy requests its certificate from
-Let's Encrypt over HTTP-01 as soon as the name resolves to the host, so the first
-HTTPS request can take a minute after DNS propagates; watch
-`docker logs chaperone-caddy-1` through SSM. The certificate and ACME account
+DNS is **external**. The stack has no hosted zone and writes no record; it
+outputs `ElasticIp`, and the hostname's A record is pointed there by hand,
+once. For the live deployment that is DuckDNS: `chaperone-demo.duckdns.org` ->
+`184.196.88.164`, set on duckdns.org on 2026-10-16. Do not roll the image out
+until `nslookup chaperone-demo.duckdns.org 8.8.8.8` returns the Elastic IP:
+Caddy requests its certificate from Let's Encrypt over HTTP-01 as soon as it
+starts, and a name that does not resolve yet burns a failed attempt. Watch
+`docker logs chaperone-caddy-1` through SSM. Because the address is an Elastic
+IP, it survives stop/start and the record never needs editing. The certificate and ACME account
 live in the `caddy_data` volume on the EBS disk, so they survive stop/start and
 rollouts. Destroying and recreating the host loses them and re-issues
 (Let's Encrypt limits duplicate certificates to 5 per week).
@@ -161,6 +190,17 @@ runtime image, and the demo upstream is not published, so it runs from your
 machine through an SSM port-forward to the demo-upstream container, writing to
 the real tables with your deployer credentials (no `DDB_ENDPOINT`). Needs the
 Session Manager plugin for the AWS CLI.
+
+**On Windows, start the port-forward as a real Windows process**, not a Git Bash
+background job: from Git Bash the session printed `Starting session` and never
+opened the local port (friction log 049). From PowerShell this works, and
+`Port 4000 opened` appears in the log within seconds:
+
+```powershell
+Start-Process aws -ArgumentList 'ssm','start-session','--target',$ID,'--document-name',
+  'AWS-StartPortForwardingSessionToRemoteHost','--parameters','host=<IP>,portNumber=4000,localPortNumber=4000' `
+  -RedirectStandardOutput tunnel.log -WindowStyle Hidden
+```
 
 ```bash
 # the container's address on the host's bridge network (reachable from the host, not the internet)
@@ -178,8 +218,9 @@ kill %1
 Pins are keyed by upstream id, tool name and definition hash, not by URL, so
 pinning through `localhost:4000` is valid for a gateway that reaches the same
 server as `demo-upstream:4000`; the local verification below did exactly this.
-**The port-forward itself has not been run against AWS.** If it fails, record
-what worked in its place.
+Ran against AWS on 2026-10-16: `grocery__add_item`, `read_list`, `place_order`
+and `track_delivery` were pinned into the real `chaperone-pin` table through the
+tunnel, and appeared in `tools/list` over HTTPS straight after.
 
 ## Trigger the demo mutation (over SSM)
 
@@ -227,18 +268,61 @@ TARGET=$D/mcp corepack pnpm exec vitest run --config spec/stack.vitest.config.ts
 corepack pnpm verify-ledger                 # deployer credentials, no DDB_ENDPOINT
 ```
 
-Until these have run against the deployment, "resumable SSE works through
-Caddy on AWS" is **not demonstrated**; only the local result below is. Added
-latency against DynamoDB on AWS is also unmeasured: run `corepack pnpm bench`
-against `$D` and put the result in the README's "Not measured yet" table.
+A hand-rolled `initialize` must send `protocolVersion` `2025-11-25` or later;
+the gateway answers an older one with a 400 that says so.
+
+**Result against the deployment, 2026-10-16** (image `c4ed3d5`):
+
+| Check | Result |
+|---|---|
+| `http://…/healthz` | 308 to HTTPS |
+| `https://…/healthz` | 200, `status` ok, `storageBackend` `dynamodb-aws`, `commit` matches the image |
+| TLS | Let's Encrypt `YE2`, `CN=chaperone-demo.duckdns.org`, TLS 1.3, verify return code 0, valid to 2027-01-14 |
+| `/control/stats`, `/control/mutate`, `/control/reset` through Caddy | 404, 404, 404 (the gateway's) |
+| ports 3000 and 4000 on the Elastic IP | closed |
+| `initialize` / `tools/list` / `tools/call grocery__read_list` over HTTPS | negotiated `2025-11-25`; 4 grocery tools + 2 first-party; `"The shopping list is empty."` |
+| `TARGET=…/mcp pnpm test:resume` | **10/10** in 78 s; every iteration replayed seq 2 and invoked `place_order` exactly once |
+| `spec/long-stream.test.ts` | **passed**, one SSE stream held for 182.8 s over HTTPS through Caddy |
+| `pnpm verify-ledger` (deployer credentials) | chain OK, 7 events verified |
+
+So "resumable SSE works through Caddy on AWS" is now demonstrated, for one run
+of each. `pnpm spec` against the deployment was not run on 2026-10-16.
+
+### Latency against DynamoDB on AWS
+
+`pnpm bench` needs a direct path to the upstream, which is not public, so
+both sides go through an SSM tunnel from this machine: the gateway container
+(`172.18.0.3:3000` -> `localhost:13000`) and the demo upstream
+(`172.18.0.2:4000` -> `localhost:4000`). The tunnel's own round trip sits in
+both sides and cancels in the difference; its jitter does not.
+
+```bash
+BENCH_GATEWAY_URL=http://localhost:13000/mcp BENCH_DIRECT_URL=http://localhost:4000/mcp \
+  corepack pnpm bench --no-reset-sse     # reset-sse refuses without DDB_ENDPOINT; TTL evicts on AWS anyway
+```
+
+**Result, 2026-10-16, image `c4ed3d5`, 1000 samples per mode, concurrency 4:
+added p50 53.30 ms, p95 835.78 ms, p99 1500.58 ms. Over the 30 ms p95 budget;
+`pnpm bench` exited 1.** Direct p50/p95 was 249.70/353.77 ms (that is the
+tunnel), proxied 303.00/1189.54 ms. `benchmarks/latency.json` records it with
+`environment.backend` `dynamodb-aws`.
+
+As a cross-check without the tunnel, the gateway's own `durationMs` for the
+`tools/call` requests in that window, read from CloudWatch (n=1222), was p50
+47 ms, p95 95 ms, p99 334 ms. That is the gateway's whole handling time
+including the in-host upstream call, not an added-latency figure, but it is
+also over 30 ms at p95. The budget is not met on a `t3.micro` against real
+DynamoDB. The four writes per call are the likely cost; that is not
+established beyond this one run.
 
 ## Memory budget on a `t3.micro`
 
 A `t3.micro` has 1 GiB, about 0.9 GiB usable. Three containers run beside the
 OS, Docker and the SSM agent. Container memory is **measured** (the local stack,
 `docker stats` every second for about a minute under the 10-iteration resume
-loop, then every 4 s during the 180 s stream); host overhead is **estimated**,
-not measured, because there has been no EC2 host.
+loop, then every 4 s during the 180 s stream). The table below is that local
+measurement and the original host estimate; the real host's numbers, measured
+2026-10-16, follow it.
 
 | Component | Idle | Peak under load | Compose limit | Source |
 |---|---|---|---|---|
@@ -256,10 +340,20 @@ is killed on its own and does not take down Docker or SSM with it. During a
 rollout the old and new containers briefly overlap (`docker compose up -d`
 recreates in place, not side by side, so this is short).
 
-**Check on the first real deploy** and write the numbers here: `free -m` and
-`docker stats --no-stream` over SSM, once idle and once during `test:resume`. If
-available memory drops under about 150 MiB or swap is being used steadily, set
-the `InstanceType` parameter to `t3.small` (about +$0.25/day).
+**Measured on the real host, 2026-10-16** (`free -m` and `docker stats
+--no-stream` over SSM):
+
+| Moment | used | available | swap used | gateway | demo-upstream | caddy |
+|---|---:|---:|---:|---:|---:|---:|
+| during the 180 s stream, after `test:resume` | 521 MiB | 203 MiB | 19 MiB | 74.9 MiB | 64.6 MiB | 17.6 MiB |
+| idle, after the rollback test | 441 MiB | 292 MiB | 45 MiB | 73.5 MiB | 40.6 MiB | 20.0 MiB |
+
+Total 916 MiB. Host overhead (used minus the containers) came to about
+300-365 MiB, inside the 300-400 estimate. Available memory stayed above the
+150 MiB line, but swap is in light use (19-45 MiB) and only about 200 MiB is
+available under load: `t3.micro` fits, without much margin. If a later run
+shows available under 150 MiB, move to `t3.small` (about +$0.25/day). Disk:
+4.7 GB of 20 GB used.
 
 ## Verify Caddy locally
 
@@ -307,8 +401,26 @@ aws ssm wait command-executed --command-id $CMD --instance-id $ID
 
 A failed rollout already restores the previous image by itself (see Deploy).
 If the host itself is broken, rebuild it: `cdk destroy ChaperoneGateway`, then
-repeat Deploy steps 4 and 5. The tables and the image are untouched; the Elastic IP and the Caddy certificate are recreated.
-Rollback timing: **not yet measured.**
+repeat Deploy steps 4 to 6. The tables and the image are untouched; the Caddy
+certificate is re-issued, and **the Elastic IP is a new address**, so the DNS
+record must be updated by hand before Caddy can get a certificate.
+
+Rollback timing, *measured 2026-10-16*, rolling `60e5967` back to `c4ed3d5`
+over SSM: **87.7 s** from `send-command` to SSM `Success` (it includes
+re-pulling the old tag, because `deploy.sh` prunes unused images), and the
+public `/healthz` was unreachable for **15.9 s** (last answer from the old
+commit to first answer from the new one, polled about every 0.5 s). The two
+roll-forwards the same day took 85.1 s and 86.8 s, with 16.7 s and 16.6 s
+unreachable. A rollout is therefore about 90 s, of which about 16 s is
+downtime: `docker compose up -d` replaces the containers in place, so the old
+ones are gone before the new ones are healthy.
+
+**Changing a file under `deploy/` does not reach the running host.** The host's
+copy is written once, by the first-boot script. The `deploy.sh` fix of
+2026-10-16 was written to the live host over SSM. A `cdk deploy
+ChaperoneGateway` after such a change alters the instance's user data, which
+CloudFormation applies by stopping and starting the instance (the Elastic IP is
+kept); review `cdk diff` first.
 
 ## Stop (pause), after submission on 2026-10-22
 
@@ -321,8 +433,9 @@ aws ec2 wait instance-stopped --instance-ids $ID
 aws ec2 describe-instances --instance-ids $ID --query "Reservations[0].Instances[0].State.Name" --output text   # stopped
 ```
 
-Stopping keeps the EBS disk (images, certificate), the Elastic IP, the DNS
-record, the role and every table. Nothing needs editing in DNS.
+Stopping keeps the EBS disk (images, certificate), the Elastic IP, the role
+and every table. The external DNS record points at the Elastic IP, so nothing
+needs editing.
 
 ### What still costs while stopped
 
@@ -330,19 +443,19 @@ record, the role and every table. Nothing needs editing in DNS.
 |---|---|---|
 | Elastic IP | **a public IPv4 address is billed hourly whether or not the instance is running** | 0.12 |
 | EBS 20 GB gp3 | the disk is kept | 0.05 |
-| Route 53 hosted zone | you keep the zone | 0.02 |
+| Secrets Manager, one secret | $0.40/month | 0.01 |
 | ECR image storage | image kept for the restart | 0.00 |
 | DynamoDB storage + PITR, log group | tables retained | about 0 |
-| **Total while stopped** | | **about 0.19** |
+| **Total while stopped** | | **about 0.18** |
 
 Releasing the Elastic IP while stopped would save about $0.12/day (about $1.80
 over the 15 paused days) but the address would then change on the next start,
 and the A record would have to be updated by hand before Caddy could renew or
 re-issue. That is a fragile saving for a judged deployment. The default here
 keeps the Elastic IP. If you do release it: start the instance, allocate and
-associate a new address, then update the record with
-`aws route53 change-resource-record-sets` (the stack's own record will drift,
-so do not run `cdk deploy ChaperoneGateway` again without reviewing the diff).
+associate a new address, then update the DuckDNS record by hand (the stack's
+own Elastic IP will drift, so do not run `cdk deploy ChaperoneGateway` again
+without reviewing the diff).
 
 ## Start (resume), on 2026-11-07
 
@@ -380,8 +493,10 @@ done
 corepack pnpm exec cdk destroy ChaperoneTables   # now just removes the empty stack
 ```
 
-Finally delete the hosted zone if you created it only for this, and the
-`CDKToolkit` bootstrap stack if nothing else uses it. Confirm nothing is left
+Then `aws secretsmanager delete-secret --secret-id chaperone/groq-api-key`,
+release the DuckDNS name on duckdns.org, and delete the `CDKToolkit` bootstrap
+stack if nothing else uses it (empty its `cdk-hnb659fds-assets-…` bucket
+first). Confirm nothing is left
 billing: `aws ec2 describe-instances`, `aws ec2 describe-addresses`.
 
 ## Cost
@@ -399,12 +514,17 @@ Credits and Free Tier before relying on them.
 | Public IPv4 (Elastic IP) | $0.005/h | 0.12 |
 | EBS 20 GB gp3 | $0.08/GB-month | 0.05 |
 | CloudWatch Logs ingest | $0.50/GB, assumed under 50 MB/day | 0.03 |
-| DynamoDB on-demand + PITR | cents at this volume | 0.01 |
-| Route 53 zone (if new) | $0.50/month | 0.02 |
-| ECR storage, two repos | about 2 GB compressed at $0.10/GB-month | 0.01 |
+| DynamoDB on-demand, 9 tables, PITR on two | cents at this volume | 0.01 |
+| Secrets Manager, one secret (the Groq key) | $0.40/month | 0.01 |
+| ECR storage, two repos plus the CDK assets repo | under 1 GB at $0.10/GB-month | 0.01 |
+| Lambda, Step Functions, EventBridge Pipe | per use; one execution per quarantine | 0.00 |
+| S3, the CDK bootstrap bucket | a few MB of templates and Lambda zips | 0.00 |
 | Data transfer out | first 100 GB/month free | 0.00 |
-| ALB, ACM, NAT gateway | not used | 0.00 |
-| **Total while running** | | **about $0.48** |
+| Route 53, ALB, ACM, NAT gateway | not used (DNS is DuckDNS, free) | 0.00 |
+| **Total while running** | | **about $0.47** |
+
+Not on the AWS bill: Groq charges for each advisory it scores (one model call
+per quarantine), on its own account.
 
 Use `t3.small` ($0.0208/h, +$0.25/day, about $0.73/day) only if `t3.micro`
 runs out of memory; the first-boot script adds a 1 GB swapfile to make that less
@@ -415,10 +535,10 @@ the running figure under $0.15/day. That is **not** assumed in the table.
 
 | Case | Days | Running | Stopped | Total |
 |---|---|---|---|---|
-| A. Continuous, Oct 16 to Nov 20 | 36 running | 36 x 0.48 = $17.3 | none | **about $17** |
-| B. Running Oct 16-22 and Nov 7-20, stopped Oct 23 to Nov 6 | 21 running + 15 stopped | 21 x 0.48 = $10.1 | 15 x 0.19 = $2.9 | **about $13** |
+| A. Continuous, Oct 16 to Nov 20 | 36 running | 36 x 0.47 = $16.9 | none | **about $17** |
+| B. Running Oct 16-22 and Nov 7-20, stopped Oct 23 to Nov 6 | 21 running + 15 stopped | 21 x 0.47 = $9.9 | 15 x 0.18 = $2.7 | **about $13** |
 
-B saves about $4 over A, because the Elastic IP, disk and zone keep billing while
+B saves about $4 over A, because the Elastic IP, disk and secret keep billing while
 stopped. Stopping is still worth doing, but the saving is small; the real cost
 risk is a forgotten resource or a failed teardown, so confirm with
 `aws ec2 describe-instances` after each step. For comparison, the Fargate + ALB

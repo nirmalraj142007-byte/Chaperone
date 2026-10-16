@@ -38,9 +38,9 @@ It has a measured cost, and the part that transfers between environments is
 the count: every gated call performs **four DynamoDB write operations**, one
 pin read plus two resumable-SSE events, each an `UpdateItem` and a `PutItem`
 (see [Cost per call](#cost-per-call-four-dynamodb-writes)). The milliseconds
-do not transfer. The only latency measured so far is against DynamoDB Local,
-a single-writer process, where it exceeds the 30 ms budget. Added latency
-against DynamoDB on AWS is {{PENDING: added p50/p95/p99 against DynamoDB on AWS — after the AWS deployment (Phase 18)}}.
+do not transfer. Against DynamoDB on AWS (a `t3.micro` in us-east-1, measured
+2026-10-16), the added latency is **p50 53.30 ms, p95 835.78 ms, p99
+1500.58 ms: over the 30 ms p95 budget**, as it is against DynamoDB Local.
 
 What it is not: there is no household that has used it, it covers one
 hard-coded household, and it detects changed claims, not malicious behaviour.
@@ -216,8 +216,9 @@ This is the audit of the claims this project could have made and does not.
 - **Classifying a change is one person's reading.** Detecting that a change
   happened is not: it is a hash comparison. Deciding whether it was cosmetic,
   additive or a change of meaning is the author reading it.
-- **The 30 ms latency budget is unverified.** It has been measured only
-  against DynamoDB Local, where it fails.
+- **The 30 ms latency budget is not met.** It fails against DynamoDB Local
+  and against DynamoDB on AWS (added p95 835.78 ms, measured through an SSM
+  tunnel; the gateway's own server-side p95 was 95 ms).
 - **It detects changed claims, not malicious behaviour.**
 
 The reasoning behind each is in [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md),
@@ -289,10 +290,22 @@ second), on one machine, at commit `e7a453b` on a dirty tree:
 | Backend | Added p50 | Added p95 | Added p99 |
 |---|---:|---:|---:|
 | `dynamodb-local` | 480.53 ms | 591.89 ms | 635.63 ms |
+| `dynamodb-aws` | 53.30 ms | 835.78 ms | 1500.58 ms |
 
-That is Chaperone's added latency against a single-writer local backend, not
-its added latency. The 30 ms p95 budget is enforced by exit code: `pnpm bench`
-exits 1 over budget, and **it currently exits 1.** The bench file records the
+The `dynamodb-local` row is Chaperone's added latency against a single-writer
+local backend, not its added latency.
+
+The `dynamodb-aws` row was measured on 2026-10-16 against the deployed
+`t3.micro` in us-east-1, at commit `3c910e5` on a dirty tree (an uncommitted friction-log entry; no code) with image `c4ed3d5`, at
+concurrency 4 with 1000 samples per mode. The direct upstream is not public, so
+both modes ran through an SSM tunnel from a laptop: the tunnel's round trip
+(direct p50 249.70 ms) cancels in the difference, but its jitter does not, and
+it widens the tail. As a cross-check with no tunnel, the gateway's own logged
+handling time for the same window's `tools/call` requests was p50 47 ms, p95
+95 ms, p99 334 ms (n=1222, CloudWatch). That includes the in-host upstream
+call, so it is not an added-latency figure. Either way the 30 ms budget is not
+met. Method and caveats: [`docs/RUNBOOK.md`](docs/RUNBOOK.md#latency-against-dynamodb-on-aws). The 30 ms p95 budget is enforced by exit code: `pnpm bench`
+exits 1 over budget, and **it currently exits 1 against both backends.** The bench file records the
 backend as a required field so a number cannot be quoted without it.
 Resumable SSE is why the writes exist: an event a client could replay with
 `Last-Event-ID` has to be durable before the response goes out.
@@ -336,7 +349,6 @@ unmeasured, is kept as superseded.
 | | Marker |
 |---|---|
 | Semantic-intent drift rate, and the changes counted separately | {{PENDING: drift rate and its denominator — 2026-10-20}} |
-| Added latency against DynamoDB on AWS | {{PENDING: production latency — after the AWS deployment (Phase 18)}} |
 
 ## Architecture
 

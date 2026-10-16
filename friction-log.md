@@ -2514,3 +2514,106 @@ preferring the shell is a trap for any deploy script that sources its own env
 file. For this repo: a deploy script that only ever ran in production was
 untested code, and a local run of it against `deploy/docker-compose.local.yml`
 would have caught this in seconds.
+
+## Entry 049 — 2026-10-16
+
+**Task attempted:** Open the SSM port-forward from `docs/RUNBOOK.md` ("Pin the
+upstream's tools") from a Windows machine, to run `pnpm pin:bootstrap` against
+the demo upstream on the EC2 host.
+
+**Steps taken:** Installed the Session Manager plugin (1.2.896.0). Ran
+`aws ssm start-session --document-name AWS-StartPortForwardingSessionToRemoteHost
+--parameters host=172.18.0.2,portNumber=4000,localPortNumber=4000` as a
+background job in Git Bash, as the runbook's `&` suggests.
+
+**Expected versus actual:** Expected `Port 4000 opened … Waiting for
+connections...`. Actual: it printed `Starting session with SessionId: …` and
+nothing else. No process listened on 4000 and `curl localhost:4000` was refused
+(exit 7), for over a minute, with no error from the CLI or the plugin. The same
+command started from PowerShell with `Start-Process` (stdout redirected to a
+file, no console attached) printed `Port 4000 opened` within seconds and
+worked. Separately, a fresh Git Bash did not have the plugin on `PATH` until
+`C:\Program Files\Amazon\SessionManagerPlugin\bin` was appended by hand.
+
+**Severity:** minor. About ten minutes; nothing deployed was affected.
+
+**Workaround:** Start each port-forward as a detached Windows process
+(`Start-Process aws … -RedirectStandardOutput …`) and wait for the `Port N
+opened` line in its log before using the port. Pinning, the resume test's
+`/control/stats` reads and both bench tunnels all ran this way.
+
+**Actionable suggestion:** The plugin should fail loudly when it cannot open the
+local listener, instead of hanging silently after "Starting session". The
+AWS docs for port forwarding could say plainly that the Windows plugin needs
+a real Windows process (not an MSYS/Git Bash background job), and the MSI could
+add itself to the PATH that Git Bash inherits.
+
+## Entry 050 — 2026-10-16
+
+**Task attempted:** Run the deployed advisory pipeline for the first time: the
+demo mutation inserts a pending quarantine, the EventBridge Pipe starts the
+Step Functions state machine, and the scoring Lambda calls Groq.
+
+**Steps taken:** Triggered `/opt/chaperone/demo-control.sh mutate` over SSM,
+called `grocery__add_item` over HTTPS so the gateway opened the quarantine, and
+listed executions of `chaperone-advisory-pipeline`.
+
+**Expected versus actual:** Expected a scored advisory. Actual: the Pipe started
+the execution within a second (good), and it FAILED in 1 s with `TypeError
+[ERR_INVALID_ARG_VALUE]: The argument 'filename' must be … Received undefined`
+at `createRequire`, at module load of both Lambdas. `@chaperone/policy`'s
+`jcs.ts` loads `canonicalize` with `createRequire(import.meta.url)`, which is
+correct for the NodeNext ESM the rest of the repo runs as. CDK's
+`NodejsFunction` bundles to CommonJS by default, where esbuild rewrites
+`import.meta` to an empty object, and esbuild also cannot bundle through a
+locally bound `require`. `cdk synth` and the stack's tests passed, because
+nothing ever loaded the bundled file.
+
+**Severity:** major. The pipeline had never run anywhere but locally under
+`tsx`; every execution would have failed.
+
+**Workaround:** In the Lambda bundles only, `node:module` is aliased
+(`esbuildArgs: {"--alias:node:module": …}`) to `infra/lambda/node-module-shim.ts`,
+whose `createRequire` returns the bundled `canonicalize` package itself, the same
+version (2.1.0, one entry in the lockfile) that policy loads. `packages/policy`
+is unchanged. Verified by loading each synthesized bundle in Node as CommonJS
+before deploying, and then by a real execution.
+
+**Actionable suggestion:** Nothing about `import.meta` in a CommonJS bundle
+fails `cdk synth`, and the build passed. `NodejsFunction` could fail the build
+(or at least warn prominently) when the bundle references `import.meta` in CJS
+output, or default to `format: ESM` on Node 18+ runtimes. For this repo: a test that `require()`s each synthesized Lambda asset
+is cheap and would have caught it locally.
+
+## Entry 051 — 2026-10-16
+
+**Task attempted:** Same pipeline, after the bundling fix: redrive the failed,
+Pipe-started execution so it re-runs on the real quarantine.
+
+**Steps taken:** `aws stepfunctions redrive-execution` on the failed execution,
+then `describe-execution`.
+
+**Expected versus actual:** Expected a scored advisory. Actual: status
+`SUCCEEDED`, output `[{"status":"unavailable","reason":"quarantine-not-pending"},
+{"status":"unresolved","reason":"quarantine-not-found"}]`. The execution input was
+`[{"householdId":…,"quarantineId":…}]`, an **array**. An EventBridge Pipe always
+delivers a batch to a Step Functions target, even with `batchSize: 1`, and the
+stack's `inputTemplate` is applied per record inside that array. Both Lambdas
+read `event.quarantineId` off the array and got `undefined`. Because "advisory
+unavailable" is designed never to fail the pipeline, the run reported success
+with nothing written: a green execution that did nothing.
+
+**Severity:** major. Without reading the output, this would have been reported
+as "the advisory pipeline ran".
+
+**Workaround:** The Parallel state takes `inputPath: "$[0]"`, asserted in
+`infra/test/advisory-pipeline-stack.test.ts`. A succeeded execution cannot be
+redriven, so the confirming run was started by hand with byte-identical Pipe input
+against the same real quarantine: `SUCCEEDED`, `scored` (Groq
+`openai/gpt-oss-120b`), `{"written":true}` in 4.2 s, and the HTTPS consent card
+then showed the model-generated advisory.
+
+**Actionable suggestion:** The Pipes docs for a Step Functions target could say
+in the first paragraph that the input is always an array, with an example. An
+`inputTemplate` that reads like a single-record shape is easy to take literally.
+For this repo: an execution's *output* is the evidence, not its status.
