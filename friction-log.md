@@ -2480,3 +2480,37 @@ response is never lost to a sync lock again.
 OneDrive folder: keep the output directory outside the synced tree, or write
 atomically with a retry. Nothing in the repo's README says the project folder
 should not be synced.
+
+## Entry 048 — 2026-10-16
+
+**Task attempted:** First real rollout of the gateway and demo-upstream images
+to the EC2 host, with `/opt/chaperone/deploy.sh <sha>` over SSM Run Command, as
+written in `docs/RUNBOOK.md`.
+
+**Steps taken:** Deployed `ChaperoneGateway`, waited for `instance-status-ok`,
+sent `cloud-init status --wait && /opt/chaperone/deploy.sh c4ed3d5…` through
+`aws ssm send-command`, and polled `get-command-invocation`.
+
+**Expected versus actual:** Expected `docker compose pull` to fetch
+`chaperone-gateway:c4ed3d5…`. Actual: it failed after 5 s with `manifest for
+…/chaperone-gateway:unset not found`. The script sources `.env` under `set -a`,
+which *exports* `GATEWAY_IMAGE=…:unset` into its own shell, then rewrites the
+file with `sed`. Docker Compose gives exported shell variables priority over
+`.env`, so the rewrite was invisible to it. The runbook already warned about
+exactly this precedence rule for the local stack, and the script still fell
+into it, because the local Caddy verification never ran `deploy.sh`.
+
+**Severity:** major. Nothing could be deployed until fixed; caught on the first
+command, before anything was public.
+
+**Workaround:** `set_images` now also `export`s the new values. The fixed script
+was written to the live host over SSM (base64 of the LF file) and the rollout
+then succeeded in 80 s. The same fix is in `deploy/deploy.sh`, so a rebuilt
+host's first-boot copy has it.
+
+**Actionable suggestion:** Docker Compose could warn when a variable it
+interpolates is set both in the shell and, differently, in `.env`; silently
+preferring the shell is a trap for any deploy script that sources its own env
+file. For this repo: a deploy script that only ever ran in production was
+untested code, and a local run of it against `deploy/docker-compose.local.yml`
+would have caught this in seconds.

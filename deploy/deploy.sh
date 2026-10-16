@@ -29,6 +29,10 @@ aws ecr get-login-password --region "${AWS_REGION}" \
 
 set_images() {
   sed -i "s|^GATEWAY_IMAGE=.*|GATEWAY_IMAGE=$1|; s|^DEMO_UPSTREAM_IMAGE=.*|DEMO_UPSTREAM_IMAGE=$2|" .env
+  # The shell too, not only the file: `set -a` above exported the old values,
+  # and compose gives exported variables priority over .env. Without this the
+  # first rollout pulled `<repo>:unset` (found on the first real deploy, 2026-10-16).
+  export GATEWAY_IMAGE="$1" DEMO_UPSTREAM_IMAGE="$2"
 }
 
 healthy() {
