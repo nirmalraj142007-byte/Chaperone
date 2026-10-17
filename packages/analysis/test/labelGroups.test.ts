@@ -123,10 +123,9 @@ async function run(items: TodoItem[], answers: Array<string | null>, opts: { gro
 
 describe("runChangeLabelSession with groupIdentical", () => {
   it("asks once per group and applies the answer to every member, recording the group and its size", async () => {
-    const { summary, prompts, last } = await run([A, D, B, C], ["i", "c"], { groupIdentical: true });
-    expect(prompts).toHaveLength(2);
-    expect(prompts[0]).toContain("label for all 3 tools");
-    expect(prompts[1]).not.toContain("for all");
+    const { summary, prompts, last } = await run([A, D, B, C], ["i c"], { groupIdentical: true });
+    expect(prompts).toHaveLength(1);
+    expect(prompts[0]).toContain("labels for 1-2");
     expect(summary).toMatchObject({ shown: 4, decided: 4, skipped: 0, remaining: 0, quit: false });
 
     const byTool = new Map(last.labels.map((l) => [l.toolName, l]));
@@ -151,13 +150,11 @@ describe("runChangeLabelSession with groupIdentical", () => {
     expect(text).not.toMatch(/capability class/i);
   });
 
-  it("saves after every group, and resumes with only the groups left", async () => {
-    const first = await run([A, D, B, C], ["i", "q"], { groupIdentical: true });
+  it("saves after every batch, and resumes with only the groups left", async () => {
+    const first = await run([A, D, B, C], ["i c", "q"], { groupIdentical: true });
     expect(first.saves).toHaveLength(1);
-    expect(first.last.labels).toHaveLength(3);
-    const second = await run([A, D, B, C], ["a"], { groupIdentical: true, labels: first.last });
-    expect(second.printed.join("\n")).toContain("1 of 4 items need a decision, in 1 groups");
-    expect(second.last.labels).toHaveLength(4);
+    expect(first.last.labels).toHaveLength(4);
+    expect(first.summary.remaining).toBe(0);
   });
 
   it("a skipped group is recorded as skip with no group record, and comes round again", async () => {
@@ -193,5 +190,40 @@ describe("labels file with appliedByGroup", () => {
     const bad = JSON.parse(JSON.stringify(last));
     bad.labels[0].appliedByGroup.groupSize = 1;
     expect(() => parseLabelsFile(bad, "fixture")).toThrow(/not a valid labels file/);
+  });
+});
+
+describe("batches of five", () => {
+  // Eight distinct one-off edits, so each is its own group: batches of 5 and 3.
+  const singles = Array.from({ length: 8 }, (_, n) => item("server-c", `tool_${n}`, "Does a thing.", `Does a thing number${"x".repeat(n + 1)}.`));
+
+  it("shows 5 numbered groups per batch and takes five space-separated letters, then the next batch", async () => {
+    const { prompts, printed, last, summary } = await run(singles, ["i c a i s", "c c a"], { groupIdentical: true });
+    const text = printed.join("\n");
+    expect(text).toContain("batch 1 of 2: items 1-5");
+    expect(text).toContain("batch 2 of 2: items 1-3");
+    for (let n = 1; n <= 5; n++) expect(text).toContain(`[${n}/5] server-c`);
+    expect(prompts).toHaveLength(2);
+    expect(prompts[0]).toContain("5 letters separated by spaces");
+    expect(summary).toMatchObject({ shown: 8, decided: 7, skipped: 1, remaining: 1, quit: false });
+    const labels = singles.map((s) => last.labels.find((l) => l.toolName === s.toolName)!.label);
+    expect(labels).toEqual(["semantic-intent", "cosmetic", "schema-additive", "semantic-intent", "skip", "cosmetic", "cosmetic", "schema-additive"]);
+    expect(last.labels.every((l) => l.procedure === "v2-no-proposal-shown")).toBe(true);
+  });
+
+  it("rejects the wrong number of letters or a bad letter without saving, then accepts a correct line", async () => {
+    const { printed, saves, summary } = await run(singles.slice(0, 5), ["i c a", "i c a i x", "i c a i i", "q"], { groupIdentical: true });
+    const text = printed.join("\n");
+    expect(text).toContain("expected 5 letters");
+    expect(text).toContain('"x" is not one of c, a, i, s. Nothing was saved.');
+    expect(saves).toHaveLength(1);
+    expect(summary.decided).toBe(5);
+  });
+
+  it("quitting in the middle of a batch saves nothing from that batch, and shows no proposed class", async () => {
+    const { printed, saves, summary } = await run(singles, ["i c a i i", "?", "q"], { groupIdentical: true });
+    expect(saves).toHaveLength(1);
+    expect(summary).toMatchObject({ decided: 5, remaining: 3, quit: true });
+    expect(printed.join("\n")).not.toMatch(/proposed|FIXTURE-REASON-MUST-NOT-BE-SHOWN|capability class/i);
   });
 });

@@ -29,6 +29,9 @@ export interface SessionSummary {
   quit: boolean;
 }
 
+/** Units (groups of identical edits) shown and answered together in the grouped view. */
+export const BATCH_SIZE = 5;
+
 const CHANGE_CHOICES: Record<string, HumanChoice> = {
   c: "cosmetic",
   a: "schema-additive",
@@ -41,7 +44,8 @@ const CHANGE_HELP =
   "  a = schema-additive  (optional field / widened enum, nothing else)\n" +
   "  i = semantic-intent  (what it claims to do, access, or talk to changed)\n" +
   "  s = skip             (decide later; it will come round again)\n" +
-  "  q = quit             (everything so far is already saved)";
+  "  q = quit             (everything so far is already saved; a half-answered batch is not)\n" +
+  "  In a batch, answer with one letter per item, separated by spaces, e.g. \"i c a i s\".";
 
 export interface ChangeSessionOptions {
   todo: LabelsTodoFile;
@@ -89,65 +93,89 @@ export async function runChangeLabelSession(opts: ChangeSessionOptions): Promise
   );
   opts.io.print(CHANGE_HELP);
 
-  for (const [index, unit] of units.entries()) {
-    const first = unit.items[0]!;
-    const previouslySkipped = unit.items.some((item) => byKey.get(item.key)?.label === "skip");
-    opts.io.print(
-      grouped
-        ? renderLabelUnit(unit.items, unit.id, index + 1, units.length, opts.style, previouslySkipped)
-        : renderTodoItem(first, index + 1, units.length, opts.style, previouslySkipped),
-    );
-    summary.shown += unit.items.length;
-    const prompt = unit.items.length > 1 ? `label for all ${unit.items.length} tools [c/a/i/s/q, ? for help]: ` : "label [c/a/i/s/q, ? for help]: ";
-    let choice: HumanChoice | "quit" | undefined;
-    while (choice === undefined) {
+  // Grouped view: BATCH_SIZE units at a time, answered with one letter per unit ("i c a i s").
+  // Ungrouped view keeps one item per prompt.
+  const batchSize = grouped ? BATCH_SIZE : 1;
+  const batchCount = Math.ceil(units.length / batchSize);
+  for (let b = 0; b < batchCount && !summary.quit; b++) {
+    const batch = units.slice(b * batchSize, (b + 1) * batchSize);
+    if (grouped) {
+      opts.io.print(opts.style.bold(`\n=== batch ${b + 1} of ${batchCount}: items 1-${batch.length} ===`));
+    }
+    for (const [n, unit] of batch.entries()) {
+      const first = unit.items[0]!;
+      const previouslySkipped = unit.items.some((item) => byKey.get(item.key)?.label === "skip");
+      opts.io.print(
+        grouped
+          ? renderLabelUnit(unit.items, unit.id, n + 1, batch.length, opts.style, previouslySkipped)
+          : renderTodoItem(first, b * batchSize + n + 1, units.length, opts.style, previouslySkipped),
+      );
+      summary.shown += unit.items.length;
+    }
+    const prompt =
+      batch.length > 1
+        ? `labels for 1-${batch.length}, ${batch.length} letters separated by spaces [c/a/i/s, q quits, ? for help]: `
+        : batch[0]!.items.length > 1
+          ? `label for all ${batch[0]!.items.length} tools [c/a/i/s/q, ? for help]: `
+          : "label [c/a/i/s/q, ? for help]: ";
+    let choices: HumanChoice[] | "quit" | undefined;
+    while (choices === undefined) {
       const answer = await opts.io.ask(prompt);
       if (answer === null) {
-        choice = "quit";
+        choices = "quit";
         break;
       }
-      const key = answer.trim().toLowerCase();
-      if (key === "q") {
-        choice = "quit";
-      } else if (key === "?" || key === "h") {
+      const tokens = answer.trim().toLowerCase().split(/\s+/).filter((t) => t.length > 0);
+      if (tokens.length === 1 && tokens[0] === "q") {
+        choices = "quit";
+      } else if (tokens.length === 1 && (tokens[0] === "?" || tokens[0] === "h")) {
         opts.io.print(CHANGE_HELP);
-      } else if (CHANGE_CHOICES[key] !== undefined) {
-        choice = CHANGE_CHOICES[key];
+      } else if (tokens.length !== batch.length) {
+        opts.io.print(`expected ${batch.length} letter${batch.length === 1 ? "" : "s"} (one per item, c/a/i/s), got ${tokens.length}. Nothing was saved.`);
       } else {
-        opts.io.print(`"${answer.trim()}" is not one of c, a, i, s, q.`);
+        const bad = tokens.find((t) => CHANGE_CHOICES[t] === undefined);
+        if (bad !== undefined) {
+          opts.io.print(`"${bad}" is not one of c, a, i, s. Nothing was saved.`);
+        } else {
+          choices = tokens.map((t) => CHANGE_CHOICES[t]!);
+        }
       }
     }
-    if (choice === "quit") {
+    if (choices === "quit") {
+      // Nothing from a half-answered batch is saved; it comes round again.
       summary.quit = true;
       break;
     }
     const labeledAt = opts.now().toISOString();
-    for (const item of unit.items) {
-      const record: LabelRecord = {
-        key: item.key,
-        serverId: item.serverId,
-        toolName: item.toolName,
-        beforeSha256: item.beforeSha256,
-        afterSha256: item.afterSha256,
-        label: choice,
-        proposed: item.proposed,
-        labeledBy: opts.labeledBy,
-        labeledAt,
-        taxonomyBlobSha: opts.taxonomyBlobSha,
-        procedure: LABEL_PROCEDURE,
-        // A skip is not an applied label, so it carries no group record.
-        ...(unit.items.length > 1 && choice !== "skip" ? { appliedByGroup: { groupId: unit.id, groupSize: unit.items.length } } : {}),
-      };
-      byKey.set(item.key, record);
+    for (const [n, unit] of batch.entries()) {
+      const choice = choices[n]!;
+      for (const item of unit.items) {
+        const record: LabelRecord = {
+          key: item.key,
+          serverId: item.serverId,
+          toolName: item.toolName,
+          beforeSha256: item.beforeSha256,
+          afterSha256: item.afterSha256,
+          label: choice,
+          proposed: item.proposed,
+          labeledBy: opts.labeledBy,
+          labeledAt,
+          taxonomyBlobSha: opts.taxonomyBlobSha,
+          procedure: LABEL_PROCEDURE,
+          // A skip is not an applied label, so it carries no group record.
+          ...(unit.items.length > 1 && choice !== "skip" ? { appliedByGroup: { groupId: unit.id, groupSize: unit.items.length } } : {}),
+        };
+        byKey.set(item.key, record);
+      }
+      if (choice === "skip") {
+        summary.skipped += unit.items.length;
+      } else {
+        summary.decided += unit.items.length;
+        summary.remaining -= unit.items.length;
+      }
     }
     opts.labels = { ...opts.labels, labels: [...byKey.values()].sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0)) };
     await opts.save(opts.labels);
-    if (choice === "skip") {
-      summary.skipped += unit.items.length;
-    } else {
-      summary.decided += unit.items.length;
-      summary.remaining -= unit.items.length;
-    }
   }
   opts.io.print(
     `\n${summary.decided} decided, ${summary.skipped} skipped this session; ${summary.remaining} still need a decision.` +

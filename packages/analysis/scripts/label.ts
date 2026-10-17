@@ -12,7 +12,10 @@
  * shown once and one answer is applied to every tool in the group; data/labels.json records appliedByGroup.
  * No proposed class is shown in any mode; every saved label records procedure "v2-no-proposal-shown".
  *
- * Type one letter and press Enter. Every answer is saved before the next item
+ * In the default grouped view, 5 groups are shown at a time, numbered 1-5, and answered with 5 letters
+ * separated by spaces, e.g. "i c a i s". With --no-group it is one item per prompt.
+ *
+ * Type one letter (or the batch's letters) and press Enter. Every answer is saved before the next item
  * is shown, so quitting (q, Ctrl+C, closing the window) loses nothing, and the
  * next run resumes at the first item without a decision. Works in Windows
  * Command Prompt: input is plain lines, and the changed words are marked with
