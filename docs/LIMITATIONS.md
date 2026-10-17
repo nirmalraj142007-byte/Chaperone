@@ -246,6 +246,8 @@ reader's reading. One rule in them leans a known way: "if in doubt between
 cases toward the headline class, so ambiguity inflates the semantic-intent
 count rather than deflating it.
 
+An AI cross-check (claude-sonnet-5-5, blind, not a second human labeller) agreed with the author's labels on 71 of the 130 crawl-interim-1 changes (54.6%, Cohen's kappa 0.13), nearly all disagreements being the author calling `semantic-intent` where the model called `cosmetic` or `schema-additive`, and the human labels were not changed as a result (`data/labels-agreement.json`).
+
 Only `semantic-intent` enters a headline number. Cosmetic and
 schema-additive changes are counted and published separately.
 {{PENDING: the application of the Axis 1 rules to crawl 2, and any count of cases the author judged ambiguous — 2026-10-20 and after}}
