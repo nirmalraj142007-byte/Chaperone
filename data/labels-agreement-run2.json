@@ -1403,6 +1403,656 @@
       "unit": 120
     }
   ],
-  "comparison": null,
-  "comparisonStatus": "not yet run: these labels were committed before data/labels.json was opened"
+  "comparison": {
+    "against": "data/labels.json (human labels of record, labeledBy Nirmalraj, 2026-10-17; not changed)",
+    "rows": "human label",
+    "columns": "AI run-2 label",
+    "classes": [
+      "cosmetic",
+      "schema-additive",
+      "semantic-intent"
+    ],
+    "n": 130,
+    "agreements": 59,
+    "agreementPct": 45.4,
+    "expectedChanceAgreement": 0.404,
+    "cohensKappa": 0.083,
+    "matrix": [
+      [
+        9,
+        3,
+        3
+      ],
+      [
+        0,
+        0,
+        0
+      ],
+      [
+        40,
+        25,
+        50
+      ]
+    ],
+    "labelCounts": {
+      "human": {
+        "semantic-intent": 115,
+        "cosmetic": 15
+      },
+      "ai": {
+        "semantic-intent": 53,
+        "cosmetic": 49,
+        "schema-additive": 28
+      }
+    },
+    "semanticIntentVsNot": {
+      "note": "the only split that enters a headline number",
+      "n": 130,
+      "bothSemanticIntent": 50,
+      "humanOnly": 65,
+      "aiOnly": 3,
+      "neither": 12,
+      "agreementPct": 47.7,
+      "cohensKappa": 0.084
+    },
+    "byUnit": {
+      "note": "one answer per group of identical edits (120 units), as pnpm analyse:label presents them",
+      "n": 120,
+      "agreements": 53,
+      "agreementPct": 44.2,
+      "expectedChanceAgreement": 0.428,
+      "cohensKappa": 0.024
+    },
+    "schemaOnlyItems": {
+      "note": "23 items whose description is byte-identical; only the input schema changed",
+      "n": 23,
+      "agreements": 1,
+      "humanCounts": {
+        "semantic-intent": 20,
+        "cosmetic": 3
+      },
+      "aiCounts": {
+        "cosmetic": 7,
+        "schema-additive": 15,
+        "semantic-intent": 1
+      }
+    },
+    "descriptionChangedItems": {
+      "n": 107,
+      "agreements": 58,
+      "humanCounts": {
+        "semantic-intent": 95,
+        "cosmetic": 12
+      },
+      "aiCounts": {
+        "semantic-intent": 52,
+        "cosmetic": 42,
+        "schema-additive": 13
+      }
+    },
+    "disagreementsByType": {
+      "human cosmetic / AI semantic-intent": {
+        "count": 3,
+        "bySchemaAndDescription": {
+          "description words, schema none": 3
+        },
+        "items": [
+          {
+            "serverId": "ahujasid__blender-mcp__ahujasid-blender-mcp",
+            "toolName": "download_polyhaven_asset",
+            "descriptionChange": "words",
+            "schemaChange": "none",
+            "aiReason": "models now always imported from .blend with no format argument (gltf/fbx no longer offered); stated behaviour for a previously valid input changed"
+          },
+          {
+            "serverId": "ahujasid__blender-mcp__ahujasid-blender-mcp",
+            "toolName": "get_polyhaven_categories",
+            "descriptionChange": "words",
+            "schemaChange": "none",
+            "aiReason": "now claims to return filterable attributes as well as categories, and full trees per type"
+          },
+          {
+            "serverId": "minia2auk__minia2a-mcp__minia2auk-minia2a-mcp",
+            "toolName": "minia2a_check_endpoint",
+            "descriptionChange": "words",
+            "schemaChange": "none",
+            "aiReason": "the payment signals it claims to check changed (canonical PAYMENT-REQUIRED header, network instead of chain/token); in doubt, not cosmetic"
+          }
+        ]
+      },
+      "human semantic-intent / AI cosmetic": {
+        "count": 40,
+        "bySchemaAndDescription": {
+          "description words, schema none": 26,
+          "description none, schema non-additive": 7,
+          "description words, schema non-additive": 7
+        },
+        "items": [
+          {
+            "serverId": "ahujasid__blender-mcp__ahujasid-blender-mcp",
+            "toolName": "poll_hunyuan_job_status",
+            "descriptionChange": "words",
+            "schemaChange": "none",
+            "aiReason": "adds only advice to relay an error message and not retry; what it does, reads and talks to is unchanged"
+          },
+          {
+            "serverId": "ariekogan__ateam-mcp__ariekogan-ateam-mcp",
+            "toolName": "ateam_create_plugin",
+            "descriptionChange": "words",
+            "schemaChange": "none",
+            "aiReason": "scaffold's own action is unchanged; the edit describes how deploys discover plugins"
+          },
+          {
+            "serverId": "ariekogan__ateam-mcp__ariekogan-ateam-mcp",
+            "toolName": "ateam_get_execution_logs",
+            "descriptionChange": "none",
+            "schemaChange": "non-additive",
+            "aiReason": "only the actor_id hint changed (pass ran_as); the tool reads the same logs"
+          },
+          {
+            "serverId": "ariekogan__ateam-mcp__ariekogan-ateam-mcp",
+            "toolName": "ateam_github_list_versions",
+            "descriptionChange": "words",
+            "schemaChange": "none",
+            "aiReason": "same listing; the tags it lists are renamed safe-* to prod-*"
+          },
+          {
+            "serverId": "ariekogan__ateam-mcp__ariekogan-ateam-mcp",
+            "toolName": "ateam_github_patch",
+            "descriptionChange": "words",
+            "schemaChange": "none",
+            "aiReason": "added text describes other tools' behaviour after a hotfix; this tool's edit, commit and branch default are unchanged"
+          },
+          {
+            "serverId": "ariekogan__ateam-mcp__ariekogan-ateam-mcp",
+            "toolName": "ateam_github_promote",
+            "descriptionChange": "words",
+            "schemaChange": "none",
+            "aiReason": "same merge and tag; only the tag prefix is renamed safe to prod"
+          },
+          {
+            "serverId": "ariekogan__ateam-mcp__ariekogan-ateam-mcp",
+            "toolName": "ateam_github_rollback",
+            "descriptionChange": "words",
+            "schemaChange": "non-additive",
+            "aiReason": "same rollback; tag names and the suggested follow-up step changed"
+          },
+          {
+            "serverId": "ariekogan__ateam-mcp__ariekogan-ateam-mcp",
+            "toolName": "ateam_patch",
+            "descriptionChange": "words",
+            "schemaChange": "none",
+            "aiReason": "redeploy was already claimed in the first line; the edit corrects what another tool checks"
+          },
+          {
+            "serverId": "ariekogan__ateam-mcp__ariekogan-ateam-mcp",
+            "toolName": "ateam_spec_search",
+            "descriptionChange": "words",
+            "schemaChange": "none",
+            "aiReason": "adds that it needs no sign-in and reports which environment answered; still a read-only doc search"
+          },
+          {
+            "serverId": "ariekogan__ateam-mcp__ariekogan-ateam-mcp",
+            "toolName": "ateam_test_notification",
+            "descriptionChange": "words",
+            "schemaChange": "none",
+            "aiReason": "only the comparison with two other tools was reworded; the notification path is unchanged"
+          },
+          {
+            "serverId": "ariekogan__ateam-mcp__ariekogan-ateam-mcp",
+            "toolName": "ateam_verify_consistency",
+            "descriptionChange": "words",
+            "schemaChange": "none",
+            "aiReason": "same read-only probe; return field renamed ok->consistent and more drift kinds listed"
+          },
+          {
+            "serverId": "ariekogan__ateam-mcp__ariekogan-ateam-mcp",
+            "toolName": "ateam_verify",
+            "descriptionChange": "words",
+            "schemaChange": "none",
+            "aiReason": "adds only how to read an error field; the probe and what it checks are unchanged"
+          },
+          {
+            "serverId": "elfa-ai__mcp__ai-elfa-mcp",
+            "toolName": "account_stats",
+            "descriptionChange": "words",
+            "schemaChange": "none",
+            "aiReason": "adds a deprecation date and a note that it returns raw metrics; what it does and reads is unchanged today"
+          },
+          {
+            "serverId": "firecrawl__firecrawl-mcp-server__firecrawl-firecrawl-mcp-server",
+            "toolName": "firecrawl_map",
+            "descriptionChange": "words",
+            "schemaChange": "none",
+            "aiReason": "notes only that responses can carry a feedback id"
+          },
+          {
+            "serverId": "firecrawl__firecrawl-mcp-server__firecrawl-firecrawl-mcp-server",
+            "toolName": "firecrawl_parse",
+            "descriptionChange": "words",
+            "schemaChange": "none",
+            "aiReason": "notes only that responses can carry a feedback id"
+          },
+          {
+            "serverId": "flowzap-xyz__flowzap-mcp__flowzap-xyz-flowzap-mcp",
+            "toolName": "flowzap_create_playground",
+            "descriptionChange": "none",
+            "schemaChange": "non-additive",
+            "aiReason": "only the code parameter's hint changed, listing accepted arrow shortcuts"
+          },
+          {
+            "serverId": "flowzap-xyz__flowzap-mcp__flowzap-xyz-flowzap-mcp",
+            "toolName": "flowzap_validate",
+            "descriptionChange": "none",
+            "schemaChange": "non-additive",
+            "aiReason": "only the code parameter's hint changed, listing accepted arrow shortcuts"
+          },
+          {
+            "serverId": "fouradata__mcp__ai-foura-mcp",
+            "toolName": "foura_browser",
+            "descriptionChange": "words",
+            "schemaChange": "non-additive",
+            "aiReason": "documents existing parameters (headers, cookies, checks) and cost; schema change is only the $schema keyword"
+          },
+          {
+            "serverId": "fouradata__mcp__ai-foura-mcp",
+            "toolName": "foura_single",
+            "descriptionChange": "words",
+            "schemaChange": "non-additive",
+            "aiReason": "documents existing parameters (proxy id, validate, timeouts); headers schema re-expressed equivalently"
+          },
+          {
+            "serverId": "minia2auk__minia2a-mcp__minia2auk-minia2a-mcp",
+            "toolName": "minia2a_call_service",
+            "descriptionChange": "words",
+            "schemaChange": "non-additive",
+            "aiReason": "adds only that stray top-level keys are rejected by name; the paid call and its payment paths are unchanged"
+          },
+          {
+            "serverId": "minia2auk__minia2a-mcp__minia2auk-minia2a-mcp",
+            "toolName": "minia2a_list_services",
+            "descriptionChange": "none",
+            "schemaChange": "non-additive",
+            "aiReason": "only the search hint changed (also matches id, hyphens as spaces)"
+          },
+          {
+            "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+            "toolName": "alphafold_structure",
+            "descriptionChange": "words",
+            "schemaChange": "none",
+            "aiReason": "adds band ranges to the summary and notes the download URLs are links only"
+          },
+          {
+            "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+            "toolName": "atted_coexpression",
+            "descriptionChange": "words",
+            "schemaChange": "none",
+            "aiReason": "restates the same seven covered organisms and names the score type per release"
+          },
+          {
+            "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+            "toolName": "bar_aiv_interactions",
+            "descriptionChange": "words",
+            "schemaChange": "none",
+            "aiReason": "notes only that the image is a URL for the client to fetch"
+          },
+          {
+            "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+            "toolName": "batch_atted_coexpression",
+            "descriptionChange": "words",
+            "schemaChange": "non-additive",
+            "aiReason": "restates organism coverage; loci gains minItems 1 (an empty list was never meaningful)"
+          },
+          {
+            "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+            "toolName": "blast_sequence",
+            "descriptionChange": "words",
+            "schemaChange": "non-additive",
+            "aiReason": "only the name of the error raised on timeout changed"
+          },
+          {
+            "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+            "toolName": "ensembl_region_query",
+            "descriptionChange": "words",
+            "schemaChange": "none",
+            "aiReason": "adds only that an out-of-range region is an error"
+          },
+          {
+            "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+            "toolName": "gene_report",
+            "descriptionChange": "words",
+            "schemaChange": "none",
+            "aiReason": "documents the existing output shape (what each section omits); same backends and dossier"
+          },
+          {
+            "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+            "toolName": "jaspar_motif",
+            "descriptionChange": "words",
+            "schemaChange": "none",
+            "aiReason": "notes only that the logo URL is a link for the client"
+          },
+          {
+            "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+            "toolName": "panther_family",
+            "descriptionChange": "words",
+            "schemaChange": "none",
+            "aiReason": "clarifies what a null family means; same lookup"
+          },
+          {
+            "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+            "toolName": "plantcyc_locus_info",
+            "descriptionChange": "words",
+            "schemaChange": "none",
+            "aiReason": "clarifies that pathway_count can be null when unknown; same lookup"
+          },
+          {
+            "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+            "toolName": "resolve_locus_to_uniprot",
+            "descriptionChange": "words",
+            "schemaChange": "none",
+            "aiReason": "adds only that an ambiguous gene symbol is an error listing the loci; same UniProt lookup"
+          },
+          {
+            "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+            "toolName": "tf_binding_motifs",
+            "descriptionChange": "words",
+            "schemaChange": "none",
+            "aiReason": "notes only that the logo and web URLs are links for the client"
+          },
+          {
+            "serverId": "rekordcloud__sonovault-mcp__rekordcloud-sonovault-mcp",
+            "toolName": "get_platform_links",
+            "descriptionChange": "none",
+            "schemaChange": "non-additive",
+            "aiReason": "only the discogs_id hint changed, giving the expected key format"
+          },
+          {
+            "serverId": "rekordcloud__sonovault-mcp__rekordcloud-sonovault-mcp",
+            "toolName": "get_release",
+            "descriptionChange": "words",
+            "schemaChange": "none",
+            "aiReason": "editions also list label and catalog number; same record from the same source"
+          },
+          {
+            "serverId": "rekordcloud__sonovault-mcp__rekordcloud-sonovault-mcp",
+            "toolName": "resolve_tracks",
+            "descriptionChange": "words",
+            "schemaChange": "none",
+            "aiReason": "only the discogs_id format is spelled out"
+          },
+          {
+            "serverId": "veriteknik__pluggedin-mcp-proxy__veriteknik-pluggedin-mcp-proxy",
+            "toolName": "pluggedin_delete_notification",
+            "descriptionChange": "none",
+            "schemaChange": "non-additive",
+            "aiReason": "only adds a uuid format hint to the id"
+          },
+          {
+            "serverId": "veriteknik__pluggedin-mcp-proxy__veriteknik-pluggedin-mcp-proxy",
+            "toolName": "pluggedin_mark_notification_done",
+            "descriptionChange": "none",
+            "schemaChange": "non-additive",
+            "aiReason": "only adds a uuid format hint to the id"
+          },
+          {
+            "serverId": "vicseeai__vicsee-mcp-server__vicseeai-vicsee-mcp-server",
+            "toolName": "vicsee_generate",
+            "descriptionChange": "words",
+            "schemaChange": "none",
+            "aiReason": "adds only advice to call an estimate tool first; generation and billing unchanged"
+          },
+          {
+            "serverId": "withoneai__mcp__withoneai-mcp",
+            "toolName": "execute_one_action",
+            "descriptionChange": "words",
+            "schemaChange": "non-additive",
+            "aiReason": "only the name of the prerequisite tool changed"
+          }
+        ]
+      },
+      "human semantic-intent / AI schema-additive": {
+        "count": 25,
+        "bySchemaAndDescription": {
+          "description words, schema non-additive": 4,
+          "description none, schema non-additive": 12,
+          "description words, schema additive": 9
+        },
+        "items": [
+          {
+            "serverId": "ariekogan__ateam-mcp__ariekogan-ateam-mcp",
+            "toolName": "ateam_get_spec",
+            "descriptionChange": "words",
+            "schemaChange": "non-additive",
+            "aiReason": "topic enum widened with five new doc topics; added text only notes no sign-in and a served_by field"
+          },
+          {
+            "serverId": "custodia-admin__pagebolt-mcp__custodia-admin-pagebolt-mcp",
+            "toolName": "create_session",
+            "descriptionChange": "none",
+            "schemaChange": "non-additive",
+            "aiReason": "cookie objects gain optional fields (path, secure, sameSite...); nothing removed or required"
+          },
+          {
+            "serverId": "custodia-admin__pagebolt-mcp__custodia-admin-pagebolt-mcp",
+            "toolName": "inspect_page",
+            "descriptionChange": "none",
+            "schemaChange": "non-additive",
+            "aiReason": "cookie objects gain optional fields; nothing removed or required, description unchanged"
+          },
+          {
+            "serverId": "custodia-admin__pagebolt-mcp__custodia-admin-pagebolt-mcp",
+            "toolName": "observe_page",
+            "descriptionChange": "none",
+            "schemaChange": "non-additive",
+            "aiReason": "cookie objects gain optional fields; nothing removed or required, description unchanged"
+          },
+          {
+            "serverId": "custodia-admin__pagebolt-mcp__custodia-admin-pagebolt-mcp",
+            "toolName": "record_video",
+            "descriptionChange": "none",
+            "schemaChange": "non-additive",
+            "aiReason": "optional cookies/authState, a new highlight action and pacing option; nothing removed or required, description unchanged"
+          },
+          {
+            "serverId": "custodia-admin__pagebolt-mcp__custodia-admin-pagebolt-mcp",
+            "toolName": "run_sequence",
+            "descriptionChange": "none",
+            "schemaChange": "non-additive",
+            "aiReason": "optional cookies/authState and a higher step cap; nothing removed or required, description unchanged"
+          },
+          {
+            "serverId": "custodia-admin__pagebolt-mcp__custodia-admin-pagebolt-mcp",
+            "toolName": "take_screenshot",
+            "descriptionChange": "none",
+            "schemaChange": "non-additive",
+            "aiReason": "cookie objects gain optional fields; nothing removed or required, description unchanged"
+          },
+          {
+            "serverId": "custodia-admin__pagebolt-mcp__custodia-admin-pagebolt-mcp",
+            "toolName": "visual_diff",
+            "descriptionChange": "none",
+            "schemaChange": "non-additive",
+            "aiReason": "cookie objects gain optional fields; nothing removed or required, description unchanged"
+          },
+          {
+            "serverId": "ergoveritas1-alt__certscore.ai__ai-certscore-mcp",
+            "toolName": "certscore_scan_site",
+            "descriptionChange": "none",
+            "schemaChange": "non-additive",
+            "aiReason": "questionSummary max length widened 300 -> 8192; nothing removed or required, description unchanged"
+          },
+          {
+            "serverId": "fouradata__mcp__ai-foura-mcp",
+            "toolName": "foura_proxy",
+            "descriptionChange": "words",
+            "schemaChange": "non-additive",
+            "aiReason": "adds an optional exitClass (premium exit allowance); the rest re-describes existing parameters"
+          },
+          {
+            "serverId": "freema__firefox-devtools-mcp__freema-firefox-devtools-mcp",
+            "toolName": "screenshot_page",
+            "descriptionChange": "words",
+            "schemaChange": "additive",
+            "aiReason": "adds an optional fullPage flag; default stated as viewport"
+          },
+          {
+            "serverId": "freema__firefox-devtools-mcp__freema-firefox-devtools-mcp",
+            "toolName": "set_download_behavior",
+            "descriptionChange": "words",
+            "schemaChange": "non-additive",
+            "aiReason": "adds an optional downloadFolder; allow/deny/default unchanged"
+          },
+          {
+            "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+            "toolName": "list_comments",
+            "descriptionChange": "words",
+            "schemaChange": "additive",
+            "aiReason": "adds optional since/since_id/order paging; default order unchanged"
+          },
+          {
+            "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+            "toolName": "aragwas_associations",
+            "descriptionChange": "words",
+            "schemaChange": "additive",
+            "aiReason": "adds optional limit/cursor paging; same source and fields"
+          },
+          {
+            "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+            "toolName": "batch_gramene_homologs",
+            "descriptionChange": "none",
+            "schemaChange": "non-additive",
+            "aiReason": "adds optional target_organism/with_organism filters; description unchanged"
+          },
+          {
+            "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+            "toolName": "gramene_homologs",
+            "descriptionChange": "words",
+            "schemaChange": "additive",
+            "aiReason": "adds optional organism filters and cursor; rest documents existing filter behaviour"
+          },
+          {
+            "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+            "toolName": "locus_go_annotations",
+            "descriptionChange": "words",
+            "schemaChange": "additive",
+            "aiReason": "adds an optional cursor; rest notes payload field names"
+          },
+          {
+            "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+            "toolName": "locus_literature",
+            "descriptionChange": "words",
+            "schemaChange": "additive",
+            "aiReason": "adds an optional cursor and a web_url field in results"
+          },
+          {
+            "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+            "toolName": "orthodb_orthologs",
+            "descriptionChange": "words",
+            "schemaChange": "additive",
+            "aiReason": "adds an optional target_organism filter and cursor"
+          },
+          {
+            "serverId": "rekordcloud__sonovault-mcp__rekordcloud-sonovault-mcp",
+            "toolName": "get_artist_releases",
+            "descriptionChange": "words",
+            "schemaChange": "additive",
+            "aiReason": "adds optional from/until date filters"
+          },
+          {
+            "serverId": "rekordcloud__sonovault-mcp__rekordcloud-sonovault-mcp",
+            "toolName": "get_label_releases",
+            "descriptionChange": "words",
+            "schemaChange": "additive",
+            "aiReason": "adds optional from/until date filters"
+          },
+          {
+            "serverId": "sidneybissoli__medical-terminologies-mcp__sidneybissoli-medical-terminolog",
+            "toolName": "rxnorm_classes",
+            "descriptionChange": "none",
+            "schemaChange": "non-additive",
+            "aiReason": "rxcui now also accepted as an integer; nothing removed or required"
+          },
+          {
+            "serverId": "sidneybissoli__medical-terminologies-mcp__sidneybissoli-medical-terminolog",
+            "toolName": "rxnorm_concept",
+            "descriptionChange": "words",
+            "schemaChange": "non-additive",
+            "aiReason": "rxcui also accepted as integer and include_related as a string; nothing removed or required"
+          },
+          {
+            "serverId": "sidneybissoli__medical-terminologies-mcp__sidneybissoli-medical-terminolog",
+            "toolName": "rxnorm_ingredients",
+            "descriptionChange": "none",
+            "schemaChange": "non-additive",
+            "aiReason": "rxcui now also accepted as an integer; nothing removed or required"
+          },
+          {
+            "serverId": "sidneybissoli__medical-terminologies-mcp__sidneybissoli-medical-terminolog",
+            "toolName": "rxnorm_ndc",
+            "descriptionChange": "none",
+            "schemaChange": "non-additive",
+            "aiReason": "rxcui now also accepted as an integer; nothing removed or required"
+          }
+        ]
+      },
+      "human cosmetic / AI schema-additive": {
+        "count": 3,
+        "bySchemaAndDescription": {
+          "description none, schema non-additive": 3
+        },
+        "items": [
+          {
+            "serverId": "browserless__browserless-mcp__browserless-browserless-mcp",
+            "toolName": "browserless_crawl",
+            "descriptionChange": "none",
+            "schemaChange": "non-additive",
+            "aiReason": "headers object loosened to accept string values; nothing removed or required, description unchanged"
+          },
+          {
+            "serverId": "browserless__browserless-mcp__browserless-browserless-mcp",
+            "toolName": "browserless_function",
+            "descriptionChange": "none",
+            "schemaChange": "non-additive",
+            "aiReason": "context object loosened to accept any values; nothing removed or required, description unchanged"
+          },
+          {
+            "serverId": "browserless__browserless-mcp__browserless-browserless-mcp",
+            "toolName": "browserless_smartscraper",
+            "descriptionChange": "none",
+            "schemaChange": "non-additive",
+            "aiReason": "headers object loosened to accept string values; nothing removed or required, description unchanged"
+          }
+        ]
+      }
+    },
+    "run1VsRun2": {
+      "note": "AI run 1 (claude-sonnet-5-5, taxonomy not read) against AI run 2 (claude-opus-5-5, taxonomy read first); rows run 1, columns run 2",
+      "n": 130,
+      "agreements": 106,
+      "agreementPct": 81.5,
+      "expectedChanceAgreement": 0.364,
+      "cohensKappa": 0.71,
+      "matrix": [
+        [
+          36,
+          0,
+          6
+        ],
+        [
+          0,
+          23,
+          0
+        ],
+        [
+          13,
+          5,
+          47
+        ]
+      ]
+    },
+    "humanLabelOptionsOffered": "packages/analysis/src/labelSession.ts:32-44: c = cosmetic, a = schema-additive, i = semantic-intent, s = skip, q = quit. schema-additive was offered; the human labels use it 0 times."
+  },
+  "comparisonStatus": "complete: data/labels.json opened only after the blind labels were committed (commit 1fd36a7)",
+  "blindLabelsCommit": "1fd36a7",
+  "caveat": "One AI rater, one pass, no adjudication, and a model of the same family as run 1. Agreement measures whether a second reader reproduces the author's call under the written rules, not which reading is correct. The author's labels are the record and were not changed. Run 2 agreed with the author less than run 1 did; that is reported as it came out."
 }
