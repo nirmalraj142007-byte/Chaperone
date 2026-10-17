@@ -214,6 +214,15 @@ This is the audit of the claims this project could have made and does not.
   "AI models" is never the subject of a sentence about it.
 - **The sample is the servers that boot without credentials**, 152 of 947
   candidates. That likely understates drift.
+- **The interim crawl is a rehearsal, not a result.** On 2026-10-02, 17 days
+  after crawl 1, 130 tool changes were found in 24 of the 152 servers captured
+  in both. All 130 labels were made by hand by the author with no proposed
+  class shown. They replace a pilot set (kept in `data/labels-pilot-v1.json`)
+  that tracked the tool's proposal on 115 of 130 and agreed with two blind AI
+  runs on only 54.6% and 45.4%. The relabel was done after seeing those AI
+  results, so its 81.5% and 78.5% agreement with them is not independent.
+  Crawl-2 labels will be checked independently. The interim crawl is
+  structure-only and is never a headline.
 - **Classifying a change is one person's reading.** Detecting that a change
   happened is not: it is a hash comparison. Deciding whether it was cosmetic,
   additive or a change of meaning is the author reading it.

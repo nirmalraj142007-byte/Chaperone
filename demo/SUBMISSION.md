@@ -51,7 +51,7 @@ change, so re-check rather than trust it.
 - [ ] `CRAWL_DATES.md` is accurate: the Crawl 2 line is machine-written (it matches `jq .startedAt data/crawl-2-report.json`), the Crawl 1 line is unchanged, and the stated interval is still **35 days** (a crawl that ran late would make it 36 or more, and the prose would have to say so)
 - [ ] `pnpm check-claims` passes (no rounded-week language)
 - [ ] `pnpm check-placeholders` passes: no pending marker left in any committed prose. This is the last gate that cannot be satisfied early; it fails today by design (drift rate, production latency, Kiro feedback)
-- [ ] `data/drift.json`, `data/labels.json` and `data/labels-todo.json` are committed and agree; the headline counts `semantic-intent` only, and cosmetic and schema-additive changes are published separately
+- [ ] `data/drift.json` and `data/labels.json` are committed and agree (`data/labels-todo.json` is a regenerable work queue and stays uncommitted); the headline counts `semantic-intent` only, and cosmetic and schema-additive changes are published separately
 - [ ] `pnpm analyse:drift --dry-run` still reports 0 drift and 0 classifier artifacts
 - [ ] The prevalence sample (`data/prevalence.json`) is labelled or its absence is stated. `corpus/PREDICTIONS.md` committed to testing it
 

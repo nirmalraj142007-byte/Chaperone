@@ -40,7 +40,8 @@ headline pair: it runs under the same capability classifier as crawl 2
 show drift over time and to detect changes that revert, and its segment rates
 are never headlines. The pre-registered comparison is crawl 1 against crawl 2,
 2026-09-15 to 2026-10-20, 35 days.
-{{PENDING: the 2026-10-02 interim crawl's timestamp and what it showed about drift over time and reverted changes — 2026-10-02}}
+The interim crawl ran 2026-10-02 (17 days after crawl 1). By the author's final hand labels (made with no proposed class shown; the relabel is not independent of the AI cross-checks, see [`LIMITATIONS.md`](LIMITATIONS.md)), 16 of the 152 servers captured in both (10.5%) had a `semantic-intent` change; 13 had a `cosmetic` change and 12 a `schema-additive` one, counted separately. This is a rehearsal, never a headline.
+{{PENDING: reverted changes between crawl 1, the interim crawl and crawl 2 — 2026-10-20}}
 
 The candidate list is the one committed before crawl 1 and is used unchanged
 for crawl 2. A server that appeared in October cannot enter the comparison,

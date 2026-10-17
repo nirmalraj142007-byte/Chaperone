@@ -598,15 +598,15 @@ October cannot recover what a server said in September. The text is quoted as
 evidence of what each server published. This record does not claim to relicense
 it, and no per-server licence review has been done.
 
-**Known gaps.** `data/labels.json` and `data/labels-todo.json` are present but not
-committed: they hold interim-crawl rehearsal labels that crawl 2's labelling will
-overwrite, and are committed with `data/drift.json` once the labels are final. Until
-then the published dataset lacks its human-label files.
+**Known gaps.** `data/labels.json` holds the final hand labels for the 130
+crawl-interim-1 changes (see "Interim change labels redone", below) and is
+committed. `data/labels-todo.json` is a regenerable work queue and is not
+committed. Crawl 2's labels are not yet made.
 
 ## Interim change labels redone with the proposal hidden — 2026-10-17
 
-**Decision.** The 130 crawl-interim-1 change labels are being redone from scratch
-by hand. `pnpm analyse:label` (and `--prevalence`) now never shows a proposed
+**Decision.** The 130 crawl-interim-1 change labels were redone from scratch
+by hand, and the redo is final (completed 2026-10-17). `pnpm analyse:label` (and `--prevalence`) now never shows a proposed
 class, reason or capability verdict in any view, and every saved label records
 `"procedure": "v2-no-proposal-shown"`. The first set is kept unedited in
 `data/labels-pilot-v1.json`, marked pilot, superseded, kept for the record.
@@ -618,7 +618,24 @@ written). Agreement that high with a shown proposal, and that low with blind
 raters, means the pilot cannot be told apart from anchoring. Relabelling with the
 proposal hidden removes that.
 
+**Outcome.** All 130 labels were made by hand by the author with no proposed
+class shown: 38 `cosmetic`, 32 `schema-additive`, 60 `semantic-intent`, none
+skipped. They replace the pilot set (`data/labels-pilot-v1.json`, 115
+`semantic-intent` and 15 `cosmetic`). Agreement with AI run 1 is 81.5% (kappa
+0.708), with run 2 78.5% (0.668) and with the pilot 52.3% (0.145)
+(`data/labels-agreement-relabel.json`). **Not independent:** the relabel was done
+after the author had seen the run-1 and run-2 results, so the new agreement
+figures do not show the labels are reliable. Crawl-2 labels will be checked
+independently.
+
+**Interim numbers recomputed from the new labels.** 130 changes fall in 24 of the
+152 servers captured in both crawls (15.8%); 16 of 152 (10.5%) have at least one
+`semantic-intent` change, against 23 of 152 (15.1%) under the pilot labels. 13
+servers have a `cosmetic` change and 12 a `schema-additive` one (a server can
+appear in more than one). The interval is 17 days (2026-09-15 to 2026-10-02).
+This is the interim crawl: structure-only, never a headline, and not the
+pre-registered 35-day comparison.
+
 **What did not change.** `corpus/TAXONOMY.md` and `corpus/PREDICTIONS.md` are
-untouched. The labelling rules the human labeller writes before relabelling go in
-a separate appendix, `corpus/TAXONOMY-APPENDIX-labelling-rules.md`, committed
-before crawl 2.
+untouched. A draft appendix of labelling rules was never committed and was not
+used; it was deleted.

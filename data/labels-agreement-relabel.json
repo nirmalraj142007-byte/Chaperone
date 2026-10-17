@@ -1,0 +1,57 @@
+{
+  "$comment": "Agreement of the author's FINAL relabelled labels (data/labels.json, procedure v2-no-proposal-shown) with the AI cross-checks and with the superseded pilot. NOT INDEPENDENT: the author had seen the run-1 and run-2 summaries (agreement figures and disagreement direction) before relabelling, so these agreement figures cannot be read as an independent reliability estimate. Crawl-2 labels will be checked independently. No new AI run was made. No label was changed as a result of this comparison.",
+  "independent": false,
+  "kind": "agreement-of-final-relabel",
+  "comparison": "crawl-1 -> crawl-interim-1",
+  "labeller": "Nirmalraj",
+  "procedure": "v2-no-proposal-shown",
+  "labelCounts": {
+    "cosmetic": 38,
+    "schema-additive": 32,
+    "semantic-intent": 60
+  },
+  "agreement": {
+    "vsAiRun1": {
+      "source": "data/labels-agreement.json",
+      "items": 130,
+      "agreements": 106,
+      "agreementPct": 81.5,
+      "cohensKappa": 0.708
+    },
+    "vsAiRun2": {
+      "source": "data/labels-agreement-run2.json",
+      "items": 130,
+      "agreements": 102,
+      "agreementPct": 78.5,
+      "cohensKappa": 0.668
+    },
+    "vsPilot": {
+      "source": "data/labels-pilot-v1.json",
+      "items": 130,
+      "agreements": 68,
+      "agreementPct": 52.3,
+      "cohensKappa": 0.145
+    }
+  },
+  "confusionVsAiRun2": {
+    "rows": "author's new labels",
+    "columns": "AI run 2 (claude-opus-5-5)",
+    "counts": {
+      "semantic-intent": {
+        "semantic-intent": 45,
+        "cosmetic": 11,
+        "schema-additive": 4
+      },
+      "schema-additive": {
+        "schema-additive": 24,
+        "cosmetic": 5,
+        "semantic-intent": 3
+      },
+      "cosmetic": {
+        "cosmetic": 33,
+        "semantic-intent": 5
+      }
+    }
+  },
+  "matchedOn": "serverId|toolName (one item each, 130 of 130)"
+}
