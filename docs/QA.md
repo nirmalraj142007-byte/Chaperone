@@ -182,7 +182,7 @@ cannot come out any other way. It is **tautological**, so it is cut from every
 claim, and `packages/eval` has a test that fails if an absolute block rate
 appears in a report. The meaningful comparison is the delta against baseline 2
 (an unaided model), which is measured for one model only: `gpt-oss-120b` on
-Groq followed the injected instruction in 52 of 90 two-turn runs (57.8%) and
+Groq followed the injected instruction in 50 of 90 two-turn runs (55.6%) and
 refused 0, so the delta is 100 points and means "the model never said no", not
 "always complied". See the README, "What this does not prove", and
 [`LIMITATIONS.md`](LIMITATIONS.md).

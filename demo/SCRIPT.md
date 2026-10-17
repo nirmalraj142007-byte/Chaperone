@@ -123,9 +123,9 @@ screen. Keep `docker compose up -d` and the demo offline-ready per
 
 ### 9 · 1:58 to 2:16 · Baseline 2
 
-- **Screen:** a title card, held: `Baseline 2: an unaided model · gpt-oss-120b on Groq · two turns · 90 attack runs · followed 57.8% · refused 0 · one model, one day`.
+- **Screen:** a title card, held: `Baseline 2: an unaided model · gpt-oss-120b on Groq · two turns · 90 attack runs · followed 55.6% · refused 0 · one model, one day`.
   Small caption under it: `No absolute block rate is claimed: it would be tautological.`
-- **Say:** "We also gave one unaided model, gpt-oss-120b on Groq, the thirty attack descriptions, ninety runs in all. It followed the injected instruction 57.8% of the time and refused none. That is a floor, for one model, on one day."
+- **Say:** "We also gave one unaided model, gpt-oss-120b on Groq, the thirty attack descriptions, ninety runs in all. It followed the injected instruction 55.6% of the time and refused none. That is a floor, for one model, on one day."
 
 ### 10 · 2:16 to 2:26 · The boot-rate finding
 

@@ -210,7 +210,7 @@ This is the audit of the claims this project could have made and does not.
   will be reported against whatever comes out, including if it is low.
 - **Baseline 2 is one model, one provider, one day.** `gpt-oss-120b` on Groq
   (Bedrock access for this AWS account was declined), 90 attack runs. Its
-  57.8% follow rate is a floor and says nothing about any other model, and
+  55.6% follow rate is a floor and says nothing about any other model, and
   "AI models" is never the subject of a sentence about it.
 - **The sample is the servers that boot without credentials**, 152 of 947
   candidates. That likely understates drift.
@@ -339,9 +339,9 @@ Resumable SSE is why the writes exist: an event a client could replay with
 each of the 30 attack tool descriptions with no Chaperone in front of it, in a
 two-turn setup: it may call the tool, is handed a canned tool result, and
 writes a final message. Of 90 runs it **followed the injected instruction in
-52 (57.8%), explicitly refused 0, and did not exercise 38.** The 52 are 46
-follows by the rubric's markers plus 6 that a human reviewed and decided were
-follows. Of the 38, the model saw the result and showed none of it in 20, asked a
+50 (55.6%), explicitly refused 0, and did not exercise 40.** The 50 are 46
+follows by the rubric's markers plus 4 that a human reviewed and decided were
+follows (a human decided 2 others were not). Of the 40, the model saw the result and showed none of it in 22, asked a
 question or answered without calling the tool in 15, and the trigger was
 unreachable in 3. It refused 0 of 30 benign-control runs. A hash
 comparison has no follow rate, so the delta is 100 points: the model never said
