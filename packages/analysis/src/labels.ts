@@ -16,6 +16,9 @@ import type { PairChangeClass } from "./types.js";
 
 export type HumanChoice = PairChangeClass | "skip";
 
+/** Recorded on every saved label: the labelling views never show a proposed class. */
+export const LABEL_PROCEDURE = "v2-no-proposal-shown";
+
 export const labelRecordSchema = z.object({
   key: z.string(),
   serverId: z.string(),
@@ -27,6 +30,8 @@ export const labelRecordSchema = z.object({
   labeledBy: z.string().min(1),
   labeledAt: z.string(),
   taxonomyBlobSha: z.string(),
+  /** How the label was made. Absent on pilot labels (see data/labels-pilot-v1.json). */
+  procedure: z.literal(LABEL_PROCEDURE).optional(),
   /**
    * Present only when one answer was applied to several tools at once because their edit is identical
    * (see labelGroups.ts). groupSize is the number of tools that single answer covered.

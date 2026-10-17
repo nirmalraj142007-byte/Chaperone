@@ -87,7 +87,7 @@ describe("rendering", () => {
   it("marks changed words with [-..-] and {+..+} with colour off, and adds ANSI only when asked", () => {
     const text = renderTodoItem(item(1), 1, 3, makeStyle(false), false);
     expect(text).toContain("{+and to your emergency contact+}");
-    expect(text).toContain("capability class moved: write -> communicate");
+    expect(text).not.toContain("capability class");
     expect(text).not.toContain("\u001b[");
     expect(renderTodoItem(item(1), 1, 3, makeStyle(true), true)).toContain("\u001b[32m{+");
     expect(renderTodoItem(item(1), 1, 3, makeStyle(true), true)).toContain("(skipped before)");
@@ -109,7 +109,7 @@ describe("rendering", () => {
     );
     expect(text).toContain("description: unchanged");
     expect(text).toContain('+ property "b" added (REQUIRED)');
-    expect(text).toContain("capability class: write");
+    expect(text).not.toContain("capability class");
   });
 
   it("describeSchemaChange covers removal, changes, required flips and other keys", () => {
@@ -150,6 +150,19 @@ describe("change-label session", () => {
     expect(last.labels.map((l) => l.label)).toEqual(["semantic-intent", "cosmetic", "schema-additive"]);
     expect(last.labels[0]).toMatchObject({ labeledBy: "Fixture Labeller", labeledAt: "2026-10-21T02:00:00.000Z", taxonomyBlobSha: BLOB, proposed: "semantic-intent" });
     expect(parseLabelsFile(JSON.parse(JSON.stringify(last)), "roundtrip").labels).toHaveLength(3);
+  });
+
+  it("never shows a proposed class, reason or capability verdict, ungrouped, and stamps procedure v2-no-proposal-shown", async () => {
+    const marked = item(1, { reason: "FIXTURE-REASON-MUST-NOT-BE-SHOWN" });
+    const { printed, last } = await session(todoOf([marked]), ["i"]);
+    const text = printed.join("\n");
+    expect(text).toContain("description AFTER:");
+    expect(text).not.toMatch(/proposed/i);
+    expect(text).not.toContain("FIXTURE-REASON-MUST-NOT-BE-SHOWN");
+    expect(text).not.toMatch(/capability class/i);
+    expect(renderTodoItem(marked, 1, 1, makeStyle(false), false)).not.toMatch(/proposed|capability/i);
+    expect(last.labels[0]).toMatchObject({ procedure: "v2-no-proposal-shown" });
+    expect(parseLabelsFile(JSON.parse(JSON.stringify(last)), "roundtrip").labels[0]!.procedure).toBe("v2-no-proposal-shown");
   });
 
   it("re-asks on bad input, prints help, and treats end of input as quit", async () => {
@@ -266,7 +279,8 @@ describe("prevalence sample (M14)", () => {
     const second = await run(first.saved, ["?", "n", "n"]);
     expect(second.summary).toMatchObject({ decided: 2, remaining: 0 });
     expect(summarizePrevalence(second.saved)).toEqual({ answered: 3, yes: 1, no: 2, sampleSize: 3, sharePct: 33.3 });
-    expect(second.saved.items[0]).toMatchObject({ labeledBy: "Fixture Labeller", taxonomyBlobSha: BLOB });
+    expect(second.saved.items[0]).toMatchObject({ labeledBy: "Fixture Labeller", taxonomyBlobSha: BLOB, procedure: "v2-no-proposal-shown" });
+    expect(second.printed.join("\n")).not.toMatch(/proposed|\((read|write|transact|communicate)\)/i);
 
     const third = await run(second.saved, []);
     expect(third.printed[0]).toContain("Nothing to label");

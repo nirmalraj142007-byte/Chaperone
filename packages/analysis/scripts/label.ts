@@ -10,7 +10,7 @@
  *
  * By default, changes whose edit is identical (same words added and removed, same input-schema change) are
  * shown once and one answer is applied to every tool in the group; data/labels.json records appliedByGroup.
- * No proposed class is shown in that mode.
+ * No proposed class is shown in any mode; every saved label records procedure "v2-no-proposal-shown".
  *
  * Type one letter and press Enter. Every answer is saved before the next item
  * is shown, so quitting (q, Ctrl+C, closing the window) loses nothing, and the

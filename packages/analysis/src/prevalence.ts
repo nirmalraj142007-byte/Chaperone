@@ -11,6 +11,7 @@
 import { AnalysisError } from "@chaperone/errors";
 import type { CapabilityClass } from "@chaperone/policy";
 import { z } from "zod";
+import { LABEL_PROCEDURE } from "./labels.js";
 import { CAPABILITY_ORDER, type Snapshot } from "./types.js";
 
 export const PREVALENCE_SAMPLE_SIZE = 150;
@@ -88,6 +89,7 @@ const itemSchema = z.object({
   labeledBy: z.string().nullable(),
   labeledAt: z.string().nullable(),
   taxonomyBlobSha: z.string().nullable(),
+  procedure: z.literal(LABEL_PROCEDURE).optional(),
 });
 export type PrevalenceItem = z.infer<typeof itemSchema>;
 

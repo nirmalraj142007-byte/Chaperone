@@ -602,3 +602,23 @@ it, and no per-server licence review has been done.
 committed: they hold interim-crawl rehearsal labels that crawl 2's labelling will
 overwrite, and are committed with `data/drift.json` once the labels are final. Until
 then the published dataset lacks its human-label files.
+
+## Interim change labels redone with the proposal hidden — 2026-10-17
+
+**Decision.** The 130 crawl-interim-1 change labels are being redone from scratch
+by hand. `pnpm analyse:label` (and `--prevalence`) now never shows a proposed
+class, reason or capability verdict in any view, and every saved label records
+`"procedure": "v2-no-proposal-shown"`. The first set is kept unedited in
+`data/labels-pilot-v1.json`, marked pilot, superseded, kept for the record.
+
+**Why.** The pilot labels matched the proposal the tool showed on 115 of 130
+changes, and agreed with two blind AI runs on only 54.6% and 45.4%
+(`data/labels-agreement.json`, `data/labels-agreement-run2.json`, both left as
+written). Agreement that high with a shown proposal, and that low with blind
+raters, means the pilot cannot be told apart from anchoring. Relabelling with the
+proposal hidden removes that.
+
+**What did not change.** `corpus/TAXONOMY.md` and `corpus/PREDICTIONS.md` are
+untouched. The labelling rules the human labeller writes before relabelling go in
+a separate appendix, `corpus/TAXONOMY-APPENDIX-labelling-rules.md`, committed
+before crawl 2.

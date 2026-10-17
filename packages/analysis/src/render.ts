@@ -154,10 +154,7 @@ export function renderTodoItem(item: TodoItem, position: number, total: number, 
   lines.push("");
   lines.push(style.bold(`[${position}/${total}] ${item.serverId}  ::  ${item.toolName}`) + (previouslySkipped ? style.dim("  (skipped before)") : ""));
   lines.push(style.dim(`compared in: ${item.comparisons.join(", ")}`));
-  lines.push(
-    `proposed: ${style.bold(item.proposed)}  (${item.reason})` +
-      (item.capabilityBefore !== item.capabilityAfter ? `\ncapability class moved: ${item.capabilityBefore} -> ${style.bold(item.capabilityAfter)}` : `\ncapability class: ${item.capabilityBefore}`),
-  );
+  // No proposed class, reason or capability verdict: procedure v2-no-proposal-shown.
   lines.push(...renderEditBody(item, style));
   return lines.join("\n");
 }

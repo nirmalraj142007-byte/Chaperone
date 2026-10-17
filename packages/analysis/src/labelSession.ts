@@ -9,7 +9,7 @@
  * not a decision: a skipped item comes round again on the next run.
  */
 import { AnalysisError } from "@chaperone/errors";
-import { type HumanChoice, type LabelRecord, type LabelsFile, type LabelsTodoFile, assertHumanLabeler } from "./labels.js";
+import { type HumanChoice, LABEL_PROCEDURE, type LabelRecord, type LabelsFile, type LabelsTodoFile, assertHumanLabeler } from "./labels.js";
 import { PREVALENCE_QUESTION, type PrevalenceFile, summarizePrevalence } from "./prevalence.js";
 import { groupTodoItems } from "./labelGroups.js";
 import { type Style, renderLabelUnit, renderTodoItem } from "./render.js";
@@ -134,6 +134,7 @@ export async function runChangeLabelSession(opts: ChangeSessionOptions): Promise
         labeledBy: opts.labeledBy,
         labeledAt,
         taxonomyBlobSha: opts.taxonomyBlobSha,
+        procedure: LABEL_PROCEDURE,
         // A skip is not an applied label, so it carries no group record.
         ...(unit.items.length > 1 && choice !== "skip" ? { appliedByGroup: { groupId: unit.id, groupSize: unit.items.length } } : {}),
       };
@@ -183,7 +184,7 @@ export async function runPrevalenceSession(opts: PrevalenceSessionOptions): Prom
   for (const [n, idx] of openIdx.entries()) {
     const item = items[idx]!;
     opts.io.print(
-      `\n${opts.style.bold(`[${n + 1}/${openIdx.length}] ${item.serverId}  ::  ${item.toolName}`)}  ${opts.style.dim(`(${item.capabilityClass})`)}\n  ${item.description || opts.style.dim("(no description)")}`,
+      `\n${opts.style.bold(`[${n + 1}/${openIdx.length}] ${item.serverId}  ::  ${item.toolName}`)}\n  ${item.description || opts.style.dim("(no description)")}`,
     );
     summary.shown++;
     let answer: "yes" | "no" | "skip" | "quit" | undefined;
@@ -205,7 +206,7 @@ export async function runPrevalenceSession(opts: PrevalenceSessionOptions): Prom
       summary.skipped++;
       continue;
     }
-    items[idx] = { ...item, answer, labeledBy: opts.labeledBy, labeledAt: opts.now().toISOString(), taxonomyBlobSha: opts.taxonomyBlobSha };
+    items[idx] = { ...item, answer, labeledBy: opts.labeledBy, labeledAt: opts.now().toISOString(), taxonomyBlobSha: opts.taxonomyBlobSha, procedure: LABEL_PROCEDURE };
     opts.file = { ...opts.file, items };
     await opts.save(opts.file);
     summary.decided++;
