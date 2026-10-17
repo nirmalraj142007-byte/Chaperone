@@ -1,0 +1,1408 @@
+{
+  "$comment": "AI cross-check of human labels, run 2. NOT a second human labeller and NOT a source of labels: data/labels.json is the label of record and was not changed. Labels here were produced by an AI model (Claude Opus 5.5, claude-opus-5-5) reading the same 130 crawl-1 -> crawl-interim-1 diffs, blind to data/labels.json and data/labels-agreement.json. Run 2 exists because run 1 (data/labels-agreement.json, claude-sonnet-5-5) did not read corpus/TAXONOMY.md before labelling, which broke the protocol; this is the one permitted re-run. Run 1 is kept unchanged.",
+  "kind": "ai-cross-check-of-human-labels",
+  "run": 2,
+  "run1File": "data/labels-agreement.json",
+  "model": {
+    "name": "Claude Opus 5.5",
+    "id": "claude-opus-5-5",
+    "provider": "Anthropic",
+    "note": "an AI model, not a person; nothing here is written to data/labels.json"
+  },
+  "protocol": {
+    "order": [
+      "1. Read corpus/TAXONOMY.md, corpus/TAXONOMY-APPENDIX-classifier-v2.md and corpus/DRIFT-JSON-APPENDIX-report-shape.md in full and fix the decision rules below.",
+      "2. Rebuild the 130 items from data/raw (crawl-1 vs crawl-interim-1) with analyseDrift and an EMPTY labels file, because the working-tree data/labels-todo.json had been regenerated with 0 items after labelling. Render them with renderLabelUnit, the grouped view pnpm analyse:label shows by default (no proposed class, reason or capability class shown).",
+      "3. Label all 130 (120 units: 112 single tools and 8 groups of identical edits; one label per unit) with a one-line reason, without opening data/labels.json, data/labels-agreement.json or docs/LIMITATIONS.md.",
+      "4. Commit the blind labels on their own before opening data/labels.json.",
+      "5. Only then compare with data/labels.json."
+    ],
+    "taxonomyBlobSha": "0c896539006dbb6f8dfacc1f02ebbf179c50eec2",
+    "itemsRebuiltFrom": "data/raw/crawl-1 and data/raw/crawl-interim-1 via analyseDrift(labels: empty): 130 items on 24 servers",
+    "blindLabelSetSha256": "9730b945b6b38b46650502d4008390eab045e8f924d13edc8c0c513de7848251",
+    "blindLabelSetSha256Of": "sha256 of JSON.stringify(labels sorted by key, mapped to [key, label])"
+  },
+  "decisionRules": {
+    "quotedFromTaxonomy": {
+      "order": "corpus/TAXONOMY.md:17-21: \"walking the diff between its crawl-1 and crawl-2 manifest in this order — tool-removed and tool-added are checked first (presence/absence), then semantic-intent, then schema-additive, then cosmetic as the default when nothing else applies.\"",
+      "cosmetic": "corpus/TAXONOMY.md:30-35: \"the tool's name, description text, and input schema are byte-different from crawl 1, but no reasonable reading of the new text changes what the tool claims to do, what it claims to access, or who it claims to talk to. Whitespace, punctuation, typo fixes, capitalisation, and reformatting (e.g. reflowing a paragraph) all fall here. If in doubt between cosmetic and semantic-intent, it is not cosmetic.\"",
+      "schemaAdditive": "corpus/TAXONOMY.md:46-49: \"the input schema gained a new field that is optional (not in required), or an existing enum widened to include new values, and nothing was removed and nothing new was made required. The tool's stated behaviour for every input that was previously valid is unchanged.\"",
+      "semanticIntent": "corpus/TAXONOMY.md:60-66: \"the description text (or a required-field addition) changes what the tool claims to do, what data or systems it claims it will access, or what third party it claims it will talk to — regardless of whether the underlying implementation actually changed. This class is judged on the claim ...\"",
+      "humanLabelScope": "corpus/DRIFT-JSON-APPENDIX-report-shape.md:304-311: a changed word, typo fixes included, goes to a person \"because TAXONOMY.md says If in doubt between cosmetic and semantic-intent, it is not cosmetic\"; \"A human label can be any of cosmetic, schema-additive or semantic-intent, and it replaces the proposal.\"",
+      "classifierAppendix": "corpus/TAXONOMY-APPENDIX-classifier-v2.md changes only Axis 2 (capability verbs); it adds no change-class rule."
+    },
+    "doubtfulCases": "The taxonomy has one doubt rule: between cosmetic and semantic-intent, doubt resolves to semantic-intent. It was applied wherever the claim test did not clearly come out cosmetic, and those reasons say \"in doubt, not cosmetic\". There is no doubt rule between schema-additive and semantic-intent; those were decided on the claim test alone.",
+    "gapRulesFixedBeforeLabelling": [
+      "G1. Added text that only tells the model how or when to use existing behaviour (relay an error, which tool to call next, a format hint, a deprecation date) and names no new action, data, system, side effect or third party: cosmetic.",
+      "G2. A schema change that is only a property's description text is judged by the same claim test as the tool description.",
+      "G3. A new REQUIRED field is semantic-intent (TAXONOMY.md:60). A removed property or a narrowed enum is not schema-additive ('nothing was removed'); it is semantic-intent when it changes what the tool claims to do or access, otherwise cosmetic, with doubt resolving to semantic-intent.",
+      "G4. A loosened constraint (wider type, additionalProperties opened, higher maximum, integer also accepted) with nothing removed and nothing required is treated as schema-additive, the closest of the three classes; the taxonomy names only optional fields and enum widening explicitly.",
+      "G5. New optional fields whose accompanying text adds no new action, data source or third party: schema-additive. When the accompanying description text itself claims a new action, mode, data source or third party, semantic-intent is checked first and wins (TAXONOMY.md:17-21)."
+    ]
+  },
+  "blindLabelCounts": {
+    "semantic-intent": 53,
+    "cosmetic": 49,
+    "schema-additive": 28
+  },
+  "labels": [
+    {
+      "key": "acedatacloud__fluxmcp__acedatacloud-fluxmcp|flux_get_tasks_batch|sha256:cc1f8b6068726aef28219387baedec8762edbc2fc40954c6a87b244dd8f82326|sha256:a91c97e6f8e40110a02fc5c1773960ec08d639845995e72fb8fc66b08b2dd76f",
+      "serverId": "acedatacloud__fluxmcp__acedatacloud-fluxmcp",
+      "toolName": "flux_get_tasks_batch",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "semantic-intent",
+      "reason": "now claims to query video generation tasks, not only image tasks",
+      "unit": 1
+    },
+    {
+      "key": "acedatacloud__fluxmcp__acedatacloud-fluxmcp|flux_get_task|sha256:b7bcbd1d849304a9534ae9a9e10ccf3c4fbdd65b793ea90496710c77b46b5a3d|sha256:b4ec8c6371862a079446f1b60e616a91491f85f6b2ae0daf9111a9780555dc16",
+      "serverId": "acedatacloud__fluxmcp__acedatacloud-fluxmcp",
+      "toolName": "flux_get_task",
+      "descriptionChange": "words",
+      "schemaChange": "non-additive",
+      "label": "semantic-intent",
+      "reason": "now claims to return video results and accept task ids from FLUX video tools",
+      "unit": 2
+    },
+    {
+      "key": "ahujasid__blender-mcp__ahujasid-blender-mcp|download_polyhaven_asset|sha256:58a08f62171c12ddd8c8097d3fd74d1a6d7d891e8a7ff64747ace8fcd1632d78|sha256:d909d6387d4e8a1b3e347c99005ebbd6168879db1892a65d56740dfec55d4b00",
+      "serverId": "ahujasid__blender-mcp__ahujasid-blender-mcp",
+      "toolName": "download_polyhaven_asset",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "semantic-intent",
+      "reason": "models now always imported from .blend with no format argument (gltf/fbx no longer offered); stated behaviour for a previously valid input changed",
+      "unit": 3
+    },
+    {
+      "key": "ahujasid__blender-mcp__ahujasid-blender-mcp|generate_hunyuan3d_model|sha256:608cd4af7a799b8f7faa49f1b5a2ee288f3b16540edf00d00eb62490e6ba4e83|sha256:b56b3f28b27bf29bfbe37ccf7a2730a3a87712e9e2f8d0f33c3ae9cc4fa7ee82",
+      "serverId": "ahujasid__blender-mcp__ahujasid-blender-mcp",
+      "toolName": "generate_hunyuan3d_model",
+      "descriptionChange": "words",
+      "schemaChange": "additive",
+      "label": "semantic-intent",
+      "reason": "adds a Premium generation mode (a different service from the user's own Tencent key) and a quality option for it",
+      "unit": 4
+    },
+    {
+      "key": "ahujasid__blender-mcp__ahujasid-blender-mcp|generate_hyper3d_model_via_images|sha256:78db1a6d9ff5683d27193178842f779943987ba275dd250a88bfe0487e00746e|sha256:5a9aad7eea9437c6c56a738b58ac596c7b0ebc26441f01e3e1b8112f5fc217ea",
+      "serverId": "ahujasid__blender-mcp__ahujasid-blender-mcp",
+      "toolName": "generate_hyper3d_model_via_images",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "semantic-intent",
+      "reason": "adds a Premium mode that changes which flow is used and always counts as a high-quality generation",
+      "unit": 5
+    },
+    {
+      "key": "ahujasid__blender-mcp__ahujasid-blender-mcp|generate_hyper3d_model_via_text|sha256:feb14cf814bb7dd507f33a4d338869b5697b64860baeb3dd61e4b29d97d50264|sha256:601f3611462403c78c15b55198a9b64b16c907d73b6eb648ccaf4d69a518b34a",
+      "serverId": "ahujasid__blender-mcp__ahujasid-blender-mcp",
+      "toolName": "generate_hyper3d_model_via_text",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "semantic-intent",
+      "reason": "adds a Premium mode that changes the flow and always counts as a high-quality generation",
+      "unit": 6
+    },
+    {
+      "key": "ahujasid__blender-mcp__ahujasid-blender-mcp|get_addon_status|sha256:fbf17689b65da3e4a4e90965428324df786ccb5a18b65ca4a25858cd12e21f7e|sha256:8cca5c7fdc8b4de8e28f06683a4af8f6ddf051ee4ab869f5d61bccbd0c183441",
+      "serverId": "ahujasid__blender-mcp__ahujasid-blender-mcp",
+      "toolName": "get_addon_status",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "semantic-intent",
+      "reason": "now claims to report Premium generators and append generation guidance to its reply; install command renamed",
+      "unit": 7
+    },
+    {
+      "key": "ahujasid__blender-mcp__ahujasid-blender-mcp|get_hunyuan3d_status|sha256:9c36988941443203166f56ef7fa72f5c91044e554d064357e511e350f61a7ef9|sha256:2a5d400653a22885f98ea4e35cc1fcda0a3436366454d1ac9341fc2536087c49",
+      "serverId": "ahujasid__blender-mcp__ahujasid-blender-mcp",
+      "toolName": "get_hunyuan3d_status",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "semantic-intent",
+      "reason": "now claims to report Premium mode and the plan's remaining generations, with no API key",
+      "unit": 8,
+      "group": {
+        "id": "42c972f01f4a",
+        "size": 2
+      }
+    },
+    {
+      "key": "ahujasid__blender-mcp__ahujasid-blender-mcp|get_hyper3d_status|sha256:f186a56a28331bab69092881c4ca9057efcfdf27318bbc0da4ab758c3861fa23|sha256:2f2bf05a5a43d5c80cdc740e808a6fc04a009b207223bde3d9c11e929bc75000",
+      "serverId": "ahujasid__blender-mcp__ahujasid-blender-mcp",
+      "toolName": "get_hyper3d_status",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "semantic-intent",
+      "reason": "now claims to report Premium mode and the plan's remaining generations, with no API key",
+      "unit": 8,
+      "group": {
+        "id": "42c972f01f4a",
+        "size": 2
+      }
+    },
+    {
+      "key": "ahujasid__blender-mcp__ahujasid-blender-mcp|get_polyhaven_categories|sha256:acec62ba6df9bc706061cc4cea6f0502776e07d2f4db73a7f17bc873a6ba71b0|sha256:a54e3f69867cccd304a67f5f35d1da81a0cbbdcc6a7bacde56832847a14b2fa1",
+      "serverId": "ahujasid__blender-mcp__ahujasid-blender-mcp",
+      "toolName": "get_polyhaven_categories",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "semantic-intent",
+      "reason": "now claims to return filterable attributes as well as categories, and full trees per type",
+      "unit": 9
+    },
+    {
+      "key": "ahujasid__blender-mcp__ahujasid-blender-mcp|import_generated_asset|sha256:2ad576735b7683330b3b8f0b450aa5dc90106603a26012993e6694206abf7e1e|sha256:cdc5a3028d0427d1aa3937751b0d96193e182c751d3334e77e7f105f3bdbec61",
+      "serverId": "ahujasid__blender-mcp__ahujasid-blender-mcp",
+      "toolName": "import_generated_asset",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "semantic-intent",
+      "reason": "request_id now also claimed for a new Premium mode",
+      "unit": 10
+    },
+    {
+      "key": "ahujasid__blender-mcp__ahujasid-blender-mcp|poll_hunyuan_job_status|sha256:d458803951e60be34a0f932f4ded12863995b9cd8bd1403c0895417c2aa17c2d|sha256:a0187f9b3da25e9bcccc47de5be5893a88e1a80a0c97597922e00d4f914bb53c",
+      "serverId": "ahujasid__blender-mcp__ahujasid-blender-mcp",
+      "toolName": "poll_hunyuan_job_status",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "cosmetic",
+      "reason": "adds only advice to relay an error message and not retry; what it does, reads and talks to is unchanged",
+      "unit": 11
+    },
+    {
+      "key": "ahujasid__blender-mcp__ahujasid-blender-mcp|poll_rodin_job_status|sha256:1088e7b335bb0f644f19e211876cee30e52d145fc107091a221211dae085512b|sha256:7251bcee1be196965c7b90ba20c8cfde6b6a667e3bbc026fc0765408f7de4f9a",
+      "serverId": "ahujasid__blender-mcp__ahujasid-blender-mcp",
+      "toolName": "poll_rodin_job_status",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "semantic-intent",
+      "reason": "adds a Premium mode to the polling it claims to cover",
+      "unit": 12
+    },
+    {
+      "key": "ahujasid__blender-mcp__ahujasid-blender-mcp|record_trajectory_feedback|sha256:60dd778ba9a5102ed83a819200da4493bdf8a887e29590b6891413780a90d454|sha256:6d9558af137e096923735d169a296d33fdfdd2b0153df33562b03fa3063d543c",
+      "serverId": "ahujasid__blender-mcp__ahujasid-blender-mcp",
+      "toolName": "record_trajectory_feedback",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "semantic-intent",
+      "reason": "newly directs the model to call it on its own whenever the user reacts, recording the user's words; in doubt, not cosmetic",
+      "unit": 13
+    },
+    {
+      "key": "ahujasid__blender-mcp__ahujasid-blender-mcp|search_polyhaven_assets|sha256:1260ffd2ef58f99c1f020a2a52bdf86a084a39162262ff926360d400f348ab8e|sha256:077d7ddb9db0277719d7a747a014e83e7cde1192d38d3c47841633c85184a782",
+      "serverId": "ahujasid__blender-mcp__ahujasid-blender-mcp",
+      "toolName": "search_polyhaven_assets",
+      "descriptionChange": "words",
+      "schemaChange": "non-additive",
+      "label": "semantic-intent",
+      "reason": "removes the categories parameter, adds query/attribute/size filters and ranked results: what the search claims to do changed",
+      "unit": 14
+    },
+    {
+      "key": "ahujasid__blender-mcp__ahujasid-blender-mcp|set_texture|sha256:270de2981806b63432ffff149bc657389fcf44522227deef19511f85d908973d|sha256:c060ae0c31ed1933a334b697ae8ea65acafa8c4b5688b5982defd218d72ef8db",
+      "serverId": "ahujasid__blender-mcp__ahujasid-blender-mcp",
+      "toolName": "set_texture",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "semantic-intent",
+      "reason": "now discloses it replaces every existing material slot irreversibly: a claimed effect not stated before",
+      "unit": 15
+    },
+    {
+      "key": "ariekogan__ateam-mcp__ariekogan-ateam-mcp|ateam_auth|sha256:314b9336705c95bc497f0cf86e5797528a9672a3e56dee4baf2f8fdf0be2cca1|sha256:94677a7108c38f74047be93fde42fca5f8b0c9233df1f37a34bb3d949789b3ee",
+      "serverId": "ariekogan__ateam-mcp__ariekogan-ateam-mcp",
+      "toolName": "ateam_auth",
+      "descriptionChange": "words",
+      "schemaChange": "non-additive",
+      "label": "semantic-intent",
+      "reason": "rewritten sign-in model: environment chosen by key prefix, env var no longer signs in, agent told not to ask for the key",
+      "unit": 16
+    },
+    {
+      "key": "ariekogan__ateam-mcp__ariekogan-ateam-mcp|ateam_build_and_run|sha256:48189ca79f091e658317aee32fff0e32e9a2cfc0e138a86e17ec49799efd3cd8|sha256:d3355d1cd258997bf0fa8434a52e9862c7c55094d7d29dc2158781daa876d1fa",
+      "serverId": "ariekogan__ateam-mcp__ariekogan-ateam-mcp",
+      "toolName": "ateam_build_and_run",
+      "descriptionChange": "words",
+      "schemaChange": "additive",
+      "label": "semantic-intent",
+      "reason": "now claims to create a GitHub repo on first deploy, deploy inline parts as sent, refuse on unpushed changes, and resume runs",
+      "unit": 17
+    },
+    {
+      "key": "ariekogan__ateam-mcp__ariekogan-ateam-mcp|ateam_conversation|sha256:1ab70291c679c45ac609aeafbe094692bc810b70375df4c919495e20ac2c7057|sha256:cdbd1ce4d0b4207df944843a0bd594b26c48b0ea1c9a5b903d14aeb9968e0353",
+      "serverId": "ariekogan__ateam-mcp__ariekogan-ateam-mcp",
+      "toolName": "ateam_conversation",
+      "descriptionChange": "words",
+      "schemaChange": "non-additive",
+      "label": "semantic-intent",
+      "reason": "tests now run as the person who owns the API key, with their memory and data; adds file attachments",
+      "unit": 18
+    },
+    {
+      "key": "ariekogan__ateam-mcp__ariekogan-ateam-mcp|ateam_create_plugin|sha256:3dddcc1c13b8701774f4591fb75ff3c70340f743bb4a7b60779889d717e5fc15|sha256:c382d3dbc60acf00b39cb1a17304cb5f7fda06ecc2f70baf6ba4041efd86eb90",
+      "serverId": "ariekogan__ateam-mcp__ariekogan-ateam-mcp",
+      "toolName": "ateam_create_plugin",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "cosmetic",
+      "reason": "scaffold's own action is unchanged; the edit describes how deploys discover plugins",
+      "unit": 19
+    },
+    {
+      "key": "ariekogan__ateam-mcp__ariekogan-ateam-mcp|ateam_delete_skill|sha256:7e65d554ebbf0ffd46275b0fc9770b82ba4a073f8c2e8bcf8fb87d1867cb469b|sha256:f514b6c5329d846af754323fc28f578693d7f85f946d7ad920675de2e1acba79",
+      "serverId": "ariekogan__ateam-mcp__ariekogan-ateam-mcp",
+      "toolName": "ateam_delete_skill",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "semantic-intent",
+      "reason": "now also deletes the skill's source from the repo on both dev and main",
+      "unit": 20
+    },
+    {
+      "key": "ariekogan__ateam-mcp__ariekogan-ateam-mcp|ateam_delete_solution|sha256:72fd0110ddbdeeca296cc70ae0c0e711b7737cc0fa7660a58c1746fee306f2dd|sha256:efbf997ab96d45d43eae12c90b136e5cff47ae5ff76637db81c2a9c63ef34f79",
+      "serverId": "ariekogan__ateam-mcp__ariekogan-ateam-mcp",
+      "toolName": "ateam_delete_solution",
+      "descriptionChange": "words",
+      "schemaChange": "non-additive",
+      "label": "semantic-intent",
+      "reason": "now claims to wipe conversations, memory and stored actor data and voice config, which it did not claim before",
+      "unit": 21
+    },
+    {
+      "key": "ariekogan__ateam-mcp__ariekogan-ateam-mcp|ateam_get_execution_logs|sha256:888ea1dae7c84d03bd7fa43872eba5cb17a0bbc089b217d01398cc28ea63d6a5|sha256:580d81a7b703bd2ea56fb804595d55e1af3a6389348944359e37d38a707c08fe",
+      "serverId": "ariekogan__ateam-mcp__ariekogan-ateam-mcp",
+      "toolName": "ateam_get_execution_logs",
+      "descriptionChange": "none",
+      "schemaChange": "non-additive",
+      "label": "cosmetic",
+      "reason": "only the actor_id hint changed (pass ran_as); the tool reads the same logs",
+      "unit": 22
+    },
+    {
+      "key": "ariekogan__ateam-mcp__ariekogan-ateam-mcp|ateam_get_spec|sha256:d9caba19077420f8cc45999ed12d7465e773dae480ce483185a1a781e61c494c|sha256:0d4ee1378da2bf864f5487c944e1b371a8b19b770e82b6893c99675962d1e699",
+      "serverId": "ariekogan__ateam-mcp__ariekogan-ateam-mcp",
+      "toolName": "ateam_get_spec",
+      "descriptionChange": "words",
+      "schemaChange": "non-additive",
+      "label": "schema-additive",
+      "reason": "topic enum widened with five new doc topics; added text only notes no sign-in and a served_by field",
+      "unit": 23
+    },
+    {
+      "key": "ariekogan__ateam-mcp__ariekogan-ateam-mcp|ateam_github_list_versions|sha256:830c10cbd76db97edb8c0fdc601de6e61a1f587529f34a2fa0fc8ad8f60b79fd|sha256:266296f536ce4f02ecb982dc4452f5ffea3a4562474be218686d90d8890d67f1",
+      "serverId": "ariekogan__ateam-mcp__ariekogan-ateam-mcp",
+      "toolName": "ateam_github_list_versions",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "cosmetic",
+      "reason": "same listing; the tags it lists are renamed safe-* to prod-*",
+      "unit": 24
+    },
+    {
+      "key": "ariekogan__ateam-mcp__ariekogan-ateam-mcp|ateam_github_log|sha256:38766ffd1d36b50c26ff1ef77c30504be0d16423611ca5d5390aafb760be1974|sha256:bb597f410b8e9bdfb1dec6c79ac0e7db90ab3d680f617d42f6133e6933d6d27f",
+      "serverId": "ariekogan__ateam-mcp__ariekogan-ateam-mcp",
+      "toolName": "ateam_github_log",
+      "descriptionChange": "words",
+      "schemaChange": "non-additive",
+      "label": "semantic-intent",
+      "reason": "default branch read changes from main (prod) to dev, so a call with no ref now reads different data",
+      "unit": 25
+    },
+    {
+      "key": "ariekogan__ateam-mcp__ariekogan-ateam-mcp|ateam_github_patch|sha256:cb496ffd8160e0bab4d58be35144d770f735aa786e4995fc551838c5c31b4325|sha256:a0ac9d1958ce29929807c6c6cb5ec35215c3b7f8ef0cf4120f2561774d139340",
+      "serverId": "ariekogan__ateam-mcp__ariekogan-ateam-mcp",
+      "toolName": "ateam_github_patch",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "cosmetic",
+      "reason": "added text describes other tools' behaviour after a hotfix; this tool's edit, commit and branch default are unchanged",
+      "unit": 26
+    },
+    {
+      "key": "ariekogan__ateam-mcp__ariekogan-ateam-mcp|ateam_github_promote|sha256:d108de344afa48187247fd67bb618c07f3c49b644cbff42a81ccd7291d09ea35|sha256:e79f6e9523863eb984349c209a19ae679b11b3996ac64092c7aaecadbcfac668",
+      "serverId": "ariekogan__ateam-mcp__ariekogan-ateam-mcp",
+      "toolName": "ateam_github_promote",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "cosmetic",
+      "reason": "same merge and tag; only the tag prefix is renamed safe to prod",
+      "unit": 27
+    },
+    {
+      "key": "ariekogan__ateam-mcp__ariekogan-ateam-mcp|ateam_github_pull|sha256:ae6a84d0740d0140a7b561c292ff923a93c7f77007ac9c393912d5949cc09906|sha256:9e6fa7effcb266f607c97c24f05a53d872630fd674ffc99116e7611794d5a9a5",
+      "serverId": "ariekogan__ateam-mcp__ariekogan-ateam-mcp",
+      "toolName": "ateam_github_pull",
+      "descriptionChange": "words",
+      "schemaChange": "additive",
+      "label": "semantic-intent",
+      "reason": "now refuses on unpushed Builder changes and states it replaces the Builder's copy with dev's; old calls can now be refused",
+      "unit": 28
+    },
+    {
+      "key": "ariekogan__ateam-mcp__ariekogan-ateam-mcp|ateam_github_read|sha256:c1f4794ba316406d61474f3f6bd10ebb08071848767aa92c922fc642196f8ab2|sha256:5b7f7fb6ccb797e6328358b3301c82938914efd1c8f25a62c615c87cd1e2385d",
+      "serverId": "ariekogan__ateam-mcp__ariekogan-ateam-mcp",
+      "toolName": "ateam_github_read",
+      "descriptionChange": "words",
+      "schemaChange": "non-additive",
+      "label": "semantic-intent",
+      "reason": "default branch read changes from main to dev, and it may create a dev branch if none exists",
+      "unit": 29
+    },
+    {
+      "key": "ariekogan__ateam-mcp__ariekogan-ateam-mcp|ateam_github_rollback|sha256:4579584d7df4a2f696649de2be916449d6bc0bbd9e79a0f43a36ad275f6b16d8|sha256:6865de44075ebb1e809650652797f8865c3d3dd6bc79f471ad22dccdb46aff9f",
+      "serverId": "ariekogan__ateam-mcp__ariekogan-ateam-mcp",
+      "toolName": "ateam_github_rollback",
+      "descriptionChange": "words",
+      "schemaChange": "non-additive",
+      "label": "cosmetic",
+      "reason": "same rollback; tag names and the suggested follow-up step changed",
+      "unit": 30
+    },
+    {
+      "key": "ariekogan__ateam-mcp__ariekogan-ateam-mcp|ateam_patch|sha256:d39ed81948d0925591618baaf75cbc2734a457a98818e4dbaeba89f4279894e3|sha256:d326fd69a4d975cfc33e7bd637909c6602f0c5e06b226a0e5142afae00f1b485",
+      "serverId": "ariekogan__ateam-mcp__ariekogan-ateam-mcp",
+      "toolName": "ateam_patch",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "cosmetic",
+      "reason": "redeploy was already claimed in the first line; the edit corrects what another tool checks",
+      "unit": 31
+    },
+    {
+      "key": "ariekogan__ateam-mcp__ariekogan-ateam-mcp|ateam_spec_search|sha256:7961151da4d1dbf3686917a2f791483ece5902f91a07218e53c45558dceb3fea|sha256:efdc0b13b517ea8050030b974ddecc5b97d16d59a242a78b8392adae3499531b",
+      "serverId": "ariekogan__ateam-mcp__ariekogan-ateam-mcp",
+      "toolName": "ateam_spec_search",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "cosmetic",
+      "reason": "adds that it needs no sign-in and reports which environment answered; still a read-only doc search",
+      "unit": 32
+    },
+    {
+      "key": "ariekogan__ateam-mcp__ariekogan-ateam-mcp|ateam_test_notification|sha256:0af196ac029b87fe2b5e01ab74167e48768dc7870eefa2dd4b7a297d6a1006f2|sha256:2d26acd175f0ee987fde78e88766656fad012988636f2184917df44e4142bdad",
+      "serverId": "ariekogan__ateam-mcp__ariekogan-ateam-mcp",
+      "toolName": "ateam_test_notification",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "cosmetic",
+      "reason": "only the comparison with two other tools was reworded; the notification path is unchanged",
+      "unit": 33
+    },
+    {
+      "key": "ariekogan__ateam-mcp__ariekogan-ateam-mcp|ateam_test_skill|sha256:44b43659dfff91eed5e233ed92cb4bcc809644449f3b37dee6d8d659a90742b1|sha256:0f3ffe94f87a6905f12b9a6090d94e0f06634d307df293af55f4a448b8e15765",
+      "serverId": "ariekogan__ateam-mcp__ariekogan-ateam-mcp",
+      "toolName": "ateam_test_skill",
+      "descriptionChange": "words",
+      "schemaChange": "non-additive",
+      "label": "semantic-intent",
+      "reason": "tests now run as the person who owns the API key, with their memory and data; adds attachments",
+      "unit": 34
+    },
+    {
+      "key": "ariekogan__ateam-mcp__ariekogan-ateam-mcp|ateam_test_voice|sha256:71c5ec843ddb329ae3d7612070377786087d8ce9ee6f221b78becadefd72788c|sha256:0269ec65dda1072f385bd2dd4d7525bc924a2d67de9489e7d2929b415a8ab88d",
+      "serverId": "ariekogan__ateam-mcp__ariekogan-ateam-mcp",
+      "toolName": "ateam_test_voice",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "semantic-intent",
+      "reason": "voice tests now run as the person who owns the API key; identity claim changed",
+      "unit": 35
+    },
+    {
+      "key": "ariekogan__ateam-mcp__ariekogan-ateam-mcp|ateam_upload_connector|sha256:3b8e09725cef460ef7cb7c76753f6f113c464288f5ef062e8d1e17617da20543|sha256:fec3acb09735781416ce485db3afda8fc59de392716367aa2b1a01f85ed0bbb6",
+      "serverId": "ariekogan__ateam-mcp__ariekogan-ateam-mcp",
+      "toolName": "ateam_upload_connector",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "semantic-intent",
+      "reason": "merge now also lays over files Core already runs, so deployed-only files survive: a changed claimed effect",
+      "unit": 36
+    },
+    {
+      "key": "ariekogan__ateam-mcp__ariekogan-ateam-mcp|ateam_verify_consistency|sha256:1e549c431f92ee2df207a91764629ea5b18c1abc7eb25e95ae4186501db4d94b|sha256:f0e859cd9c6080cc772bd08265e7c3df7ac1e41c07606aa5fa46b7a72057f985",
+      "serverId": "ariekogan__ateam-mcp__ariekogan-ateam-mcp",
+      "toolName": "ateam_verify_consistency",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "cosmetic",
+      "reason": "same read-only probe; return field renamed ok->consistent and more drift kinds listed",
+      "unit": 37
+    },
+    {
+      "key": "ariekogan__ateam-mcp__ariekogan-ateam-mcp|ateam_verify|sha256:433d8dd996bcb1c510cb067a11b46c227f4ae1920d39d3c97a2a8a5c6c26f84e|sha256:137e424ed3c0b6444ef21212432501c0b3df21d9fa9986385c74f91752ddc9fc",
+      "serverId": "ariekogan__ateam-mcp__ariekogan-ateam-mcp",
+      "toolName": "ateam_verify",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "cosmetic",
+      "reason": "adds only how to read an error field; the probe and what it checks are unchanged",
+      "unit": 38
+    },
+    {
+      "key": "browserless__browserless-mcp__browserless-browserless-mcp|browserless_agent|sha256:6a3c0a77ed94c95f654ef0a62aca42498ad930854a88989399875e347f46dab5|sha256:ff23cfb71fe636abb87bc9f9a6643f54f13dd226b144053e8ee01f2715998583",
+      "serverId": "browserless__browserless-mcp__browserless-browserless-mcp",
+      "toolName": "browserless_agent",
+      "descriptionChange": "words",
+      "schemaChange": "non-additive",
+      "label": "semantic-intent",
+      "reason": "sessions become one-shot by default, adds OS/device emulation, a datacenter proxy tier, outcome reporting and upload path limits",
+      "unit": 39
+    },
+    {
+      "key": "browserless__browserless-mcp__browserless-browserless-mcp|browserless_crawl|sha256:5087888ac35c2e2fe77aba8aa893fd258b705cbc646cc4e7b25ef91e4cd514a3|sha256:9dbe79104073e9670e536e2421e0b79f02e2bf8eb8ca911b7a6ed605a259d04e",
+      "serverId": "browserless__browserless-mcp__browserless-browserless-mcp",
+      "toolName": "browserless_crawl",
+      "descriptionChange": "none",
+      "schemaChange": "non-additive",
+      "label": "schema-additive",
+      "reason": "headers object loosened to accept string values; nothing removed or required, description unchanged",
+      "unit": 40
+    },
+    {
+      "key": "browserless__browserless-mcp__browserless-browserless-mcp|browserless_function|sha256:22fd7ba11f55798afa642609b63bd2851de57d6cb974b1c6a71241c01662dc9a|sha256:559117bb659df66d94f3d4910bcbab63eea3b67c8ddec93cb27e86ee3bb7e22d",
+      "serverId": "browserless__browserless-mcp__browserless-browserless-mcp",
+      "toolName": "browserless_function",
+      "descriptionChange": "none",
+      "schemaChange": "non-additive",
+      "label": "schema-additive",
+      "reason": "context object loosened to accept any values; nothing removed or required, description unchanged",
+      "unit": 41
+    },
+    {
+      "key": "browserless__browserless-mcp__browserless-browserless-mcp|browserless_smartscraper|sha256:011d3ac32e88ce8a9f821ea10fa5afaa59181362a48886cafc20e139e299e862|sha256:6afde954da86cf3bd6a786281eade377f0693cac867dfc30ba4f919129dcadcf",
+      "serverId": "browserless__browserless-mcp__browserless-browserless-mcp",
+      "toolName": "browserless_smartscraper",
+      "descriptionChange": "none",
+      "schemaChange": "non-additive",
+      "label": "schema-additive",
+      "reason": "headers object loosened to accept string values; nothing removed or required, description unchanged",
+      "unit": 42
+    },
+    {
+      "key": "custodia-admin__pagebolt-mcp__custodia-admin-pagebolt-mcp|create_session|sha256:0dc5eccfa85a2d1ca3ff6208e97d966beea5f5d982e8c3424996235406d44c05|sha256:9e5b1872e6908cfc8ba6ef0678000f9487caf97698bcc9747a8d4931c755e254",
+      "serverId": "custodia-admin__pagebolt-mcp__custodia-admin-pagebolt-mcp",
+      "toolName": "create_session",
+      "descriptionChange": "none",
+      "schemaChange": "non-additive",
+      "label": "schema-additive",
+      "reason": "cookie objects gain optional fields (path, secure, sameSite...); nothing removed or required",
+      "unit": 43
+    },
+    {
+      "key": "custodia-admin__pagebolt-mcp__custodia-admin-pagebolt-mcp|inspect_page|sha256:b39884504e49bfbcab36e642fbad8d35b17623341d847b80d9fcdf8a7edc76cc|sha256:ca6a3b9ff3c3c8eb215e808656b13e55ea8fc4dfa683da4e68c3f083492acf8a",
+      "serverId": "custodia-admin__pagebolt-mcp__custodia-admin-pagebolt-mcp",
+      "toolName": "inspect_page",
+      "descriptionChange": "none",
+      "schemaChange": "non-additive",
+      "label": "schema-additive",
+      "reason": "cookie objects gain optional fields; nothing removed or required, description unchanged",
+      "unit": 44,
+      "group": {
+        "id": "933184b17b23",
+        "size": 4
+      }
+    },
+    {
+      "key": "custodia-admin__pagebolt-mcp__custodia-admin-pagebolt-mcp|observe_page|sha256:9df9da3100c1f9071440ffc15901098a4b55b36f3810f303de6fd42646afddfd|sha256:b0c61dd63fd6d3233924aec1a6d133b4734502f3921c769ce5c8aa51dcba02e1",
+      "serverId": "custodia-admin__pagebolt-mcp__custodia-admin-pagebolt-mcp",
+      "toolName": "observe_page",
+      "descriptionChange": "none",
+      "schemaChange": "non-additive",
+      "label": "schema-additive",
+      "reason": "cookie objects gain optional fields; nothing removed or required, description unchanged",
+      "unit": 44,
+      "group": {
+        "id": "933184b17b23",
+        "size": 4
+      }
+    },
+    {
+      "key": "custodia-admin__pagebolt-mcp__custodia-admin-pagebolt-mcp|record_video|sha256:e8878c55064156afbbc0ced1b3befff56e75efd34d4a0c4b046ec8e3fcd15425|sha256:fa743b15d5f0666fc60af0a883732bec148540d896883e934705393951bdfd32",
+      "serverId": "custodia-admin__pagebolt-mcp__custodia-admin-pagebolt-mcp",
+      "toolName": "record_video",
+      "descriptionChange": "none",
+      "schemaChange": "non-additive",
+      "label": "schema-additive",
+      "reason": "optional cookies/authState, a new highlight action and pacing option; nothing removed or required, description unchanged",
+      "unit": 45
+    },
+    {
+      "key": "custodia-admin__pagebolt-mcp__custodia-admin-pagebolt-mcp|run_sequence|sha256:1044859f5cb4f398a9946f33ff60f71681c7b6b7f7c5a45d7d9db2cdfd887fbb|sha256:53230b9900344912556f576b49db72cf62377df4e8ef7a0236975c2864e433ea",
+      "serverId": "custodia-admin__pagebolt-mcp__custodia-admin-pagebolt-mcp",
+      "toolName": "run_sequence",
+      "descriptionChange": "none",
+      "schemaChange": "non-additive",
+      "label": "schema-additive",
+      "reason": "optional cookies/authState and a higher step cap; nothing removed or required, description unchanged",
+      "unit": 46
+    },
+    {
+      "key": "custodia-admin__pagebolt-mcp__custodia-admin-pagebolt-mcp|take_screenshot|sha256:0872f98e3ecef43bf445bd09af87860fecfa22b113ac2bf879eded1972b855a9|sha256:65997e444f2b13aad419c0e7623b082e15ba60df374a45db468c7ef8633534c0",
+      "serverId": "custodia-admin__pagebolt-mcp__custodia-admin-pagebolt-mcp",
+      "toolName": "take_screenshot",
+      "descriptionChange": "none",
+      "schemaChange": "non-additive",
+      "label": "schema-additive",
+      "reason": "cookie objects gain optional fields; nothing removed or required, description unchanged",
+      "unit": 44,
+      "group": {
+        "id": "933184b17b23",
+        "size": 4
+      }
+    },
+    {
+      "key": "custodia-admin__pagebolt-mcp__custodia-admin-pagebolt-mcp|visual_diff|sha256:439962a4f6f7c39e46a8c3e3970a1418d2217f858d2154a600c11b9977a2403c|sha256:f0da9b070fca95821de09461c5b3a4de580a06da17767645b7c65db588be4290",
+      "serverId": "custodia-admin__pagebolt-mcp__custodia-admin-pagebolt-mcp",
+      "toolName": "visual_diff",
+      "descriptionChange": "none",
+      "schemaChange": "non-additive",
+      "label": "schema-additive",
+      "reason": "cookie objects gain optional fields; nothing removed or required, description unchanged",
+      "unit": 44,
+      "group": {
+        "id": "933184b17b23",
+        "size": 4
+      }
+    },
+    {
+      "key": "dealfluence__adeu__ai-adeu-adeu|accept_all_changes|sha256:35a0697d52740b86ba30abceaf7de8e8b8142f57a4f9e05934514ea8503e99c6|sha256:0dce35429581c78914998717ed9f09257289e2a608271355c82e8b5a30810c07",
+      "serverId": "dealfluence__adeu__ai-adeu-adeu",
+      "toolName": "accept_all_changes",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "cosmetic",
+      "reason": "only the version string in the description changed",
+      "unit": 47,
+      "group": {
+        "id": "a7525bf1426d",
+        "size": 6
+      }
+    },
+    {
+      "key": "dealfluence__adeu__ai-adeu-adeu|apply_text_revision|sha256:af37860523fce19530ed786fe75f1649ebcc30e5b095a2c8f3104f969e1a1829|sha256:4f108f5349360f1977af8f2804955ab450ff97f3a977478b546f188ecb766f55",
+      "serverId": "dealfluence__adeu__ai-adeu-adeu",
+      "toolName": "apply_text_revision",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "cosmetic",
+      "reason": "only the version string in the description changed",
+      "unit": 47,
+      "group": {
+        "id": "a7525bf1426d",
+        "size": 6
+      }
+    },
+    {
+      "key": "dealfluence__adeu__ai-adeu-adeu|diff_docx_files|sha256:e0308cfde1c1d0323abb7c554822ca687e047e1238793de2eb7d3264dd74646d|sha256:ad5f3c3bc0a1b9397c5f224d63cb5a6095b171dfce7b278998b0865b3f2ebcd8",
+      "serverId": "dealfluence__adeu__ai-adeu-adeu",
+      "toolName": "diff_docx_files",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "cosmetic",
+      "reason": "only the version string in the description changed",
+      "unit": 47,
+      "group": {
+        "id": "a7525bf1426d",
+        "size": 6
+      }
+    },
+    {
+      "key": "dealfluence__adeu__ai-adeu-adeu|finalize_document|sha256:f12f262292d9da40b2bd0a19acae6a782129abd37319ddc7f8a12b4044c6e930|sha256:f5093adae84aa36233c1b4b27d37977463ad734f5b20b60236a1861b5f9171f1",
+      "serverId": "dealfluence__adeu__ai-adeu-adeu",
+      "toolName": "finalize_document",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "cosmetic",
+      "reason": "only the version string in the description changed",
+      "unit": 47,
+      "group": {
+        "id": "a7525bf1426d",
+        "size": 6
+      }
+    },
+    {
+      "key": "dealfluence__adeu__ai-adeu-adeu|process_document_batch|sha256:c08349096b790de531a9cbfdffe943f94f542e11e9c7b983370a8842ad43bc03|sha256:081762745528c8c6e43c75a1ccf68f5d85cf641c14606e42c4905f38db271528",
+      "serverId": "dealfluence__adeu__ai-adeu-adeu",
+      "toolName": "process_document_batch",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "cosmetic",
+      "reason": "only the version string in the description changed",
+      "unit": 47,
+      "group": {
+        "id": "a7525bf1426d",
+        "size": 6
+      }
+    },
+    {
+      "key": "dealfluence__adeu__ai-adeu-adeu|read_docx|sha256:c2109d7e882fc6b6cb38f69d5eab692db02ef33a5ac4251424fb8bfbeb54a28f|sha256:37b52167116a586c949fe348654079a28fb37d29a5312fe0782e15d67d3b17f1",
+      "serverId": "dealfluence__adeu__ai-adeu-adeu",
+      "toolName": "read_docx",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "cosmetic",
+      "reason": "only the version string in the description changed",
+      "unit": 47,
+      "group": {
+        "id": "a7525bf1426d",
+        "size": 6
+      }
+    },
+    {
+      "key": "elfa-ai__mcp__ai-elfa-mcp|account_stats|sha256:b1e3585af9d78271aa7d8091e33a29cb733e01e38b509de65cd14381e1280222|sha256:954b73bee75791ebb12d2172500740e00308289f37ef9daccec7e16533b91caf",
+      "serverId": "elfa-ai__mcp__ai-elfa-mcp",
+      "toolName": "account_stats",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "cosmetic",
+      "reason": "adds a deprecation date and a note that it returns raw metrics; what it does and reads is unchanged today",
+      "unit": 48
+    },
+    {
+      "key": "elfa-ai__mcp__ai-elfa-mcp|auto_query_write|sha256:554b626db7e304f9d57dacd4c8ed4fc425d693c8bfec62438fcffb4316c9c8bc|sha256:bf1037dc825438f340dd5ae55c78ea8c2292913e96d71a6e58758191f8e977cc",
+      "serverId": "elfa-ai__mcp__ai-elfa-mcp",
+      "toolName": "auto_query_write",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "semantic-intent",
+      "reason": "drops the statement that non-notification actions need request signing: a stated access condition removed",
+      "unit": 49
+    },
+    {
+      "key": "elfa-ai__mcp__ai-elfa-mcp|auto_validate|sha256:01ace6672a6554b3707877d817f479f54042875f55c4b1d6c373d4d198dbe289|sha256:0810093cdc93c5ea76d8dc78276254f82ac4c69b5ce21a151026d5a4698be996",
+      "serverId": "elfa-ai__mcp__ai-elfa-mcp",
+      "toolName": "auto_validate",
+      "descriptionChange": "none",
+      "schemaChange": "non-additive",
+      "label": "semantic-intent",
+      "reason": "enum narrowed: the pacifica venue is no longer accepted, so a previously valid input is refused",
+      "unit": 50
+    },
+    {
+      "key": "elfa-ai__mcp__ai-elfa-mcp|mentions|sha256:668f0576785778a14daf4b5ca0c8af82edf98dfa5d66334f2dd38136513c2a4d|sha256:0a00f0142b5bfe988385ad171e95aa283b4510ee3f7753467c6610c2278ed8aa",
+      "serverId": "elfa-ai__mcp__ai-elfa-mcp",
+      "toolName": "mentions",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "semantic-intent",
+      "reason": "now states the news feed is X posts from news-tagged accounts, not articles: a narrower claimed data source",
+      "unit": 51
+    },
+    {
+      "key": "entire-vc__evc-spark-mcp__entire-vc-evc-spark-mcp|get_asset_content|sha256:89b535e80d0fc60fbdb3e04311d3d077edab71a124af869fa4bb450c59dce6cb|sha256:ab78dea1c1837fc92fa041c27fd8c6f8b524f79737e755f39f501a1845e7b371",
+      "serverId": "entire-vc__evc-spark-mcp__entire-vc-evc-spark-mcp",
+      "toolName": "get_asset_content",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "semantic-intent",
+      "reason": "now claims the read counts as an acquisition and returns an id to report outcomes with",
+      "unit": 52
+    },
+    {
+      "key": "entire-vc__evc-spark-mcp__entire-vc-evc-spark-mcp|get_asset|sha256:2f39e1cd1513ff85b087b13140eb1973e112e22852d28ddd9d6a1f7957f220b8|sha256:6d40b5dcc8441a509aaadb02fbd172a1e9bf2be3f030a8c16880ceb8f696152a",
+      "serverId": "entire-vc__evc-spark-mcp__entire-vc-evc-spark-mcp",
+      "toolName": "get_asset",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "semantic-intent",
+      "reason": "returned data changes: content dropped, outcome reports added",
+      "unit": 53
+    },
+    {
+      "key": "ergoveritas1-alt__certscore.ai__ai-certscore-mcp|certscore_get_scan_bundle|sha256:3bec7944d223235b3edb1a947d008728396b0b47fb39d5f65864b8cbed6e4649|sha256:453c68533cc3975547a7d98c45ca0d3ac4dda17046401fa33cc9f99b627b095e",
+      "serverId": "ergoveritas1-alt__certscore.ai__ai-certscore-mcp",
+      "toolName": "certscore_get_scan_bundle",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "semantic-intent",
+      "reason": "now claims to return new evidence sections (retained requests, privacy-choice controls); in doubt, not cosmetic",
+      "unit": 54
+    },
+    {
+      "key": "ergoveritas1-alt__certscore.ai__ai-certscore-mcp|certscore_scan_site|sha256:1b3b4f704e2e1bf50ad05376b4e7b0faede190d66b2d54dbcf45fe6261029446|sha256:db74182f07257fa71daf1abaa3d3a3b8ff1e00e09f7b0e8c025b56a1c231e0ef",
+      "serverId": "ergoveritas1-alt__certscore.ai__ai-certscore-mcp",
+      "toolName": "certscore_scan_site",
+      "descriptionChange": "none",
+      "schemaChange": "non-additive",
+      "label": "schema-additive",
+      "reason": "questionSummary max length widened 300 -> 8192; nothing removed or required, description unchanged",
+      "unit": 55
+    },
+    {
+      "key": "firecrawl__firecrawl-mcp-server__firecrawl-firecrawl-mcp-server|firecrawl_agent_status|sha256:9bd2fb95e587449c07d61e565da3e3f1d3ab734d07d1f4fe1d7d7ed6cd493e93|sha256:61803ef0a303a9704a883c9adac2fa31f8d873cc74f1f1ac82b18a407ea117fd",
+      "serverId": "firecrawl__firecrawl-mcp-server__firecrawl-firecrawl-mcp-server",
+      "toolName": "firecrawl_agent_status",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "cosmetic",
+      "reason": "only the stated typical run time changed",
+      "unit": 56
+    },
+    {
+      "key": "firecrawl__firecrawl-mcp-server__firecrawl-firecrawl-mcp-server|firecrawl_agent|sha256:fe2ccad1d747689195f99103d01b2b0c9ed95de59782218d46692a5b78a20571|sha256:133237ed0caba530e01b2b0f3bfe9c4d8da319e8fcf7f8bc70444de017a68e65",
+      "serverId": "firecrawl__firecrawl-mcp-server__firecrawl-firecrawl-mcp-server",
+      "toolName": "firecrawl_agent",
+      "descriptionChange": "words",
+      "schemaChange": "additive",
+      "label": "semantic-intent",
+      "reason": "rewritten: Alexandria data providers, terms acceptance flow, credit caps and threads",
+      "unit": 57
+    },
+    {
+      "key": "firecrawl__firecrawl-mcp-server__firecrawl-firecrawl-mcp-server|firecrawl_developer_search|sha256:2258e3d8f6ca83762244aaf8155eda1c6227fe6e4ce1cab6a946e6fe4ef56881|sha256:b436c0df097cf33b5e35e5de86352b87d0a941b3004a5f2c2507fa3d5049ab13",
+      "serverId": "firecrawl__firecrawl-mcp-server__firecrawl-firecrawl-mcp-server",
+      "toolName": "firecrawl_developer_search",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "semantic-intent",
+      "reason": "index now claims to cover public repositories and code docs; skills-only filter dropped",
+      "unit": 58
+    },
+    {
+      "key": "firecrawl__firecrawl-mcp-server__firecrawl-firecrawl-mcp-server|firecrawl_feedback|sha256:1d8905df7ec9156b939946e19b9835cbd33fe4d0dbf3907169d3227b0b52bd47|sha256:f0f6580e8c2141c617081d5ef3850e0a8d8ac7eb9f3d768662ee846bb4346467",
+      "serverId": "firecrawl__firecrawl-mcp-server__firecrawl-firecrawl-mcp-server",
+      "toolName": "firecrawl_feedback",
+      "descriptionChange": "words",
+      "schemaChange": "additive",
+      "label": "semantic-intent",
+      "reason": "adds an Alexandria feedback mode that sends the user's underlying objective to Firecrawl",
+      "unit": 59
+    },
+    {
+      "key": "firecrawl__firecrawl-mcp-server__firecrawl-firecrawl-mcp-server|firecrawl_map|sha256:272c7b1c59cacbb2440cd4ad2634f4e29ee53f9f2c8e9d2ae4c14ccaded5526a|sha256:6b2992a1f8f030917f412803ac3f39533eb51827f9976189a2fcf3b7eaf07cf0",
+      "serverId": "firecrawl__firecrawl-mcp-server__firecrawl-firecrawl-mcp-server",
+      "toolName": "firecrawl_map",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "cosmetic",
+      "reason": "notes only that responses can carry a feedback id",
+      "unit": 60
+    },
+    {
+      "key": "firecrawl__firecrawl-mcp-server__firecrawl-firecrawl-mcp-server|firecrawl_parse|sha256:2f9de850bbf90c9ca0005107d7cfe996793416b234b754813f5fa785358f525d|sha256:bd240723a6f11c87d120ef332653833617479d076b52355215624fa3dca62e84",
+      "serverId": "firecrawl__firecrawl-mcp-server__firecrawl-firecrawl-mcp-server",
+      "toolName": "firecrawl_parse",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "cosmetic",
+      "reason": "notes only that responses can carry a feedback id",
+      "unit": 61
+    },
+    {
+      "key": "firecrawl__firecrawl-mcp-server__firecrawl-firecrawl-mcp-server|firecrawl_scrape|sha256:cb3011dea3dc6a810f9bed4f6e5761cbf3e50c1595a1e15ef055d00330634392|sha256:e0acdac42aea5d089b2fd958d71e9e3629f2fb5fb9bc8edd524b1b7fe87524c9",
+      "serverId": "firecrawl__firecrawl-mcp-server__firecrawl-firecrawl-mcp-server",
+      "toolName": "firecrawl_scrape",
+      "descriptionChange": "words",
+      "schemaChange": "additive",
+      "label": "semantic-intent",
+      "reason": "adds an Alexandria mode that executes catalogued capabilities instead of scraping a url",
+      "unit": 62
+    },
+    {
+      "key": "firecrawl__firecrawl-mcp-server__firecrawl-firecrawl-mcp-server|firecrawl_search|sha256:5aadb31f3a7e73a79016280e32f0b11d3e03d9380b6aa0f3a6abdd0d29bc7ea0|sha256:28b51626d6303e81557c91db96b7707a3293b9e9812cc5d0c2a75d31f60a89e6",
+      "serverId": "firecrawl__firecrawl-mcp-server__firecrawl-firecrawl-mcp-server",
+      "toolName": "firecrawl_search",
+      "descriptionChange": "words",
+      "schemaChange": "non-additive",
+      "label": "semantic-intent",
+      "reason": "authenticated searches now also query Alexandria data providers by default; github category removed",
+      "unit": 63
+    },
+    {
+      "key": "flowzap-xyz__flowzap-mcp__flowzap-xyz-flowzap-mcp|flowzap_create_playground|sha256:987c920509f358012cfbe915950e016815bd461bb68718c7488d0d6aec2fc9d8|sha256:d021473ab585021d75f08336a423191ca05320777849ed36e017849705640701",
+      "serverId": "flowzap-xyz__flowzap-mcp__flowzap-xyz-flowzap-mcp",
+      "toolName": "flowzap_create_playground",
+      "descriptionChange": "none",
+      "schemaChange": "non-additive",
+      "label": "cosmetic",
+      "reason": "only the code parameter's hint changed, listing accepted arrow shortcuts",
+      "unit": 64
+    },
+    {
+      "key": "flowzap-xyz__flowzap-mcp__flowzap-xyz-flowzap-mcp|flowzap_validate|sha256:5bfe19afb2d07d61cc8ac75c5b044c5c6f960dbaa111269339bbbe1b49d46ed6|sha256:79c15f644f9b6451cd9bd436807d07d946afe0b72204b354af7fe701f1372489",
+      "serverId": "flowzap-xyz__flowzap-mcp__flowzap-xyz-flowzap-mcp",
+      "toolName": "flowzap_validate",
+      "descriptionChange": "none",
+      "schemaChange": "non-additive",
+      "label": "cosmetic",
+      "reason": "only the code parameter's hint changed, listing accepted arrow shortcuts",
+      "unit": 65
+    },
+    {
+      "key": "fouradata__mcp__ai-foura-mcp|foura_auto|sha256:f0589834504fcc0716c43f808e35e172fff728e3a5dc785a0c54818b489357a5|sha256:83bc130eaf380f57a0e35716d0a4798e7c6dcf90d94540c8c2730bd1f6bd6c6c",
+      "serverId": "fouradata__mcp__ai-foura-mcp",
+      "toolName": "foura_auto",
+      "descriptionChange": "words",
+      "schemaChange": "non-additive",
+      "label": "cosmetic",
+      "reason": "rewrite explains the existing escalation, timeout and credit reporting; headers schema re-expressed equivalently",
+      "unit": 66
+    },
+    {
+      "key": "fouradata__mcp__ai-foura-mcp|foura_browser|sha256:912ed656c950367fbcbb3dc890983d18e39bdf148e1227cfe10e439b602f0d7e|sha256:180adf8d30543bde430a264410e317727d78f1a73ff16267b9966358da7be17a",
+      "serverId": "fouradata__mcp__ai-foura-mcp",
+      "toolName": "foura_browser",
+      "descriptionChange": "words",
+      "schemaChange": "non-additive",
+      "label": "cosmetic",
+      "reason": "documents existing parameters (headers, cookies, checks) and cost; schema change is only the $schema keyword",
+      "unit": 67
+    },
+    {
+      "key": "fouradata__mcp__ai-foura-mcp|foura_proxy|sha256:9022dde6b9121f76c7c9ff21364d0ced1c920ac2d01f791894e1668aa55b47b8|sha256:774cfd199bc7822d15096cfce579f2a8caadff22db8797dde7307ec0f85083b7",
+      "serverId": "fouradata__mcp__ai-foura-mcp",
+      "toolName": "foura_proxy",
+      "descriptionChange": "words",
+      "schemaChange": "non-additive",
+      "label": "schema-additive",
+      "reason": "adds an optional exitClass (premium exit allowance); the rest re-describes existing parameters",
+      "unit": 68
+    },
+    {
+      "key": "fouradata__mcp__ai-foura-mcp|foura_single|sha256:9f4f9e721f12ce044fc6e019dcb73a46f437089c16f682a4e99fce76b0f60738|sha256:bd1839305398557929e7dd8214edb6b69179421bbb85ee491fcddcb51e2120b4",
+      "serverId": "fouradata__mcp__ai-foura-mcp",
+      "toolName": "foura_single",
+      "descriptionChange": "words",
+      "schemaChange": "non-additive",
+      "label": "cosmetic",
+      "reason": "documents existing parameters (proxy id, validate, timeouts); headers schema re-expressed equivalently",
+      "unit": 69
+    },
+    {
+      "key": "freema__firefox-devtools-mcp__freema-firefox-devtools-mcp|screenshot_page|sha256:f1b1c4159da6b0ce6d2a94e80a31ab16b9aeb131f8223c044d96ee4958c8dda5|sha256:fdc6231a82c94a068ecf3a5911e93b2c407b3f3654fa4df6d8445038c4b52146",
+      "serverId": "freema__firefox-devtools-mcp__freema-firefox-devtools-mcp",
+      "toolName": "screenshot_page",
+      "descriptionChange": "words",
+      "schemaChange": "additive",
+      "label": "schema-additive",
+      "reason": "adds an optional fullPage flag; default stated as viewport",
+      "unit": 70
+    },
+    {
+      "key": "freema__firefox-devtools-mcp__freema-firefox-devtools-mcp|set_download_behavior|sha256:0fc1c022faaa8454984a5281ea02cb9c047a291e644bbe7540de8554fccf004f|sha256:fb61a3bc124b7ba7086767114a14a97548e7545bf54bed5bbcd9dd6095686703",
+      "serverId": "freema__firefox-devtools-mcp__freema-firefox-devtools-mcp",
+      "toolName": "set_download_behavior",
+      "descriptionChange": "words",
+      "schemaChange": "non-additive",
+      "label": "schema-additive",
+      "reason": "adds an optional downloadFolder; allow/deny/default unchanged",
+      "unit": 71
+    },
+    {
+      "key": "jau123__meigen-ai-design-mcp__jau123-meigen-ai-design-mcp|generate_video|sha256:f9dd9ef4bf75b519623964b58bddd6e7178ea9fa3356f328d2be392dd5e5ed5a|sha256:23061911739df8d5bf7fe120ea6a604bbf10b832927708ba7654e6dc7fffa567",
+      "serverId": "jau123__meigen-ai-design-mcp__jau123-meigen-ai-design-mcp",
+      "toolName": "generate_video",
+      "descriptionChange": "words",
+      "schemaChange": "non-additive",
+      "label": "semantic-intent",
+      "reason": "now accepts local files and uploads them to MeiGen, which it said it did not support, plus reference audio",
+      "unit": 72
+    },
+    {
+      "key": "jau123__meigen-ai-design-mcp__jau123-meigen-ai-design-mcp|get_inspiration|sha256:e847185a6f296fd5988ace50961cb38688827316c37d14d738167f863a6e8097|sha256:f4b70e34372b57712a55a0fa9bb21d71cbe37743bf237ab79f9e0a5a5ac45b8b",
+      "serverId": "jau123__meigen-ai-design-mcp__jau123-meigen-ai-design-mcp",
+      "toolName": "get_inspiration",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "cosmetic",
+      "reason": "only how to present results and a note that prompts are untrusted; same data returned",
+      "unit": 73
+    },
+    {
+      "key": "jau123__meigen-ai-design-mcp__jau123-meigen-ai-design-mcp|search_gallery|sha256:1d6f4b80325fab138d3d6be0f6d5dad0e744b00816db44344afd5b6fd61c045b|sha256:31212515ee124e1be43e500a4a6926463ada7305917df7df67fd90a19d3018ad",
+      "serverId": "jau123__meigen-ai-design-mcp__jau123-meigen-ai-design-mcp",
+      "toolName": "search_gallery",
+      "descriptionChange": "words",
+      "schemaChange": "non-additive",
+      "label": "semantic-intent",
+      "reason": "now claims to authenticate with the user's API key and spend that account's search quota; results capped at 3",
+      "unit": 74
+    },
+    {
+      "key": "kentucky-ai__opentakeoff__kentucky-ai-opentakeoff|annotate|sha256:5708f84dcb44638f96cb2dfe45d5468d77ba6fd36a944279e8f69b17c3b01adb|sha256:dd4f8e71436384642ba5d3f9f0811e9b431b49e00eb696e4b3150072e7114eb1",
+      "serverId": "kentucky-ai__opentakeoff__kentucky-ai-opentakeoff",
+      "toolName": "annotate",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "semantic-intent",
+      "reason": "text containing {{qty}} now renders a live measured quantity: changed behaviour for a previously valid input",
+      "unit": 75
+    },
+    {
+      "key": "kentucky-ai__opentakeoff__kentucky-ai-opentakeoff|measure_line|sha256:b7c53f074c0b3af5dfd561da9b416eb7c036d8d8948daeacb40df8ea72afce19|sha256:c32361561bb55b8649fbb1f4ea01d45282715c8a7eb131055638e9fe8dadd3e1",
+      "serverId": "kentucky-ai__opentakeoff__kentucky-ai-opentakeoff",
+      "toolName": "measure_line",
+      "descriptionChange": "words",
+      "schemaChange": "additive",
+      "label": "semantic-intent",
+      "reason": "length_lf is redefined as plan plus rise plus drop, with condition defaults applied: a changed claimed result",
+      "unit": 76
+    },
+    {
+      "key": "malamutemayhem__unclick__malamutemayhem-unclick|gitea_action|sha256:3472dace3282490f9b6f09176f74a15dc564fbe7c21c0905ff49145ce29920e5|sha256:52ab02316b6725dc2097591d2ce06797c8868ed59fbaddc824ef079f902c37ae",
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "gitea_action",
+      "descriptionChange": "words",
+      "schemaChange": "non-additive",
+      "label": "semantic-intent",
+      "reason": "adds new actions: read CI logs, partial-file edits, dispatch test workflows, read PRs",
+      "unit": 77
+    },
+    {
+      "key": "malamutemayhem__unclick__malamutemayhem-unclick|list_comments|sha256:822bc1939640fd1635acc7c44c0185defeda638fe039e2f3c41dd9850a72e3f0|sha256:51b70ac3ecc2a2cd6258641d094902f0c6ec5751ce013430146da60323a81539",
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "list_comments",
+      "descriptionChange": "words",
+      "schemaChange": "additive",
+      "label": "schema-additive",
+      "reason": "adds optional since/since_id/order paging; default order unchanged",
+      "unit": 78
+    },
+    {
+      "key": "minia2auk__minia2a-mcp__minia2auk-minia2a-mcp|minia2a_call_service|sha256:2e2e844a6be0977647d295e880d96b583ad748fbb51e27e4cf47bbb24d0d4d47|sha256:dce872e4efeca717ecce87a7de12206131bd1c3957f5acad6c2ee9c6ef55c027",
+      "serverId": "minia2auk__minia2a-mcp__minia2auk-minia2a-mcp",
+      "toolName": "minia2a_call_service",
+      "descriptionChange": "words",
+      "schemaChange": "non-additive",
+      "label": "cosmetic",
+      "reason": "adds only that stray top-level keys are rejected by name; the paid call and its payment paths are unchanged",
+      "unit": 79
+    },
+    {
+      "key": "minia2auk__minia2a-mcp__minia2auk-minia2a-mcp|minia2a_check_endpoint|sha256:3625405cce273820a6295d2c03f834e7b0fcc80c3b41a51259071e6906891760|sha256:515f320d76d63a0704f5788a36b34738f6d4c750bae6ff66dcae9fd2ba045192",
+      "serverId": "minia2auk__minia2a-mcp__minia2auk-minia2a-mcp",
+      "toolName": "minia2a_check_endpoint",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "semantic-intent",
+      "reason": "the payment signals it claims to check changed (canonical PAYMENT-REQUIRED header, network instead of chain/token); in doubt, not cosmetic",
+      "unit": 80
+    },
+    {
+      "key": "minia2auk__minia2a-mcp__minia2auk-minia2a-mcp|minia2a_list_services|sha256:e821822c3742df66a750a07178b7fc1903a4b31f8946f4a8515e11671fbc0d39|sha256:f2064aa0f29c9e4a9e9f8e51d5a1877f8db63b6e72d1cfb54a6cc0f261769102",
+      "serverId": "minia2auk__minia2a-mcp__minia2auk-minia2a-mcp",
+      "toolName": "minia2a_list_services",
+      "descriptionChange": "none",
+      "schemaChange": "non-additive",
+      "label": "cosmetic",
+      "reason": "only the search hint changed (also matches id, hyphens as spaces)",
+      "unit": 81
+    },
+    {
+      "key": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp|alphafold_structure|sha256:8b0a8263a7d670b6a3acbbdf20798479846ec91b23006766006f771f6b47c72c|sha256:d5e8ecc23ddec51d7211b0554014fe01a661b6cdf336c66b436ddc9330510437",
+      "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+      "toolName": "alphafold_structure",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "cosmetic",
+      "reason": "adds band ranges to the summary and notes the download URLs are links only",
+      "unit": 82
+    },
+    {
+      "key": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp|aragwas_associations|sha256:03f45236798a32a223cba123361e80d5b498016f854bb48c32ba15b9805a6c82|sha256:8a57618121ef9522cb484d6304fd422a25bb7dea353c9daf018a55164d03b9aa",
+      "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+      "toolName": "aragwas_associations",
+      "descriptionChange": "words",
+      "schemaChange": "additive",
+      "label": "schema-additive",
+      "reason": "adds optional limit/cursor paging; same source and fields",
+      "unit": 83
+    },
+    {
+      "key": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp|atted_coexpression|sha256:91557e3c29cab1d246744cb68491a88adef8db23b3e0fe0ef38bb30b3552214c|sha256:059172dbb7ba83c13aeec154ec4c764029f9699b0d4f29bf14b5f1e3d1c00247",
+      "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+      "toolName": "atted_coexpression",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "cosmetic",
+      "reason": "restates the same seven covered organisms and names the score type per release",
+      "unit": 84
+    },
+    {
+      "key": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp|bar_aiv_interactions|sha256:1548bafb3c843ccf5dc3ff4bddf8ae5babb362988f887270c24df862fe6a86bb|sha256:7ce731bdee0028fdbf9f98068fe7aa8355fc034f232d4e1d5eba4a350598d777",
+      "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+      "toolName": "bar_aiv_interactions",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "cosmetic",
+      "reason": "notes only that the image is a URL for the client to fetch",
+      "unit": 85
+    },
+    {
+      "key": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp|batch_atted_coexpression|sha256:dc47ccc32574f6c7ca94d5a0fa42b732c03e3cb98d820e47f69de54fda9f2678|sha256:392a008ece7c03370b50170f97a1ed031f008002db677066be57ce19480586c8",
+      "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+      "toolName": "batch_atted_coexpression",
+      "descriptionChange": "words",
+      "schemaChange": "non-additive",
+      "label": "cosmetic",
+      "reason": "restates organism coverage; loci gains minItems 1 (an empty list was never meaningful)",
+      "unit": 86
+    },
+    {
+      "key": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp|batch_gramene_homologs|sha256:8c43504fa5b3eca34ee3a8dfe4b3859c42a6c44699a971cd9701ae054e536668|sha256:a11c9d582520db672a38f7a3fa461bfeb9333c84dafc928af159e921df503ff6",
+      "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+      "toolName": "batch_gramene_homologs",
+      "descriptionChange": "none",
+      "schemaChange": "non-additive",
+      "label": "schema-additive",
+      "reason": "adds optional target_organism/with_organism filters; description unchanged",
+      "unit": 87
+    },
+    {
+      "key": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp|batch_kegg_pathways|sha256:393cd5682cbecd9a797bc89039183698d739f988987fcf8cc6c8319ed92ae21a|sha256:0a2620e45651090d00a6e171fd9e8e96fe0ab3684897911eeaa40b500adcf934",
+      "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+      "toolName": "batch_kegg_pathways",
+      "descriptionChange": "words",
+      "schemaChange": "non-additive",
+      "label": "semantic-intent",
+      "reason": "now claims to cover six more organisms via an NCBI Entrez bridge, where before only Arabidopsis resolved",
+      "unit": 88
+    },
+    {
+      "key": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp|batch_string_interactions|sha256:1f7b47832c2b5be4a0b9e2182463778a1c996dbdd9022069aad8d83178e4e311|sha256:ffa0200fce4da1695883f187f96fc664e5a8de0b5d0a8ce44e2e4e0e0f3f5c52",
+      "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+      "toolName": "batch_string_interactions",
+      "descriptionChange": "words",
+      "schemaChange": "non-additive",
+      "label": "semantic-intent",
+      "reason": "adds a new REQUIRED field (loci) and removes loci_or_accessions from the schema; in doubt, not cosmetic",
+      "unit": 89
+    },
+    {
+      "key": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp|blast_sequence|sha256:173108870294640b3f06046e00fb0a3fc4049d9388d876f25f9b13d767078c60|sha256:8c9188266a20284de4700a2dd5a0aec6b96d38906473c209e6a40375397f6594",
+      "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+      "toolName": "blast_sequence",
+      "descriptionChange": "words",
+      "schemaChange": "non-additive",
+      "label": "cosmetic",
+      "reason": "only the name of the error raised on timeout changed",
+      "unit": 90
+    },
+    {
+      "key": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp|ensembl_region_query|sha256:b4279fbf392bb96835370031846ba41815c4eef0abbf1d13e5d68fc7b3561952|sha256:942aec0ba506963f06c0282237d06707f8d0d44b5ec59d2d69754b8f0784117c",
+      "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+      "toolName": "ensembl_region_query",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "cosmetic",
+      "reason": "adds only that an out-of-range region is an error",
+      "unit": 91
+    },
+    {
+      "key": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp|gene_report|sha256:062754c6d9bd94e03eb49f7705f813e47d0dee5d09246a81c837934c41aed723|sha256:b39b844187092ac19564795e76f6c7adb30ad608b2caa7caad3e4eb9a9ff60ff",
+      "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+      "toolName": "gene_report",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "cosmetic",
+      "reason": "documents the existing output shape (what each section omits); same backends and dossier",
+      "unit": 92
+    },
+    {
+      "key": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp|gramene_homologs|sha256:77d526df468ed48f652098546ec47ebb3096d9e3732e2f0d1d67ed22b43a8f09|sha256:9105c4d167ae06ada6c35ed74100bd0d3d9b60fa65ac3ef7b507306cf4547d07",
+      "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+      "toolName": "gramene_homologs",
+      "descriptionChange": "words",
+      "schemaChange": "additive",
+      "label": "schema-additive",
+      "reason": "adds optional organism filters and cursor; rest documents existing filter behaviour",
+      "unit": 93
+    },
+    {
+      "key": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp|jaspar_motif|sha256:b5cc310885e8a479e83ad60d8783beafb6e896e51589720c9d12d25302708552|sha256:960c525f0e08e4cbab60430faf111b8669430b6d3e1fb951045a48817b5a7bd8",
+      "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+      "toolName": "jaspar_motif",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "cosmetic",
+      "reason": "notes only that the logo URL is a link for the client",
+      "unit": 94
+    },
+    {
+      "key": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp|kegg_pathways|sha256:8211738059967bfebae32f343015c902b3937cca7a60bb3cf5f9fbaca3ea5a4b|sha256:079b6c0fbd1112e83c8741ce5b16bedf2ed90b7acc9ce0ed095b6f0af25b2ad8",
+      "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+      "toolName": "kegg_pathways",
+      "descriptionChange": "words",
+      "schemaChange": "non-additive",
+      "label": "semantic-intent",
+      "reason": "now claims to cover six more organisms via an NCBI Entrez bridge, where before only Arabidopsis resolved",
+      "unit": 95
+    },
+    {
+      "key": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp|locus_go_annotations|sha256:731001df5d11e7f0b67c84e1bf28cba3f66f076d88a275a167641143c4325a17|sha256:904ad3f5087430ce3ab252b163dea9baaa47bc96e8e90ec765047619ec2852d2",
+      "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+      "toolName": "locus_go_annotations",
+      "descriptionChange": "words",
+      "schemaChange": "additive",
+      "label": "schema-additive",
+      "reason": "adds an optional cursor; rest notes payload field names",
+      "unit": 96
+    },
+    {
+      "key": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp|locus_literature|sha256:1a4e71594135fc3c37762f49abb7e5203dfcf0b7dc56ebd5a5cbfb69f501cdf7|sha256:c1cb35184d51cc7054f79716a4403ad38ea93f84fda3c83419999f7243f343ce",
+      "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+      "toolName": "locus_literature",
+      "descriptionChange": "words",
+      "schemaChange": "additive",
+      "label": "schema-additive",
+      "reason": "adds an optional cursor and a web_url field in results",
+      "unit": 97
+    },
+    {
+      "key": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp|locus_plant_ontology|sha256:821e9c197ac03830a89918a6fb56c910646b35c3a092ae71af60f283c75e213f|sha256:bcc8d96c0dfb1caaf63836f2c278e411ce6e0f2e95e68de8c206873cf760e374",
+      "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+      "toolName": "locus_plant_ontology",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "semantic-intent",
+      "reason": "coverage changed: maize, grape and soybean now refused, wheat added, others refused instead of empty",
+      "unit": 98
+    },
+    {
+      "key": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp|orthodb_orthologs|sha256:a27a21fc6590977b43e287a21191576fdd09b52d4a4f74933fde0152baff4aad|sha256:2a6a38e3ea11a20b02604dfa8ddc69d5f96332305178e13d090eadd100f732dc",
+      "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+      "toolName": "orthodb_orthologs",
+      "descriptionChange": "words",
+      "schemaChange": "additive",
+      "label": "schema-additive",
+      "reason": "adds an optional target_organism filter and cursor",
+      "unit": 99
+    },
+    {
+      "key": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp|panther_family|sha256:0f30e281fd94c26f10df95cf4ec3af516378a436fa243856ab648315d2c9ced5|sha256:27a894d26da36bc605759ef7db97c4fb2c7aacae34aa7c9d95046ef1b565a3e1",
+      "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+      "toolName": "panther_family",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "cosmetic",
+      "reason": "clarifies what a null family means; same lookup",
+      "unit": 100
+    },
+    {
+      "key": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp|plantcyc_locus_info|sha256:4c1d384b14ce6a5b11d980af3b8f3e1521a0c66d78b7b9e7f2910ad590e13a39|sha256:6e99d6278ff25541e3c0160a68912e2a3aa1d58a36e154274e93c82efa380c29",
+      "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+      "toolName": "plantcyc_locus_info",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "cosmetic",
+      "reason": "clarifies that pathway_count can be null when unknown; same lookup",
+      "unit": 101
+    },
+    {
+      "key": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp|resolve_locus_to_uniprot|sha256:5eda6fd2833283c63aacf575d88852bdb53d5ba73f6c5dc5569efca80c73213b|sha256:af33ee13de6b46a9d85d8acfd672429858b357031c94243410cf8ad5956b040a",
+      "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+      "toolName": "resolve_locus_to_uniprot",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "cosmetic",
+      "reason": "adds only that an ambiguous gene symbol is an error listing the loci; same UniProt lookup",
+      "unit": 102
+    },
+    {
+      "key": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp|string_interactions|sha256:8913d350d547bfeddf9dcb381500445c6869c3ded8e985a98e7eb9690638838d|sha256:434902bc43a3c21a94b26b5ee0efd15333f1041aef954707f4c0d291e9677046",
+      "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+      "toolName": "string_interactions",
+      "descriptionChange": "words",
+      "schemaChange": "non-additive",
+      "label": "semantic-intent",
+      "reason": "adds a new REQUIRED field (locus) replacing locus_or_accession, and locus resolution moves to STRING's own resolver",
+      "unit": 103
+    },
+    {
+      "key": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp|tf_binding_motifs|sha256:03d17c37eaceb2397bf63b5fbd29cb1cbf5d31d98a1983e565fa5e4055248cb9|sha256:92b6023600e4cb3e2dd6ebfeba196d685980d383d21e49ddfc4049ae8dc66744",
+      "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+      "toolName": "tf_binding_motifs",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "cosmetic",
+      "reason": "notes only that the logo and web URLs are links for the client",
+      "unit": 104
+    },
+    {
+      "key": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp|vep_annotate|sha256:4959c29b274eaa67c700d27737b3d92b496dbf3a2bef4412bc1b2531a2426c42|sha256:c793615bce6be44a5b114557477438727f870fa6e1701f477e2052d9200ba802",
+      "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+      "toolName": "vep_annotate",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "semantic-intent",
+      "reason": "no longer claims to return PolyPhen predictions (now always null for plants): a narrower claimed result",
+      "unit": 105
+    },
+    {
+      "key": "rekordcloud__sonovault-mcp__rekordcloud-sonovault-mcp|get_artist_releases|sha256:83a1fb5f78c02353486b4bbff75a03c4cfff652422175dfa929c9d1fb80a4d7e|sha256:c6ce5da17ea27146ece97f0e9c1087416da5c3f17c61bab99ad0d7bffd61dd42",
+      "serverId": "rekordcloud__sonovault-mcp__rekordcloud-sonovault-mcp",
+      "toolName": "get_artist_releases",
+      "descriptionChange": "words",
+      "schemaChange": "additive",
+      "label": "schema-additive",
+      "reason": "adds optional from/until date filters",
+      "unit": 106
+    },
+    {
+      "key": "rekordcloud__sonovault-mcp__rekordcloud-sonovault-mcp|get_label_releases|sha256:b813dc48924d23d0cdf7e5b98e66ec842d8fce8d1ac05fec704ee69e6af73c3d|sha256:18425a30bcd725589e5139896f3087691cd3e26520f5d36a5975caefe9d7cb12",
+      "serverId": "rekordcloud__sonovault-mcp__rekordcloud-sonovault-mcp",
+      "toolName": "get_label_releases",
+      "descriptionChange": "words",
+      "schemaChange": "additive",
+      "label": "schema-additive",
+      "reason": "adds optional from/until date filters",
+      "unit": 107
+    },
+    {
+      "key": "rekordcloud__sonovault-mcp__rekordcloud-sonovault-mcp|get_platform_links|sha256:526f8ae4c84cb561b890bf4b44994e3f1c711dfd21a42913dd874f00c47ab2f6|sha256:bf7b4cb08f5ece527d6168f95f8a5f742f6a0fe21267d7fa00751852d996b157",
+      "serverId": "rekordcloud__sonovault-mcp__rekordcloud-sonovault-mcp",
+      "toolName": "get_platform_links",
+      "descriptionChange": "none",
+      "schemaChange": "non-additive",
+      "label": "cosmetic",
+      "reason": "only the discogs_id hint changed, giving the expected key format",
+      "unit": 108
+    },
+    {
+      "key": "rekordcloud__sonovault-mcp__rekordcloud-sonovault-mcp|get_release|sha256:6763b788474124e4920439a9589ac9b5cb643592d228eed46e780a7722c90b95|sha256:479b94555e47214cf5b1341f8471b563daa8b23fc7e197375431afe337a6de47",
+      "serverId": "rekordcloud__sonovault-mcp__rekordcloud-sonovault-mcp",
+      "toolName": "get_release",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "cosmetic",
+      "reason": "editions also list label and catalog number; same record from the same source",
+      "unit": 109
+    },
+    {
+      "key": "rekordcloud__sonovault-mcp__rekordcloud-sonovault-mcp|resolve_tracks|sha256:7f9075e2a59457c65979856dc313c4ba0cb3d378ff5d26ece43ee46a10a59d29|sha256:207c9ea90247fee483c367b96bfa0af62b892ed9731973ccc2326cf887a75da2",
+      "serverId": "rekordcloud__sonovault-mcp__rekordcloud-sonovault-mcp",
+      "toolName": "resolve_tracks",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "cosmetic",
+      "reason": "only the discogs_id format is spelled out",
+      "unit": 110
+    },
+    {
+      "key": "sidneybissoli__medical-terminologies-mcp__sidneybissoli-medical-terminolog|cid10_search|sha256:364649dba14e3f12e2b947256badb70d71326f7042af22189c84079889abaa3d|sha256:ebafda8152d23ffea00336118b14e1f433e3871f687005c5a78ff89586082558",
+      "serverId": "sidneybissoli__medical-terminologies-mcp__sidneybissoli-medical-terminolog",
+      "toolName": "cid10_search",
+      "descriptionChange": "words",
+      "schemaChange": "non-additive",
+      "label": "semantic-intent",
+      "reason": "search now ANDs words and maps everyday Portuguese to CID-10 wording: a changed matching behaviour; in doubt, not cosmetic",
+      "unit": 111
+    },
+    {
+      "key": "sidneybissoli__medical-terminologies-mcp__sidneybissoli-medical-terminolog|rxnorm_classes|sha256:b0b6d70a1805094f8635e87d4bdbe1998cbc64b4add8d82c857b9aa963109bcb|sha256:a6b759806cc91bb1645e2bcded50da511932e44de60505a0503b0ae7f968d6c8",
+      "serverId": "sidneybissoli__medical-terminologies-mcp__sidneybissoli-medical-terminolog",
+      "toolName": "rxnorm_classes",
+      "descriptionChange": "none",
+      "schemaChange": "non-additive",
+      "label": "schema-additive",
+      "reason": "rxcui now also accepted as an integer; nothing removed or required",
+      "unit": 112,
+      "group": {
+        "id": "fcdae3135622",
+        "size": 2
+      }
+    },
+    {
+      "key": "sidneybissoli__medical-terminologies-mcp__sidneybissoli-medical-terminolog|rxnorm_concept|sha256:3f1ebe2125e56e9355631cc73f637692a529c5bc0f130423872d962391546cfc|sha256:2253c539f079d0ba02fdf4784b201254703421197f63d5c3b16e0098ddf6683f",
+      "serverId": "sidneybissoli__medical-terminologies-mcp__sidneybissoli-medical-terminolog",
+      "toolName": "rxnorm_concept",
+      "descriptionChange": "words",
+      "schemaChange": "non-additive",
+      "label": "schema-additive",
+      "reason": "rxcui also accepted as integer and include_related as a string; nothing removed or required",
+      "unit": 113
+    },
+    {
+      "key": "sidneybissoli__medical-terminologies-mcp__sidneybissoli-medical-terminolog|rxnorm_ingredients|sha256:3d802857cc0ac94194fa81c7d1d5b427e676c1ae40def5332dfccc4f8dcf918f|sha256:9203115c8fb67a14e6ddc21d747e8e06fb0398d0afd170bc0e03cd50c7cb54f0",
+      "serverId": "sidneybissoli__medical-terminologies-mcp__sidneybissoli-medical-terminolog",
+      "toolName": "rxnorm_ingredients",
+      "descriptionChange": "none",
+      "schemaChange": "non-additive",
+      "label": "schema-additive",
+      "reason": "rxcui now also accepted as an integer; nothing removed or required",
+      "unit": 112,
+      "group": {
+        "id": "fcdae3135622",
+        "size": 2
+      }
+    },
+    {
+      "key": "sidneybissoli__medical-terminologies-mcp__sidneybissoli-medical-terminolog|rxnorm_ndc|sha256:2eff6e47f72fec9137fe5c98a96cc94302cee94c5a95836824edcad02ca2132c|sha256:f2e13cb77f4267a353c96090c250e8ff78b442a4cd6774a278c73e8674ea4012",
+      "serverId": "sidneybissoli__medical-terminologies-mcp__sidneybissoli-medical-terminolog",
+      "toolName": "rxnorm_ndc",
+      "descriptionChange": "none",
+      "schemaChange": "non-additive",
+      "label": "schema-additive",
+      "reason": "rxcui now also accepted as an integer; nothing removed or required",
+      "unit": 114
+    },
+    {
+      "key": "twelvetake-studios__reaper-mcp__twelvetake-studios-reaper-mcp|get_tempo|sha256:8e4bf4f0985561f1018f576693a2872075ee9f665c2d51198f725c7e01cae14c|sha256:23719cd373f1e0ae34e29748bc70ee39656c79dce626fcfbbdf794cb8a80e12a",
+      "serverId": "twelvetake-studios__reaper-mcp__twelvetake-studios-reaper-mcp",
+      "toolName": "get_tempo",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "semantic-intent",
+      "reason": "now claims to return every tempo marker, not just the project tempo",
+      "unit": 115
+    },
+    {
+      "key": "veriteknik__pluggedin-mcp-proxy__veriteknik-pluggedin-mcp-proxy|pluggedin_delete_notification|sha256:d68b4adec4d0ccbc706f9cc18c4d6937eadbab221194897bed8633b7aeb48059|sha256:b230e986036608d088610d4e7b47fa0de76203398b5995d423704918149420ae",
+      "serverId": "veriteknik__pluggedin-mcp-proxy__veriteknik-pluggedin-mcp-proxy",
+      "toolName": "pluggedin_delete_notification",
+      "descriptionChange": "none",
+      "schemaChange": "non-additive",
+      "label": "cosmetic",
+      "reason": "only adds a uuid format hint to the id",
+      "unit": 116
+    },
+    {
+      "key": "veriteknik__pluggedin-mcp-proxy__veriteknik-pluggedin-mcp-proxy|pluggedin_mark_notification_done|sha256:c5bc93116579e45340a9d839eff6644236d3027aa81dbe235eddcdb94a7f6cc3|sha256:9983c3e96f77b124997007c814411d202674249a6db492ccf0138b43ef20d7f4",
+      "serverId": "veriteknik__pluggedin-mcp-proxy__veriteknik-pluggedin-mcp-proxy",
+      "toolName": "pluggedin_mark_notification_done",
+      "descriptionChange": "none",
+      "schemaChange": "non-additive",
+      "label": "cosmetic",
+      "reason": "only adds a uuid format hint to the id",
+      "unit": 117
+    },
+    {
+      "key": "vicseeai__vicsee-mcp-server__vicseeai-vicsee-mcp-server|vicsee_generate|sha256:6fc203e25a72626272b45b46789d442722cec4f1d9d5169b76aee064b1f5dfd5|sha256:0f706704fbddc14d3d9fae26920ac6672ffd95dc4dbcb4a218179f9ab8b5f0f0",
+      "serverId": "vicseeai__vicsee-mcp-server__vicseeai-vicsee-mcp-server",
+      "toolName": "vicsee_generate",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "cosmetic",
+      "reason": "adds only advice to call an estimate tool first; generation and billing unchanged",
+      "unit": 118
+    },
+    {
+      "key": "withoneai__mcp__withoneai-mcp|execute_one_action|sha256:e4206cfd35518c088d2b458c7112bfe3c4388e24f042d28a40ecb42ab9a9f918|sha256:05f8d432ed193cae6868f8929ece24ad9772e091168d1cc4371b44013d38c53f",
+      "serverId": "withoneai__mcp__withoneai-mcp",
+      "toolName": "execute_one_action",
+      "descriptionChange": "words",
+      "schemaChange": "non-additive",
+      "label": "cosmetic",
+      "reason": "only the name of the prerequisite tool changed",
+      "unit": 119
+    },
+    {
+      "key": "withoneai__mcp__withoneai-mcp|list_one_integrations|sha256:12eeabe33678346ae67c2660b882a9d706125c93e09202318898c771f59fa764|sha256:70279956823539b54ecb2fff75eef3086609d5e266f472546a4a3d6a7d45177b",
+      "serverId": "withoneai__mcp__withoneai-mcp",
+      "toolName": "list_one_integrations",
+      "descriptionChange": "words",
+      "schemaChange": "none",
+      "label": "semantic-intent",
+      "reason": "now lists only the user's connected platforms, not every available platform",
+      "unit": 120
+    }
+  ],
+  "comparison": null,
+  "comparisonStatus": "not yet run: these labels were committed before data/labels.json was opened"
+}
