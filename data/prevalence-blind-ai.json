@@ -1,0 +1,1208 @@
+{
+  "$comment": "Independent blind AI cross-check of the human prevalence labels (data/prevalence.json). Labelled by claude-sonnet-5-5 (Claude Sonnet 5.5, via Claude Code) from the 150 tool descriptions alone, before reading any human answer, using the question fixed in corpus/DRIFT-JSON-APPENDIX-report-shape.md. Rule applied: yes if the text issues mandatory or imperative directives to the calling model about what else to do (call order, must/never/IMPORTANT, interpret results this way); no if it only describes the tool, its parameters or its return, including mild 'use this when / pair with' selection hints. This file contains no human answers.",
+  "model": "claude-sonnet-5-5",
+  "question": "Is this description instruction-shaped: does it read as an instruction directed at the calling model, rather than a description for a person reading a catalogue?",
+  "labeledAt": "2026-10-18T06:24:33.544Z",
+  "items": [
+    {
+      "n": 1,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "stapi_search_starship",
+      "sha256": "sha256:ed887bc04b87ca99c54b17c3beae34b246510e387c505ae30af32fbd4610c727",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 2,
+      "serverId": "mathiaspaulenko__wavexis-mcp__mathiaspaulenko-wavexis-mcp",
+      "toolName": "wavexis_page_pdf",
+      "sha256": "sha256:7088e4d61d3253d8889a0206226c76052f8151fae988ea16335bcdfddbfcc6a0",
+      "answer": "no",
+      "reason": "Use-this-instead pointer to a sibling tool; otherwise documents behaviour and return shape."
+    },
+    {
+      "n": 3,
+      "serverId": "autonomad1__computeback-mcp__ai-autonomad-computeback",
+      "toolName": "dispatch_email_campaign",
+      "sha256": "sha256:2c8d4a46fa914ea7d1a035a6e2fae9162add126e3ff370fa8ac40fda50c74fb2",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 4,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "segment_list_sources",
+      "sha256": "sha256:b59df6604238117f6617eaed5c9281eda580cf88ee49813138d18717c5a0b468",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 5,
+      "serverId": "freema__firefox-devtools-mcp__freema-firefox-devtools-mcp",
+      "toolName": "restart_firefox",
+      "sha256": "sha256:99655a6bf24e4f090d1b1e85b4e1ea3d566d9b554236247d16859900e6bc5319",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 6,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "wikipedia_page",
+      "sha256": "sha256:ef6fca5fc605801b1d89fd414ef6365934982f5784fad8528fcfded015ca0a7f",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 7,
+      "serverId": "pantani__tdmcp__pantani-tdmcp",
+      "toolName": "create_depth_silhouette",
+      "sha256": "sha256:f784d3ccd5c1f38e4e7185a19e65c302d7551a3623d8251b5cf1ac40326fb4fd",
+      "answer": "no",
+      "reason": "Describes construction and return; the 'use X instead' is a mild alternative pointer, not a directive to act."
+    },
+    {
+      "n": 8,
+      "serverId": "twelvetake-studios__reaper-mcp__twelvetake-studios-reaper-mcp",
+      "toolName": "delete_region",
+      "sha256": "sha256:453e725743b11a13d2499f0ee7db4197b3c0d17fbb94c8364e4223d944252667",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 9,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "shunting_yard",
+      "sha256": "sha256:34b7305374c2b089c4276955a601bc1e42159d71b21aaa1ceaa98ab848c7ac65",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 10,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "gdelt_geo_events",
+      "sha256": "sha256:ccc8acd4ec403c8cd36e7f1b441cf0442cc6b864fdce0ea5552335eecea07341",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 11,
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_get_client_strategy",
+      "sha256": "sha256:ef86c88a7faf46f490b91be1019ad1d1d4ca540fd7b69fecf5174bb71778f46a",
+      "answer": "yes",
+      "reason": "Directs the model to consult this before producing a report and says parseErrors must be reported and excluded and context never authorises a write."
+    },
+    {
+      "n": 12,
+      "serverId": "gokimedia__tarot-mcp-server__gokimedia-tarot-mcp-server",
+      "toolName": "get_card_meaning",
+      "sha256": "sha256:3e905849ac47cdeb543cff6087a1a4cdf5e102ce4596a1a118ee3cd728a543bd",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 13,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "eventbrite_get_attendees",
+      "sha256": "sha256:14a83b59d2d5eed9449a9f51f19c5c43674dc8a25caefc8e0ee5fc9c1e9be1a9",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 14,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "check_inbox",
+      "sha256": "sha256:5bea4dc9dfa8da8196a6da0ce3d7f2d47dd941c02ce650ec41e18b052b7911ce",
+      "answer": "yes",
+      "reason": "Tells the model when to call it (right after read_messages, before declaring a run finished), what to handle first, and what to call next (post_message, mark_inbox_read)."
+    },
+    {
+      "n": 15,
+      "serverId": "2s-io__sdk__2s-io-sdk",
+      "toolName": "occupation.search",
+      "sha256": "sha256:1be7ecdedfc5c13b72ddd1299b3f568df17902d8bfa1538d0b944238a684eb30",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 16,
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_eduzz_get_programme",
+      "sha256": "sha256:532cd454d115e9a1f11b8961d34169f1caeb4679e790c3c2823e02dd92322eca",
+      "answer": "no",
+      "reason": "'Use this when you already know the id' is selection guidance; the rest describes return value."
+    },
+    {
+      "n": 17,
+      "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+      "toolName": "batch_locus_go_annotations",
+      "sha256": "sha256:d17848f1fb30ecf128d2b2181fdd846edfc784cf1fb9f0db43e7bf1d9e930934",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 18,
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_list_client_strategies",
+      "sha256": "sha256:4254cec5d6c12bec7b87a00c09142305224a49731072ac4b924f29ff934627bf",
+      "answer": "no",
+      "reason": "Describes the list and its return shape; usage hint is selection guidance only."
+    },
+    {
+      "n": 19,
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_ebay_list_programmes",
+      "sha256": "sha256:3173ec0c4d835cb01fbfa7f13db8b3867cf4de40e6089c7dd57dba5e0f3192a2",
+      "answer": "no",
+      "reason": "Selection guidance with example user questions; describes return value."
+    },
+    {
+      "n": 20,
+      "serverId": "gernika-labs__clarx-cloud__ai-clarx-mcp",
+      "toolName": "analyze_manifest",
+      "sha256": "sha256:e4aed64ccbcb476f5bc23e08fd579d5faa1780b6dae1312f5738616dc4ca89f8",
+      "answer": "yes",
+      "reason": "Imperative 'do not compare it to Clarx repo AI-readiness scores' instructs the model how to interpret the result."
+    },
+    {
+      "n": 21,
+      "serverId": "acunningham-ship-it__veilbrowser__acunningham-ship-it-veilbrowser",
+      "toolName": "veil_right_click",
+      "sha256": "sha256:2a31f74a0b7cf3e751a2045fedcb275b7b83fccc010a7c887b604118f837b3b6",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 22,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "corporate_bs_phrase",
+      "sha256": "sha256:422e6c21e3bb2773aa7923331c224e8933f62776a0a340fee03d091cc82638d2",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 23,
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_rewardful_list_media_partners",
+      "sha256": "sha256:199d9a418d89a41f2c3e74d36e6f1eaf3a3287912c5cdee2f82d15b7720454b2",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 24,
+      "serverId": "34892002__bilibili-mcp-js__34892002-bilibili-mcp-js",
+      "toolName": "bilibili-user-stat",
+      "sha256": "sha256:0f213c130b627c7af2ee2a161c3baf8a3e6fb775931a5f6aa3658b40eff8b021",
+      "answer": "no",
+      "reason": "Chinese: gets uploader statistics; no directive."
+    },
+    {
+      "n": 25,
+      "serverId": "aethynio__aethyn-browser-mcp__aethynio-aethyn-browser-mcp",
+      "toolName": "aethyn_navigate",
+      "sha256": "sha256:0231b93a870afd42537d7ab1116d4883009ebf8936ba773f857284e54456995b",
+      "answer": "yes",
+      "reason": "Tells the model to read the page with aethyn_get_content and judge for itself, and to respect robots.txt and site terms."
+    },
+    {
+      "n": 26,
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_coupang-partners_list_programmes",
+      "sha256": "sha256:9b32a4e76696db961f285b83745babbea55abc77104a2f1c713d1d0f3b049374",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 27,
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_awin-advertiser_propose_publisher_decision",
+      "sha256": "sha256:acff44378ad35ba4043403ea999d317692aa7e1f7a9b41d0c49839ed7028c4ae",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 28,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "gumroad_get_product",
+      "sha256": "sha256:bcab32d42675426aa525ebdf263ccceebe1ff89f4ba1acab84514a5aff0cc58f",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 29,
+      "serverId": "neptun2000__heor-agent-mcp__neptun2000-heor-agent-mcp",
+      "toolName": "evidence.network",
+      "sha256": "sha256:d3bb54c99448b1314544830a284dccc3d995071e58a0685aa94ece159b69a70c",
+      "answer": "no",
+      "reason": "Describes analysis; parameter hint only."
+    },
+    {
+      "n": 30,
+      "serverId": "hanzili__comet-mcp__hanzili-comet-mcp",
+      "toolName": "comet_poll",
+      "sha256": "sha256:3718a052a52077a2c0076e92b3c2855267b6b3b38e6926319f48a028187e3ed1",
+      "answer": "yes",
+      "reason": "'Call repeatedly to monitor agentic tasks' is a calling instruction to the model."
+    },
+    {
+      "n": 31,
+      "serverId": "mi60dev__visionaire-engine__mi60dev-visionaire-engine",
+      "toolName": "set_viewport",
+      "sha256": "sha256:0cefc6e4fcea35946c7971d6877afb8f0c668d4277266d294362ffe7c2ec2330",
+      "answer": "yes",
+      "reason": "Tells the model when to use it and to follow with a fresh page_snapshot / explain_styles."
+    },
+    {
+      "n": 32,
+      "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+      "toolName": "vep_annotate",
+      "sha256": "sha256:4959c29b274eaa67c700d27737b3d92b496dbf3a2bef4412bc1b2531a2426c42",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 33,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "weather_forecast",
+      "sha256": "sha256:813fcba5a021d090492e7fe546ba9b65089e09b4c06cb1d40af6bd19fc065117",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 34,
+      "serverId": "pantani__tdmcp__pantani-tdmcp",
+      "toolName": "connect_qr_scan_bus",
+      "sha256": "sha256:c9c7b981e090a9c93e469c5edceadb40bcf150e26b0af476e99ce7efa2d92ff6",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 35,
+      "serverId": "acedatacloud__seedreammcp__acedatacloud-seedreammcp",
+      "toolName": "seedream_get_tasks_batch",
+      "sha256": "sha256:141aa93842121070021374d8d835b169aef85b631079eaafa4c8b2ddf2db96cc",
+      "answer": "no",
+      "reason": "Selection guidance and return description."
+    },
+    {
+      "n": 36,
+      "serverId": "browserbase__mcp-server-browserbase__browserbase-mcp-server-browserba",
+      "toolName": "act",
+      "sha256": "sha256:4056e22db4436e12bcccff8e17c01a83c99782f8371e5a4cb69a3e588388819a",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 37,
+      "serverId": "sidneybissoli__medical-terminologies-mcp__sidneybissoli-medical-terminolog",
+      "toolName": "find_equivalent",
+      "sha256": "sha256:24c957ad79ba1e90f9c68eb0dcccaef04ca53f2d76deb063e2ee07e74134fb57",
+      "answer": "no",
+      "reason": "Describes search behaviour and parameters; pointer to dedicated tools is a mild alternative."
+    },
+    {
+      "n": 38,
+      "serverId": "pantani__tdmcp__pantani-tdmcp",
+      "toolName": "create_show_failover",
+      "sha256": "sha256:c359d9dccb2e4f3de9558cee8ffb161ea20d0b0a77357295b7046032327e2cb3",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 39,
+      "serverId": "pantani__tdmcp__pantani-tdmcp",
+      "toolName": "reload_bridge",
+      "sha256": "sha256:50439d963fcc4b1658c902308a133f74c1d9bb2904396fa43a7d270e49887ff6",
+      "answer": "no",
+      "reason": "'Use after editing bridge code' is a mild when-to-use note."
+    },
+    {
+      "n": 40,
+      "serverId": "ejwhite7__brandkit-mcp__ejwhite7-brandkit-mcp",
+      "toolName": "get_positioning",
+      "sha256": "sha256:ca7174ab827abb77f45d1c0c0c10ef82815b6d6418dfdaea85f6fd9550d238e2",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 41,
+      "serverId": "pantani__tdmcp__pantani-tdmcp",
+      "toolName": "build_pop_chain",
+      "sha256": "sha256:a885a5e85e5bf56fa2f2c6dac28e43844b20d0d5d550c8479bb56ebc53bdb010",
+      "answer": "no",
+      "reason": "Describes builder; the closing 'Tip' is a design hint, not a directive to act."
+    },
+    {
+      "n": 42,
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_eduzz_list_programmes",
+      "sha256": "sha256:c7b618b94eed088bc7f25c127cc81a8d512cabf9da3b9f4d960996d32ef0292a",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 43,
+      "serverId": "bv-venky__excalidraw-architect-mcp__bv-venky-excalidraw-architect-mc",
+      "toolName": "list_diagram_types",
+      "sha256": "sha256:bb0de7cca92ec9f74c7a630ae9d026296b128db91e47a14b3cfefecef260ed74",
+      "answer": "yes",
+      "reason": "'Call this BEFORE create_diagram' plus design rules (target density, mark only 1-2 elements focal) addressed to the model."
+    },
+    {
+      "n": 44,
+      "serverId": "pantani__tdmcp__pantani-tdmcp",
+      "toolName": "clip_audio_transport",
+      "sha256": "sha256:4cabda73a7a7c2f4ff83f8e97d5b221dbfc66b6f778a4ab1921e2e13084023b3",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 45,
+      "serverId": "2s-io__sdk__2s-io-sdk",
+      "toolName": "finance.form-144",
+      "sha256": "sha256:77e8d02519a06730834710781b5ac93c4264cf3e7b7508d8dc5b02eb1bf317ad",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 46,
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_commission-factory_get_earnings_summary",
+      "sha256": "sha256:300a239fe550097704ef9c6af57fb2893905eae06d44b44e036d433aff135646",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 47,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "urlscan_search",
+      "sha256": "sha256:fa5b5cdea676158ae3600fe3b33c8cafd4f88c276625438b83aecc2f2ec00248",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 48,
+      "serverId": "quokkapix__quokkapix-mcp__quokkapix-quokkapix-mcp",
+      "toolName": "get_video_rule_profile",
+      "sha256": "sha256:d06082f4fa9718ebca9480bd49ef4baca1334406f90ab8a54c28de1c63248279",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 49,
+      "serverId": "2s-io__sdk__2s-io-sdk",
+      "toolName": "trade.flows",
+      "sha256": "sha256:f499a8ebae2456a5172c72bfde5d088de3e38e5e14a83e419541faec1a1030f7",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 50,
+      "serverId": "pantani__tdmcp__pantani-tdmcp",
+      "toolName": "create_pop_growth",
+      "sha256": "sha256:189f5917f3b493f467e0fd7d72131962c135aa9d5268e59c19bd9573026c6a05",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 51,
+      "serverId": "mirastacklabs-ai__mirastack-redfish-mcp__mirastacklabs-ai-mirastack-redfi",
+      "toolName": "get_chassis",
+      "sha256": "sha256:d9a4e430256220c082e38a39df09c8c90985e98f8595a81baa29f7e72303c2ed",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 52,
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_monetizze_get_earnings_summary",
+      "sha256": "sha256:4633e11eaacc9da215974d36de73c170b2b0ba06354e6534cb89888e9e999738",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 53,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "pagerduty_list_services",
+      "sha256": "sha256:993713edaad74ab6bdd146a6d54bb43a0bcea3cf074e0bbbdb313ea5cbb62411",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 54,
+      "serverId": "smaniches__uniprot-mcp__smaniches-uniprot-mcp",
+      "toolName": "uniprot_resolve_interpro",
+      "sha256": "sha256:28f0885c29a8a3fc09af4f01a78609255916513f6777e240d50e1a22acd62210",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 55,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "wise_create_quote",
+      "sha256": "sha256:9badc18f5806025d6407cfc1642f1c0bf19ee2e3b5129137b1e9aaacd39172df",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 56,
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_ebay_list_clicks",
+      "sha256": "sha256:38aea619121fb0720e933d7ee9614f50594b557a17e5937d4b6bedfacdc6106b",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 57,
+      "serverId": "j4th__mtg-mcp-server__j4th-mtg-mcp-server",
+      "toolName": "scryfall_card_details",
+      "sha256": "sha256:5a208c782557048380e931032a7c09791c45d4480e19d960f3b8199b6b61bbff",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 58,
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_afilio_get_programme",
+      "sha256": "sha256:5e27818b623219a59880f3651f9e651aa28fb3a15e1307202a31d6f6ced4d4af",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 59,
+      "serverId": "khglynn__spotify-bulk-actions-mcp__khglynn-spotify-bulk-actions-mcp",
+      "toolName": "unsave_tracks",
+      "sha256": "sha256:15801c9637918e89d862ef34ca3a0db5bdeb36c1b26bbf8c024f3cf306aeb36b",
+      "answer": "no",
+      "reason": "Safety note about preview-unless-confirm describes tool behaviour."
+    },
+    {
+      "n": 60,
+      "serverId": "gtcc777__pulsenetwork-mcp__gtcc777-pulsenetwork-mcp",
+      "toolName": "debtpulse",
+      "sha256": "sha256:4e36bc46d67cbf0bd416c31423a0fdb230e52443f31c7cf36149c1728ff46110",
+      "answer": "no",
+      "reason": "Price list of endpoints; no directive to the model."
+    },
+    {
+      "n": 61,
+      "serverId": "bv-venky__excalidraw-architect-mcp__bv-venky-excalidraw-architect-mc",
+      "toolName": "modify_diagram",
+      "sha256": "sha256:6ae3a6d5cad6c6609f706038495e7039ebb611a66563f2c35300137425d8ea28",
+      "answer": "yes",
+      "reason": "'IMPORTANT: Call get_diagram_info first' is a direct imperative about what else to do."
+    },
+    {
+      "n": 62,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "holidays_next",
+      "sha256": "sha256:1be76ed8b0c7cca268eacf80fce2a48adad8c27b0adfd014e7989a13b2fd346b",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 63,
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_addrevenue_generate_tracking_link",
+      "sha256": "sha256:a58accd82df51235b515879ab0f678d5dc9053dc8362bfa73aa9b549cdac70e1",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 64,
+      "serverId": "jau123__meigen-ai-design-mcp__jau123-meigen-ai-design-mcp",
+      "toolName": "generate_video",
+      "sha256": "sha256:f9dd9ef4bf75b519623964b58bddd6e7178ea9fa3356f328d2be392dd5e5ed5a",
+      "answer": "yes",
+      "reason": "Tells the model to preserve the caller's resolved prompt and scope, set requestId/wait/download, then query check_generation."
+    },
+    {
+      "n": 65,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "yelp_get_business",
+      "sha256": "sha256:8eb8f1b8e1ac4d61470b88f55f467724d02afb4494a76d22df295a3386321bea",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 66,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "jp_get_post",
+      "sha256": "sha256:5d78227f4224310d44beeed72846fe2cce0b0b9cf850fb8e4bf210e1ff9b2e8f",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 67,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "nobel_laureates",
+      "sha256": "sha256:a1ec485997e5be32222c94d52fc0e4c2c9b1d44e3acd58c91eebc4bf63e7faf8",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 68,
+      "serverId": "2s-io__sdk__2s-io-sdk",
+      "toolName": "dev.csv-to-json",
+      "sha256": "sha256:095f7155900bff8f4feedf7c1a2badbb4c2239137a49400598ab093e6fcb6c97",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 69,
+      "serverId": "j4th__mtg-mcp-server__j4th-mtg-mcp-server",
+      "toolName": "rules_scenario",
+      "sha256": "sha256:4aa69f3042cbb21369a729438ea9189a75914ca7bee53c490bbc0bbb03d6ffff",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 70,
+      "serverId": "rosasynthesiz__flstudio-mcp__rosasynthesiz-flstudio-mcp",
+      "toolName": "fl_record",
+      "sha256": "sha256:a0932cefefac35ba828288580787701d7e9d6d147b27799e92bf1cfe3d8e72dc",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 71,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "testpass_edit_item",
+      "sha256": "sha256:4d067aa60cc69c94170941bdaa664ddda4c159c100cff0fcad72c1e78f4458cc",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 72,
+      "serverId": "chronary__chronary-mcp__ai-chronary-mcp",
+      "toolName": "cancel_proposal",
+      "sha256": "sha256:b10947e95bf103e335707c6ca462e188b069fe2dbdc1d0313fdd2d7bbda2fc04",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 73,
+      "serverId": "mcccsm__x402-list-mcp__mcccsm-x402-list-mcp",
+      "toolName": "x402_search_services",
+      "sha256": "sha256:cb3affef385b7257b274f9ffdc3225a52f1cbffc9c4d96c85d814a8d07386f33",
+      "answer": "yes",
+      "reason": "'Your first call when...' then 'Then x402_get_service' directs the model's call sequence."
+    },
+    {
+      "n": 74,
+      "serverId": "browserless__browserless-mcp__browserless-browserless-mcp",
+      "toolName": "browserless_agent",
+      "sha256": "sha256:6a3c0a77ed94c95f654ef0a62aca42498ad930854a88989399875e347f46dab5",
+      "answer": "yes",
+      "reason": "'READ CAREFULLY', mandatory plan/snapshot loop, 'REQUIRED' session close, 'NEVER' rules: an instruction manual aimed at the model."
+    },
+    {
+      "n": 75,
+      "serverId": "pantani__tdmcp__pantani-tdmcp",
+      "toolName": "find_td_parameters",
+      "sha256": "sha256:e3a3d6ff6d1e65e30336489e90676b00ff586741969a7b558caf7fbc4cd6e133",
+      "answer": "yes",
+      "reason": "Tells the model to inspect scan_truncated and count_complete before claiming completeness."
+    },
+    {
+      "n": 76,
+      "serverId": "davidmosiah__wellness-nourish__davidmosiah-wellness-nourish",
+      "toolName": "nourish_goal_progress",
+      "sha256": "sha256:2660bd7c6b9fc3260f2903b32395b5e0f980d2cc7a18e8502848118862e2db2b",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 77,
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_flexoffers_list_clicks",
+      "sha256": "sha256:d20255184c8017c1175f079da41558141cef7950ff26897de0f2c71fe482cb33",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 78,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "numerical_diff",
+      "sha256": "sha256:8cc4450ffdde3f5f4ca36da885286dc245547c1d05d3997942dff5e2e4133163",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 79,
+      "serverId": "redhold__diagrams-mcp-app-core__redhold-diagrams-mcp-app-core",
+      "toolName": "get_usage",
+      "sha256": "sha256:5dbf5a568f73cfb431276d7679ad6daef6f5b4eae0d75b6140b8494f2b629e43",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 80,
+      "serverId": "quokkapix__quokkapix-mcp__quokkapix-quokkapix-mcp",
+      "toolName": "get_video_recipe",
+      "sha256": "sha256:414a5b83753248decb799d0e8fd1eb3ea6ea3b71c15c09a6c14ad17743a02cee",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 81,
+      "serverId": "sf1nx__x402station-mcp__sf1nx-x402station-mcp",
+      "toolName": "alternatives",
+      "sha256": "sha256:a843371222768761eafb8d18674aa8996309ad6364a48aced81b1b758d4ec8a5",
+      "answer": "yes",
+      "reason": "Opens with an imperative 'Avoid paying unsafe x402 endpoints'; reads as a directive (low confidence, could be a tagline)."
+    },
+    {
+      "n": 82,
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_partnero_list_media_partners",
+      "sha256": "sha256:9d8562e39fa35e66d9e453ec4b82ffb595cd369190c87cc7c195623340f88fb8",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 83,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "pinecone_list_indexes",
+      "sha256": "sha256:3a5084c9336d14f65a360b68e4c51d2984e6b17456daa86f4eca51b76323cfcb",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 84,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "temperature_convert",
+      "sha256": "sha256:9760e4cf5f26518c05b4a42587ee06d2aea5ab8d665afd7fddc66791e7063f9d",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 85,
+      "serverId": "pantani__tdmcp__pantani-tdmcp",
+      "toolName": "manage_component",
+      "sha256": "sha256:c5a8dd90e37ff7bb7f6c6a75e83258a5e540bcd4578b4998a25c586cd505e3b0",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 86,
+      "serverId": "twelvetake-studios__reaper-mcp__twelvetake-studios-reaper-mcp",
+      "toolName": "get_track_fx_chunk",
+      "sha256": "sha256:23cab0b69cbd52650bbee1a7d082c19e138727f4c4aed655c074e62e1c3df4ff",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 87,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "datetime_business_days",
+      "sha256": "sha256:fc46b37fc37cf5535ce365023e794f76030647a53cb8815906f79488018cea3c",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 88,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "frankfurter_convert",
+      "sha256": "sha256:2dc90cf44c2dbe9be675bd86696853e65483888d653640618927254a16adfe42",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 89,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "flowpass_report",
+      "sha256": "sha256:4fe4293898fcf06c668218563fe33702d9ce86985ee4b5bb26de9ca0a04887ff",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 90,
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_leaddyno_get_programme",
+      "sha256": "sha256:ebabb9f5364eb5e73fec0a24aa779076927d0552b9c3fc1c1cb9147320fab3ce",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 91,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "plaid_balances",
+      "sha256": "sha256:15946d0ea43121ae1169a9ddfc685edd434d3be2e6879ae910153d14f58a2eac",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 92,
+      "serverId": "olostep__olostep-mcp-server__olostep-olostep-mcp-server",
+      "toolName": "get_batch_results",
+      "sha256": "sha256:aa518d198ffa9f5a109e6c164b2e663bb523819ab3de39778ff07c347b41ca6e",
+      "answer": "no",
+      "reason": "Describes returns; 'call again later' is a status note."
+    },
+    {
+      "n": 93,
+      "serverId": "2s-io__sdk__2s-io-sdk",
+      "toolName": "nutrition.food",
+      "sha256": "sha256:419ed43675406272e728b32fd73e25110242118d1d63ed0dc007f414dcb55106",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 94,
+      "serverId": "mrfelfel__taghvim__mrfelfel-taghvim",
+      "toolName": "jalali_persian",
+      "sha256": "sha256:dc80b6b1c5d844a64a8dfd0ffc4c89872b0050d8b2e9caf7ee4e87da6a659e73",
+      "answer": "no",
+      "reason": "Alternative-tool pointer only."
+    },
+    {
+      "n": 95,
+      "serverId": "2s-io__sdk__2s-io-sdk",
+      "toolName": "patents.detail",
+      "sha256": "sha256:1824b0f176f90bc7c1f1cb75150b8794ec74355fbcc346334a8a693468f06d2d",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 96,
+      "serverId": "pantani__tdmcp__pantani-tdmcp",
+      "toolName": "pulse_td_parameter",
+      "sha256": "sha256:6964c5c4c43aae3454d02c87307817bda01deef6e04965567caaf588dbf80223",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 97,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "aspect_ratio",
+      "sha256": "sha256:e7503dd013f3a0e4def41b1f79a6bd3afac1c7eab4484de0bf560123c1a7a8f6",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 98,
+      "serverId": "mi60dev__visionaire-engine__mi60dev-visionaire-engine",
+      "toolName": "inspect_element",
+      "sha256": "sha256:28334dbca33b2e137f8669992688ca1da5ad18851f17ff658c729f1a3e537cfa",
+      "answer": "no",
+      "reason": "When-to-use and sibling pointers; describes what it returns."
+    },
+    {
+      "n": 99,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "chuck_random",
+      "sha256": "sha256:0be8f7e93440c6f3032c1bbf7f8d1c66442e3944cde88cc003af4f89e4be3136",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 100,
+      "serverId": "ergoveritas1-alt__certscore.ai__ai-certscore-mcp",
+      "toolName": "certscore_scan_site",
+      "sha256": "sha256:1b3b4f704e2e1bf50ad05376b4e7b0faede190d66b2d54dbcf45fe6261029446",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 101,
+      "serverId": "davidmosiah__wellness-nourish__davidmosiah-wellness-nourish",
+      "toolName": "nourish_after_log_review",
+      "sha256": "sha256:c098e8183ca3bd234ec42bdffb80b831fad4fabd981227a4e532180ef25c7851",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 102,
+      "serverId": "quokkapix__quokkapix-mcp__quokkapix-quokkapix-mcp",
+      "toolName": "process_images",
+      "sha256": "sha256:ff9195aabd0d8f87d971d56a6b526d5b67b2844751bcbb14fd8d39bc96115574",
+      "answer": "yes",
+      "reason": "'Retry the unchanged call with the quoted product token' directs the model's next call."
+    },
+    {
+      "n": 103,
+      "serverId": "pantani__tdmcp__pantani-tdmcp",
+      "toolName": "create_cue_sequencer",
+      "sha256": "sha256:820153755b1ed0ba0f35bea8894c28fc7564affb1566282b721c70a9bb0984b4",
+      "answer": "yes",
+      "reason": "Tells the model to store the target's cues with manage_cue first (low confidence, mild prerequisite)."
+    },
+    {
+      "n": 104,
+      "serverId": "2s-io__sdk__2s-io-sdk",
+      "toolName": "store.vector-query",
+      "sha256": "sha256:144f6092c2b37901e10e4ae8864c9a4da87e78965e40f75d97e9c76d7d1a4067",
+      "answer": "no",
+      "reason": "Truncated description; no directive visible."
+    },
+    {
+      "n": 105,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "willyweather_tide",
+      "sha256": "sha256:779965f340a89babb41a957be3294bbe755378aacc30977ac808936a9c00258c",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 106,
+      "serverId": "mymedi-ai__mymedi-ai-mcp-server__mymedi-ai-mymedi-ai-mcp-server",
+      "toolName": "order_readiness_checklist",
+      "sha256": "sha256:e4c32a4730c2d0c120671e5d493c58fb8e910ab60cf4785cc702f5a80a8baf33",
+      "answer": "yes",
+      "reason": "'never send patient data' is a prohibition addressed to the caller."
+    },
+    {
+      "n": 107,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "obsidian_search_notes",
+      "sha256": "sha256:d4a863596759c501dbbde960d53f09b37c55d04e24639dcf486c1d12ee58322d",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 108,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "evil_insult_random",
+      "sha256": "sha256:c88eff43bf54fece867ff80da9161e925cb1e251a9eabeec475abd8c9147cf88",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 109,
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_commission-factory_list_programmes",
+      "sha256": "sha256:9159533db0ff877f18cb16723dfab17003325cbc2a072f314805cfd63fa3cf36",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 110,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "promote_idea_to_todo",
+      "sha256": "sha256:b188bde24a58bfbaf890a5d94c76f8aec7e8f47a8ff947af1b49b6d0d3f68f40",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 111,
+      "serverId": "dealfluence__adeu__ai-adeu-adeu",
+      "toolName": "process_document_batch",
+      "sha256": "sha256:c08349096b790de531a9cbfdffe943f94f542e11e9c7b983370a8842ad43bc03",
+      "answer": "yes",
+      "reason": "Mandates call read_docx before accept/reject/reply, never reuse ids, never write CriticMarkup manually: imperatives to the model."
+    },
+    {
+      "n": 112,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "crypto_coin",
+      "sha256": "sha256:31399e6a5b02ab40c9dd149581c49eb5269cff618229c87c3e025bafa65c95d9",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 113,
+      "serverId": "freema__firefox-devtools-mcp__freema-firefox-devtools-mcp",
+      "toolName": "screencast_stop",
+      "sha256": "sha256:ea784139d8095f09260e1e5c9a536bda1af40f39555eb8ddbdffc93991ea0c9c",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 114,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "gutendex_book",
+      "sha256": "sha256:966404a57ab79584fa33cb8d33bf882e31cf54f9328ecbc2e6be064f808f42a6",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 115,
+      "serverId": "chronary__chronary-mcp__ai-chronary-mcp",
+      "toolName": "list_booking_pages",
+      "sha256": "sha256:1844975217cf8d4e7a39f412beff39c74a46532465524538c7a5ff0f04c7c4aa",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 116,
+      "serverId": "2s-io__sdk__2s-io-sdk",
+      "toolName": "github.search-code",
+      "sha256": "sha256:6301bbb0d01215379e5d69b470957e0e5987e48b8a43319058cf5da9ca717c03",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 117,
+      "serverId": "doctorm333__promptpilot-mcp-server__doctorm333-promptpilot-mcp-serve",
+      "toolName": "build_prompt",
+      "sha256": "sha256:51f89eede288573646c001e57dc452fe486a5eeb8af35843301caf5f84f6ef3a",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 118,
+      "serverId": "ahujasid__blender-mcp__ahujasid-blender-mcp",
+      "toolName": "get_polypizza_status",
+      "sha256": "sha256:b146e70173e1b0ad678a38e33e7ee6e2029207f26e3ee2beb0f4d4ff94d51f35",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 119,
+      "serverId": "custodia-admin__pagebolt-mcp__custodia-admin-pagebolt-mcp",
+      "toolName": "import_agent_trace",
+      "sha256": "sha256:ef6e58442bc49ffa413273f757def9bfcc7673926c86e1700ef78da77c8d4568",
+      "answer": "no",
+      "reason": "Describes the conversion; the pairing note is a workflow suggestion, mild (borderline)."
+    },
+    {
+      "n": 120,
+      "serverId": "twelvetake-studios__reaper-mcp__twelvetake-studios-reaper-mcp",
+      "toolName": "crop_to_active_take",
+      "sha256": "sha256:ff4d239d49163f2be4e5f5a3ba312eef05518fe681e85d07fe0f39b30c75dcef",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 121,
+      "serverId": "j4th__mtg-mcp-server__j4th-mtg-mcp-server",
+      "toolName": "budget_upgrade",
+      "sha256": "sha256:a7209e871b51cdb50db96d29953603918ae6151c7bdcee02fceea4a195df2b1d",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 122,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "ghost_list_pages",
+      "sha256": "sha256:efde63c02447f01d7dff6bb517b7d3e97f012b5c77a0783905e85a6aade26fdb",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 123,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "shopify_inventory",
+      "sha256": "sha256:7a34928a5ef65c8c7395bba38d47cfbea9af04c4765bef9e3bca34c64daf0286",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 124,
+      "serverId": "2s-io__sdk__2s-io-sdk",
+      "toolName": "space.observe",
+      "sha256": "sha256:788a35988ef5bddfcb62b6874bbfe0e258a97cacd033890eb9e397bd00702bfc",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 125,
+      "serverId": "pantani__tdmcp__pantani-tdmcp",
+      "toolName": "create_blender_scene_bridge",
+      "sha256": "sha256:bfe7d50afe30def89835ff62e0f508f6767ec0170b9bd31e0761968dcc479f09",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 126,
+      "serverId": "2s-io__sdk__2s-io-sdk",
+      "toolName": "energy.fuel-stations",
+      "sha256": "sha256:32203171e7f39e0eb5a73c95eb75752c79c892ddb16bb9b92fe446a013d6b9df",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 127,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "bgg_top_games",
+      "sha256": "sha256:eb34fb421d8ec41d94b8e314abd607920c0a1a12f848e9a6f23c3c772f76b5bb",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 128,
+      "serverId": "mymedi-ai__mymedi-ai-mcp-server__mymedi-ai-mymedi-ai-mcp-server",
+      "toolName": "disease_surveillance",
+      "sha256": "sha256:e92d139907470e9822c256613c84efe94688fba8b853a90196d370ea4a82c96f",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 129,
+      "serverId": "autonomad1__computeback-mcp__ai-autonomad-computeback",
+      "toolName": "dispatch_sms_campaign",
+      "sha256": "sha256:9f9f468c7f3077f79a4bdbdb4a6a50f51b887d6a7fee1560226d449bc0a69129",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 130,
+      "serverId": "34892002__bilibili-mcp-js__34892002-bilibili-mcp-js",
+      "toolName": "bilibili-user-videos",
+      "sha256": "sha256:e5da123144fe91a08a3d40f95f6f4504bf9e2a5169f3cee7e14aeb36b39233f7",
+      "answer": "no",
+      "reason": "Chinese: 'not yet supported - get uploader video list'; no directive."
+    },
+    {
+      "n": 131,
+      "serverId": "pantani__tdmcp__pantani-tdmcp",
+      "toolName": "create_flow_abstraction",
+      "sha256": "sha256:f43abfb8e9d237288a39f3cef0449b0ee4d2acf479113b2f3aa7b18bb3c15df7",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 132,
+      "serverId": "chronary__chronary-mcp__ai-chronary-mcp",
+      "toolName": "set_availability_rules",
+      "sha256": "sha256:0861bea7c040de7f849dff42229e2a53555c0d99d641daaffa8562b6eef91072",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 133,
+      "serverId": "gtcc777__pulsenetwork-mcp__gtcc777-pulsenetwork-mcp",
+      "toolName": "truthpulse",
+      "sha256": "sha256:c9214f2d5aa14494fbd435d3f511852106a63649d94bdf94857504304570cbc9",
+      "answer": "no",
+      "reason": "Marketing/endpoint list; no directive to the model."
+    },
+    {
+      "n": 134,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "pushover_get_receipt",
+      "sha256": "sha256:ad6aeb294802f694656d5c48e5ccaaeda5e0dec77a9e707088b2f19f00ed63a5",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 135,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "haar_wavelet",
+      "sha256": "sha256:2a9dfa51831e74d3ecbd163e59f1a8cc8f6d49c320ecff09164ea89ffb450e10",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 136,
+      "serverId": "2s-io__sdk__2s-io-sdk",
+      "toolName": "medical.icd10",
+      "sha256": "sha256:82b1c3787556faca0722d2bc7185514fb28dbb8d911a3d3b97f4e7b98ccd28d8",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 137,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "togetherai_create_embedding",
+      "sha256": "sha256:51f075dff42eaf1cc31b19585879a42ea303da24c8983b0b87e8340032147fb1",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 138,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "mhw_monsters",
+      "sha256": "sha256:5b10229aabee0cb5234a0524bd123e7997ae059362642e09efa6b9c08b61ea7a",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 139,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "amber_forecast",
+      "sha256": "sha256:af759506c6e6b0d30309139cb2a21ebb732b3f3279e7db98f6ea029a316372cb",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 140,
+      "serverId": "bv-venky__excalidraw-architect-mcp__bv-venky-excalidraw-architect-mc",
+      "toolName": "whats_connected_to",
+      "sha256": "sha256:432d6949b689349141da6518b9675f0825d4ea446c7c17704f94491ad4c013aa",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 141,
+      "serverId": "2s-io__sdk__2s-io-sdk",
+      "toolName": "gov.osha-violations",
+      "sha256": "sha256:19b86ff91775e392e686aafd5e503c8d29f2a278609acae6a00808f8a869be8a",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 142,
+      "serverId": "lespaceman__agent-web-interface__lespaceman-agent-web-interface",
+      "toolName": "snapshot",
+      "sha256": "sha256:35f3dfb7ad1df0aee6943820262f4aa8c7409caac4df3f0e43bc7035a4f6aebe",
+      "answer": "no",
+      "reason": "When-to-use note only."
+    },
+    {
+      "n": 143,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "mhw_weapons",
+      "sha256": "sha256:9c3114c4024f22d654a0c82a6d72112af636d7cb49eae5f10459e99b57b6802c",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 144,
+      "serverId": "genwavellc__svgmaker-mcp__genwavellc-svgmaker-mcp",
+      "toolName": "svgmaker_account_info",
+      "sha256": "sha256:c2c50444ec519066021ceac4cdf841f59dbde679660fa2d408fc5da1d8a46810",
+      "answer": "no",
+      "reason": "Selection guidance ('check credits before a paid operation') is mild; describes returns."
+    },
+    {
+      "n": 145,
+      "serverId": "nekzus__npm-sentinel-mcp__nekzus-npm-sentinel-mcp",
+      "toolName": "npmLicenseCompatibility",
+      "sha256": "sha256:8f1076d91ac0fafc48714a605daeb84c6b03f18a5206186c6fcbfb7a73f4a480",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 146,
+      "serverId": "slshults__shakespeare-monologues-mcp__slshults-shakespeare-monologues-",
+      "toolName": "get_scene_summary",
+      "sha256": "sha256:ee70ef2044fd0a47f52c6773cdcb974ec279fce03c38fb45cf5bfd28b53c0006",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 147,
+      "serverId": "2s-io__sdk__2s-io-sdk",
+      "toolName": "watchers.flight-status",
+      "sha256": "sha256:ec761e99c22f12a2ba6f8c4d106e67fa99d5945d5f5487ded073208e6cbad84a",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 148,
+      "serverId": "twelvetake-studios__reaper-mcp__twelvetake-studios-reaper-mcp",
+      "toolName": "set_midi_note_velocity",
+      "sha256": "sha256:6ae7bc0293633f4af4a0b3c6a0d510ba77bcc95639bd92913ad2df2d5b61c659",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 149,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "confluence_search",
+      "sha256": "sha256:8f546c6fad80a200757e3b1281a50d5989db0decf8a5f86db0c4e4cbc0be44d9",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    },
+    {
+      "n": 150,
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "lastfm_similar_artists",
+      "sha256": "sha256:beb0759377face3294ad25fb86d0abc112fd7ac36af32034568b1ae24861d6bd",
+      "answer": "no",
+      "reason": "Describes what the tool does, its inputs or its return; no directive aimed at the model."
+    }
+  ]
+}
