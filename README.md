@@ -364,6 +364,20 @@ account in [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md). Re-score with no
 model calls: `pnpm eval:baseline2`. A single-turn first attempt, mostly
 unmeasured, is kept as superseded.
 
+### Instruction-shaped descriptions (prediction 2)
+
+Of 150 tools drawn from the 6,058 captured at crawl 1, the author labelled **13
+as instruction-shaped: 8.7% (13/150), 95% Wilson interval 5.1% to 14.3%.** The
+point estimate is within the pre-registered prediction of 5-12%
+(`corpus/PREDICTIONS.md`); the interval's upper end is above 12%, so the sample
+does not by itself exclude a rate outside that range. The sample was
+stratified by capability class with proportional allocation, so it is
+self-weighting and needs no weights for the whole corpus; weighting by stratum
+size gives 8.7% (8.71%), the same figure. A blind AI cross-check agreed on
+97.3% of the 150 (kappa 0.85) and found 4 more `yes` than the author; the
+author's answers were not changed (`data/prevalence-agreement.json`,
+[`docs/LIMITATIONS.md`](docs/LIMITATIONS.md)). `data/prevalence.json`.
+
 ### Not measured yet
 
 | | Marker |

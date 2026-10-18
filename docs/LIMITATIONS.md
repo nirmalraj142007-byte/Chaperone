@@ -264,6 +264,13 @@ summaries, so the 81.5% and 78.5% figures are not independent evidence of
 reliability.** Neither AI run is a second human labeller. Crawl-2 labels will be
 checked independently.
 
+**The prevalence labels got one blind AI cross-check.** The author's 150
+instruction-shaped labels (13 `yes`, 8.7%) were locked and pushed before a blind
+run by claude-sonnet-5-5 (17 `yes`; agreement 97.3%, kappa 0.85; it said `yes`
+on all 13 of the author's and on 4 more); the author's answers were not changed,
+and the AI result is an independent cross-check, not ground truth
+(`data/prevalence-agreement.json`).
+
 Only `semantic-intent` enters a headline number. Cosmetic and
 schema-additive changes are counted and published separately.
 {{PENDING: the application of the Axis 1 rules to crawl 2, and any count of cases the author judged ambiguous — 2026-10-20 and after}}

@@ -1,0 +1,54 @@
+{
+  "$comment": "Independent blind AI cross-check of human labels. Not ground truth and not a replacement for them: the human answers in data/prevalence.json are unchanged. AI labelled all 150 descriptions before reading any human answer (blind answers committed in 8270be4 before this comparison).",
+  "model": "claude-sonnet-5-5",
+  "humanAnswersChanged": false,
+  "n": 150,
+  "table": {
+    "humanYes_aiYes": 13,
+    "humanYes_aiNo": 0,
+    "humanNo_aiYes": 4,
+    "humanNo_aiNo": 133
+  },
+  "agreement": 0.9733333333333334,
+  "cohensKappa": 0.8521439132577627,
+  "humanYes": 13,
+  "aiAlsoYesOfHumanYes": 13,
+  "extraAiYesWhereHumanNo": 4,
+  "aiYesTotal": 17,
+  "aiShare": 0.11333333333333333,
+  "humanShare": 0.08666666666666667,
+  "humanWilson95": [
+    0.05134717806451293,
+    0.14262822426394298
+  ],
+  "aiWilson95": [
+    0.0719742388824878,
+    0.1740027503925193
+  ],
+  "weighting": {
+    "strata": {
+      "read": {
+        "n": 104,
+        "yes": 4,
+        "N": 4185
+      },
+      "write": {
+        "n": 32,
+        "yes": 4,
+        "N": 1300
+      },
+      "transact": {
+        "n": 5,
+        "yes": 2,
+        "N": 202
+      },
+      "communicate": {
+        "n": 9,
+        "yes": 3,
+        "N": 371
+      }
+    },
+    "weightedHumanShare": 0.08714562646553402,
+    "note": "Allocation was proportional to stratum size, so the sample is self-weighting; weighted share differs from the raw share only by largest-remainder rounding."
+  }
+}

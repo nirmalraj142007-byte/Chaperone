@@ -64,6 +64,7 @@ connect and keeps nothing; Chaperone is the memory.
 |---|---|---|
 | The interval between the two crawls is stated as a day count | Delivered | **35 days**, 2026-09-15 to 2026-10-20; `CRAWL_DATES.md`; `pnpm check-claims` fails on rounded-week language |
 | The taxonomy and predictions were fixed before the first crawl | Delivered | `corpus/TAXONOMY.md`, `corpus/PREDICTIONS.md`, committed 2026-09-12 and not edited since; `docs/QA.md` question 1 |
+| Instruction-shaped description prevalence (prediction 2) | Delivered | 13 of 150 (8.7%), 95% Wilson interval 5.1% to 14.3%; the point estimate is within the pre-registered 5-12%, the interval's upper end is not. Self-weighting stratified sample (weighted figure 8.7%). `data/prevalence.json`, `data/prevalence-agreement.json` |
 | The drift rate | **Not measured yet** | {{PENDING: semantic-intent drift rate and its denominator — 2026-10-20}} |
 | An unaided-model comparison, reported as a delta, never an absolute block rate | Delivered, one model | `gpt-oss-120b` on Groq, two-turn: followed in 50 of 90 attack runs (55.6%), refused 0, 0 of 30 benign controls refused. `docs/BASELINE2-RUBRIC.md` was committed before the run; `data/baseline2-raw.json` holds every response; `pnpm eval:baseline2` re-scores with no model call |
 | The tautology is stated, not hidden | Delivered | README "What this does not prove"; the guard test in `packages/eval/test/guards.test.ts` fails if an absolute Chaperone block rate enters a report |

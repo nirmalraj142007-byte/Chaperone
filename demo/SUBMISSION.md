@@ -53,7 +53,7 @@ change, so re-check rather than trust it.
 - [ ] `pnpm check-placeholders` passes: no pending marker left in any committed prose. This is the last gate that cannot be satisfied early; it fails today by design (drift rate, production latency, Kiro feedback)
 - [ ] `data/drift.json` and `data/labels.json` are committed and agree (`data/labels-todo.json` is a regenerable work queue and stays uncommitted); the headline counts `semantic-intent` only, and cosmetic and schema-additive changes are published separately
 - [ ] `pnpm analyse:drift --dry-run` still reports 0 drift and 0 classifier artifacts
-- [ ] The prevalence sample (`data/prevalence.json`) is labelled or its absence is stated. `corpus/PREDICTIONS.md` committed to testing it
+- [x] The prevalence sample (`data/prevalence.json`) is labelled (13/150, 8.7%, 2026-10-18). `corpus/PREDICTIONS.md` committed to testing it
 
 ## 5. The deployed URL
 
