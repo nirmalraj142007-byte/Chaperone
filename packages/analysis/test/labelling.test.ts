@@ -271,13 +271,13 @@ describe("prevalence sample (M14)", () => {
       });
       return { summary, saved, printed };
     };
-    const first = await run(small, ["y", "zz", "s", null]);
-    expect(first.summary).toMatchObject({ decided: 1, skipped: 1, quit: true });
-    expect(summarizePrevalence(first.saved)).toMatchObject({ answered: 1, yes: 1, sharePct: null });
+    const first = await run(small, ["y n", "y n x", "y n s"]);
+    expect(first.summary).toMatchObject({ decided: 2, skipped: 1, quit: false });
+    expect(summarizePrevalence(first.saved)).toMatchObject({ answered: 2, yes: 1, no: 1, sharePct: null });
     expect(first.printed.some((p) => p.includes("No share is stated"))).toBe(true);
 
-    const second = await run(first.saved, ["?", "n", "n"]);
-    expect(second.summary).toMatchObject({ decided: 2, remaining: 0 });
+    const second = await run(first.saved, ["?", "n"]);
+    expect(second.summary).toMatchObject({ decided: 1, remaining: 0 });
     expect(summarizePrevalence(second.saved)).toEqual({ answered: 3, yes: 1, no: 2, sampleSize: 3, sharePct: 33.3 });
     expect(second.saved.items[0]).toMatchObject({ labeledBy: "Fixture Labeller", taxonomyBlobSha: BLOB, procedure: "v2-no-proposal-shown" });
     expect(second.printed.join("\n")).not.toMatch(/proposed|\((read|write|transact|communicate)\)/i);

@@ -194,7 +194,11 @@ export interface PrevalenceSessionOptions {
   save(file: PrevalenceFile): Promise<void>;
 }
 
-const PREVALENCE_HELP = "  y = yes, instruction-shaped\n  n = no\n  s = skip (comes round again)\n  q = quit (everything so far is already saved)";
+const PREVALENCE_CHOICES: Record<string, "yes" | "no" | "skip"> = { y: "yes", n: "no", s: "skip" };
+
+const PREVALENCE_HELP =
+  "  y = yes, instruction-shaped\n  n = no\n  s = skip (comes round again)\n  q = quit (everything so far is saved; a half-answered batch is not)\n" +
+  "  Answer with one letter per tool, separated by spaces, e.g. \"n n y n s\".";
 
 export async function runPrevalenceSession(opts: PrevalenceSessionOptions): Promise<SessionSummary> {
   assertHumanLabeler(opts.labeledBy);
@@ -209,36 +213,61 @@ export async function runPrevalenceSession(opts: PrevalenceSessionOptions): Prom
   opts.io.print(opts.style.bold(PREVALENCE_QUESTION));
   opts.io.print(PREVALENCE_HELP);
 
-  for (const [n, idx] of openIdx.entries()) {
-    const item = items[idx]!;
-    opts.io.print(
-      `\n${opts.style.bold(`[${n + 1}/${openIdx.length}] ${item.serverId}  ::  ${item.toolName}`)}\n  ${item.description || opts.style.dim("(no description)")}`,
-    );
-    summary.shown++;
-    let answer: "yes" | "no" | "skip" | "quit" | undefined;
-    while (answer === undefined) {
-      const line = await opts.io.ask("instruction-shaped? [y/n/s/q]: ");
-      const key = line === null ? "q" : line.trim().toLowerCase();
-      if (key === "y") answer = "yes";
-      else if (key === "n") answer = "no";
-      else if (key === "s") answer = "skip";
-      else if (key === "q") answer = "quit";
-      else if (key === "?" || key === "h") opts.io.print(PREVALENCE_HELP);
-      else opts.io.print(`"${key}" is not one of y, n, s, q.`);
+  // BATCH_SIZE tools at a time, numbered 1-5, answered with one letter each. No classifier verdict is shown.
+  const batchCount = Math.ceil(openIdx.length / BATCH_SIZE);
+  for (let b = 0; b < batchCount && !summary.quit; b++) {
+    const batch = openIdx.slice(b * BATCH_SIZE, (b + 1) * BATCH_SIZE);
+    opts.io.print(opts.style.bold(`\n=== batch ${b + 1} of ${batchCount}: tools 1-${batch.length} ===`));
+    for (const [n, idx] of batch.entries()) {
+      const item = items[idx]!;
+      opts.io.print(`\n${opts.style.bold(`${n + 1}. ${item.serverId}  ::  ${item.toolName}`)}\n  ${item.description || opts.style.dim("(no description)")}`);
+      summary.shown++;
     }
-    if (answer === "quit") {
+    const prompt =
+      batch.length > 1
+        ? `instruction-shaped? ${batch.length} letters separated by spaces [y/n/s, q quits, ? for help]: `
+        : "instruction-shaped? [y/n/s/q, ? for help]: ";
+    let answers: Array<"yes" | "no" | "skip"> | "quit" | undefined;
+    while (answers === undefined) {
+      const line = await opts.io.ask(prompt);
+      if (line === null) {
+        answers = "quit";
+        break;
+      }
+      const tokens = line.trim().toLowerCase().split(/\s+/).filter((t) => t.length > 0);
+      if (tokens.length === 1 && tokens[0] === "q") {
+        answers = "quit";
+      } else if (tokens.length === 1 && (tokens[0] === "?" || tokens[0] === "h")) {
+        opts.io.print(PREVALENCE_HELP);
+      } else if (tokens.length !== batch.length) {
+        opts.io.print(`expected ${batch.length} letter${batch.length === 1 ? "" : "s"} (one per tool, y/n/s), got ${tokens.length}. Nothing was saved.`);
+      } else {
+        const bad = tokens.find((t) => PREVALENCE_CHOICES[t] === undefined);
+        if (bad !== undefined) {
+          opts.io.print(`"${bad}" is not one of y, n, s. Nothing was saved.`);
+        } else {
+          answers = tokens.map((t) => PREVALENCE_CHOICES[t]!);
+        }
+      }
+    }
+    if (answers === "quit") {
+      // Nothing from a half-answered batch is saved; it comes round again.
       summary.quit = true;
       break;
     }
-    if (answer === "skip") {
-      summary.skipped++;
-      continue;
+    const labeledAt = opts.now().toISOString();
+    for (const [n, idx] of batch.entries()) {
+      const answer = answers[n]!;
+      if (answer === "skip") {
+        summary.skipped++;
+        continue;
+      }
+      items[idx] = { ...items[idx]!, answer, labeledBy: opts.labeledBy, labeledAt, taxonomyBlobSha: opts.taxonomyBlobSha, procedure: LABEL_PROCEDURE };
+      summary.decided++;
+      summary.remaining--;
     }
-    items[idx] = { ...item, answer, labeledBy: opts.labeledBy, labeledAt: opts.now().toISOString(), taxonomyBlobSha: opts.taxonomyBlobSha, procedure: LABEL_PROCEDURE };
     opts.file = { ...opts.file, items };
     await opts.save(opts.file);
-    summary.decided++;
-    summary.remaining--;
   }
   const s = summarizePrevalence(opts.file);
   opts.io.print(

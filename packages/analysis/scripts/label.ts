@@ -12,6 +12,9 @@
  * shown once and one answer is applied to every tool in the group; data/labels.json records appliedByGroup.
  * No proposed class is shown in any mode; every saved label records procedure "v2-no-proposal-shown".
  *
+ * With --prevalence, 5 tools are shown at a time, numbered 1-5, and answered with 5 letters (y/n/s) separated
+ * by spaces, e.g. "n n y n s".
+ *
  * In the default grouped view, 5 groups are shown at a time, numbered 1-5, and answered with 5 letters
  * separated by spaces, e.g. "i c a i s". With --no-group it is one item per prompt.
  *
