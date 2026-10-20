@@ -273,7 +273,22 @@ and the AI result is an independent cross-check, not ground truth
 
 Only `semantic-intent` enters a headline number. Cosmetic and
 schema-additive changes are counted and published separately.
-{{PENDING: the application of the Axis 1 rules to crawl 2, and any count of cases the author judged ambiguous — 2026-10-20 and after}}
+**Crawl 2.** The author hand-labelled 274 crawl-2 pairs against these rules
+(229 of them feed the crawl-1 to crawl-2 headline) and the labels were locked
+(commit `9d3411c`) before drift was computed. The result is 29 of 149 servers
+(19.5%, 95% Wilson interval 13.9% to 26.6%) with semantic-intent drift over 35
+days, just under the pre-registered 20 to 40%. No count of cases the author
+judged ambiguous exists: `data/labels.json` has no ambiguous marker, so none
+is reported.
+
+A blind AI run (claude-sonnet-5-5) then labelled the same 274 pairs without
+seeing the hand labels. Agreement is 194 of 274 (70.8%), kappa 0.53
+(moderate); collapsed to semantic-intent versus the rest, 73.4%, kappa 0.49.
+The AI was stricter: on its labels 34 of 149 servers (22.8%) drift, against the
+author's 29, so the author's figure is the conservative one. The human labels
+decide the headline, as pre-registered. This is one AI rater of the same model
+family that helped build the tool; it is a consistency check, not ground truth
+and not a second human (`data/labels-agreement-crawl2.json`).
 
 
 ## Baseline 2's classifier is provisional

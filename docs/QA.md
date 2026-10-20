@@ -24,7 +24,7 @@ fails the build if anyone tries.
 |---|---|---|
 | Pre-registration | 2026-09-12T17:08:55+05:30, commit `ab49dbb` | `CRAWL_DATES.md`, `corpus/TAXONOMY.md`, `corpus/PREDICTIONS.md`, all in that one commit. The taxonomy and the predictions have not been edited since (`git log` on those two paths shows only that commit); the blob hash of the taxonomy at crawl 1 was `0c896539006dbb6f8dfacc1f02ebbf179c50eec2`. |
 | Crawl 1 | started 2026-09-15T06:19:42.282Z, finished 06:51:29.907Z | `data/crawl-1-report.json` (`startedAt`, `finishedAt`) |
-| Crawl 2 | scheduled 2026-10-20 | {{PENDING: crawl 2 `startedAt` timestamp, and the measured day count between the two crawls — 2026-10-20}} |
+| Crawl 2 | started 2026-10-20T06:29:28.731Z | `data/crawl-2-report.json` (`startedAt`); `data/drift.json` records the interval as 35 days, measured from the two timestamps |
 
 `data/drift.json` is committed now in a "pending" shape. Its fields were
 fixed before crawl 2, so the analysis can fill them but cannot add new ones
@@ -41,7 +41,7 @@ show drift over time and to detect changes that revert, and its segment rates
 are never headlines. The pre-registered comparison is crawl 1 against crawl 2,
 2026-09-15 to 2026-10-20, 35 days.
 The interim crawl ran 2026-10-02 (17 days after crawl 1). By the author's final hand labels (made with no proposed class shown; the relabel is not independent of the AI cross-checks, see [`LIMITATIONS.md`](LIMITATIONS.md)), 16 of the 152 servers captured in both (10.5%) had a `semantic-intent` change; 13 had a `cosmetic` change and 12 a `schema-additive` one, counted separately. This is a rehearsal, never a headline.
-{{PENDING: reverted changes between crawl 1, the interim crawl and crawl 2 — 2026-10-20}}
+Reverted changes: none. Of the 15 servers with a semantic-intent change at the interim crawl, 0 had changed back by crawl 2 (`timeToFirstChange.changedThenRevertedByCrawl2` in `data/drift.json`). The interim figure is not a headline.
 
 The candidate list is the one committed before crawl 1 and is used unchanged
 for crawl 2. A server that appeared in October cannot enter the comparison,
@@ -85,7 +85,17 @@ What is not soft: that a definition changed at all. That is `allow(current,
 pinnedHash)`, a synchronous hash comparison in `packages/policy`. Two hashes
 are equal or they are not, and no reading is involved.
 
-{{PENDING: the semantic-intent drift rate with its denominator, the count of cosmetic and schema-additive changes reported separately, and the number of cases the author judged ambiguous — 2026-10-20 and after}}
+Measured (`data/drift.json`): **29 of 149 servers (19.5%, 95% Wilson interval
+13.9% to 26.6%) showed semantic-intent drift over 35 days, just under the
+pre-registered 20 to 40% range.** By capability: transact 13 of 46 (28.3%),
+communicate 10 of 40 (25.0%), write 6 of 40 (15.0%), read 0 of 23 (0%); the
+groups are small. Counted separately, in tools and never in the headline: 110
+cosmetic, 91 schema-additive, 77 added, 57 removed. No count of ambiguous cases
+exists (the labels file has no such marker). Prediction 3 is untested, because
+its condition (drift of at least 20%) was not met. An independent blind AI
+check of the 274 hand labels agreed on 70.8% (kappa 0.53) and was stricter, 34
+of 149 servers (22.8%), so the author's figure is the conservative one; the
+human labels decide the headline.
 
 ## 3. Attempted versus captured: what happened to the rest?
 
@@ -198,9 +208,9 @@ declined, Groq is used".
 
 **What is the latency cost?** Every gated call performs four DynamoDB writes.
 Measured against DynamoDB Local it added a median of 480.53 ms, which is a
-statement about that backend and not about the gateway. The 30 ms budget is
-unverified against real DynamoDB and `pnpm bench` fails on purpose until it
-is. {{PENDING: added p50/p95/p99 against DynamoDB on AWS — after the AWS deployment (Phase 18)}}
+statement about that backend and not about the gateway. Against DynamoDB on AWS,
+measured on the deployed host on 2026-10-16, it added p50 33.10 ms, p95 53.82 ms
+and p99 129.25 ms: the 30 ms p95 budget is not met, and `pnpm bench` exits 1.
 
 **Is this a security product?** It is a memory. It records what a household
 approved and compares later versions against it. It does not try to detect
