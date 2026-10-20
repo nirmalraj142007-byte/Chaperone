@@ -176,6 +176,5 @@
     "transact": 212
   },
   "lowConfidenceCount": 4064,
-  "taxonomyBlobSha": "0c896539006dbb6f8dfacc1f02ebbf179c50eec2",
-  "notes": "A first attempt at about 2026-10-20T06:24Z failed on a ConfigError (CHAPERONE_UPSTREAMS unset, DynamoDB Local not running) within about a minute. Its six partial raw files were set aside unused; no data from it is in this report. This report is the clean rerun started 2026-10-20T06:29Z. See friction-log.md Entry 056."
+  "taxonomyBlobSha": "0c896539006dbb6f8dfacc1f02ebbf179c50eec2"
 }

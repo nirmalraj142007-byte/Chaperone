@@ -639,3 +639,7 @@ pre-registered 35-day comparison.
 **What did not change.** `corpus/TAXONOMY.md` and `corpus/PREDICTIONS.md` are
 untouched. A draft appendix of labelling rules was never committed and was not
 used; it was deleted.
+
+## Crawl 2: failed first attempt, clean rerun — 2026-10-20
+
+A first attempt at about 06:24 UTC failed on a config error (CHAPERONE_UPSTREAMS unset, DynamoDB Local not running) in about a minute, before any crawl data was used. Its 6 partial raw files were set aside, not deleted, in `planning/backup/crawl-2-failed-attempt/`, and no data from them is in the crawl-2 report. The recorded run is the clean rerun that started at 06:29:28.731 UTC. `data/crawl-2-report.json` is the unmodified generated output; this note lives here and in `CRAWL_DATES.md` instead. See friction-log Entry 056.

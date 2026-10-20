@@ -74,3 +74,4 @@ Like the two lines above the appendix, this one is written by the crawler from
 its own report, not by hand:
 
 - Interim crawl 1 (`crawl-interim-1`) executed at: 2026-10-02T00:02:42.889Z (finished 2026-10-02T00:18:49.060Z; corpus/TAXONOMY.md blob 0c896539006dbb6f8dfacc1f02ebbf179c50eec2)
+- Crawl 2 note (added by hand 2026-10-20, after the run; the line above is the crawler's): a first attempt at about 06:24 UTC failed on a config error in about a minute, before any crawl data was used. Its 6 partial raw files were set aside in planning/backup/crawl-2-failed-attempt/ and no data from them is in the crawl-2 report. The recorded run is the clean rerun that started at the timestamp above.
