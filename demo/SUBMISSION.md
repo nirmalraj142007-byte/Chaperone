@@ -40,7 +40,8 @@ change, so re-check rather than trust it.
 
 ## 3. Devpost
 
-- [ ] **Product Feedback field completed for every tool used**, drawn from `docs/PRODUCT-FEEDBACK.md`: MCP TypeScript SDK, MCP Apps (`ext-apps`) and Inspector, DynamoDB and DynamoDB Local, Bedrock, Groq, CDK, Docker, Kiro, the registry APIs. Known state: the Kiro section still carries a pending marker (the CDK-deploy section was filled on 2026-10-16 from the real deployment; the repository records no Kiro usage). If Kiro was not used, the section says so in one plain sentence rather than being padded
+- [ ] **Product Feedback field completed for every tool used**, drawn from `docs/PRODUCT-FEEDBACK.md`: MCP TypeScript SDK, MCP Apps (`ext-apps`) and Inspector, DynamoDB and DynamoDB Local, Bedrock, Groq, CDK, Docker, Kiro, the registry APIs. Known state: the Kiro section says plainly that Kiro was not used in the final build; the CDK-deploy section was filled on 2026-10-16 from the real deployment
+- [x] **Open-source contribution (OSS PR): not entered.** No pull request to another project is part of this submission, and none is claimed
 - [ ] **Friction log attached**: `friction-log.md`, every entry in the six-field form
 - [ ] The description opens with the add-on framing, not with "proxy", "security layer" or "guardrail"
 - [ ] The description repeats no number that is not in a committed file, and no absolute block rate
@@ -50,7 +51,7 @@ change, so re-check rather than trust it.
 
 - [ ] `CRAWL_DATES.md` is accurate: the Crawl 2 line is machine-written (it matches `jq .startedAt data/crawl-2-report.json`), the Crawl 1 line is unchanged, and the stated interval is still **35 days** (a crawl that ran late would make it 36 or more, and the prose would have to say so)
 - [ ] `pnpm check-claims` passes (no rounded-week language)
-- [ ] `pnpm check-placeholders` passes: no pending marker left in any committed prose. This is the last gate that cannot be satisfied early; it fails today by design (drift rate, production latency, Kiro feedback)
+- [ ] `pnpm check-placeholders` passes: no pending marker left in any committed prose. This is the last gate that cannot be satisfied early; the only marker left is the demo-video link in `deploy/site/index.html`, which cannot exist before 2026-10-22
 - [ ] `data/drift.json` and `data/labels.json` are committed and agree (`data/labels-todo.json` is a regenerable work queue and stays uncommitted); the headline counts `semantic-intent` only, and cosmetic and schema-additive changes are published separately
 - [ ] `pnpm analyse:drift --dry-run` still reports 0 drift and 0 classifier artifacts
 - [x] The prevalence sample (`data/prevalence.json`) is labelled (13/150, 8.7%, 2026-10-18). `corpus/PREDICTIONS.md` committed to testing it

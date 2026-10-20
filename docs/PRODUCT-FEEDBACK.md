@@ -287,7 +287,7 @@ offer a supported "no egress but publish ports" switch.
 
 ## Kiro
 
-**Used for:** {{PENDING: what Kiro was used for in this project — the repo records no Kiro usage or friction; the author supplies this before 2026-10-22}}
+**Used for:** Kiro was not used in the final build. It is listed only because it is part of the hackathon toolchain.
 
 No friction is recorded here because none was recorded in the friction log at
 the time, and this file does not reconstruct feedback from memory.
