@@ -99,7 +99,8 @@ demo/            SCRIPT.md, OFFLINE.md, SUBMISSION.md
 ```
 pnpm install
 docker compose up -d          # ddb (DynamoDB Local), demo-upstream, gateway
-pnpm ddb:migrate              # idempotent table creation
+pnpm ddb:migrate              # idempotent table creation; needs DDB_ENDPOINT + CHAPERONE_UPSTREAMS exported
+pnpm demo:migrate             # the same with the local demo addresses filled in: use this on a fresh clone
 pnpm demo:reset               # full staged demo state, offline, < 60s
 pnpm demo:verify              # the demo beats, headless (Playwright), asserted; must pass twice in a row
 pnpm demo:idempotence         # two resets, ddb:dump after each, diffed (ULIDs/timestamps normalised)

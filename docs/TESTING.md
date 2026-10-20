@@ -168,7 +168,10 @@ pnpm pin:bootstrap
 
 `pnpm ddb:migrate` and the rest read `DDB_ENDPOINT` and `CHAPERONE_UPSTREAMS`
 from the environment; the values CI uses are in `.github/workflows/ci.yml`. The
-demo and e2e scripts fill in local defaults themselves.
+demo and e2e scripts fill in local defaults themselves. On a fresh clone with
+no environment exported, `pnpm demo:migrate` is `pnpm ddb:migrate` with the local
+demo addresses filled in (it is idempotent, and `pnpm demo:reset` does the same
+provisioning).
 
 `pnpm test` on its own needs none of this.
 

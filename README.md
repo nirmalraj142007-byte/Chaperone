@@ -76,7 +76,10 @@ bundle) and prints the beats. Skipping `pnpm build` fails with
 `ERR_MODULE_NOT_FOUND`, because the scripts load the workspace packages from
 their built output. If `docker compose up` reports that a container name is
 already in use, another checkout's stack exists: run `docker compose down` in
-that checkout first (the container names are fixed).
+that checkout first (the container names are fixed). `pnpm demo:reset` also
+creates the DynamoDB tables; to create them on their own, run `pnpm demo:migrate`
+(the bare `pnpm ddb:migrate` needs `DDB_ENDPOINT` and `CHAPERONE_UPSTREAMS` in
+the environment, so it can also target a deployed table set).
 
 **2. Run the demo.** The primary surface is the *simulated Alexa+ experience*: a
 web page with a conversation, where you talk to a household assistant and the
@@ -154,8 +157,8 @@ then open <http://localhost:4173/queue> (the held change and its card),
 puts everything back for another run.
 
 To check all of it headlessly: `pnpm demo:verify` walks the same beats in a real
-browser and asserts each one (11 pass, 1 skipped by design: the drift chart
-has nothing to draw until crawl 2). It needs Chromium once:
+browser and asserts each one, including the drift chart, which it checks against
+`data/drift.json`. It needs Chromium once:
 `pnpm exec playwright install chromium`.
 
 **Two things in the demo are hand-written stand-ins, and both are labelled on
