@@ -139,13 +139,12 @@ screen. Keep `docker compose up -d` and the demo offline-ready per
 
 ### 12 · 2:36 to 2:52 · Final card
 
-- **Screen:** a final card, held to the end: `Crawl 1 · 2026-09-15`, `Crawl 2 · 2026-10-20`, `35 days`, then the drift headline sentence once it exists.
-- **Say:** "Two crawls of one frozen list of servers, September 15th and October 20th: 35 days. {{PENDING: drift headline sentence, from data/drift.json after crawl 2; at most 20 spoken words so beat 12 stays within 16 seconds — 2026-10-20}}"
+- **Screen:** a final card, held to the end: `Crawl 1 · 2026-09-15`, `Crawl 2 · 2026-10-20`, `35 days`, then `29 of 149 servers · 19.5% · semantic-intent drift` and `pre-registered range: 20 to 40%`.
+- **Say:** "Two crawls of one frozen list of servers, September 15th and October 20th: 35 days. Twenty-nine of 149 servers changed what a tool claims: 19.5 percent, just under our pre-registered range."
 
 ## Timing check
 
-Words are counted from each beat's **Say** line (beat 12 excludes the pending
-sentence, which has a budget of its own). 2.4 words per second is the planning
+Words are counted from each beat's **Say** line (beat 12 includes the drift sentence). 2.4 words per second is the planning
 rate; a beat that needs more than that to be read aloud has to be cut or given
 more seconds.
 
@@ -162,7 +161,7 @@ more seconds.
 | 9 | 18 | 39 | 2.17 |
 | 10 | 10 | 19 | 1.90 |
 | 11 | 10 | 18 | 1.80 |
-| 12 | 16 | 15 + pending | — |
+| 12 | 16 | 31 | 1.94 |
 | **Total** | **172** | | **2:52** |
 
 ## After crawl 2 (2026-10-20)
