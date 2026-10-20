@@ -1,0 +1,8 @@
+{
+  "serverId": "eonik-ai__eonik-mcp__ai-eonik-mcp",
+  "status": "FAILED_START",
+  "tools": [],
+  "stderrTail": "eonik MCP 3.0.0: bridging stdio to https://api.eonik.ai/mcp\neonik MCP: fetch failed\n",
+  "durationMs": 14020,
+  "transport": "stdio"
+}

@@ -1,0 +1,1696 @@
+{
+  "serverId": "ng-galien__maket__ng-galien-maket",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "maket_mermaid",
+      "description": "When to use: add a diagram to a page. Works for flowcharts, sequence, class, ER, state, and XY chart diagrams. Pick this over manual SVG or nested divs when the thing you want is conceptually a graph.\n\nRenders Mermaid syntax to durable inline SVG and injects it into the page HTML. The answer gives the document's reading path in Maket and the rendered diagram as an inline image (at most 1600 px and 1 MB of base64; beyond a 2:1 ratio, its top or left part). The source and semantic rendering choices stay on the wrapper so charte changes can rerender the diagram. The diagram scales with its wrapper (width/height drive the frame, not the SVG itself). If dataId already exists, the diagram is replaced in place — idempotent edits.\nA document charte is applied automatically through canonical diagram tokens and documented color/font fallbacks. tokenRefs selects any existing charte token explicitly; direct safe values take final precedence.\nDensity controls are supported for flowchart and state diagrams by the current renderer. Source-level Mermaid styling directives are rejected; use charte tokens or safe diagram options.\nHeader on its own line:  graph TD\\n  A-->B    (NOT graph TD; A-->B)",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "doc": {
+            "type": "string",
+            "description": "Document name"
+          },
+          "page": {
+            "type": "number",
+            "description": "Page number (1-based)"
+          },
+          "code": {
+            "type": "string",
+            "description": "Mermaid diagram syntax. Header on its own line, then statements. E.g. \"graph TD\\n  A-->B\\n  B-->C\"."
+          },
+          "dataId": {
+            "description": "data-id for the wrapper element. Default: auto-generated (mermaid-1, mermaid-2...)",
+            "type": "string"
+          },
+          "width": {
+            "description": "CSS width for the wrapper (e.g. \"180mm\", \"100%\"). Default: auto.",
+            "type": "string"
+          },
+          "height": {
+            "description": "CSS height for the wrapper (e.g. \"120mm\"). Default: auto.",
+            "type": "string"
+          },
+          "theme": {
+            "description": "Optional built-in diagram profile. Overrides automatic charte defaults; tokenRefs and direct values override it.",
+            "type": "string",
+            "enum": [
+              "zinc-light",
+              "zinc-dark",
+              "tokyo-night",
+              "tokyo-night-storm",
+              "tokyo-night-light",
+              "catppuccin-mocha",
+              "catppuccin-latte",
+              "nord",
+              "nord-light",
+              "dracula",
+              "github-light",
+              "github-dark",
+              "solarized-light",
+              "solarized-dark",
+              "one-dark"
+            ]
+          },
+          "tokenRefs": {
+            "description": "Explicit references to tokens on the document charte, keyed by diagram role. Example: {\"bg\":\"color.paper\",\"accent\":\"color.primary\",\"font\":\"font.body\"}.",
+            "type": "object",
+            "properties": {
+              "bg": {
+                "description": "Charte token reference for bg, as \"group.key\".",
+                "type": "string"
+              },
+              "fg": {
+                "description": "Charte token reference for fg, as \"group.key\".",
+                "type": "string"
+              },
+              "line": {
+                "description": "Charte token reference for line, as \"group.key\".",
+                "type": "string"
+              },
+              "accent": {
+                "description": "Charte token reference for accent, as \"group.key\".",
+                "type": "string"
+              },
+              "muted": {
+                "description": "Charte token reference for muted, as \"group.key\".",
+                "type": "string"
+              },
+              "surface": {
+                "description": "Charte token reference for surface, as \"group.key\".",
+                "type": "string"
+              },
+              "border": {
+                "description": "Charte token reference for border, as \"group.key\".",
+                "type": "string"
+              },
+              "font": {
+                "description": "Charte token reference for font, as \"group.key\".",
+                "type": "string"
+              },
+              "padding": {
+                "description": "Charte token reference for padding, as \"group.key\".",
+                "type": "string"
+              },
+              "nodeSpacing": {
+                "description": "Charte token reference for nodeSpacing, as \"group.key\".",
+                "type": "string"
+              },
+              "layerSpacing": {
+                "description": "Charte token reference for layerSpacing, as \"group.key\".",
+                "type": "string"
+              },
+              "transparent": {
+                "description": "Charte token reference for transparent, as \"group.key\".",
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          },
+          "bg": {
+            "description": "Safe background colour. Overrides charte, profile, or tokenRefs.",
+            "type": "string"
+          },
+          "fg": {
+            "description": "Safe foreground colour. Overrides charte, profile, or tokenRefs.",
+            "type": "string"
+          },
+          "line": {
+            "description": "Safe connector colour. Overrides charte, profile, or tokenRefs.",
+            "type": "string"
+          },
+          "accent": {
+            "description": "Safe arrow/accent colour. Overrides charte, profile, or tokenRefs.",
+            "type": "string"
+          },
+          "muted": {
+            "description": "Secondary text colour. Overrides charte, profile, or tokenRefs.",
+            "type": "string"
+          },
+          "surface": {
+            "description": "Node surface colour. Overrides charte, profile, or tokenRefs.",
+            "type": "string"
+          },
+          "border": {
+            "description": "Node and group border colour. Overrides charte, profile, or tokenRefs.",
+            "type": "string"
+          },
+          "font": {
+            "description": "Safe primary font family. A fallback stack is normalized to its first family. Overrides charte, profile, or tokenRefs.",
+            "type": "string"
+          },
+          "transparent": {
+            "description": "Render without an SVG background. Default: false.",
+            "type": "boolean"
+          },
+          "padding": {
+            "description": "Flowchart/state canvas padding in px.",
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "nodeSpacing": {
+            "description": "Flowchart/state horizontal spacing between sibling nodes in px.",
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "layerSpacing": {
+            "description": "Flowchart/state vertical spacing between diagram layers in px.",
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "targetId": {
+            "description": "data-id of parent element to insert into. Default: page root.",
+            "type": "string"
+          },
+          "position": {
+            "description": "Where to insert relative to target. Default: beforeend.",
+            "type": "string",
+            "enum": [
+              "beforebegin",
+              "afterbegin",
+              "beforeend",
+              "afterend"
+            ]
+          }
+        },
+        "required": [
+          "doc",
+          "page",
+          "code"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    },
+    {
+      "name": "maket_image",
+      "description": "When to use: manage the asset library (images). `view` → `meta` is a required two-step: meta refuses any write without the context_token from the latest view call — proof the image was read before metadata is attributed.\n\nImages live on disk under the assets dir; metadata lives in the store; both move together.\n  list   — list assets grouped by category; flags items missing metadata.\n  view   — load an asset inline (text + binary image) and return its context_token. MUST be called before meta.\n  meta   — write/update metadata; rejects without a current context_token.\n  import — copy an asset in via url, path, or register-mode (filename-only for already-present files). Auto-optimises + thumbnails.\n  delete — remove the file, thumbnail, and metadata row.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "list",
+              "view",
+              "meta",
+              "import",
+              "delete"
+            ],
+            "description": "Operation to run. See the tool description for the action table."
+          },
+          "filename": {
+            "description": "Asset filename. Required for view/meta/delete. For import: destination filename (required in register-mode, derived from url/path otherwise).",
+            "type": "string"
+          },
+          "category": {
+            "description": "For list: filter to this category. For meta/import: category tag.",
+            "type": "string"
+          },
+          "context_token": {
+            "description": "For meta (REQUIRED): token returned by the matching view call. Proves the image was read before its metadata is written.",
+            "type": "string"
+          },
+          "title": {
+            "description": "For meta/import: human title.",
+            "type": "string"
+          },
+          "description": {
+            "description": "For meta/import: long prose.",
+            "type": "string"
+          },
+          "tags": {
+            "description": "For meta/import: searchable tags.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "credit": {
+            "description": "For meta/import: attribution / photographer credit.",
+            "type": "string"
+          },
+          "orientation": {
+            "description": "For meta/import: orientation hint (landscape/portrait/square).",
+            "type": "string"
+          },
+          "url": {
+            "description": "For import: HTTP(S) URL to download from.",
+            "type": "string"
+          },
+          "path": {
+            "description": "For import: local filesystem path to copy from.",
+            "type": "string"
+          },
+          "overwrite": {
+            "description": "For import: overwrite an existing file with the same name.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    },
+    {
+      "name": "maket_charte",
+      "description": "When to use: manage brand style guides (chartes). `view` is a prerequisite for any charte-aware HTML edit — it returns the context_token required by maket_html set/patch.\n\nDesign tokens become CSS variables (--charte-color-primary, etc.) injected into every page. Voice and rules guide content composition.\nmaket_mermaid automatically consumes canonical diagram tokens and documented fallbacks from color/font groups; its tokenRefs option can target any existing safe token explicitly.\n  list   — list all chartes with a short colour-palette preview.\n  view   — read one charte; returns tokens, voice, rules, and context_token.\n  set    — create or overwrite a charte.\n  delete — remove a charte.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "list",
+              "view",
+              "set",
+              "delete"
+            ],
+            "description": "Operation to run. See the tool description for the action table."
+          },
+          "name": {
+            "description": "Required for view/set/delete. Unique charte name.",
+            "type": "string"
+          },
+          "description": {
+            "description": "For set: one-line human description.",
+            "type": "string"
+          },
+          "tokens": {
+            "description": "For set: design tokens grouped by category. Become CSS variables --charte-<group>-<key>. Diagram roles can use a canonical \"diagram\" group (bg, fg, line, accent, muted, surface, border, font, padding, nodeSpacing, layerSpacing, transparent). Example: {\"color\":{\"primary\":\"#2563EB\"},\"font\":{\"body\":\"Montserrat\"},\"diagram\":{\"surface\":\"#EFF6FF\",\"nodeSpacing\":\"32px\"}}.",
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
+          },
+          "voice": {
+            "description": "For set: voice guidelines (personality, formality, do/dont, vocabulary, examples).",
+            "type": "object",
+            "properties": {
+              "personality": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "formality": {
+                "type": "string"
+              },
+              "do": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "dont": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "vocabulary": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "examples": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "good": {
+                      "type": "string"
+                    },
+                    "bad": {
+                      "type": "string"
+                    },
+                    "context": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "good",
+                    "bad"
+                  ]
+                }
+              }
+            }
+          },
+          "rules": {
+            "description": "For set: composition rules (titles, photos, layout). Extra keys allowed.",
+            "type": "object",
+            "properties": {
+              "titles": {
+                "type": "string"
+              },
+              "photos": {
+                "type": "string"
+              },
+              "layout": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    },
+    {
+      "name": "maket_collection",
+      "description": "When to use: manage data collections used by page placeholders.\n\nCollections are typed by JSON Schema and contain ordered members. A page can be bound to one collection; rendering then produces one page per member.\n  list   — list collections.\n  view   — read one collection with fields and members.\n  create — create an empty collection from a JSON Schema.\n  validate_schema — check a schema against existing members without saving.\n  change_schema — apply a schema only when existing members validate.\n  add_row / update_row / delete_row — edit collection members.\n  delete — remove a collection.\n  bind / unbind — bind or clear a collection on a document page.\n  cursor — read or move a bound page's preview cursor (doc + page required). Without mode/row it reads; with mode (template|rendered|all) and/or row (member id or 1-based number) it moves. The human's live canvas, this cursor and the exports all share this state.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "list",
+              "view",
+              "create",
+              "validate_schema",
+              "change_schema",
+              "add_row",
+              "update_row",
+              "delete_row",
+              "delete",
+              "bind",
+              "unbind",
+              "cursor"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "schema": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          },
+          "data": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          },
+          "row": {
+            "type": "string"
+          },
+          "doc": {
+            "type": "string"
+          },
+          "page": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "template",
+              "rendered",
+              "all"
+            ]
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    },
+    {
+      "name": "maket_state",
+      "description": "When to use: attach durable data and immutable snapshot history to one living document.\n\nDocument state is separate from collections and mail merge. A state-backed document renders Mustache variables, sections, inverted sections, and loops from its latest revision. Every mutation stores a complete validated schema + data snapshot. History is unbounded unless the document has a revision retention.\nThe page interface is HTML/CSS, a JSON Forms template, or HTML embedding the current form at <!--maket-json-form-->. Configure the form with maket_page set_form. HTML uses display-only Mustache plus explicit data-maket-bind controls. JSON Forms uses the document-state JSON Schema and data, with an optional UI schema. Both formats resolve to the same JSON Pointer patches and revisioned store.\n  init     — attach a schema and initial data to a static document (revision 1; no expected_revision).\n  get      — read the schema, the revision retention (`retention`, null when unbounded), and the current revision.\n  update   — append a complete state snapshot; expected_revision is required.\n  patch    — apply RFC 6902 JSON Patch operations; expected_revision is required.\n  validate_schema — validate a proposed schema against current or supplied data without saving.\n  change_schema — atomically replace the schema and append compatible data; expected_revision is required.\n  history  — list immutable revisions newest first.\n  revision — read one revision.\n  restore  — append a new revision containing an older schema + data snapshot; expected_revision is required.\n  set_retention — keep `retention` previous revisions besides the current one and delete older ones now and after every later write; 0 keeps only the current state, null restores unbounded history. Applies to Workspace items and collection projections too.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "init",
+              "get",
+              "update",
+              "patch",
+              "validate_schema",
+              "change_schema",
+              "history",
+              "revision",
+              "restore",
+              "set_retention"
+            ],
+            "description": "Document-state operation to perform."
+          },
+          "doc": {
+            "type": "string",
+            "description": "Target document name."
+          },
+          "schema": {
+            "description": "JSON Schema required by init, validate_schema, and change_schema.",
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          },
+          "data": {
+            "description": "Complete state object required by init/update; optional compatible data for schema validation/change.",
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          },
+          "patch": {
+            "description": "RFC 6902 operations required by action=patch.",
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "op": {
+                      "type": "string",
+                      "const": "add"
+                    },
+                    "path": {
+                      "type": "string"
+                    },
+                    "value": {}
+                  },
+                  "required": [
+                    "op",
+                    "path",
+                    "value"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "op": {
+                      "type": "string",
+                      "const": "remove"
+                    },
+                    "path": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "op",
+                    "path"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "op": {
+                      "type": "string",
+                      "const": "replace"
+                    },
+                    "path": {
+                      "type": "string"
+                    },
+                    "value": {}
+                  },
+                  "required": [
+                    "op",
+                    "path",
+                    "value"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "op": {
+                      "type": "string",
+                      "const": "move"
+                    },
+                    "from": {
+                      "type": "string"
+                    },
+                    "path": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "op",
+                    "from",
+                    "path"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "op": {
+                      "type": "string",
+                      "const": "copy"
+                    },
+                    "from": {
+                      "type": "string"
+                    },
+                    "path": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "op",
+                    "from",
+                    "path"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "op": {
+                      "type": "string",
+                      "const": "test"
+                    },
+                    "path": {
+                      "type": "string"
+                    },
+                    "value": {}
+                  },
+                  "required": [
+                    "op",
+                    "path",
+                    "value"
+                  ]
+                }
+              ]
+            }
+          },
+          "expected_revision": {
+            "description": "Current revision required by update, patch, change_schema, and restore; not used by init.",
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "revision": {
+            "description": "Historical revision required by revision and restore.",
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "retention": {
+            "description": "For set_retention: number of previous revisions kept besides the current one (0 keeps only the current state); null keeps the full history again.",
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "action",
+          "doc"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    },
+    {
+      "name": "maket_structured_workspace",
+      "description": "When to use: create and operate a Structured Workspace — a schema-driven collection of items, listed in an index and opened as Maket documents built from templates.\n\nMethod (full recipe: maket_learn action=topic topic=structured-workspaces): 1) create with a data_schema alone that has a required \"id\" property (string), one value per item: Maket identifies the items by \"/id\" — or declare another identity per collection, e.g. representation_schema={\"collections\":{\"items\":{\"name\":\"Items\",\"identity\":\"/code\"}}} — and Maket writes the index, detail, card templates and the detail form itself, in the Workspace category; 2) add_item; 3) check, which must answer verdict ready. Inline template HTML (detailTemplateHtml, compactTemplateHtml, indexTemplateHtml, detailForm) or names of existing template documents are the optional second and third paths.\nIdentity: every collection has an `identity`, a JSON Pointer to a required string or number property of its items (e.g. \"/code\"); without one, \"/id\" when the schema requires an id property. Its value, as a string, is the item id used everywhere (item=, documents, cursors) and is unique across the whole Workspace, all collections included; Maket never generates one. add_item refuses data without it, or a value another item of the Workspace already bears (invalid_record, naming that item); update_item refuses a change of it: delete and add the item again instead. The identity of a collection holding items cannot be changed.\ncreate and update_definition refuse a definition with errors (isError, one line per error with collection, path and fix) and keep the previous definition; allow_incomplete=true persists it anyway. add_item and update_item refuse data that breaks the schema with its path, rule and fix.\n\nThe data schema validates every item. The representation schema declares one or more collections; each collection owns its global template and binds concrete schema paths to compact and detail templates. The item source holds the item data; an item's document is created from its detail template when the item is opened or exported. Template-controlled pages are synchronized from the template; instance-owned pages remain in the same document.\nReading items is a cursor query: view answers one batch of item summaries for one collection (collection, default the first) with `next` (an opaque cursor, absent once the listing is exhausted), `total` and the group counts. Pass text (searches `searchFields`, by default every text property, ignoring case and accents), filters ([{\"field\":\"/status\",\"op\":\"eq\",\"value\":\"todo\"}], op in for a list), sort ({\"field\":\"/title\",\"direction\":\"descending\"}) and batch (default `indexPageSize`, 50; at most 500) to start a new query, which also becomes the window every client sees in the index. To read the next batch, pass cursor=<next> with the same query arguments (the answer gives the call in `more`): it reads the source directly and never depends on the shared window: no item that existed before and kept its sort value is skipped or read twice, while an item whose sort value changes during paging may move across the cursor. There is no page number and no previous: a new query restarts from the first item. view with neither query nor cursor answers the first batch of the collection's own order.\nOptional collection grouping: `groupBy` is a JSON Pointer into item data (e.g. \"/status\"), `groupOrder` lists group values to place first, and `pageSize` (default 24) caps the compact cards per collection page. With `groupBy`, each item slot receives a group header followed by its cards and the collection document flows onto as many pages as needed; without it, the collection stays one page.\nOptional collection sort: `sortBy` is a JSON Pointer into item data (e.g. \"/place\") and `sortDirection` is \"ascending\" (default) or \"descending\"; cards are ordered by that value inside each group, or across the slot without `groupBy`, items without a value last and ties in item id order; without `sortBy`, insertion order stays.\n  list          — list Structured Workspaces, each prefixed with ready or incomplete.\n  view          — verdict and finding count first, then the definition, item counts, pinned items, owned documents, one batch of the collection window (see the cursor query above), and `reading`: the reading path of that collection's index in Maket.\n  check         — the doctor: verdict ready or not ready and every finding with severity, object, sentence, fix and next call. Never writes.\n  create        — create a workspace from a data schema, with an optional representation schema; refuses errors unless allow_incomplete=true.\n  update_definition — validate and replace the data and/or representation contract, then update the item and index documents that exist; an erroneous definition is refused and the previous one kept unless allow_incomplete=true.\n  add_item      — validate data and write the item to its source under the id its identity property holds; its document is created when the item is opened.\n  update_item   — replace item data with optimistic revision control.\n  delete_item   — delete the item from its source, with its document when it was opened.\n  sync_template — propagate current detail-template pages while preserving instance-owned pages.\n  rename        — rename the Workspace without regenerating owned documents.\n  delete        — atomically delete the Workspace and every document, state revision, and annotation it owns.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "list",
+              "view",
+              "check",
+              "create",
+              "update_definition",
+              "add_item",
+              "update_item",
+              "delete_item",
+              "sync_template",
+              "rename",
+              "delete"
+            ]
+          },
+          "workspace": {
+            "type": "string"
+          },
+          "new_name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "data_schema": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          },
+          "representation_schema": {
+            "type": "object",
+            "properties": {
+              "version": {
+                "type": "number",
+                "const": 1
+              },
+              "collections": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "identity": {
+                      "type": "string"
+                    },
+                    "collectionTemplateDocumentId": {
+                      "type": "string"
+                    },
+                    "indexTemplateHtml": {
+                      "type": "string"
+                    },
+                    "detailTemplateHtml": {
+                      "type": "string"
+                    },
+                    "compactTemplateHtml": {
+                      "type": "string"
+                    },
+                    "detailForm": {
+                      "type": "object",
+                      "properties": {
+                        "uischema": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {}
+                        }
+                      }
+                    },
+                    "bindings": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "type": "object",
+                        "properties": {
+                          "schemaPath": {
+                            "type": "string"
+                          },
+                          "compactTemplateDocumentId": {
+                            "type": "string"
+                          },
+                          "detailTemplateDocumentId": {
+                            "type": "string"
+                          },
+                          "detailTemplateHtml": {
+                            "type": "string"
+                          },
+                          "compactTemplateHtml": {
+                            "type": "string"
+                          },
+                          "detailForm": {
+                            "type": "object",
+                            "properties": {
+                              "uischema": {
+                                "type": "object",
+                                "propertyNames": {
+                                  "type": "string"
+                                },
+                                "additionalProperties": {}
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "groupBy": {
+                      "type": "string"
+                    },
+                    "groupOrder": {
+                      "type": "array",
+                      "items": {
+                        "type": [
+                          "string",
+                          "number",
+                          "boolean",
+                          "null"
+                        ]
+                      }
+                    },
+                    "pageSize": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "sortBy": {
+                      "type": "string"
+                    },
+                    "sortDirection": {
+                      "type": "string",
+                      "enum": [
+                        "ascending",
+                        "descending"
+                      ]
+                    },
+                    "indexPageSize": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "searchFields": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "item": {
+            "type": "string"
+          },
+          "collection": {
+            "type": "string"
+          },
+          "binding": {
+            "type": "string"
+          },
+          "document_name": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          },
+          "expected_revision": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "expected_workspace_revision": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "allow_incomplete": {
+            "type": "boolean"
+          },
+          "text": {
+            "type": "string"
+          },
+          "filters": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string"
+                },
+                "op": {
+                  "type": "string",
+                  "enum": [
+                    "eq",
+                    "in"
+                  ]
+                },
+                "value": {
+                  "anyOf": [
+                    {
+                      "type": [
+                        "string",
+                        "number",
+                        "boolean",
+                        "null"
+                      ]
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": [
+                          "string",
+                          "number",
+                          "boolean",
+                          "null"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "field",
+                "op",
+                "value"
+              ]
+            }
+          },
+          "sort": {
+            "type": "object",
+            "properties": {
+              "field": {
+                "type": "string"
+              },
+              "direction": {
+                "type": "string",
+                "enum": [
+                  "ascending",
+                  "descending"
+                ]
+              }
+            },
+            "required": [
+              "field"
+            ]
+          },
+          "cursor": {
+            "type": "string"
+          },
+          "batch": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    },
+    {
+      "name": "maket_learn",
+      "description": "When to use: first call for any agent entering Maket; source of operational guidance for using Maket MCP tools correctly.\n\nReturns structured Markdown inside MCP text content. It teaches agents how to operate Maket: workflow, HTML composition, chartes, diagram styling, collections, living document state, Structured Workspaces, review loop, and client installation.\nThis is not the user-facing Help document opened from the Maket UI.\n\nActions:\n  overview — short operating model.\n  topics   — list available topics.\n  topic    — read one topic with topic=<name>.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "description": "Default: overview.",
+            "type": "string",
+            "enum": [
+              "overview",
+              "topics",
+              "topic"
+            ]
+          },
+          "topic": {
+            "description": "Required for action=topic.",
+            "type": "string",
+            "enum": [
+              "overview",
+              "workflow",
+              "tools",
+              "html",
+              "chartes",
+              "diagrams",
+              "collections",
+              "state",
+              "structured-workspaces",
+              "review",
+              "install",
+              "gemini"
+            ]
+          },
+          "audience": {
+            "description": "Default: agent.",
+            "type": "string",
+            "enum": [
+              "agent",
+              "human"
+            ]
+          }
+        },
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    },
+    {
+      "name": "maket_page",
+      "description": "When to use: manage page structure within a document — add, remove, rename, reorder, list. For page content, use maket_html instead.\n\nManage pages within a document. HTML can embed the current JSON Forms template at <!--maket-json-form-->.\n  add      — append a page with html, json_forms, or both with one form slot; sets it active.\n  remove  — delete a page by 1-based index or name; refused if it's the last page.\n  rename  — rename a page by index or current name.\n  reorder — move a page from one 1-based position to another; activePage adjusts.\n  list     — list pages with their template format; the active page is marked ●.\n  set_form — replace the current form, preserving HTML with a form slot; without a slot, switch to a full-page form.\n  get_form — read one page's JSON Forms template.\n\nNote: charte compliance (token-literal colours, font-family, box-shadow) is enforced by maket_html set/patch, not by maket_page add. If the new page must match a charte, follow maket_page add with maket_html set to validate.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "add",
+              "remove",
+              "rename",
+              "reorder",
+              "list",
+              "set_form",
+              "get_form"
+            ],
+            "description": "Operation to run. See the tool description for the action table."
+          },
+          "doc": {
+            "type": "string",
+            "description": "Document name (always required)."
+          },
+          "page": {
+            "description": "For remove/rename: target page — either 1-based index or page name.",
+            "type": [
+              "string",
+              "number"
+            ]
+          },
+          "name": {
+            "description": "For add/rename: page name (new page name, or rename target).",
+            "type": "string"
+          },
+          "html": {
+            "description": "For add: HTML body for the new page. Relative image src values are normalized to /assets/...",
+            "type": "string"
+          },
+          "json_forms": {
+            "description": "For add/set_form: JSON Forms template. Omit uischema to generate the form from the document-state JSON Schema.",
+            "type": "object",
+            "properties": {
+              "uischema": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
+              }
+            }
+          },
+          "from": {
+            "description": "For reorder: source 1-based position.",
+            "type": "number"
+          },
+          "to": {
+            "description": "For reorder: target 1-based position.",
+            "type": "number"
+          }
+        },
+        "required": [
+          "action",
+          "doc"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    },
+    {
+      "name": "maket_doc",
+      "description": "When to use: every persistent document-lifecycle operation — create, clone, rename, delete, list, update metadata, or move bundles in/out. For session-level actions (open a doc/page in the preview, inspect state, lock), use maket_workspace. For per-page edits use maket_page and for content use maket_html.\n\n`doc` is the doc in scope for every action except list. `name` only appears when you need a NEW name (duplicate, rename).\n\nManage design documents (the workspace unit: canvas + pages + meta).\n  new       — create a blank document at `doc`; sets it active. Previous unsaved work is lost.\n  list      — enumerate saved documents: pinned documents first (most recently pinned first, marked 📌, with their category), then the other documents as a hierarchy of category paths.\n  lookup    — read-only identity of `doc` by exact name, Workspace documents included: JSON {name, id, revision (monotonic modification token), pageCount, dataModel, stateRevision (null without state)}. It never opens the preview nor changes the active document. When absent, the error lists near matches.\n  link      — return a reading path for `doc`, using its stable document id and configured browser base path. Prefix it with the reachable gateway origin.\n  delete    — remove `doc` permanently; refused if it's the only document left.\n  duplicate — clone `doc` → `name` (format variants, A/B copies).\n  rename    — rename `doc` → `name`.\n  meta      — update `doc`'s metadata: designNotes, teamNotes, rating, category, charte, responsive. The responsive flag applies to every browser-reader page while canvas/PDF keep authored dimensions. Owned Workspace templates accept responsive alone; sync_template propagates it.\n  pin       — pin `doc` at the top of the document lists (desktop library, Reader navigation, list). The most recently pinned document comes first; pinning an already pinned doc keeps its place. Allowed on locked documents. Workspace item pins appear under their collection in the Workspace sidebar; indexes and templates cannot be pinned.\n  unpin     — remove `doc`'s pin; free documents return to their category and Workspace items disappear from the pinned shortcuts.\n  export    — write a portable `.maket` bundle to EXPORTS_DIR. By default the bundle embeds referenced asset binaries (images, SVGs) so it survives transfer to another machine or a fresh datadir. Pass `include_assets=false` for a lighter structure-only snapshot. Include `doc` for a single document, `docs` for a list, or omit both to export every document. Referenced chartes, collections, and current document-state snapshots (with their revision retention) are embedded automatically; revision history stays local. Override the filename with `output`.\n  import    — load a `.maket` bundle from `input` (absolute path or EXPORTS_DIR-relative). Documents land with conflict-renamed names; chartes and collections skip names that already exist. Current document-state snapshots initialize revision 1, and assets are restored to ASSETS_DIR with the existing collision rule.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "new",
+              "list",
+              "lookup",
+              "link",
+              "delete",
+              "duplicate",
+              "rename",
+              "meta",
+              "pin",
+              "unpin",
+              "export",
+              "import"
+            ],
+            "description": "Operation to run. See the tool description for the action table."
+          },
+          "doc": {
+            "description": "The doc in scope. Required for every action except list. For lookup: the exact name to read. For new: the new doc's name (must be unique). For delete/meta/pin/unpin: the doc to act on. For duplicate/rename: the source doc.",
+            "type": "string"
+          },
+          "name": {
+            "description": "The new name. Only used by duplicate (clone's name) and rename (new name).",
+            "type": "string"
+          },
+          "format": {
+            "description": "For new: paper/screen format, or AUTO with width in mm and automatic page height. Default A3. Paper sizes are mm; DESKTOP/TABLET/MOBILE are screen aspect ratios scaled to mm.",
+            "type": "string",
+            "enum": [
+              "A2",
+              "A3",
+              "A4",
+              "A5",
+              "A6",
+              "A7",
+              "A8",
+              "DESKTOP",
+              "TABLET",
+              "MOBILE",
+              "AUTO"
+            ]
+          },
+          "width": {
+            "description": "Width in millimetres for AUTO format; required on creation. Height follows each page content.",
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "orientation": {
+            "description": "For new: page orientation. Default portrait.",
+            "type": "string",
+            "enum": [
+              "portrait",
+              "landscape"
+            ]
+          },
+          "background": {
+            "description": "For new: canvas background colour (CSS). Default #ffffff.",
+            "type": "string"
+          },
+          "category": {
+            "description": "For new/meta: category path separated by / (for example clients/acme). Flat values remain valid roots; default general.",
+            "type": "string"
+          },
+          "charte": {
+            "description": "For new/meta: name of an existing charte to associate with this document. The charte itself is applied later via maket_charte view.",
+            "type": "string"
+          },
+          "responsive": {
+            "description": "For new/meta: opt this entire document into fluid browser reading at its available pane width. Default false; canvas authoring and PDF keep their physical dimensions. On a Workspace template only this field may be changed through meta; then sync_template propagates it to projections.",
+            "type": "boolean"
+          },
+          "margins": {
+            "description": "For new: per-side safe-zone insets in mm {top, right, bottom, left}. Optional.",
+            "type": "object",
+            "properties": {
+              "top": {
+                "type": "number"
+              },
+              "right": {
+                "type": "number"
+              },
+              "bottom": {
+                "type": "number"
+              },
+              "left": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "top",
+              "right",
+              "bottom",
+              "left"
+            ]
+          },
+          "designNotes": {
+            "description": "For meta: designer-facing notes (visible in the UI).",
+            "type": "string"
+          },
+          "teamNotes": {
+            "description": "For meta: team-facing notes (visible in the UI).",
+            "type": "string"
+          },
+          "rating": {
+            "description": "For meta: 0–5 star rating (clamped).",
+            "type": "number"
+          },
+          "docs": {
+            "description": "For export: list of doc names to include in the bundle. Omit to export all documents. Ignored by other actions.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "output": {
+            "description": "For export: output filename (defaults to <doc>.maket or maket-bundle.maket). Absolute paths are honoured; bare names land in EXPORTS_DIR.",
+            "type": "string"
+          },
+          "input": {
+            "description": "For import: absolute or EXPORTS_DIR-relative path to a .maket file to load.",
+            "type": "string"
+          },
+          "include_assets": {
+            "description": "For export: embed referenced asset binaries (images, SVGs) in the bundle. Default true — produces a portable .maket that survives transfer to another machine or datadir. Set false for a structure-only snapshot (smaller, git-friendly).",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    },
+    {
+      "name": "maket_canvas",
+      "description": "When to use: set or update the canvas (physical frame) of a document — format, orientation, background, margins. Call this before adding content to a fresh doc, or when switching a doc between formats.\n\nCoordinates are in mm.\n  Paper sizes — A2=420×594, A3=297×420, A4=210×297, A5=148×210, A6=105×148, A7=74×105, A8=52×74.\n  Screen sizes — DESKTOP=288×205 (1440×1024), TABLET=167×239 (834×1194), MOBILE=79×170 (393×852).\n  AUTO — width in mm is required; each page height follows its content. Orientation is ignored. Use normal HTML flow rather than a fixed-height wrapper.\nUnspecified fields keep their current value.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "doc": {
+            "type": "string",
+            "description": "Document name."
+          },
+          "format": {
+            "description": "Paper (A2–A8, mm) or screen (DESKTOP/TABLET/MOBILE, mm-equivalent). Unspecified keeps the current value.",
+            "type": "string",
+            "enum": [
+              "A2",
+              "A3",
+              "A4",
+              "A5",
+              "A6",
+              "A7",
+              "A8",
+              "DESKTOP",
+              "TABLET",
+              "MOBILE",
+              "AUTO"
+            ]
+          },
+          "width": {
+            "description": "Width in millimetres for AUTO format; required on creation. Height follows each page content.",
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "orientation": {
+            "description": "Page orientation. Unspecified keeps the current value.",
+            "type": "string",
+            "enum": [
+              "portrait",
+              "landscape"
+            ]
+          },
+          "background": {
+            "description": "CSS background colour. Unspecified keeps the current value. Prefer var(--charte-color-bg) when a charte is loaded.",
+            "type": "string"
+          },
+          "margins": {
+            "description": "Per-side safe-zone insets in mm: {top, right, bottom, left}. The layout verdict reports `tight` when blocks cross into any band, and the client draws dashed guides at these insets. Unspecified keeps the current value.",
+            "type": "object",
+            "properties": {
+              "top": {
+                "type": "number"
+              },
+              "right": {
+                "type": "number"
+              },
+              "bottom": {
+                "type": "number"
+              },
+              "left": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "top",
+              "right",
+              "bottom",
+              "left"
+            ]
+          }
+        },
+        "required": [
+          "doc"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    },
+    {
+      "name": "maket_html",
+      "description": "When to use: read and write page HTML. Pick set for the initial skeleton, patch for iterative edits, get to read, check to measure overflow without writing.\n\nEvery visible element MUST have a data-id. Use flex/grid with mm units. When a charte is loaded, prefer var(--charte-*) tokens. The compliance check is narrow: it rejects (1) hardcoded colour literals that duplicate an existing charte token value (e.g. #2563EB when primary=#2563EB), (2) any hardcoded font-family when the charte defines fonts, (3) any hardcoded box-shadow when the charte defines shadows. Fresh colours that don't duplicate a token pass untouched.\nLayout override: data-maket-layout=\"ignore\" excludes exactly one marked non-interactive leaf block from overflow, overlap, clipping, and margin checks. The block must have no child elements or text; controls, links, data-maket-bind and focusable/ARIA elements are ineligible. Reserve it for intentional non-content decoration after visual review. Add it only with maket_html action=patch using attr on an existing data-id; the enabling op must be the only op in that patch request. Set, insert, replace, and content HTML cannot introduce it.\nFor a state-backed document, Mustache is display-only. The document must author editable controls and all their CSS explicitly: data-maket-bind supports <input type=\"checkbox\"> for booleans, <input type=\"text\"> and <textarea> for strings, <select> for string enums (or for a string whose options come from a state list with data-maket-options=\"state.list\"), and <button type=\"button\"> for the single-value editor; a bound button with data-maket-value=\"<value>\" (optionally data-maket-action=\"set\") writes that value on click instead. Use state.foo at the root and relative foo inside state sections; never persist data-maket-path or other runtime attributes.\n  set   — REPLACE the full page HTML. Rejects the whole payload on any violation. Requires context_token when the doc has a charte.\n  patch — apply ops by data-id: style/content/attr/insert/replace/remove/clone/moveTo. Violating ops roll back individually, the rest still apply.\n  get   — return current HTML; pass id=<data-id> for a single element, format=text to strip tags.\n  check — measure layout against the canvas + declared `canvas.margins`, and report page links that target a missing page; no side effects. The page is measured as readers see it: a state-backed page hydrated with the current document state (a JSON Forms page on its rendered form), a collection page with the member its preview cursor shows (first member otherwise), a Structured Workspace collection document with its items; a list that flows onto continuation pages is measured page by page; other pages as authored. The report's first line names what was measured. set and patch measure the same way. Returns a Markdown measurement report with physical canvas and content extents, root geometry, problematic addressable blocks, parent/canvas excess per side, clipping, and overlap pairs. Status: ✓ OK, ⚠ tight (block crosses a declared margin band — tighten or move into the safe zone before shipping), ⛔ overflow (block escapes the canvas, not shippable; pairwise overlaps between `[data-id]` blocks are reported under this same status), or ⛔ unchecked when headless validation could not run. On tight/overflow, the `next:` block points to a snapshot + targeted patch; unchecked is diagnostic-only to avoid blind retry loops.\nPage links: <a href=\"#page=3\"> (canonical, 1-based page number) or <a href=\"#page:Exact page name\"> navigates to that page of the same document in Canvas, Reader and viewer, and becomes an internal link in print and PDF. In the authoring Canvas a plain click selects the link for editing; ⌘-click (Ctrl-click elsewhere) follows it. The href is a literal: set and patch refuse Mustache in a page link.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "set",
+              "patch",
+              "get",
+              "check"
+            ],
+            "description": "Operation to run. See the tool description for the action table."
+          },
+          "doc": {
+            "type": "string",
+            "description": "Document name (always required)."
+          },
+          "page": {
+            "type": "number",
+            "description": "Page number, 1-based (always required)."
+          },
+          "html": {
+            "description": "For set: full page HTML. Every visible element MUST carry a data-id. Use flex/grid with mm units; images use relative filenames (src=\"photo.jpg\"); colours/fonts come from var(--charte-*). Example: <div data-id=\"page\" style=\"width:210mm;height:297mm;display:flex;flex-direction:column;padding:15mm\"><h1 data-id=\"title\">Hello</h1></div>.",
+            "type": "string"
+          },
+          "context_token": {
+            "description": "For set: charte context token from maket_charte view. REQUIRED when the document has a charte — proof the brand guidelines were read first.",
+            "type": "string"
+          },
+          "ops": {
+            "description": "For patch: list of surgical ops by data-id. Each op has `id` plus one of: style (object), content (string), attr (object), insert (html) + optional position, replace (outerHTML), remove (true), clone (newId), moveTo (targetId) + optional position. To exclude one intentional non-interactive leaf decoration with no child elements or text from layout validation, patch that existing element with attr: {\"data-maket-layout\":\"ignore\"}; controls, links, data-maket-bind and focusable/ARIA elements are ineligible. This override is rejected in set/insert/replace/content HTML, and its enabling op must be the only op in the patch request.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "style": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                },
+                "remove": {
+                  "type": "boolean"
+                },
+                "insert": {
+                  "type": "string"
+                },
+                "position": {
+                  "type": "string",
+                  "enum": [
+                    "beforebegin",
+                    "afterbegin",
+                    "beforeend",
+                    "afterend"
+                  ]
+                },
+                "replace": {
+                  "type": "string"
+                },
+                "content": {
+                  "type": "string"
+                },
+                "attr": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                },
+                "clone": {
+                  "type": "string"
+                },
+                "moveTo": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "additionalProperties": {}
+            }
+          },
+          "format": {
+            "description": "For get: 'html' (default, full markup) or 'text' (tags stripped).",
+            "type": "string",
+            "enum": [
+              "html",
+              "text"
+            ]
+          },
+          "id": {
+            "description": "For get: data-id of a single element to return; omit to fetch the whole page.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "doc",
+          "page"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    },
+    {
+      "name": "maket_workspace",
+      "description": "When to use: every session-level interaction with the live workspace — open a doc/page in the preview, inspect a doc's current state, toggle its lock, and process the user-message queue. For persistent CRUD on documents (create, rename, delete, duplicate, meta, import/export) use maket_doc.\n\n  focus         — open `doc` at page `page` in the live preview (sets active doc + active page).\n  state         — summarise `doc`'s current state: canvas, pages with element counts and data-source cursors (collection · mode · row), charte, pending messages.\n  lock          — lock or unlock `doc`. When locked, every doc-scoped mutation refuses until it's unlocked. Pass locked=true/false, or omit to toggle.\n  fit_view      — zoom out the client to fit the whole workspace (same as the Maximize button).\n  list_messages — return pending annotations as JSON. With `doc`, return only that document's messages; without it, return all document and workspace messages. Each message carries `docName` (or none for workspace scope), `pageIndex` and `elementId` for its anchor, `text`, `ts`; a note the person changed after sending also carries `edited: true` and `editedAt` (epoch ms) — act on the current `text`.\n  ack_messages  — drop the given `ids` from whichever bucket they live in.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "focus",
+              "state",
+              "lock",
+              "fit_view",
+              "list_messages",
+              "ack_messages"
+            ],
+            "description": "Operation to run. See the tool description for the action table."
+          },
+          "doc": {
+            "description": "The document in scope. Required for focus/state/lock. For list_messages, pass an exact document name to read only its annotations; omit to read all document and workspace messages.",
+            "type": "string",
+            "minLength": 1
+          },
+          "page": {
+            "description": "For focus: 1-based page number to make active.",
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "locked": {
+            "description": "For lock: true to lock the document, false to unlock. Omit to toggle.",
+            "type": "boolean"
+          },
+          "ids": {
+            "description": "For ack_messages: message ids to mark processed.",
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    },
+    {
+      "name": "maket_preview",
+      "description": "When to use: view documents outside the agent. `open` flips the live preview URL into the user's browser; `snapshot` rasterises a single page to PNG at its true mm size; `show` puts pages in front of the user inside the conversation.\n\n  open     — launch the live preview URL (localhost) in the default browser. No params.\n  snapshot — render a page via headless Chromium. Returns the full-size PNG as a file path on disk, the page's reading path in Maket, and the image inline (at most 1600 px on its longest side and 1 MB of base64, downscaled when larger; beyond a 2:1 ratio, the top or left part of the page). On hosts that render MCP Apps, the Maket reader also opens on that page.\n  show     — on hosts that render MCP Apps, open the Maket reader in the conversation: doc, pages (\"all\", 3, \"3-5\" or [1,4]), layout (scroll | page), start (page to open at), zoom (fit-width | actual). The user can then switch layout, jump through the page list, zoom and open the document in Maket. Other hosts get the reading path. Returns no image: use snapshot to inspect a page yourself.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "open",
+              "snapshot",
+              "show"
+            ],
+            "description": "Operation to run. See the tool description for the action table."
+          },
+          "doc": {
+            "description": "Document name. Required for snapshot and show.",
+            "type": "string"
+          },
+          "page": {
+            "description": "1-based page number. Required for snapshot.",
+            "type": "number"
+          },
+          "pages": {
+            "description": "For show: \"all\" (default), a page number, a range such as \"3-5\", or a list of page numbers.",
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "all"
+              },
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "string",
+                "pattern": "^\\d+\\s*-\\s*\\d+$"
+              },
+              {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                }
+              }
+            ]
+          },
+          "layout": {
+            "description": "For show: scroll (default) shows the pages one after another; page shows one at a time with previous and next.",
+            "type": "string",
+            "enum": [
+              "scroll",
+              "page"
+            ]
+          },
+          "start": {
+            "description": "For show: the page number to open at, one of the shown pages (default: the first).",
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "zoom": {
+            "description": "For show: fit-width (default) or actual size.",
+            "type": "string",
+            "enum": [
+              "fit-width",
+              "actual"
+            ]
+          },
+          "path": {
+            "description": "For snapshot: output PNG path. Defaults to EXPORTS_DIR/<doc>.png.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    },
+    {
+      "name": "maket_reader",
+      "description": "Calls of the Maket reader view (ui://maket/page): page returns one rendered page without image data, image returns one of its images downscaled to the displayed width, write sets one value of a state document as the Maket form does. Not for agents.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "page",
+              "image",
+              "write"
+            ],
+            "description": "page, image or write."
+          },
+          "doc": {
+            "type": "string",
+            "description": "Document name."
+          },
+          "page": {
+            "description": "For page and image: 1-based page number.",
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "expectedRevision": {
+            "description": "For write: the state revision the value was edited from.",
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "path": {
+            "description": "For write: JSON Pointer of the value.",
+            "type": "string"
+          },
+          "op": {
+            "description": "For write: patch op.",
+            "type": "string",
+            "enum": [
+              "replace",
+              "add"
+            ]
+          },
+          "value": {
+            "description": "For write: the new value.",
+            "type": [
+              "string",
+              "number",
+              "boolean",
+              "null"
+            ]
+          },
+          "file": {
+            "description": "For image: the asset file, one of the page's images.",
+            "type": "string"
+          },
+          "width": {
+            "description": "For image: displayed width in device pixels.",
+            "type": "number"
+          }
+        },
+        "required": [
+          "action",
+          "doc"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    },
+    {
+      "name": "maket_pdf",
+      "description": "When to use: export a document to PDF for sharing or print. One call renders every page in order. For a single-page raster (PNG), use maket_preview snapshot instead.\n\nRenders every page via headless Chromium at the canvas's true mm size, then writes to EXPORTS_DIR/<doc>.pdf. Charte CSS is inlined so fonts and tokens render identically to the live preview. The result lists, by number and name, every page whose PDF rendering differs from its preview (element boxes, fonts, colours).\n  quality — screen (96 DPI, smallest), print (150 DPI, default), hd (300 DPI).\n  rows    — collection-bound pages: preview (default, follows the page cursor), current (cursor row only), all (one page per row), template (raw placeholders). Check the cursor first with maket_collection action=cursor.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "doc": {
+            "type": "string",
+            "description": "Document name."
+          },
+          "quality": {
+            "description": "DPI preset: screen=96, print=150 (default), hd=300.",
+            "type": "string",
+            "enum": [
+              "screen",
+              "print",
+              "hd"
+            ]
+          },
+          "rows": {
+            "description": "For pages bound to a collection: preview (default) follows each page's cursor — what the live canvas shows; current = the cursor's row only; all = one page per row (mail merge); template = raw placeholders.",
+            "type": "string",
+            "enum": [
+              "preview",
+              "current",
+              "all",
+              "template"
+            ]
+          }
+        },
+        "required": [
+          "doc"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    },
+    {
+      "name": "maket_gmail",
+      "description": "When to use: connect Gmail, search/read mail, download an attachment, or create a draft from a Maket document. All actions except connect require an active OAuth session — call connect first.\n\n  connect          — restore the refresh token if present, otherwise open the browser for OAuth consent. Pass with_read=true to also request inbox access (drafts are always granted).\n  search           — list subject/from/date for messages matching a Gmail query. Capped at 50. Requires with_read=true at connect time.\n  read             — fetch one message by id: headers, body (3000-char truncated), attachments listing. Requires with_read=true at connect time.\n  fetch_attachment — download one attachment (id + attachmentId from a prior read). Images land in the Maket asset library (validated, optimized, thumbnailed, metadata row). Other files (PDF, zip, docx, …) drop into <DATA_DIR>/attachments/ untouched. Requires with_read=true at connect time.\n  draft            — compose a Gmail draft from a document page. Charte tokens resolve to literals, assets inline as base64, listed docs attach as PDFs. Maket never sends — the user reviews and sends from Gmail.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "connect",
+              "search",
+              "read",
+              "draft",
+              "fetch_attachment"
+            ],
+            "description": "Operation to run. See the tool description for the action table."
+          },
+          "query": {
+            "description": "For search: Gmail query (same syntax as the UI: from:, subject:, after:, etc.).",
+            "type": "string"
+          },
+          "maxResults": {
+            "description": "For search: cap on results. Default 10, max 50.",
+            "type": "number"
+          },
+          "id": {
+            "description": "For read: Gmail message id (from search results).",
+            "type": "string"
+          },
+          "doc": {
+            "description": "For draft: Maket document to use as the email body.",
+            "type": "string"
+          },
+          "page": {
+            "description": "For draft: 1-based page number within the document.",
+            "type": "number"
+          },
+          "to": {
+            "description": "For draft: recipient. Falls back to doc.meta.emailTo when omitted.",
+            "type": "string"
+          },
+          "cc": {
+            "description": "For draft: cc. Falls back to doc.meta.emailCc.",
+            "type": "string"
+          },
+          "bcc": {
+            "description": "For draft: bcc. Falls back to doc.meta.emailBcc.",
+            "type": "string"
+          },
+          "subject": {
+            "description": "For draft: subject. Falls back to doc.meta.emailSubject.",
+            "type": "string"
+          },
+          "attachments": {
+            "description": "For draft: names of other Maket docs to attach as PDFs. Falls back to doc.meta.emailAttachments.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "attachmentId": {
+            "description": "For fetch_attachment: Gmail attachment id from a previous action=read call.",
+            "type": "string"
+          },
+          "filename": {
+            "description": "For fetch_attachment: override the saved filename. Defaults to the name reported by Gmail.",
+            "type": "string"
+          },
+          "overwrite": {
+            "description": "For fetch_attachment: replace an existing file (asset or non-image drop) when set. Default false.",
+            "type": "boolean"
+          },
+          "category": {
+            "description": "For fetch_attachment (image branch only): category tag saved with the asset row. Default email-attachment.",
+            "type": "string"
+          },
+          "quality": {
+            "description": "For draft: PDF quality preset for attachments. Default screen (smaller).",
+            "type": "string",
+            "enum": [
+              "screen",
+              "print",
+              "hd"
+            ]
+          },
+          "with_read": {
+            "description": "For connect: also request read access (inbox search + message read). Default false — Maket only creates drafts.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    }
+  ],
+  "stderrTail": "2026-10-20T06:53:06.799Z boot pid=32 port=24842 host=127.0.0.1 dataDir=/tmp/.maket cmd=(default)\n2026-10-20T06:53:07.559Z ensureServer ok started=true alreadyRunning=false\n2026-10-20T06:53:07.907Z connected MCP v2 client; exposing 16 tools over stdio\n",
+  "durationMs": 86710,
+  "transport": "stdio"
+}

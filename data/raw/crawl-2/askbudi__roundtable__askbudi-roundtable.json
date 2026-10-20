@@ -1,0 +1,8 @@
+{
+  "serverId": "askbudi__roundtable__askbudi-roundtable",
+  "status": "REFUSED_NO_CREDS",
+  "tools": [],
+  "stderrTail": "Downloading pydantic-core (2.1MiB)\nDownloading pygments (1.2MiB)\nDownloading openai (1.6MiB)\nDownloading cryptography (4.5MiB)\nDownloading tiktoken (1.1MiB)\nDownloading botocore (15.3MiB)\nDownloading hf-xet (4.0MiB)\nDownloading litellm (35.0MiB)\nDownloading tokenizers (3.2MiB)\nDownloading aiohttp (1.8MiB)\nDownloading beartype (1.5MiB)\n   Building uuid==1.30\n      Built uuid==1.30\n",
+  "durationMs": 120039,
+  "transport": "stdio"
+}

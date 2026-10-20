@@ -1,0 +1,8 @@
+{
+  "serverId": "longevity-genie__biothings-mcp__longevity-genie-biothings-mcp",
+  "status": "FAILED_TIMEOUT",
+  "tools": [],
+  "stderrTail": "Downloading pygments (1.2MiB)\nDownloading cryptography (4.5MiB)\nDownloading pydantic-core (2.1MiB)\nDownloading numpy (16.0MiB)\nDownloading hf-xet (4.0MiB)\nDownloading pip (1.7MiB)\nDownloading lxml (5.0MiB)\nDownloading biopython (3.1MiB)\nDownloading beartype (1.5MiB)\nDownloading pandas (10.3MiB)\n Downloaded pygments\n Downloaded beartype\n Downloaded pip\n Downloaded pydantic-core\n Downloaded biopython\n Downloaded hf-xet\n Downloaded cryptography\n Downloaded lxml\n Downloaded pandas\n",
+  "durationMs": 120099,
+  "transport": "stdio"
+}

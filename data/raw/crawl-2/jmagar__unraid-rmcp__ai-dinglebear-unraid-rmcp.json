@@ -1,0 +1,8 @@
+{
+  "serverId": "jmagar__unraid-rmcp__ai-dinglebear-unraid-rmcp",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "npm error code ENOVERSIONS\nnpm error No versions available for unraid-rmcp\nnpm error A complete log of this run can be found in: /tmp/npm-cache/_logs/2026-10-20T06_46_48_586Z-debug-0.log\n",
+  "durationMs": 1972,
+  "transport": "stdio"
+}

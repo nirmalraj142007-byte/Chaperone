@@ -1,0 +1,8 @@
+{
+  "serverId": "mcpservings__paper-mcp__kangletian-paper-mcp",
+  "status": "FAILED_TIMEOUT",
+  "tools": [],
+  "stderrTail": "Downloading numpy (16.0MiB)\nDownloading pygments (1.2MiB)\nDownloading pydantic-core (2.1MiB)\nDownloading cryptography (4.5MiB)\nDownloading networkx (2.0MiB)\nDownloading beartype (1.5MiB)\nDownloading pymupdf (65.7MiB)\nDownloading onnxruntime (22.7MiB)\n Downloaded pygments\n Downloaded beartype\n Downloaded pydantic-core\n Downloaded networkx\n Downloaded cryptography\n",
+  "durationMs": 120074,
+  "transport": "stdio"
+}

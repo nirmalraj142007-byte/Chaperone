@@ -1,0 +1,252 @@
+{
+  "serverId": "mi60dev__visionaire-engine__mi60dev-visionaire-engine",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "connect",
+      "description": "ALWAYS the first call: start (or restart) a browser session. Modes: \"launch\" (default) starts a local Chrome; \"extension\" drives the USER'S OWN browser through the Visionaire extension — with url it opens that page in a tab (grouped as \"Visionaire\"), without url it inspects the tab the user shared from the extension popup; \"attach\" joins a Chrome started with --remote-debugging-port (browserUrl). Use extension mode for pages behind login or when the user says \"my browser\" / \"this tab\". If a tool reports no session or a wedged browser, connect again.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "launch",
+              "attach",
+              "extension"
+            ],
+            "description": "Default 'launch'; 'extension' uses the user's browser via the Visionaire extension; 'attach' joins a debug-port Chrome"
+          },
+          "url": {
+            "type": "string",
+            "description": "Navigate here right after connecting (extension mode: opened in the agent's own tab)"
+          },
+          "browserUrl": {
+            "type": "string",
+            "description": "DevTools HTTP endpoint for attach mode, e.g. http://127.0.0.1:9222"
+          },
+          "tabId": {
+            "type": "integer",
+            "description": "Extension mode: inspect this shared tab (ids come from a previous connect output)"
+          },
+          "browser": {
+            "type": "string",
+            "enum": [
+              "chrome",
+              "firefox"
+            ],
+            "description": "Extension mode: prefer this browser when both extensions are connected"
+          },
+          "headless": {
+            "type": "boolean",
+            "description": "Launch mode only; default false (visible window)"
+          },
+          "width": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "Viewport width, default 1280 (launch mode)"
+          },
+          "height": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "Viewport height, default 800 (launch mode)"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "navigate",
+      "description": "Navigate the connected tab to a URL — or, with no url, hard-reload the current page. Pass bypassCache: true when a stale cached stylesheet/script keeps being served (disables the browser cache for the rest of the session). All element uids from earlier calls become stale.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Absolute URL to load; omit to reload the current page"
+          },
+          "bypassCache": {
+            "type": "boolean",
+            "description": "Disable the browser cache for the rest of the session (fresh CSS/JS on every load)"
+          },
+          "waitFor": {
+            "type": "string",
+            "description": "CSS selector of content you expect (e.g. \"table tbody tr\"): wait until it exists before returning — best for single-page apps"
+          },
+          "settleMs": {
+            "type": "number",
+            "description": "After load, wait up to this long for network + DOM to go quiet (default 8000, max 30000, 0 = no wait)"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "set_viewport",
+      "description": "Emulate a viewport size (and optional deviceScaleFactor) on the connected tab, then re-inspect. Use for responsive bugs — 'it breaks on mobile', 'the menu is wrong at tablet width', anything behind a media query — since resizing can change which @media rule wins. Follow with a fresh page_snapshot / explain_styles at the new size.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "width": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "Viewport width in CSS px"
+          },
+          "height": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "Viewport height in CSS px"
+          },
+          "deviceScaleFactor": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "Default 1"
+          }
+        },
+        "required": [
+          "width",
+          "height"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "solve",
+      "description": "**START HERE** for any visual/behavioral question about the connected page. Describe the problem in plain language (\"button is blue instead of white\", \"modal hidden behind overlay\", \"menu breaks at 768px\") and pass context.element (uid, selector, or text). solve routes to a diagnostic plan, runs it, and answers with the winning rule file:line, visibility/overlap causes, measurements, listeners or animations — plus one NEXT step. Unsure routing returns candidates; pass `scenario` to force one, or `tool`+`args` to run one engine tool directly.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "intent": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The problem in plain language, e.g. \"why is the header CTA blue instead of white\""
+          },
+          "scenario": {
+            "type": "string",
+            "enum": [
+              "color-wrong",
+              "style-not-apply",
+              "what-rule-sets-this",
+              "element-wrong-size",
+              "spacing-wrong",
+              "alignment-off",
+              "flex-grid-layout",
+              "element-hidden",
+              "overlap-z-index",
+              "clipped-cutoff",
+              "text-truncated",
+              "font-wrong",
+              "animation-broken",
+              "click-not-working",
+              "hover-state-wrong",
+              "responsive-broken",
+              "positioned-wrong",
+              "find-element",
+              "page-overview",
+              "diagnose-issue"
+            ],
+            "description": "Skip routing and run this scenario: color-wrong, style-not-apply, what-rule-sets-this, element-wrong-size, spacing-wrong, alignment-off, flex-grid-layout, element-hidden, overlap-z-index, clipped-cutoff, text-truncated, font-wrong, animation-broken, click-not-working, hover-state-wrong, responsive-broken, positioned-wrong, find-element, page-overview, diagnose-issue"
+          },
+          "context": {
+            "type": "object",
+            "properties": {
+              "element": {
+                "type": "string",
+                "description": "Target element: a uid (e12, or f12 in Firefox), a CSS selector, or a short text description (\"Subscribe button\")"
+              },
+              "elements": {
+                "type": "string",
+                "description": "A CSS selector matching a GROUP of elements (alignment checks)"
+              },
+              "property": {
+                "type": "string",
+                "description": "CSS property of interest, e.g. \"color\", \"padding\", \"z-index\""
+              },
+              "viewport": {
+                "type": "object",
+                "properties": {
+                  "width": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  },
+                  "height": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  }
+                },
+                "required": [
+                  "width",
+                  "height"
+                ],
+                "additionalProperties": false,
+                "description": "Emulate this viewport before inspecting"
+              },
+              "reference_element": {
+                "type": "string",
+                "description": "Second element to compare/align against"
+              },
+              "breakpoints": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                "description": "Widths for responsive checks (default 375/768/1280)"
+              }
+            },
+            "additionalProperties": false,
+            "description": "Target and details; solve asks for what is missing"
+          },
+          "tool": {
+            "type": "string",
+            "enum": [
+              "page_snapshot",
+              "page_origins",
+              "inspect_element",
+              "explain_styles",
+              "inspect_ancestors",
+              "find_elements",
+              "node_at_point",
+              "annotated_screenshot",
+              "style_diff",
+              "pick_element",
+              "get_listeners",
+              "explain_animations",
+              "record_interaction",
+              "interact",
+              "measure_element",
+              "evaluate",
+              "inject_css",
+              "assert_visual",
+              "visual_diff",
+              "impact_preview",
+              "diagnose",
+              "responsive_sweep",
+              "capture_proof",
+              "check_alignment",
+              "pick_color",
+              "read_text"
+            ],
+            "description": "Expert mode — run ONE engine tool directly with `args` (intent is still required, as a note). Tools: page_snapshot(budgetTokens,scope,includeInvisible); page_origins(); inspect_element(uid,selector,x,y,verbose); explain_styles(uid,selector,x,y,property); inspect_ancestors(uid,selector,x,y,concern); find_elements(text,selector,role,region,match,visibleOnly,limit); node_at_point(x,y); annotated_screenshot(uids,region,fullPage,clipTo,padding,scale,annotate); style_diff(uid,selector,x,y,mode,slot,capture_pixels); pick_element(timeoutSeconds); get_listeners(uid,selector,x,y,eventType,includeAncestors); explain_animations(uid,selector,x,y,property); record_interaction(uid,selector,x,y,action,waitMs,maxEvents); interact(uid,selector,x,y,action,settleMs); measure_element(uid,selector,x,y,referenceUid,referenceSelector); evaluate(expression,awaitPromise,timeoutMs); inject_css(uid,selector,declarations,css,revert); assert_visual(assertions,suite_id,tolerance_px,detail,stop_on_first_fail,page); visual_diff(target,reference,threshold,accept_pct,ignore_antialiasing,ignore_regions,mask_dynamic,emit_heatmap,region_grid); impact_preview(selector,group_by,proposed_change,detail,page); diagnose(uid,selector,x,y,symptom,expected,max_culprits); responsive_sweep(viewports,run,restore_viewport); capture_proof(phase,bundle_id,targets,suite_id,note); check_alignment(selector,uids,tolerance,gridUnit); pick_color(x,y,uid,selector,at); read_text(uid,selector,x,y,maxChars)"
+          },
+          "args": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Arguments for `tool` (expert mode)"
+          }
+        },
+        "required": [
+          "intent"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ],
+  "stderrTail": "visionaire-engine: extension bridge on ws://127.0.0.1:17337\nvisionaire-engine 1.2.0 ready on stdio\n",
+  "durationMs": 36862,
+  "transport": "stdio"
+}

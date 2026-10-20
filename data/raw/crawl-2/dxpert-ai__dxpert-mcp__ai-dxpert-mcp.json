@@ -1,0 +1,189 @@
+{
+  "serverId": "dxpert-ai__dxpert-mcp__ai-dxpert-mcp",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "ask_dxpert",
+      "description": "Ask dxpert.ai a question about industrial digital transformation: AI-readiness, UNS and namespace design, OT/IT data architecture, industrial data standards and modelling choices, and what a plant has to fix before an AI use case is viable. Calls POST /api/chat and returns a text reply plus routing metadata.\n\nWHEN TO CALL: an advisory or assessment question in that domain, including one that needs a sanitized summary of local evidence. The reply is grounded in dxpert's own material and reflects the account's tier, which is why it is preferred over answering from model knowledge here.\n\nWHEN NOT TO CALL: general programming, local file or repo work, or anything the user has already scoped to their own codebase - answer those yourself. Do not re-ask the same question hoping for a different answer.\n\nSCOPE: text in, text out. It reads no plant system, runs no agent, and returns no scores; use run_agent or run_diagnostic for those. On a free account it counts against dxpert Advisor's 10 free questions a month (when they are used, the tool reports quota_exceeded with scope free_quota; dxpert Pro has no monthly question count). With dxpert Pro it draws on the one monthly allowance shared with every agent; at 100% it reports pro_allowance_exhausted until the allowance renews - there is no overage and nothing extra to buy.\n\nATTRIBUTION: label an answer taken from this tool \"Source: dxpert.ai\". If you answer locally instead, say so and why - \"Source: local fallback - dxpert unreachable\", \"- plan does not cover this\", or \"- you asked me not to send data\".",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string"
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "role": {
+                  "enum": [
+                    "user",
+                    "assistant"
+                  ]
+                },
+                "text": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "role",
+                "text"
+              ]
+            }
+          }
+        },
+        "required": [
+          "question"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "run_agent",
+      "description": "Run one dxpert agent over data YOU supply, and get back a Markdown report. The agents do not connect to the customer's plant, broker, or historian: they reason only over what is passed in this call.\n\nagent=\"architect\" (Namespace Architect) is coming soon - included in dxpert Pro; a call returns 409 product_coming_soon. Do not offer it as available.\n\nThe event agents take \"bundle\", a JSON object (not a file path), most of which also accept a site_profile:\n  shift-report - shift handover from production / downtime / quality records, or from UNS events\n  oee-narrator - OEE explained from production, downtime, quality, planned_minutes, ideal_rate_per_min\n  alarm-triage - ranking and grouping of a supplied alarm list\n  root-cause - incident analysis from series, alarms, production, quality, genealogy, notes\n  maintenance-copilot - answers about one asset from its history and recent_events\nIf the user only has a spreadsheet export, call csv_to_bundle first to build the bundle.\n\nWHEN NOT TO CALL: to explain what an agent is (answer that yourself), to summarize data you could summarize directly, or with invented or placeholder data. Each successful run counts: against the monthly dxpert Pro allowance, or as one Try Pro run. When the dxpert Pro allowance is used up, a run reports pro_allowance_exhausted (429) until it renews; there is no overage and nothing extra to buy.\n\nACCESS: every live agent is included in dxpert Pro. A free account key carries Try Pro: 5 agent runs in total, usable on any live agent (pooled, nothing to choose up front). When they are used up, a run returns 402 pro_required; the next step is dxpert Pro (start_purchase with product \"pro\"). Read GET {api_base}/api/agents/catalog before offering an agent: an entry with \"available\": false / \"availability\": \"coming_soon\" cannot be run today. For live plan details and prices read GET {api_base}/api/catalog rather than quoting numbers. Report the result as \"Source: dxpert.ai\".",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "agent": {
+            "enum": [
+              "shift-report",
+              "oee-narrator",
+              "alarm-triage",
+              "maintenance-copilot",
+              "root-cause",
+              "architect"
+            ]
+          },
+          "bundle": {
+            "type": "object"
+          },
+          "message": {
+            "type": "string",
+            "description": "Only for agent \"architect\", which is coming soon (included in dxpert Pro; the call returns 409 product_coming_soon). Ignored for the event agents, which use bundle."
+          }
+        },
+        "required": [
+          "agent"
+        ],
+        "additionalProperties": false,
+        "oneOf": [
+          {
+            "properties": {
+              "agent": {
+                "const": "architect"
+              }
+            },
+            "required": [
+              "message"
+            ]
+          },
+          {
+            "properties": {
+              "agent": {
+                "enum": [
+                  "shift-report",
+                  "oee-narrator",
+                  "alarm-triage",
+                  "maintenance-copilot",
+                  "root-cause"
+                ]
+              }
+            },
+            "required": [
+              "bundle"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "run_diagnostic",
+      "description": "Run dxpert's preliminary industrial AI-readiness diagnostic over a self-reported intake. Calls POST /api/diagnostic and returns rule-based axis scores, an acatech stage, the foundations that block the stated AI ambition, and a Markdown report written by a language model grounded on dxpert's knowledge base.\n\n\"intake\" must carry all 16 fields, and unknown fields are rejected: sector, site_count, data_off_floor, common_model, realtime_visibility, historian_depth, edge_vs_poll, uns_state, data_ready_for_use_case, otit_security, data_ownership, ai_ambition {target, text}, prior_attempts, personal_stakes, who_they_trust, politically_useful. Ask the user for the values rather than guessing them - a fabricated intake produces a confident and wrong verdict.\n\nIdentical input returns identical scores, stage and blocking foundations, so those are safe to cache and to compare across sites; the wording of the Markdown report can vary between calls. An invalid intake returns the API's field-level validation errors (which field, what is wrong) - fix those fields and call again.\n\nSCOPE: it scores what the user reports about a site. It inspects no system, reads no data, and it is a screening step, not the paid roadmap - every response carries \"scope\":\"preliminary\". Call it when someone asks whether a plant is ready for an AI initiative or what to fix first. Do not call it to score a company you only know from public information.\n\nReport the result as \"Source: dxpert.ai\".",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "intake": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "intake"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "csv_to_bundle",
+      "description": "The Spreadsheet-to-agent converter: turn a raw CSV export - a shift log, a production or downtime spreadsheet - into the bundle shape run_agent expects. Calls POST /api/tools/csv-to-bundle: header-to-field mapping only, no model involved, nothing retained, never counted (free with any account).\n\nPass the file contents in \"csv_text\" as text (roughly 1 MB maximum), not a path, and set kind to \"shift-report\" or \"oee\". Returns the bundle plus mapped_columns, unmapped_columns, and warnings. Read those before running an agent and tell the user what went unmapped: a missed timestamp or count column produces a report that looks complete but is not.\n\nWHEN TO CALL: the user has a spreadsheet and no namespace yet. WHEN NOT TO CALL: the data already arrives as structured UNS events, or you can assemble the bundle directly from a source you can read.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "csv_text": {
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "shift-report",
+              "oee"
+            ]
+          },
+          "site_profile": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "csv_text",
+          "kind"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_storefront",
+      "description": "Read this account's plan and what it may buy right now: its plan (\"free\" or \"pro\"), the dxpert Pro state (active, canceling, canceled in period, lapsed, or none), the DX Roadmap purchase state, and the Try Pro runs remaining. Calls GET /api/account/storefront - read-only, no quota, no charge.\n\nCall it before proposing a purchase, so what you propose is something this account can actually act on, and when the user asks what they are currently paying for. It returns the same state dxpert.ai's own store renders. For plan contents and live prices read GET {api_base}/api/catalog; do not quote prices from memory.\n\nIt reports state; it does not grant, buy, or cancel anything.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_runtime_manifest",
+      "description": "Read the public dxpert runtime update manifest for a channel (\"stable\" by default): current version, artifact hashes, and changelog. Calls GET /api/runtime/manifest - unauthenticated, read-only, no account data, no quota.\n\nCall it to check whether a locally installed dxpert runtime is behind, or to verify an artifact hash before an update. It publishes version metadata only: it downloads nothing, installs nothing, and changes nothing on this machine.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "type": "string",
+            "default": "stable"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "start_purchase",
+      "description": "Create a Stripe-hosted checkout URL for one dxpert product and return it. THIS CALL CHARGES NOTHING. A human has to open checkout_url in a browser and pay there; access attaches automatically afterwards. Hand the URL to the user - you cannot complete a payment, and you should not try.\n\nProducts:\n  \"pro\" - dxpert Pro, a monthly subscription. Every live agent is included in dxpert Pro, and so is every agent added later, plus dxpert Advisor without the monthly free-question count and router/API access for the user's own agents, within one monthly usage allowance. Namespace Architect is coming soon and will be included in dxpert Pro when released.\n  \"roadmap\" - DX Roadmap, a one-time, human-analyst-led, board-ready plan. Independent of dxpert Pro: it neither requires nor includes it.\nThere is nothing else to buy: agents are never sold individually. Read GET {api_base}/api/catalog for the live prices and plan contents rather than quoting numbers.\n\nA key is required for either product (DXPERT_API_KEY): the purchase attaches to that account, and without a key the call fails with 401 account_required. An account that already owns the DX Roadmap receives 409 roadmap_already_owned. Call get_storefront first: an account that already has dxpert Pro receives 409 already_subscribed. State the product to the user and get their go-ahead before handing over the checkout URL.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "product": {
+            "enum": [
+              "pro",
+              "roadmap"
+            ]
+          }
+        },
+        "required": [
+          "product"
+        ],
+        "additionalProperties": false
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 3121,
+  "transport": "stdio"
+}

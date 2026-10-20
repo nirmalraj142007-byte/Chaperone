@@ -1,0 +1,8 @@
+{
+  "serverId": "co-browser__browser-use-mcp-server__co-browser-browser-use-mcp-serve",
+  "status": "REFUSED_NO_CREDS",
+  "tools": [],
+  "stderrTail": "Downloading zstandard (5.3MiB)\nDownloading aiohttp (1.7MiB)\nDownloading pygments (1.2MiB)\nDownloading cryptography (4.5MiB)\nDownloading pillow (6.6MiB)\nDownloading openai (1.1MiB)\nDownloading tiktoken (1.1MiB)\nDownloading google-api-python-client (14.2MiB)\nDownloading reportlab (1.9MiB)\nDownloading lxml (5.0MiB)\nDownloading pydantic-core (2.0MiB)\nDownloading anthropic (2.0MiB)\nDownloading playwright (46.0MiB)\n Downloaded openai\n Downloaded pygments\n Downloaded tiktoken\n Downloaded aiohttp\n Downloaded reportlab\n Downloaded anthropic\n Downloaded pydantic-core\n",
+  "durationMs": 120037,
+  "transport": "stdio"
+}

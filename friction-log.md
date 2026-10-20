@@ -2745,3 +2745,34 @@ SSM (Entry 048 was fixed by sending the base64 of the LF file).
 could warn that line endings come from the author's checkout. A `.gitattributes`
 line in the `cdk init` template would cover it. For this repo: a test that
 synthesised user data contains no `\r` would hold the property against a regression.
+
+## Entry 056 — 2026-10-20
+
+**Task attempted:** Run `pnpm crawl:run --crawl-id=crawl-2` on the pre-registered
+date, from a fresh shell on the host.
+
+**Steps taken:** Ran the command as documented in the package scripts. About a
+minute in it exited with `ConfigError: Invalid environment configuration:
+CHAPERONE_UPSTREAMS ... Required`, thrown from `getDdbDocClient` via `getCorpusServer`
+inside the crawl worker. The DynamoDB Local container was also not running. Six
+`data/raw/crawl-2/` files had already been written (two of them `FAILED_TIMEOUT`).
+Moved them to a backup folder, ran `docker compose up -d ddb`, exported
+`DDB_ENDPOINT`, dummy local AWS keys and the `CHAPERONE_UPSTREAMS` value from
+`.env.example` in that shell only, and reran the same command.
+
+**Expected versus actual:** Expected a crawl script that only reads the candidate
+list and Docker to need nothing else. Actual: it also opens a DynamoDB client, which
+loads the full gateway config, so an unrelated gateway-only variable blocks it. The
+failure arrived after the crawl had started and written files, not at startup.
+Nothing in `docs/RUNBOOK.md` lists the environment `crawl:run` needs.
+
+**Severity:** major on a one-shot, pre-registered date; no data was lost or used
+from the failed attempt.
+
+**Workaround:** Start `ddb`, set the three variables for the shell, rerun. The
+partial files were set aside (not deleted) so the rerun started clean.
+
+**Actionable suggestion:** For this repo: validate config at the top of
+`crawl.ts`, before any boot, and add the crawler's required environment to the
+RUNBOOK. Loading only the DynamoDB keys the crawler uses would stop an unrelated
+gateway setting blocking it.

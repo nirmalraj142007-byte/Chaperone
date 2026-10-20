@@ -1,0 +1,8 @@
+{
+  "serverId": "pskill9__web-search__pskill9-web-search",
+  "status": "FAILED_INSTALL",
+  "tools": [],
+  "stderrTail": "npm error could not determine executable to run\nnpm error A complete log of this run can be found in: /tmp/npm-cache/_logs/2026-10-20T06_54_07_015Z-debug-0.log\n",
+  "durationMs": 2269,
+  "transport": "stdio"
+}

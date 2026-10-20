@@ -1,0 +1,1058 @@
+{
+  "seed": 1185023,
+  "seedDerivation": "seedFromString(\"crawl-2\")",
+  "sampleSize": 150,
+  "totalLowConfidence": 4064,
+  "items": [
+    {
+      "serverId": "swaltersjrtest__microtap-mcp__swaltersjrtest-microtap-mcp",
+      "toolName": "get_wallet_balance",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "codeislaw101__katzilla__codeislaw101-katzilla",
+      "toolName": "search_tools",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_tradetracker_list_transactions",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "spacex_latest_launch",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "random_string",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_tapfiliate_get_earnings_summary",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "smaniches__alphafold-sovereign-mcp__smaniches-alphafold-sovereign-mc",
+      "toolName": "get_target_diseases",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_value-commerce-advertiser_list_clicks",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "2s-io__sdk__2s-io-sdk",
+      "toolName": "edu.school-lookup",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "poetry_search_by_title",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "charcodes_convert",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "cocktail_filter_by_ingredient",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "httpbin_get",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "musharna__plant-genomics-mcp__musharna-plant-genomics-mcp",
+      "toolName": "alphafold_structure",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "chronary__chronary-mcp__ai-chronary-mcp",
+      "toolName": "list_agents",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "umodeler__picoberry-mcp__umodeler-picoberry-mcp",
+      "toolName": "list_my_assets",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "opendota_hero_stats",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "untappd_get_brewery",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "posthog_list_feature_flags",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "atbash_process",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "austenstone__myinstants-mcp__austenstone-myinstants-mcp",
+      "toolName": "browse_category",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "ck_list_forms",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "neon_list_projects",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "2s-io__sdk__2s-io-sdk",
+      "toolName": "github.branches",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "markdown_to_html",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "yonlandwu__chinese-almanac-mcp__yonlandwu-chinese-almanac-mcp",
+      "toolName": "get_solar_terms",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "cartesian_tree",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "xavierfabregat__spotify-mcp__xavierfabregat-spotify-mcp",
+      "toolName": "playback",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "auspy__supasidebar-mcp__auspy-supasidebar-mcp",
+      "toolName": "enable_feature",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "davidmosiah__wellness-cgm-mcp__davidmosiah-wellness-cgm-mcp",
+      "toolName": "cgm_glucose_window",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "2s-io__sdk__2s-io-sdk",
+      "toolName": "security.cwe",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "wger_categories",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "meal_filter_by_area",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "r-huijts__rijksmuseum-mcp__r-huijts-rijksmuseum-mcp",
+      "toolName": "open_image_in_browser",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "browsermcp__mcp__browsermcp-mcp",
+      "toolName": "browser_go_forward",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "noteboxd__mcp__noteboxd-mcp",
+      "toolName": "search",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "wordpress_list_pages",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "gavxm__ani-mcp__gavxm-ani-mcp",
+      "toolName": "anilist_evolution",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "segment_list_sources",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "lespaceman__agent-web-interface__lespaceman-agent-web-interface",
+      "toolName": "ping",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_cj-advertiser_get_programme",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_shopmy_get_programme",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "hungarian_assign",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "2s-io__sdk__2s-io-sdk",
+      "toolName": "quakes.recent",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "2s-io__sdk__2s-io-sdk",
+      "toolName": "stocks.financials-reported",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "swapi_search_planets",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "2s-io__sdk__2s-io-sdk",
+      "toolName": "law.trademark-status",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "2s-io__sdk__2s-io-sdk",
+      "toolName": "law.docket-search",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "genderize_name",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "opensky_flights",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "nba_teams",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_flipkart_list_programmes",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "wavelet_tree",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "attalla1__photopea-mcp-server__attalla1-photopea-mcp-server",
+      "toolName": "photopea_group_layers",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "2s-io__sdk__2s-io-sdk",
+      "toolName": "predict.positions",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "pantani__tdmcp__pantani-tdmcp",
+      "toolName": "analyze_project",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "forgemeshlabs__anomaly-mcp__forgemeshlabs-anomaly-mcp",
+      "toolName": "defi_scan",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "neptun2000__heor-agent-mcp__neptun2000-heor-agent-mcp",
+      "toolName": "utils.validate_links",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "riot_ranked",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "2s-io__sdk__2s-io-sdk",
+      "toolName": "water.gauge",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "molanojustin__smithsonian-mcp__molanojustin-smithsonian-mcp",
+      "toolName": "explore_topic",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "twelvetake-studios__reaper-mcp__twelvetake-studios-reaper-mcp",
+      "toolName": "get_repeat_state",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "firecrawl__firecrawl-mcp-server__firecrawl-firecrawl-mcp-server",
+      "toolName": "firecrawl_developer_search",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "2s-io__sdk__2s-io-sdk",
+      "toolName": "sports.nfl-teams",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "etsy_search_shops",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "2s-io__sdk__2s-io-sdk",
+      "toolName": "bio.species",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "wolido__openaaas__wolido-openaaas",
+      "toolName": "register",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "hn_user",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "twelvetake-studios__reaper-mcp__twelvetake-studios-reaper-mcp",
+      "toolName": "track_fx_get_enabled",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "registry__ai-aetherwealth-mcp",
+      "toolName": "get_trade",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "jau123__meigen-ai-design-mcp__jau123-meigen-ai-design-mcp",
+      "toolName": "generate_image",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "doublespeed-main__mcp__ai-doublespeed-mcp",
+      "toolName": "test_sim",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "discord_read",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_rewardful_list_media_partners",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "2s-io__sdk__2s-io-sdk",
+      "toolName": "vehicle.vin-decode",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "tm_get_event",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "neptun2000__heor-agent-mcp__neptun2000-heor-agent-mcp",
+      "toolName": "literature.search",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "contentful_list_content_types",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "smaniches__uniprot-mcp__smaniches-uniprot-mcp",
+      "toolName": "uniprot_get_entry",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_mrge_get_programme",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "hibp_all_breaches",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "jau123__meigen-ai-design-mcp__jau123-meigen-ai-design-mcp",
+      "toolName": "list_models",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "genwavellc__svgmaker-mcp__genwavellc-svgmaker-mcp",
+      "toolName": "svgmaker_gallery_preview",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "color_info",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "libretranslate_languages",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "bighippoman__intercept-mcp__bighippoman-intercept-mcp",
+      "toolName": "fetch_batch",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_commission-factory_list_clicks",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "pantani__tdmcp__pantani-tdmcp",
+      "toolName": "get_td_node_parameters",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "khglynn__spotify-bulk-actions-mcp__khglynn-spotify-bulk-actions-mcp",
+      "toolName": "get_playlist_info",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "openaq_measurements",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "2s-io__sdk__2s-io-sdk",
+      "toolName": "law.attorney-lookup",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "ptv_route_directions",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "geopass_run",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_shareasale_get_programme",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "2s-io__sdk__2s-io-sdk",
+      "toolName": "vehicle.decode-wmi",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "2s-io__sdk__2s-io-sdk",
+      "toolName": "geo.nearby",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_daisycon_verify_auth",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_tradetracker_generate_tracking_link",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "acunningham-ship-it__veilbrowser__acunningham-ship-it-veilbrowser",
+      "toolName": "veil_get_cookies",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_eduzz_list_programmes",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "standard_form",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "upc_lookup",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_financeads_generate_tracking_link",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "2s-io__sdk__2s-io-sdk",
+      "toolName": "tld.info",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "cat_api_random_image",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "mathiaspaulenko__wavexis-mcp__mathiaspaulenko-wavexis-mcp",
+      "toolName": "wavexis_close_page",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "rosasynthesiz__flstudio-mcp__rosasynthesiz-flstudio-mcp",
+      "toolName": "fl_reference_match",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "34892002__bilibili-mcp-js__34892002-bilibili-mcp-js",
+      "toolName": "bilibili-video-detail",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "lastfm_album_info",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "noteboxd__mcp__noteboxd-mcp",
+      "toolName": "batch_get_fragrances",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "swapi_get_starship",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "pantani__tdmcp__pantani-tdmcp",
+      "toolName": "get_td_class_details",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_travelpayouts_list_transactions",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "ariekogan__ateam-mcp__ariekogan-ateam-mcp",
+      "toolName": "ateam_get_solution",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "robhunter__agentdeals__robhunter-agentdeals",
+      "toolName": "get_weekly_digest",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "mirastacklabs-ai__mirastack-redfish-mcp__mirastacklabs-ai-mirastack-redfi",
+      "toolName": "list_accounts",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_daisycon_get_programme",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "halidsaglam__saglitzdesign-mcp__halidsaglam-saglitzdesign-mcp",
+      "toolName": "get_design_language",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_levanta_list_programmes",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_webgains-advertiser_list_clicks",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_connexity_verify_auth",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "2s-io__sdk__2s-io-sdk",
+      "toolName": "crypto.coin",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "redhold__diagrams-mcp-app-core__redhold-diagrams-mcp-app-core",
+      "toolName": "whoami",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_tapfiliate_list_programmes",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_commission-factory-advertiser_list_clicks",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "2s-io__sdk__2s-io-sdk",
+      "toolName": "crypto.trending",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "get_calendly_event",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "abn_search",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "discogs_get_artist",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "ariekogan__ateam-mcp__ariekogan-ateam-mcp",
+      "toolName": "ateam_test_pipeline",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "sidneybissoli__medical-terminologies-mcp__sidneybissoli-medical-terminolog",
+      "toolName": "icd11_postcoordination",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_impact-advertiser_list_contracts",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_hotmart_generate_tracking_link",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "nekzus__npm-sentinel-mcp__nekzus-npm-sentinel-mcp",
+      "toolName": "npmChangelogAnalysis",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "setlistfm_search_setlists",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "seatgeek_search_events",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "twelvetake-studios__reaper-mcp__twelvetake-studios-reaper-mcp",
+      "toolName": "take_fx_get_param_name",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_shopmy_list_transactions",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "frankfurter_currencies",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "2s-io__sdk__2s-io-sdk",
+      "toolName": "predict.kalshi-events",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "2s-io__sdk__2s-io-sdk",
+      "toolName": "predict.matched-pairs",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "2s-io__sdk__2s-io-sdk",
+      "toolName": "patents.epo-search",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "2s-io__sdk__2s-io-sdk",
+      "toolName": "clinical.trial-search",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_involve-asia_get_programme",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "malamutemayhem__unclick__malamutemayhem-unclick",
+      "toolName": "stock_quote",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "pantani__tdmcp__pantani-tdmcp",
+      "toolName": "pulse_td_parameter",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "2s-io__sdk__2s-io-sdk",
+      "toolName": "patents.search",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "pantani__tdmcp__pantani-tdmcp",
+      "toolName": "serialize_network",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "bobberrisford__affiliatemcp__ai-agenticaffiliate-affiliate-ne",
+      "toolName": "affiliate_cj-advertiser_list_transactions",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    },
+    {
+      "serverId": "ejwhite7__brandkit-mcp__ejwhite7-brandkit-mcp",
+      "toolName": "get_colors_and_type",
+      "capabilityClass": "read",
+      "confidence": "low",
+      "classifierVersion": "v2"
+    }
+  ]
+}

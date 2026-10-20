@@ -1,0 +1,205 @@
+{
+  "serverId": "dxpert-ai__uns-tools__ai-dxpert-uns-tools",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "lint_sparkplug_topic",
+      "description": "Validate one or more MQTT topic strings against the Sparkplug B topic grammar (Sparkplug 3.0). Free, no API key, no account: the grammar runs locally inside this server and nothing is sent anywhere. Call this whenever a topic that is meant to be Sparkplug appears in a config, a broker trace, a code review, or a user question -- it is faster and far more reliable than reasoning about the grammar from memory. It checks the spBv1.0 namespace level, the eight message types (NBIRTH/NDEATH/DBIRTH/DDEATH/NDATA/DDATA/NCMD/DCMD) plus STATE, node-vs-device level count, the legacy Sparkplug 2.2 STATE form, publish-side MQTT wildcards, empty levels, and identifier characters that break downstream consumers. It returns ordered findings (fail / warn / pass / info) with the parsed topic parts, not a yes/no. It does NOT connect to a broker, decode payloads, or check whether the device actually exists.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "topics": {
+            "description": "One topic string, or an array of topic strings. A single string containing newlines is also accepted and split per line.",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1
+              }
+            ]
+          }
+        },
+        "required": [
+          "topics"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "check_uns_namespace",
+      "description": "Check a set of Unified Namespace (UNS) topic paths for the convention problems that quietly rot a namespace: inconsistent hierarchy depth, mixed casing styles across segments, whitespace in segments, case-collisions between siblings that read as one node but are two, duplicate paths, empty levels, and stray MQTT wildcards. Free, no API key, no account: the checks run locally inside this server and nothing is sent anywhere. Call this when reviewing a proposed namespace, an ISA-95-style hierarchy, a broker topic dump, or a tag export -- before anyone builds on top of it, because renaming a namespace later is the expensive part. It returns a summary line plus per-issue findings (fail / warn / pass / info). It judges naming consistency only: it does NOT know your plant, does not validate Sparkplug grammar (use lint_sparkplug_topic for that), and does not design a namespace for you.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "topics": {
+            "description": "The topic paths to check. An array of paths, or a single string with one path per line.",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1
+              }
+            ]
+          }
+        },
+        "required": [
+          "topics"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "run_readiness_diagnostic",
+      "description": "Run the public dxpert.ai industrial AI-readiness diagnostic: a 16-answer self-reported intake in, a scored report out (ten axes 0-5, a maturity stage, the foundation gaps blocking the stated AI ambition, and a confidence value). Free and requires no API key or account, but unlike the two validators this one DOES call the dxpert.ai API over the network, so it needs connectivity and is rate limited. Call this when someone asks how ready a plant or site is for AI/analytics, what is blocking them, or where to start -- and you can supply honest answers to the intake fields. Ask the user for the values you do not have rather than guessing them; the verdict is only as good as the intake. The response carries a \"scope\" field which this tool passes through verbatim: it is a preliminary self-reported screening, not an audit, and should be reported to the user as such.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "intake": {
+            "type": "object",
+            "description": "The 16-question readiness intake. All fields are required by the API; the enums below are the accepted values.",
+            "properties": {
+              "sector": {
+                "enum": [
+                  "discrete_mfg",
+                  "automotive",
+                  "process",
+                  "pharma",
+                  "food_bev",
+                  "energy",
+                  "other"
+                ]
+              },
+              "site_count": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "data_off_floor": {
+                "enum": [
+                  "manual",
+                  "scada_only",
+                  "opcua",
+                  "mqtt_sparkplug",
+                  "mixed"
+                ]
+              },
+              "common_model": {
+                "enum": [
+                  "none",
+                  "per_system",
+                  "partial",
+                  "unified"
+                ]
+              },
+              "realtime_visibility": {
+                "enum": [
+                  "none",
+                  "on_request",
+                  "partial",
+                  "single_pane"
+                ]
+              },
+              "historian_depth": {
+                "enum": [
+                  "none",
+                  "local",
+                  "central_untrusted",
+                  "central_trusted"
+                ]
+              },
+              "edge_vs_poll": {
+                "enum": [
+                  "poll",
+                  "mixed",
+                  "edge_push"
+                ]
+              },
+              "uns_state": {
+                "enum": [
+                  "none",
+                  "point_to_point",
+                  "partial",
+                  "governed_uns"
+                ]
+              },
+              "data_ready_for_use_case": {
+                "enum": [
+                  "no",
+                  "partial",
+                  "yes"
+                ]
+              },
+              "otit_security": {
+                "enum": [
+                  "ad_hoc",
+                  "partial",
+                  "governed"
+                ]
+              },
+              "data_ownership": {
+                "enum": [
+                  "tribal",
+                  "unclear",
+                  "owned_governed"
+                ]
+              },
+              "ai_ambition": {
+                "type": "object",
+                "description": "What they actually want AI to do, and how far they intend to take it.",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "target": {
+                    "enum": [
+                      "pilot",
+                      "scale",
+                      "autonomous"
+                    ]
+                  }
+                },
+                "required": [
+                  "text",
+                  "target"
+                ]
+              },
+              "prior_attempts": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "personal_stakes": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "who_they_trust": {
+                "type": "string",
+                "maxLength": 300
+              },
+              "politically_useful": {
+                "type": "string",
+                "maxLength": 500
+              }
+            }
+          }
+        },
+        "required": [
+          "intake"
+        ],
+        "additionalProperties": false
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 3546,
+  "transport": "stdio"
+}

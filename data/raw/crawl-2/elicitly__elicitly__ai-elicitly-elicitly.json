@@ -1,0 +1,132 @@
+{
+  "serverId": "elicitly__elicitly__ai-elicitly-elicitly",
+  "status": "BOOTED",
+  "tools": [
+    {
+      "name": "elicit_confirm",
+      "description": "Ask the user an OK/Cancel confirmation via elicitation (convenience wrapper over elicit_form), modeled on JavaScript's confirm(). Use this for a single yes/no question; use elicit_form to collect arbitrary fields. Returns three-state {confirmed}: true = proceed, false = a human explicitly said no, null = no answer was obtained (reason: \"dismissed\" | \"error\") — ask again later.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "The yes/no question shown to the user in the host's elicitation dialog."
+          },
+          "labels": {
+            "description": "Relabel or localize the OK/Cancel buttons. Each label is trimmed, 1-40 characters; unknown keys are rejected. Button placement and styling stay fixed.",
+            "type": "object",
+            "properties": {
+              "ok": {
+                "description": "Replacement label for the OK button (e.g. \"Aceptar\").",
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 40
+              },
+              "cancel": {
+                "description": "Replacement label for the Cancel button (e.g. \"Cancelar\").",
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 40
+              }
+            },
+            "additionalProperties": false
+          },
+          "timeoutSeconds": {
+            "description": "How long to wait for the answer, in seconds (default 300, clamped 60-3600).",
+            "type": "number"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    },
+    {
+      "name": "elicit_doctor",
+      "description": "Check whether the connected MCP host actually supports elicitation (and sampling/roots) before relying on it — advertising a capability is not the same as it working. Use it to decide whether to call elicit_form/elicit_confirm, to explain why a prompt did or didn't appear, or to contribute a host capability fingerprint. Returns a passive report derived from the initialize handshake; set probeElicitation: true to also run one live form round-trip (the user may see a dialog) and classify what really happened. Read-only; safe to call anytime.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "probeElicitation": {
+            "description": "Also fire one live form-elicitation round-trip (the user may see a dialog) and report the outcome under probes.elicitationForm. Default false: passive capability report only, no prompt.",
+            "type": "boolean"
+          }
+        },
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    },
+    {
+      "name": "elicit_form",
+      "description": "Trigger a form elicitation with a caller-supplied JSON schema; returns the raw {action, content}. For a plain OK/Cancel question, prefer elicit_confirm. MUST NOT be used to request secrets, credentials, or other sensitive information.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "The instruction shown to the user above the form fields."
+          },
+          "requestedSchema": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {},
+            "description": "JSON Schema for the form, restricted to the MCP elicitation requestedSchema subset: a flat object whose properties are strings, numbers/integers, booleans, or enums — no nested objects, arrays of objects, $ref, or allOf. See https://modelcontextprotocol.io/specification/2025-11-25/client/elicitation#requested-schema"
+          },
+          "timeoutSeconds": {
+            "description": "How long to wait for the answer, in seconds (default 300, clamped 60-3600) — raise it for forms with several fields.",
+            "type": "number"
+          }
+        },
+        "required": [
+          "message",
+          "requestedSchema"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    },
+    {
+      "name": "elicit_display",
+      "description": "Show information to the user as rendered HTML instead of Markdown: pass a LiquidJS template and a JSON context, and hosts that support MCP Apps render it inline in the conversation. Use it for tables, reports, and summaries the user should scan; it does not collect a decision (use elicit_confirm or elicit_form for that). Values interpolated with {{ context.* }} are HTML-escaped; truthiness is JavaScript-style. Templates may load Tailwind (https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4) and DaisyUI (https://cdn.jsdelivr.net/npm/daisyui@5) with their own <script>/<link> tags; the view follows the host's light/dark theme via data-theme. External images, scripts, styles, and fonts load only from: https://cdn.jsdelivr.net — anything else is blocked. Use data: URIs for images you already have that are not publicly reachable (generated, read from a local file, or from a private source the user gave you), passed in context rather than the template (64 KB vs 32 KB). Don't download a public image just to work around the allowlist: if its origin isn't allowed, leave it out and tell the user which origin to allow. The rendered HTML is not returned to you — the result only says whether it could be shown.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "template": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32768,
+            "description": "LiquidJS template producing an HTML fragment, rendered against {{ context.* }}. Max 32768 characters."
+          },
+          "context": {
+            "description": "JSON data exposed to the template as `context`. Max 64 KB serialized.",
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          },
+          "title": {
+            "description": "Heading shown above the render.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "summary": {
+            "description": "One or two sentences describing what is shown; returned as the tool's text result.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "template"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      }
+    }
+  ],
+  "stderrTail": "",
+  "durationMs": 17013,
+  "transport": "stdio"
+}

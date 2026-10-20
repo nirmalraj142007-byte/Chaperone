@@ -1,0 +1,8 @@
+{
+  "serverId": "gtcc777__pulsenetwork-mcp__gtcc777-pulsenetwork-mcp",
+  "status": "FAILED_TIMEOUT",
+  "tools": [],
+  "stderrTail": "",
+  "durationMs": 120078,
+  "transport": "stdio"
+}

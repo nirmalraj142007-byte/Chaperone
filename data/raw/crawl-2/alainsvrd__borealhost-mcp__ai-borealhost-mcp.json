@@ -1,0 +1,8 @@
+{
+  "serverId": "alainsvrd__borealhost-mcp__ai-borealhost-mcp",
+  "status": "FAILED_TIMEOUT",
+  "tools": [],
+  "stderrTail": "Downloading pygments (1.2MiB)\nDownloading pydantic-core (2.1MiB)\nDownloading cryptography (4.5MiB)\n Downloaded pygments\n Downloaded pydantic-core\n Downloaded cryptography\nInstalled 38 packages in 11ms\nINFO:     Started server process [55]\nINFO:     Waiting for application startup.\n[10/20/26 06:31:22] INFO     StreamableHTTP       streamable_http_manager.py:164\n                             session manager                                    \n                             started                                            \nINFO:     Application startup complete.\nINFO:     Uvicorn running on http://0.0.0.0:8100 (Press CTRL+C to quit)\n",
+  "durationMs": 120055,
+  "transport": "stdio"
+}

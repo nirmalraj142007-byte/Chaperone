@@ -1,0 +1,8 @@
+{
+  "serverId": "browserless__browserless-mcp__browserless-browserless-mcp",
+  "status": "FAILED_TIMEOUT",
+  "tools": [],
+  "stderrTail": "",
+  "durationMs": 120040,
+  "transport": "stdio"
+}
