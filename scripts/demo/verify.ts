@@ -11,7 +11,7 @@
  *   the refusal text is the frozen constant, byte for byte; the card shows
  *   the added clause highlighted and a capability badge; approving through
  *   the console restores the tool; the ledger verifies; /corpus renders its
- *   PARTIAL state (crawl 1 only). And, as a side condition, that the browser
+ *   COMPLETE state (both crawls, the final drift.json). And, as a side condition, that the browser
  *   made no request to anything but this machine.
  *
  * Every advisory line it sees is the hand-written FIXTURE from
@@ -19,7 +19,7 @@
  */
 import assert from "node:assert/strict";
 import type { ChildProcess } from "node:child_process";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import type { Browser, BrowserContext, Page } from "playwright";
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -270,22 +270,41 @@ function beats(): Beat[] {
       title: "The evidence screen, with the network off",
       run: async ({ page }) => {
         await page.goto(`${STACK.consoleUrl}/corpus`);
-        await page.getByText("Observation 1 of 2 recorded").waitFor({ timeout: 15_000 });
+        await page.getByText("Both observations recorded").waitFor({ timeout: 15_000 });
         const body = await page.locator("main").innerText();
-        assert.match(body, /1 of 2/);
-        assert.match(body, /2026-10-20/, "the crawl 2 target date should be shown");
-        assert.ok(!/2 of 2/.test(body), "the complete state must not render before crawl 2");
-        return "PARTIAL: observation 1 of 2, measurement due 2026-10-20";
+        assert.ok(!/Observation 1 of 2/.test(body), "the partial state must not render once crawl 2 is recorded");
+        assert.match(body, /2026-10-20/, "the crawl 2 date should be shown");
+        assert.match(body, /35/, "the 35-day interval should be shown");
+        return "COMPLETE: both observations recorded, crawl 2 on 2026-10-20, 35 days";
       },
     },
     {
       title: "The drift chart",
-      skip:
-        "TODO(blocker: crawl 2 has not run, so data/drift.json has status \"pending\" and no drift chart exists; " +
-        "resolves after crawl 2 on 2026-10-20 and `pnpm analyse:drift`): once drift.json says \"complete\", " +
-        "load /corpus, assert \"Both observations recorded\", the \"Headline · semantic-intent only\" section, " +
-        "and one drift mark per capability class from data/drift.json's byCapability. Write the assertions against " +
-        "the real file then, not against a guess at it now.",
+      run: async ({ page }) => {
+        const drift = JSON.parse(readFileSync(path.join(REPO_ROOT, "data", "drift.json"), "utf8")) as {
+          status: string;
+          n: number;
+          semanticIntent: { servers: number; drifted: number; ratePct: number };
+          byCapability: Array<{ capabilityClass: string; servers: number; drifted: number; ratePct: number }>;
+        };
+        assert.equal(drift.status, "complete");
+        await page.goto(`${STACK.consoleUrl}/corpus`);
+        await page.getByText("Headline · semantic-intent only").waitFor({ timeout: 15_000 });
+        const body = await page.locator("main").innerText();
+        assert.ok((await page.content()).includes("Semantic-intent drift by capability class"), "the by-capability chart should be shown");
+        assert.ok(
+          body.includes(`${drift.semanticIntent.ratePct.toFixed(1)}%`) &&
+            body.includes(`${drift.semanticIntent.drifted} of ${drift.semanticIntent.servers}`),
+          "the headline should quote data/drift.json",
+        );
+        for (const stratum of drift.byCapability) {
+          assert.ok(
+            body.includes(`${stratum.drifted} of ${stratum.servers}`) && body.includes(`${stratum.ratePct.toFixed(1)}%`),
+            `the ${stratum.capabilityClass} mark should quote data/drift.json`,
+          );
+        }
+        return `headline ${drift.semanticIntent.drifted} of ${drift.semanticIntent.servers} (${drift.semanticIntent.ratePct.toFixed(1)}%) and ${drift.byCapability.length} capability marks match data/drift.json`;
+      },
     },
     {
       title: "Nothing left this machine",

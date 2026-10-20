@@ -77,7 +77,9 @@ export function demoBeats(ctx: ChecklistContext): Beat[] {
         `open ${ctx.consoleUrl}/corpus     -> state ${ctx.corpusState}: ` +
           (ctx.corpusState === "PARTIAL"
             ? "'Observation 1 of 2 recorded', crawl 1 only, measurement due 2026-10-20. No drift chart exists yet."
-            : "see docs/UI-STATES.md"),
+            : ctx.corpusState === "COMPLETE"
+              ? "'Both observations recorded', the headline from data/drift.json and one mark per capability class."
+              : "see docs/UI-STATES.md"),
       ],
     },
     {
