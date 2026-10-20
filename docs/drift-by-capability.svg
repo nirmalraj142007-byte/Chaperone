@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 360" width="720" height="360" role="img" aria-labelledby="t d" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">
+  <title id="t">Semantic-intent drift by capability class, crawl 1 to crawl 2</title>
+  <desc id="d">Share of servers with at least one semantic-intent change over 35 days (2026-09-15 to 2026-10-20): transact 13 of 46 (28.3%), communicate 10 of 40 (25.0%), write 6 of 40 (15.0%), read 0 of 23 (0%). Overall: 29 of 149 (19.5%).</desc>
+  <rect width="720" height="360" fill="#ffffff"/>
+  <text x="24" y="32" font-size="18" font-weight="700" fill="#1a1a1a">Semantic-intent drift by capability class</text>
+  <text x="24" y="52" font-size="12.5" fill="#444444">Share of servers with at least one tool whose claim changed in meaning, 35 days (2026-09-15 to 2026-10-20)</text>
+
+  <!-- gridlines and axis: 0-40%, 13 px per percentage point, origin x=150 -->
+  <g stroke="#e3e3e3" stroke-width="1">
+    <line x1="150" y1="78" x2="150" y2="268"/>
+    <line x1="280" y1="78" x2="280" y2="268"/>
+    <line x1="410" y1="78" x2="410" y2="268"/>
+    <line x1="540" y1="78" x2="540" y2="268"/>
+    <line x1="670" y1="78" x2="670" y2="268"/>
+  </g>
+  <g font-size="12" fill="#555555" text-anchor="middle">
+    <text x="150" y="286">0%</text>
+    <text x="280" y="286">10%</text>
+    <text x="410" y="286">20%</text>
+    <text x="540" y="286">30%</text>
+    <text x="670" y="286">40%</text>
+  </g>
+
+  <!-- bars -->
+  <g font-size="13.5" fill="#1a1a1a">
+    <text x="138" y="102" text-anchor="end" font-weight="600">transact</text>
+    <rect x="150" y="84" width="367.9" height="30" fill="#2b5fa8"/>
+    <text x="526" y="104">28.3%  (13 of 46)</text>
+
+    <text x="138" y="152" text-anchor="end" font-weight="600">communicate</text>
+    <rect x="150" y="134" width="325" height="30" fill="#2b5fa8"/>
+    <text x="483" y="154">25.0%  (10 of 40)</text>
+
+    <text x="138" y="202" text-anchor="end" font-weight="600">write</text>
+    <rect x="150" y="184" width="195" height="30" fill="#2b5fa8"/>
+    <text x="353" y="204">15.0%  (6 of 40)</text>
+
+    <text x="138" y="252" text-anchor="end" font-weight="600">read</text>
+    <rect x="150" y="234" width="2" height="30" fill="#2b5fa8"/>
+    <text x="160" y="254">0%  (0 of 23)</text>
+  </g>
+
+  <!-- overall: 19.5% -> x = 150 + 19.5*13 = 403.5 -->
+  <line x1="403.5" y1="72" x2="403.5" y2="270" stroke="#b3261e" stroke-width="2" stroke-dasharray="6 4"/>
+  <text x="409" y="70" font-size="12.5" font-weight="700" fill="#b3261e">overall 19.5% (29 of 149)</text>
+
+  <text x="24" y="316" font-size="12" fill="#444444">Cosmetic, schema-additive, tool-added and tool-removed changes are counted separately and are not in these bars.</text>
+  <text x="24" y="334" font-size="12" fill="#444444">The groups are small (23 to 46 servers each); read the ordering as suggestive. Source: data/drift.json.</text>
+</svg>

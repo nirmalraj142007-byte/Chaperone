@@ -205,9 +205,12 @@ This is the audit of the claims this project could have made and does not.
   property, not a result. A block rate is reported only as a delta against
   baseline 2 (an unaided model), never as an absolute, and `packages/eval` has
   a test that fails if an absolute leaks into a report.
-- **The drift rate is not measured yet.** Crawl 2 runs on 2026-10-20, 35 days
-  after crawl 1. The prediction (20 to 40%) was committed before crawl 1 and
-  will be reported against whatever comes out, including if it is low.
+- **The drift rate came in just under the pre-registered range.** 29 of 149
+  servers (19.5%, 95% Wilson interval 13.9% to 26.6%) showed semantic-intent
+  drift over 35 days; the prediction, committed before crawl 1, was 20 to 40%.
+  One more drifted server would have made it 20.1%. The interval spans the
+  whole boundary, so this is a near miss, not a refutation. The four capability
+  groups hold 23 to 46 servers each, which is too few to rank them firmly.
 - **Baseline 2 is one model, one provider, one day.** `gpt-oss-120b` on Groq
   (Bedrock access for this AWS account was declined), 90 attack runs. Its
   55.6% follow rate is a floor and says nothing about any other model, and
@@ -221,7 +224,8 @@ This is the audit of the claims this project could have made and does not.
   that tracked the tool's proposal on 115 of 130 and agreed with two blind AI
   runs on only 54.6% and 45.4%. The relabel was done after seeing those AI
   results, so its 81.5% and 78.5% agreement with them is not independent.
-  Crawl-2 labels will be checked independently. The interim crawl is
+  The crawl-2 labels were checked independently, by a blind AI run made after
+  they were locked (see "Crawl 2 and drift" below). The interim crawl is
   structure-only and is never a headline.
 - **Classifying a change is one person's reading.** Detecting that a change
   happened is not: it is a hash comparison. Deciding whether it was cosmetic,
@@ -238,8 +242,8 @@ and the questions a reviewer is likely to ask are answered in
 ## The numbers
 
 Each number has its provenance and the command or file that reproduces it.
-Anything not yet measured is a `{{PENDING}}` marker. No value has been
-estimated to fill one.
+Anything not measured is said to be unmeasured. No value has been estimated to
+fill a gap.
 
 ### Crawl 1 (2026-09-15)
 
@@ -378,11 +382,67 @@ size gives 8.7% (8.71%), the same figure. A blind AI cross-check agreed on
 author's answers were not changed (`data/prevalence-agreement.json`,
 [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md)). `data/prevalence.json`.
 
-### Not measured yet
+### Crawl 2 and drift (2026-10-20)
 
-| | Marker |
-|---|---|
-| Semantic-intent drift rate, and the changes counted separately | {{PENDING: drift rate and its denominator — 2026-10-20}} |
+Crawl 2 started 2026-10-20T06:29:28.731Z (`data/crawl-2-report.json`) against
+the candidate list exactly as frozen at crawl 1. Crawl 1 started
+2026-09-15T06:19:42.282Z: **35 days** apart. 149 servers were captured in both
+crawls (3 of crawl 1's 152 did not boot in crawl 2 and are not in the
+denominator). All figures below are from `data/drift.json`.
+
+**Headline: 29 of 149 servers (19.5%, 95% Wilson interval 13.9% to 26.6%)
+showed semantic-intent drift over 35 days (2026-09-15 to 2026-10-20). That is
+just under the pre-registered 20 to 40% range.** Only `semantic-intent`
+changes, the ones that change what a tool claims to do, count toward it.
+
+![Semantic-intent drift by capability class: transact 28.3%, communicate 25.0%, write 15.0%, read 0%, against an overall 19.5%](docs/drift-by-capability.svg)
+
+| Capability class | Servers drifted | Rate |
+|---|---:|---:|
+| transact | 13 of 46 | 28.3% |
+| communicate | 10 of 40 | 25.0% |
+| write | 6 of 40 | 15.0% |
+| read | 0 of 23 | 0% |
+
+The strata are small (23 to 46 servers each), so the ordering is suggestive and
+the individual rates are wide: the 95% Wilson interval for transact is 17.3% to
+42.5%, and for read, 0 of 23, it runs from 0% to 14.3%.
+
+**Counted separately, never in the headline** (unit: tools, 5,838 paired tools
+in the 149 servers): 110 cosmetic, 91 schema-additive, 77 tools added and 57
+tools removed (115 tools had a semantic-intent change). Three servers present
+in crawl 1 were absent in crawl 2 (163 tools), outside the pairing. No change
+observed at the interim crawl had reverted by crawl 2.
+
+**Pre-registered predictions** (`corpus/PREDICTIONS.md`, unedited since
+2026-09-12), scored here and only here:
+
+| # | Prediction | Measured | Result |
+|---|---|---|---|
+| 1 | Semantic-intent drift 20-40% | 19.5% (29 of 149), interval 13.9-26.6% | **Just missed**, below the floor by 0.5 points |
+| 2 | Instruction-shaped descriptions 5-12% | 8.7% (13 of 150), interval 5.1-14.3% | **Met** on the point estimate; the interval's upper end is above 12% |
+| 3 | Given drift of 20% or more, fewer than 30% of drifted servers publish a signal | Not run | **Untested**: its condition was not met |
+| 4 | An unaided model refuses 70-85% of the attack corpus | `gpt-oss-120b`: followed 50 of 90 runs (55.6%), explicitly refused 0, did not exercise 40 (44.4%) | **Missed**, on either reading: 0% refused, 44.4% not followed. One model, one provider, one day |
+
+Prediction 3 is conditional on drift of at least 20%. The gate for the signal
+check (rider C) was 20% with at least 100 servers; the measured rate was 19.5%,
+so the check was not run and the prediction is neither confirmed nor refuted.
+
+**Label reliability.** Whether a change is cosmetic, schema-additive or
+semantic-intent is one person's reading, so the 274 crawl-2 labels were
+checked by an independent blind AI run (claude-sonnet-5-5). The hand labels
+were locked and pushed first (commit `9d3411c`); the AI labelled all 274 from
+the raw definitions without seeing them and committed its labels on their own
+(`c53afef`) before any comparison. They agree on 194 of 274 (70.8%), Cohen's
+kappa 0.53 (moderate). The AI was stricter: on its labels 34 of 149 servers
+(22.8%) would have drifted, against the author's 29, so the author's figure is
+the conservative one. The human labels decide the headline, as pre-registered;
+the AI run is a consistency check, not ground truth, and not a second human
+(`data/labels-agreement-crawl2.json`, `data/labels-blind-ai-crawl2.json`).
+
+**Prevalence (prediction 2).** 8.7% (13 of 150, 95% Wilson interval 5.1% to
+14.3%), kappa 0.85 against a blind AI check (see above;
+`data/prevalence.json`, `data/prevalence-agreement.json`).
 
 ## Architecture
 
