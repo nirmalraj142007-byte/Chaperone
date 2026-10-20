@@ -1,0 +1,150 @@
+{
+  "$comment": "Independent BLIND AI cross-check of the author's 274 crawl-2 hand labels. NOT a second human labeller and NOT a source of labels: data/labels.json is the label of record, was locked in commit 9d3411c before this check, and was not changed. The labels here were produced by an AI model (Claude Sonnet 5.5, claude-sonnet-5-5) from the raw crawl-1 and crawl-2 definitions without reading any label value in data/labels.json. They were committed on their own (c53afef, data/labels-blind-ai-crawl2.json) before the comparison was run.",
+  "kind": "independent-blind-ai-cross-check-of-human-labels",
+  "crawl": "crawl-1 -> crawl-2",
+  "model": {
+    "name": "Claude Sonnet 5.5",
+    "id": "claude-sonnet-5-5",
+    "provider": "Anthropic",
+    "note": "an AI model, not a person; nothing here is written to data/labels.json"
+  },
+  "lock": {
+    "humanLabelsCommit": "9d3411cf921ba3b6993e7bbb3ff5ee2b8ad66f4e",
+    "blindLabelsCommit": "c53afef",
+    "blindLabelSetSha256": "344b65fb92a14edeaf5b9bfcfdeccf9ae0aee1b083b88b145d81b962afe5975f",
+    "blindLabelSetSha256Of": "sha256 of JSON.stringify(labels sorted by key, mapped to [key, label])",
+    "order": [
+      "1. Read corpus/TAXONOMY.md and corpus/TAXONOMY-APPENDIX-classifier-v2.md; fix the Axis 1 decision rules.",
+      "2. Rebuild the 274 pairs from data/raw (crawl-1, crawl-interim-1, crawl-2) with the analysis package and an EMPTY labels map. Only the KEY list of the 274 entries added in 9d3411c was taken from git (diff of key lines of 9d3411c^ and 9d3411c); no label value, proposal or proposal reason was read.",
+      "3. Label all 274 with a one-line reason.",
+      "4. Commit the blind labels on their own (c53afef).",
+      "5. Only then compare with data/labels.json."
+    ]
+  },
+  "decisionRules": {
+    "taxonomyBlobSha": "0c896539006dbb6f8dfacc1f02ebbf179c50eec2",
+    "order": "corpus/TAXONOMY.md: tool-removed and tool-added first, then semantic-intent, then schema-additive, then cosmetic as the default when nothing else applies.",
+    "cosmetic": "no reasonable reading of the new text changes what the tool claims to do, what it claims to access, or who it claims to talk to. If in doubt between cosmetic and semantic-intent, it is not cosmetic.",
+    "schemaAdditive": "the input schema gained a new optional field, or an existing enum widened, and nothing was removed and nothing new was made required; stated behaviour for every previously valid input is unchanged.",
+    "semanticIntent": "the description text (or a required-field addition) changes what the tool claims to do, what data or systems it claims it will access, or what third party it claims it will talk to, judged on the claim.",
+    "classifierAppendix": "corpus/TAXONOMY-APPENDIX-classifier-v2.md changes only Axis 2 (capability verbs); it adds no change-class rule.",
+    "gapRulesApplied": [
+      "Added text about what a tool returns, charges, records, refuses, or sends and to whom: semantic-intent.",
+      "Added guidance about a different tool, example swaps, version stamps, source-line wording, and disclaimers about untrusted data: cosmetic.",
+      "A new optional field is schema-additive unless accompanying text changes the behaviour of an existing input.",
+      "Removed or tightened constraints with no description change fall through to cosmetic by the walk order."
+    ]
+  },
+  "items": {
+    "total": 274,
+    "rebuiltAs": "404 keys in labels.json after 9d3411c minus 130 before it; all 274 were reproduced as pending items by the pipeline with an empty labels map",
+    "feedingCrawl1ToCrawl2Headline": 229,
+    "interimOnlyOrOtherComparison": 45
+  },
+  "agreement": {
+    "n": 274,
+    "agree": 194,
+    "percent": 70.8,
+    "expectedByChance": 0.3767,
+    "cohensKappa": 0.532,
+    "kappaReading": "moderate agreement (Landis and Koch 0.41-0.60)",
+    "skippedOrMissing": 0
+  },
+  "confusion": {
+    "rowsAreAuthorHumanLabels": true,
+    "columnsAreBlindAI": true,
+    "classes": [
+      "cosmetic",
+      "schema-additive",
+      "semantic-intent"
+    ],
+    "matrix": [
+      [
+        67,
+        4,
+        26
+      ],
+      [
+        3,
+        22,
+        40
+      ],
+      [
+        6,
+        1,
+        105
+      ]
+    ],
+    "rowTotals": [
+      97,
+      65,
+      112
+    ],
+    "columnTotals": [
+      76,
+      27,
+      171
+    ],
+    "table": {
+      "cosmetic": {
+        "cosmetic": 67,
+        "schema-additive": 4,
+        "semantic-intent": 26
+      },
+      "schema-additive": {
+        "cosmetic": 3,
+        "schema-additive": 22,
+        "semantic-intent": 40
+      },
+      "semantic-intent": {
+        "cosmetic": 6,
+        "schema-additive": 1,
+        "semantic-intent": 105
+      }
+    }
+  },
+  "semanticIntentVsRest": {
+    "note": "collapse cosmetic and schema-additive; the only class that enters a headline",
+    "rowsAreAuthor": true,
+    "matrix": {
+      "authorNotSemantic": {
+        "aiNotSemantic": 96,
+        "aiSemantic": 66
+      },
+      "authorSemantic": {
+        "aiNotSemantic": 7,
+        "aiSemantic": 105
+      }
+    },
+    "percentAgree": 73.36,
+    "cohensKappa": 0.49
+  },
+  "headline": {
+    "definition": "servers with at least one semantic-intent tool pair in crawl-1 -> crawl-2, denominator n captured in both; every non-274 pair keeps the label of record or its mechanical class",
+    "n": 149,
+    "author": {
+      "semanticIntentServers": 29,
+      "semanticIntentPairs": 115,
+      "cosmeticPairs": 110,
+      "schemaAdditivePairs": 91
+    },
+    "blindAi": {
+      "semanticIntentServers": 34,
+      "semanticIntentPairs": 161,
+      "cosmeticPairs": 95,
+      "schemaAdditivePairs": 60
+    },
+    "difference": {
+      "servers": 5,
+      "note": "the blind AI labels are stricter, so they give MORE semantic-intent servers, not fewer"
+    },
+    "check": "the author-labels run of the same computation reproduces the published 29 of 149"
+  },
+  "limitations": [
+    "One AI rater. This is a consistency check on the human labels, not ground truth, and it is not a second human labeller.",
+    "The same model family (Claude) produced much of the surrounding tooling and wrote this protocol, so independence from the author's workflow is partial.",
+    "corpus/DRIFT-JSON-APPENDIX-report-shape.md and the author's own gap rules were not read before labelling; where the taxonomy is silent (removed or tightened constraints, added returned fields, guidance about other tools) the rater applied its own gap rules, listed above, and these differ from the human rater's in direction.",
+    "Disagreements are not listed here by item and no label is recommended for change.",
+    "45 of the 274 keys belong to crawl-1 -> interim or interim -> crawl-2 pairs and do not feed the crawl-1 -> crawl-2 headline; they are included in the agreement statistics."
+  ]
+}
