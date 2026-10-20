@@ -24,6 +24,13 @@ import {
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const real = loadEvidence(repoRoot);
 
+/** The pre-registered pending form of drift.json: what the screen showed between the crawls. Derived from the real file. */
+const pendingEvidence: Evidence = {
+  ...real,
+  crawl2: null,
+  drift: { ...(real.drift as Drift), status: "pending", n: null, semanticIntent: null, byCapability: null, countedSeparately: {}, headlineEligible: null, crawl2StartedAt: null },
+};
+
 describe("loadEvidence", () => {
   it("reads the committed crawl-1 report", () => {
     expect(real.crawl1).not.toBeNull();
@@ -36,19 +43,27 @@ describe("loadEvidence", () => {
     expect(real.bootRate?.findingSentence).toContain("did not start from their own documented setup instructions");
   });
 
-  it("reads drift.json in its pre-registered pending form", () => {
-    expect(real.drift?.status).toBe("pending");
+  it("reads drift.json in its final complete form: 29 of 149, 19.5%, 35 days", () => {
+    expect(real.drift?.status).toBe("complete");
     expect(real.drift?.interval).toBe(35);
-    expect(real.drift?.n).toBeNull();
-    expect(real.drift?.byCapability).toBeNull();
+    expect(real.drift?.n).toBe(149);
+    expect(real.drift?.crawl2StartedAt).toBe("2026-10-20T06:29:28.731Z");
+    expect(real.drift?.semanticIntent).toEqual({ servers: 149, drifted: 29, ratePct: 19.5 });
+    expect(real.drift?.byCapability?.map((s) => [s.capabilityClass, s.drifted, s.servers, s.ratePct])).toEqual([
+      ["transact", 13, 46, 28.3],
+      ["communicate", 10, 40, 25],
+      ["write", 6, 40, 15],
+      ["read", 0, 23, 0],
+    ]);
     expect(real.drift?.prediction).toEqual(
       expect.objectContaining({ lowPct: 20, highPct: 40, registeredOn: "2026-09-12" }),
     );
   });
 
   it("returns null for a file that does not exist rather than throwing", () => {
-    // crawl-2 has not run and the bench harness has not been built.
-    expect(real.crawl2).toBeNull();
+    // crawl 2 ran on 2026-10-20, so the committed report is present and read.
+    expect(real.crawl2?.crawlId).toBe("crawl-2");
+    expect(real.crawl2?.startedAt).toBe("2026-10-20T06:29:28.731Z");
     expect(loadEvidence(path.join(repoRoot, "does-not-exist"))).toEqual(
       expect.objectContaining({ crawl1: null, drift: null, latency: null }),
     );
@@ -64,8 +79,12 @@ describe("corpusState", () => {
     expect(corpusState(EMPTY_EVIDENCE)).toBe("empty");
   });
 
-  it("is partial today — crawl 1 recorded, drift still pending", () => {
-    expect(corpusState(real)).toBe("partial");
+  it("is complete with the committed final drift.json", () => {
+    expect(corpusState(real)).toBe("complete");
+  });
+
+  it("is partial in the pre-registered pending form — crawl 1 recorded, drift pending", () => {
+    expect(corpusState(pendingEvidence)).toBe("partial");
   });
 
   it("stays partial when drift.json exists but says pending", () => {
@@ -108,19 +127,29 @@ describe("corpusState", () => {
 });
 
 describe("strata", () => {
+  it("shows the final drift rates once the analysis is complete", () => {
+    const rows = strata(real);
+    expect(rows.map((r) => [r.capabilityClass, r.display, r.note])).toEqual([
+      ["transact", "28.3%", "13 of 46 servers"],
+      ["communicate", "25.0%", "10 of 40 servers"],
+      ["write", "15.0%", "6 of 40 servers"],
+      ["read", "0.0%", "0 of 23 servers"],
+    ]);
+  });
+
   it("returns the four classes in order of consequence, not by size", () => {
     expect(strata(real).map((s) => s.capabilityClass)).toEqual(["transact", "communicate", "write", "read"]);
   });
 
-  it("marks read low-confidence, because it is the classifier's unmatched-verb default", () => {
-    const rows = strata(real);
+  it("marks read low-confidence in the crawl-1 frame, because it is the classifier's unmatched-verb default", () => {
+    const rows = strata(pendingEvidence);
     expect(rows.filter((r) => r.lowConfidence).map((r) => r.capabilityClass)).toEqual(["read"]);
     // The crawl report's own low-confidence count equals the read population, which is why.
     expect(real.crawl1?.lowConfidenceCount).toBe(real.crawl1?.capabilityDistribution["read"]);
   });
 
   it("sums to the tools actually captured", () => {
-    const total = strata(real).reduce((n, s) => n + s.value, 0);
+    const total = strata(pendingEvidence).reduce((n, s) => n + s.value, 0);
     expect(total).toBe(real.crawl1?.totalToolsCaptured);
   });
 
@@ -189,6 +218,8 @@ describe("bandVerdict", () => {
     expect(bandVerdict(20, drift)).toBe("inside");
     expect(bandVerdict(40, drift)).toBe("inside");
     expect(bandVerdict(19.9, drift)).toBe("below");
+    // The measured headline, 19.5%, is just under the pre-registered 20% floor.
+    expect(bandVerdict(19.5, drift)).toBe("below");
     expect(bandVerdict(40.1, drift)).toBe("above");
   });
 });

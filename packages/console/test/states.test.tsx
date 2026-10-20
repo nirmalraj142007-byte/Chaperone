@@ -92,11 +92,19 @@ const ROUTES = [
   { name: "upstreams", path: "/upstreams" },
 ] as const;
 
+/** The pre-registered pending form (crawl 1 recorded, crawl 2 not yet run), derived from the real files. */
+const pendingEvidence: Evidence = {
+  ...realEvidence,
+  crawl2: null,
+  drift: { ...(realEvidence.drift as Drift), status: "pending", n: null, semanticIntent: null, byCapability: null, countedSeparately: {}, headlineEligible: null, crawl2StartedAt: null },
+};
+
 describe("every designed state of every route", () => {
   for (const route of ROUTES) {
     for (const state of STATE_OVERRIDES) {
       it(`${route.name} · ${state}`, async () => {
-        const html = await render(`${route.path}?state=${state}`);
+        // The designed "partial" /corpus state is the pre-crawl-2 layout, so it is rendered from the pending form of the evidence.
+        const html = await render(`${route.path}?state=${state}`, route.name === "corpus" ? pendingEvidence : realEvidence);
         expect(html.length).toBeGreaterThan(0);
         // Nothing renders the literal string "undefined" or "NaN" — the
         // classic way a state screen leaks a missing value into the page.
@@ -109,9 +117,9 @@ describe("every designed state of every route", () => {
 });
 
 describe("/corpus renders its real states from committed data", () => {
-  it("is partial today: crawl 1 recorded, crawl 2 pending", async () => {
-    expect(corpusState(realEvidence)).toBe("partial");
-    const html = await render("/corpus");
+  it("is partial in the pending form: crawl 1 recorded, crawl 2 pending", async () => {
+    expect(corpusState(pendingEvidence)).toBe("partial");
+    const html = await render("/corpus", pendingEvidence);
     // The three things the partial state must show.
     expect(html).toContain("did not start from their own documented setup instructions");
     expect(html).toContain("2026-10-20");
@@ -124,14 +132,14 @@ describe("/corpus renders its real states from committed data", () => {
   });
 
   it("is empty when no crawl has been recorded, and still names both target dates", async () => {
-    const html = await render("/corpus", { ...realEvidence, crawl1: null, bootRate: null });
+    const html = await render("/corpus", { ...pendingEvidence, crawl1: null, bootRate: null });
     expect(html).toContain("No crawl data yet");
     expect(html).toContain("2026-09-15");
     expect(html).toContain("2026-10-20");
     await expect(html).toMatchFileSnapshot("./__snapshots__/corpus.real-empty.html");
   });
 
-  it("is complete once drift.json says so, with N, both timestamps, the day count and the taxonomy blob", async () => {
+  it("is complete (synthetic drift values, to exercise the layout) once drift.json says so, with N, both timestamps, the day count and the taxonomy blob", async () => {
     const drift: Drift = {
       ...(realEvidence.drift as Drift),
       status: "complete",
@@ -157,6 +165,22 @@ describe("/corpus renders its real states from committed data", () => {
     expect(html).toContain("35");
     expect(html).toContain("0c896539006dbb6f8dfacc1f02ebbf179c50eec2");
     await expect(html).toMatchFileSnapshot("./__snapshots__/corpus.real-complete.html");
+  });
+
+  it("is complete: both crawls recorded, the final drift.json rendered", async () => {
+    expect(corpusState(realEvidence)).toBe("complete");
+    const html = await render("/corpus");
+    expect(html).toContain("Semantic-intent drift by capability class");
+    expect(html).toContain("2026-09-15T06:19:42.282Z");
+    expect(html).toContain("2026-10-20T06:29:28.731Z");
+    expect(html).toContain("35");
+    expect(html).toContain("149");
+    expect(html).toContain("19.5");
+    for (const figure of ["28.3", "25.0", "15.0", "0.0"]) expect(html).toContain(figure);
+    for (const [drifted, servers] of [[13, 46], [10, 40], [6, 40], [0, 23]]) {
+      expect(html).toContain(`${drifted} of ${servers}`);
+    }
+    await expect(html).toMatchFileSnapshot("./__snapshots__/corpus.real-final.html");
   });
 });
 

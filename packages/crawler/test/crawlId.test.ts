@@ -77,17 +77,35 @@ describe("assertCrawlIdRunnable", () => {
   });
 });
 
-describe("the live CRAWL_DATES.md after crawl-interim-1 ran", () => {
-  it("has only the interim line filled, from the crawler's report; crawl 1 and crawl 2 lines are byte-identical to before", () => {
+describe("the live CRAWL_DATES.md after crawl-interim-1 and crawl 2 ran", () => {
+  it("records crawl 1 on 2026-09-15 and crawl 2 on 2026-10-20, exactly 35 days apart", () => {
+    const crawl1 = liveDates.match(/^- Crawl 1 executed at: (\S+) /m)?.[1];
+    const crawl2 = liveDates.match(/^- Crawl 2 executed at: (\S+) /m)?.[1];
+    expect(crawl1).toBe("2026-09-15T06:19:42.282Z");
+    expect(crawl2).toBe("2026-10-20T06:29:28.731Z");
+    const days = (Date.parse(crawl2 ?? "") - Date.parse(crawl1 ?? "")) / 86_400_000;
+    expect(Math.floor(days)).toBe(35);
+    expect(liveDates).toContain("**Interval: 35 days.**");
+  });
+
+  it("differs from the pre-interim fixture only in the crawl 2 line, the interim line and one appended crawl 2 note; the crawl 1 line is byte-identical", () => {
+    const BLOB_LINE = "corpus/TAXONOMY.md blob 0c896539006dbb6f8dfacc1f02ebbf179c50eec2";
+    expect(liveDates).toContain(
+      `- Crawl 2 executed at: 2026-10-20T06:29:28.731Z (finished 2026-10-20T07:01:23.889Z; ${BLOB_LINE})`,
+    );
+    const live = liveDates.split("\n");
+    const note = live.filter((l) => l.startsWith("- Crawl 2 note (added by hand 2026-10-20"));
+    expect(note).toHaveLength(1);
+    const changes = changedLines(preInterimDates.replace(FIXTURE_BANNER, ""), live.filter((l) => !note.includes(l)).join("\n"));
+    expect(changes.map((c) => c.before.slice(0, 22))).toEqual(["- Crawl 2 executed at:", "- Interim crawl 1 (`cr"]);
+    const crawl1Line = /^- Crawl 1 executed at:.*$/m;
+    expect(liveDates.match(crawl1Line)?.[0]).toBe(preInterimDates.match(crawl1Line)?.[0]);
+  });
+
+  it("has the interim line filled from the crawler's report", () => {
     expect(liveDates).toMatch(
       /^- Interim crawl 1 \(`crawl-interim-1`\) executed at: 2026-10-02T00:02:42\.889Z \(finished 2026-10-02T00:18:49\.060Z; corpus\/TAXONOMY\.md blob 0c896539006dbb6f8dfacc1f02ebbf179c50eec2\)$/m,
     );
-    const changes = changedLines(preInterimDates.replace(FIXTURE_BANNER, ""), liveDates);
-    expect(changes).toHaveLength(1);
-    expect(changes[0]?.before).toMatch(/^- Interim crawl 1 .*_\(pending/);
-    for (const frozen of [/^- Crawl 1 executed at:.*$/m, /^- Crawl 2 executed at:.*$/m]) {
-      expect(liveDates.match(frozen)?.[0]).toBe(preInterimDates.match(frozen)?.[0]);
-    }
   });
 
   it("refuses to fill the interim line a second time", () => {
