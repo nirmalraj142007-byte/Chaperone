@@ -440,3 +440,33 @@ Whether a resident can read the consent card and say what changed has not been
 measured, so no claim in this repo rests on it. "A resident can find the
 changed clause" is a design intent, not a finding. A household usability study
 is future work.
+
+## Capability class partly tracks server size
+
+The drift-by-capability table in the README may partly reflect server size.
+Larger servers have more tools that can change, and are more likely to include
+a transact tool. `pnpm exec tsx scripts/size-check.ts` (output committed in
+`data/size-check.json`) groups the 149 servers by crawl-1 tool count into
+roughly equal thirds and reconciles to `data/drift.json` (29 drifted; all four
+capability strata match):
+
+| Size band | Servers | Semantic-intent drift | Transact servers |
+|---|---:|---:|---:|
+| Small, 1 to 6 tools | 54 | 4 of 54 (7.4%) | 7 |
+| Medium, 7 to 19 tools | 49 | 9 of 49 (18.4%) | 13 |
+| Large, 20 or more tools | 46 | 16 of 46 (34.8%) | 26 |
+
+The median drifted server has 23 tools; the median server that did not drift
+has 8. Median tools per server by capability class: transact 22.5,
+communicate 12.5, write 6.5, read 4. Within a size band the class ordering
+mostly flattens (medium: transact 3 of 13, communicate 3 of 13, write 3 of 15,
+read 0 of 8), and no read server is in the large band, so these data cannot
+separate class from size. Cells are small; no model was fitted.
+
+How a server's class is assigned: each tool is classified from its name and
+description by a hand-reviewed verb list (classifier v2, keyword-based, see
+`packages/policy/src/capability.ts`), and the server takes the
+highest-consequence class among its tools (transact, then communicate, then
+write, then read). A server with one transact-looking tool among forty
+read-only tools is a transact server, which is one reason transact servers skew
+large.

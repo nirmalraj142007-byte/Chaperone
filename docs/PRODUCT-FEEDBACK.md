@@ -292,6 +292,28 @@ offer a supported "no egress but publish ports" switch.
 No friction is recorded here because none was recorded in the friction log at
 the time, and this file does not reconstruct feedback from memory.
 
+## Alexa+
+
+**Importance: Important.** Unlike the sections above, this one records
+questions and a request rather than friction hit while building. The project
+had no access to Alexa+ internals, so these are asked, not answered, and no
+claim about current behaviour is made.
+
+**Questions**
+
+1. Are third-party MCP tools re-reviewed after certification when their
+   definitions change?
+2. How does Alexa+ handle `notifications/tools/list_changed` from a server?
+
+**Request**
+
+- Platform-side definition pinning, so a changed tool is held until re-review
+  or user consent.
+
+Context for why it matters: across 149 public MCP servers, 29 (19.5%) changed
+what at least one tool claims to do over 35 days (`data/drift.json`). Those
+servers are not Alexa+ partners; they show the wider ecosystem.
+
 ## The MCP Registry and each directory API
 
 **Used for:** assembling the 947-server candidate list for crawl 1

@@ -1,0 +1,149 @@
+{
+  "basis": "149 servers captured in both crawls; size = crawl-1 tool count; server class = highest-consequence crawl-1 tool under classifier v2 (transact > communicate > write > read); drifted = >=1 semantic-intent change (labels.json)",
+  "cutoffs": {
+    "small": "<= 6 tools",
+    "medium": "7 to 19 tools",
+    "large": ">= 20 tools"
+  },
+  "overall": {
+    "servers": 149,
+    "drifted": 29,
+    "ratePct": 19.5
+  },
+  "medianToolsAllServers": 10,
+  "medianToolsDriftedServers": 23,
+  "medianToolsUndriftedServers": 8,
+  "bySize": [
+    {
+      "band": "small",
+      "minTools": 1,
+      "maxTools": 6,
+      "servers": 54,
+      "drifted": 4,
+      "ratePct": 7.4,
+      "transactServers": 7,
+      "byClass": {
+        "transact": {
+          "servers": 7,
+          "drifted": 0,
+          "ratePct": 0
+        },
+        "communicate": {
+          "servers": 12,
+          "drifted": 2,
+          "ratePct": 16.7
+        },
+        "write": {
+          "servers": 20,
+          "drifted": 2,
+          "ratePct": 10
+        },
+        "read": {
+          "servers": 15,
+          "drifted": 0,
+          "ratePct": 0
+        }
+      }
+    },
+    {
+      "band": "medium",
+      "minTools": 7,
+      "maxTools": 19,
+      "servers": 49,
+      "drifted": 9,
+      "ratePct": 18.4,
+      "transactServers": 13,
+      "byClass": {
+        "transact": {
+          "servers": 13,
+          "drifted": 3,
+          "ratePct": 23.1
+        },
+        "communicate": {
+          "servers": 13,
+          "drifted": 3,
+          "ratePct": 23.1
+        },
+        "write": {
+          "servers": 15,
+          "drifted": 3,
+          "ratePct": 20
+        },
+        "read": {
+          "servers": 8,
+          "drifted": 0,
+          "ratePct": 0
+        }
+      }
+    },
+    {
+      "band": "large",
+      "minTools": 20,
+      "maxTools": 1677,
+      "servers": 46,
+      "drifted": 16,
+      "ratePct": 34.8,
+      "transactServers": 26,
+      "byClass": {
+        "transact": {
+          "servers": 26,
+          "drifted": 10,
+          "ratePct": 38.5
+        },
+        "communicate": {
+          "servers": 15,
+          "drifted": 5,
+          "ratePct": 33.3
+        },
+        "write": {
+          "servers": 5,
+          "drifted": 1,
+          "ratePct": 20
+        },
+        "read": {
+          "servers": 0,
+          "drifted": 0,
+          "ratePct": null
+        }
+      }
+    }
+  ],
+  "byClass": [
+    {
+      "capabilityClass": "transact",
+      "servers": 46,
+      "drifted": 13,
+      "ratePct": 28.3,
+      "medianTools": 22.5,
+      "minTools": 3,
+      "maxTools": 1677
+    },
+    {
+      "capabilityClass": "communicate",
+      "servers": 40,
+      "drifted": 10,
+      "ratePct": 25,
+      "medianTools": 12.5,
+      "minTools": 1,
+      "maxTools": 72
+    },
+    {
+      "capabilityClass": "write",
+      "servers": 40,
+      "drifted": 6,
+      "ratePct": 15,
+      "medianTools": 6.5,
+      "minTools": 1,
+      "maxTools": 46
+    },
+    {
+      "capabilityClass": "read",
+      "servers": 23,
+      "drifted": 0,
+      "ratePct": 0,
+      "medianTools": 4,
+      "minTools": 1,
+      "maxTools": 19
+    }
+  ]
+}

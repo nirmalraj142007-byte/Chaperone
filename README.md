@@ -251,6 +251,9 @@ Each number has its provenance and the command or file that reproduces it.
 Anything not measured is said to be unmeasured. No value has been estimated to
 fill a gap.
 
+The 149 servers are public MCP servers, not Alexa+ partners; they show how often
+tool definitions change in the wider ecosystem.
+
 ### Crawl 1 (2026-09-15)
 
 Started 2026-09-15T06:19:42.282Z, finished 06:51:29.907Z
@@ -413,6 +416,10 @@ changes, the ones that change what a tool claims to do, count toward it.
 The strata are small (23 to 46 servers each), so the ordering is suggestive and
 the individual rates are wide: the 95% Wilson interval for transact is 17.3% to
 42.5%, and for read, 0 of 23, it runs from 0% to 14.3%.
+
+The pattern may partly reflect server size, since larger servers have more tools
+that can change and are more likely to include a transact tool (numbers in
+[`docs/LIMITATIONS.md`](docs/LIMITATIONS.md#capability-class-partly-tracks-server-size)).
 
 **Counted separately, never in the headline** (unit: tools, 5,838 paired tools
 in the 149 servers): 110 cosmetic, 91 schema-additive, 77 tools added and 57
