@@ -260,6 +260,8 @@ October by re-running `crawl:assemble`.
 
 ## AWS-01: the Step Functions pipeline (Phase 12/13, built — `cdk synth` only)
 
+> Update 2026-10-21: this section records the state at Phase 12/13. The pipeline was deployed in Phase 18 (2026-10-16) and has run end to end; see `docs/RUNBOOK.md` and `docs/LIMITATIONS.md`.
+
 `infra/` (a new pnpm workspace package, `@chaperone/infra` — added to
 `pnpm-workspace.yaml` this phase) now has a real CDK v2 app,
 `infra/lib/advisory-pipeline-stack.ts`, replacing the "not built" gap this

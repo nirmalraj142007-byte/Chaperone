@@ -22,8 +22,9 @@ rehearsals and replace this paragraph with the real timings.
   visible. Two items are hand-written stand-ins and are labelled on screen (the
   one-line summary on the card, and the staged "12 January" approval); do not
   describe either as real model output or real history.
-- Nothing is deployed. Beat 7 runs against the local stack; the on-screen label
-  says so.
+- A live deployment exists (https://chaperone-demo.duckdns.org, one EC2 host with
+  Caddy, deployed 2026-10-16), but the filmed demo, including beat 7, runs against
+  the local stack; the on-screen label says so.
 
 ## Before the take
 

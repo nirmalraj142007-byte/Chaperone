@@ -341,8 +341,8 @@ Resumable SSE is why the writes exist: an event a client could replay with
 
 | Command | Result |
 |---|---|
-| `pnpm test` | 871 tests in 85 files, all passing (103.5 s, run 2026-09-24), with coverage gates |
-| `pnpm spec` | 27 named conformance assertions, all passing (29.6 s, run 2026-09-24) |
+| `pnpm test` | 1,174 tests in 106 files, all passing (run 2026-10-21), with coverage gates |
+| `pnpm spec` | 27 named conformance assertions, all passing (run 2026-10-21) |
 | `pnpm test:stack` | 16 tests in 4 files, all passing: ten kill-and-resume iterations, a held-open stream, ledger tamper detection, "refused stays refused" |
 | `pnpm test:e2e` | 4 Playwright tests in 2 specs, all passing (38.6 s) |
 | `pnpm test:all` | exit 0 in 327 s from a fresh clone of `bafc5f5` on 2026-09-24; it also ends with `verify-ledger` green. See [`docs/TESTING.md`](docs/TESTING.md) |

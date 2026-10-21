@@ -27,7 +27,7 @@ change, so re-check rather than trust it.
 - [ ] Beat 12 shows both crawl dates and says **35 days**, and nothing in the video says a rounded number of weeks
 - [ ] No absolute Chaperone block rate anywhere, spoken or on a card
 - [ ] The drift sentence in beat 12 is the one in `data/drift.json`, and counts `semantic-intent` changes only
-- [ ] Beat 7 is labelled as a local stack unless a deployment exists (see section 5)
+- [ ] Beat 7 is labelled as the local stack it runs on (a live deployment exists; see section 5)
 
 ## 2. The repository
 
@@ -41,7 +41,7 @@ change, so re-check rather than trust it.
 ## 3. Devpost
 
 - [ ] **Product Feedback field completed for every tool used**, drawn from `docs/PRODUCT-FEEDBACK.md`: MCP TypeScript SDK, MCP Apps (`ext-apps`) and Inspector, DynamoDB and DynamoDB Local, Bedrock, Groq, CDK, Docker, Kiro, the registry APIs. Known state: the Kiro section says plainly that Kiro was not used in the final build; the CDK-deploy section was filled on 2026-10-16 from the real deployment
-- [x] **Open-source contribution (OSS PR): not entered.** No pull request to another project is part of this submission, and none is claimed
+- [x] **Open Source Mini Challenge: not entered.** Its rules ask for a new, additional project, and this submission has none. No pull request to another project is part of it, and none is claimed
 - [ ] **Friction log attached**: `friction-log.md`, every entry in the six-field form
 - [ ] The description opens with the add-on framing, not with "proxy", "security layer" or "guardrail"
 - [ ] The description repeats no number that is not in a committed file, and no absolute block rate
@@ -70,7 +70,7 @@ with `TARGET` set to the live host and to `https://does-not-exist.invalid/mcp`
 alike (`docs/RUBRIC-MAP.md`, section 1).
 
 - [ ] Either: a deployed gateway whose `/healthz` returns 200, with `TARGET=https://<host>/mcp pnpm spec` and `TARGET=https://<host>/mcp pnpm test:resume` both passing against it (pasted output)
-- [ ] Or: the README, the Devpost description and the video all say plainly that it is not deployed and the demo runs on the local stack, and the production-latency marker is replaced by a sentence saying it was not measured against DynamoDB on AWS. Do not leave a dangling pending marker, and do not state a number that came from DynamoDB Local as if it were production
+- [ ] The README, the Devpost description and the video say plainly that the filmed demo runs on the local stack while a live deployment exists, and any latency figure names its backend: 53.82 ms added p95 on DynamoDB in AWS (fails the 30 ms budget), 591.89 ms on DynamoDB Local. Do not leave a dangling pending marker
 
 ## 6. Last, in this order
 

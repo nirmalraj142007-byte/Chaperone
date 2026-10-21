@@ -1,0 +1,9 @@
+{
+  "basis": "servers captured in both crawls; hashTool from @chaperone/policy; a card = hash change on an existing tool or a tool with no pin",
+  "serversInBoth": 149,
+  "serversWithAtLeastOneCard": 46,
+  "serversWithHashChange": 43,
+  "serversWithNewTool": 27,
+  "toolsHashChanged": 316,
+  "toolsAdded": 77
+}

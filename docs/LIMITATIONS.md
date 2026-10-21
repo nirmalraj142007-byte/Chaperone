@@ -327,17 +327,18 @@ see `packages/eval/src/guards.ts` and CLAUDE.md non-negotiable #7. Baseline
 every number has an independent point of comparison instead of standing
 alone.
 
-## AWS-01 is `cdk synth`-only, not deployed
+## AWS-01 is deployed and has run once end to end; it has not been load-tested
 
 `infra/lib/advisory-pipeline-stack.ts` (the DynamoDB Stream -> EventBridge
 Pipe -> Step Functions -> Lambdas -> advisory table pipeline) synthesizes
-cleanly to a CloudFormation template and its IAM statements were inspected
-directly in that output (now a Parallel state of a Groq-calling Lambda and a
-no-model changelog-check Lambda, joined before a write Lambda), but `cdk deploy` has never been run — no version
-of this pipeline has ever executed against a real AWS account. Phase 18 is
-where that happens. Until then, `pnpm advisory:run-local` (against
-DynamoDB Local) remains the only way any advisory row has actually been
-written by this project.
+cleanly to a CloudFormation template (a Parallel state of a Groq-calling Lambda
+and a no-model changelog-check Lambda, joined before a write Lambda). It was
+deployed to us-east-1 on 2026-10-16 (Phase 18), and the EventBridge Pipe started
+a Step Functions execution by itself from a DynamoDB Stream insert; it SUCCEEDED
+and wrote an advisory row (`docs/RUNBOOK.md`, "Advisory pipeline smoke test").
+The first deploy found three bugs that `cdk synth` and the stack tests had not.
+What is not covered: sustained load, and an execution graph screenshot. The
+demo's advisory line is still the labelled hand-written fixture.
 
 ## One household, no accounts, no sandboxing
 

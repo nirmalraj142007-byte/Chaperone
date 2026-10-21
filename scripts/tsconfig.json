@@ -8,6 +8,7 @@
   "include": [
     "resume-demo.ts",
     "check-claims.ts",
+    "count-card-servers.ts",
     "check-placeholders.ts",
     "demo-reset.ts",
     "demo-verify.ts",
