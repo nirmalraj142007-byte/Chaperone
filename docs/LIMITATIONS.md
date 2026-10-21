@@ -433,3 +433,23 @@ proposed `semantic-intent`, so the "author is the labeller" limitation
 above applies to all of them. `data/drift.json` reports how many labels
 were needed (`labels.required`) and how many overrode the mechanical
 proposal (`labels.humanOverrodeProposal`).
+
+## The consent card is not yet readable to a non-technical resident
+
+Five people read the card for the demo mutation (the calendar clause added to
+`add_item`), recorded in [`CARD-READABILITY.md`](CARD-READABILITY.md): 3 of 5
+understood what changed, 1 partly, 1 did not. The one participant without a
+tech background (56) did not understand it; the one who partly did (35) has a
+tech background.
+
+Read that result with its limits. All five are the author's relatives, which
+may bias it. The three who understood (26, 23, 26) regularly approve
+permissions for AI coding agents, which likely helped. The outcomes are the
+author's summary of what each person said, not verbatim transcripts. Five
+people is not a usability study.
+
+What it does mean: the product's intended resident is the person it served
+worst, so "a resident can find the changed clause" is not established for
+non-technical residents. The next step is plainer wording for them, followed by
+a re-test with people outside the author's family. The card has not been
+changed yet.
