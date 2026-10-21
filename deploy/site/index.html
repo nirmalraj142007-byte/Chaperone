@@ -279,17 +279,33 @@ footer { margin-top: 36px; font-size: 14px; color: var(--muted); }
   </section>
 
   <section aria-labelledby="try-heading">
-    <h2 id="try-heading">What you can do here</h2>
+    <h2 id="try-heading">Try it</h2>
     <ol class="steps">
       <li>
-        <h3>Connect any MCP client to this server</h3>
-        <span class="endpoint">https://chaperone-demo.duckdns.org/mcp</span>
-        <p>MCP specification 2025-11-25, Streamable HTTP transport. Behind it is a staged household grocery server, so its tools appear as <code>grocery__add_item</code>, <code>grocery__read_list</code> and so on. A tool whose description has changed since the household approved it is withheld from the list until the resident decides.</p>
-        <p class="small">The namespacing <code>{upstream}__{tool}</code> is deliberate and asserted in the conformance suite.</p>
+        <h3>1. Open the MCP Inspector</h3>
+        <p>Any MCP client works; the Inspector is the quickest. Run <code>npx @modelcontextprotocol/inspector</code> on your machine and open the address it prints.</p>
       </li>
       <li>
-        <h3>Run the full demo on your machine</h3>
-        <p>The consent flow, the simulated Alexa+ app and the evidence ledger run locally with Docker and Node 24, no AWS account needed. Follow the <a href="https://github.com/nirmalraj142007-byte/Chaperone#quickstart-no-aws-account">README quickstart</a>.</p>
+        <h3>2. Connect to this server</h3>
+        <span class="endpoint">https://chaperone-demo.duckdns.org/mcp</span>
+        <p>Choose the Streamable HTTP transport and paste that address. MCP specification 2025-11-25; no sign-in.</p>
+      </li>
+      <li>
+        <h3>3. List the tools</h3>
+        <p>Behind the server is a staged household grocery server, so its tools appear as <code>grocery__add_item</code>, <code>grocery__read_list</code> and so on, beside Chaperone's own <code>chaperone/pending_changes</code>. The namespacing <code>{upstream}__{tool}</code> is deliberate and asserted in the conformance suite.</p>
+      </li>
+      <li>
+        <h3>4. Call <code>grocery__add_item</code>, then <code>grocery__read_list</code></h3>
+        <p>Add an item by name, then read the list back. These are approved tools, so they run straight away.</p>
+      </li>
+      <li>
+        <h3>5. Call <code>chaperone/pending_changes</code></h3>
+        <p>It lists any tool whose description has changed since the household approved it. Most of the time the answer is none.</p>
+      </li>
+      <li>
+        <h3>6. See a held tool</h3>
+        <p>A tool whose wording has changed is withheld from the list until the resident decides, and only that tool; every other tool keeps working. The held state is shown in the demo video (link below) and in the local run, which needs Docker and Node 24 and no AWS account: follow the <a href="https://github.com/nirmalraj142007-byte/Chaperone#quickstart-no-aws-account">README quickstart</a>.</p>
+        <p class="small">If you happen to catch a tool mid-change on this server, please don't click Approve or Block on its card: this is the shared judging instance, and that decision belongs to the one demo household.</p>
       </li>
     </ol>
   </section>
