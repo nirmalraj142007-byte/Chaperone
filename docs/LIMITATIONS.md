@@ -436,7 +436,7 @@ proposal (`labels.humanOverrodeProposal`).
 
 ## The consent card is not yet readable to a non-technical resident
 
-Five people read the card for the demo mutation (the calendar clause added to
+In an informal check (not a study), five of the author's relatives read the card for the demo mutation (the calendar clause added to
 `add_item`), recorded in [`CARD-READABILITY.md`](CARD-READABILITY.md): 3 of 5
 understood what changed, 1 partly, 1 did not. The one participant without a
 tech background (56) did not understand it; the one who partly did (35) has a
@@ -445,8 +445,8 @@ tech background.
 Read that result with its limits. All five are the author's relatives, which
 may bias it. The three who understood (26, 23, 26) regularly approve
 permissions for AI coding agents, which likely helped. The outcomes are the
-author's summary of what each person said, not verbatim transcripts. Five
-people is not a usability study.
+author's summary of what each person said, not verbatim transcripts. It is not a usability
+study and no claim that the card is readable rests on it.
 
 What it does mean: the product's intended resident is the person it served
 worst, so "a resident can find the changed clause" is not established for

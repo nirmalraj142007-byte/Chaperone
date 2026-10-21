@@ -236,11 +236,12 @@ This is the audit of the claims this project could have made and does not.
 - **The 30 ms latency budget is not met.** It fails against DynamoDB Local
   and against DynamoDB on AWS, measured on the deployed host (added p95
   53.82 ms, 23.82 ms over).
-- **The consent card was read by five relatives of the author, and it did not
-  work for the non-technical one.** 3 of 5 understood what changed, 1 partly,
+- **An informal check of the consent card with five of the author's relatives
+  (not a study) did not show the card is readable.** 3 of 5 understood what changed, 1 partly,
   1 did not. The participant without a tech background did not understand it.
   The three who understood regularly approve permissions for AI coding agents,
-  which likely helped, and all five are the author's relatives. Next step is
+  which likely helped, and all five are the author's relatives. This is not
+  evidence the card is readable. Next step is
   plainer wording for non-technical residents
   ([`docs/CARD-READABILITY.md`](docs/CARD-READABILITY.md)).
 - **It detects changed claims, not malicious behaviour.**

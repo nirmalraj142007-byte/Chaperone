@@ -1,5 +1,8 @@
 # Consent card readability test
 
+**Informal 5-person check with the author's relatives. Not a study, and not
+evidence that the card is readable.**
+
 A 5-person check of whether someone who has never seen Chaperone can read the
 consent card and say what changed. Results are filled in below.
 
@@ -59,11 +62,14 @@ transcribed verbatim**, so this file has no answer columns and the verdicts
 were not re-derived from the "understood" rule above. They are the author's
 judgement, stated as given.
 
-**Results:** 3 of 5 understood, 1 partly, 1 did not. The one participant
+**Results (informal check, not a study):** 3 of 5 understood, 1 partly, 1 did not. The one participant
 without a tech background did not understand the card.
 
 ## Caveats
 
+- **This is not a study and does not show the card is readable.** It must not
+  be cited as support for "a resident can read the card". Five relatives, no
+  controls, summarised outcomes.
 - **P3 to P5 regularly approve permissions for AI coding agents.** That is
   close to the decision the card asks for, and it likely helped them.
 - **All five participants are the author's relatives**, which may bias the
