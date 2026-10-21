@@ -35,6 +35,9 @@ const DOCUMENTED_EXCEPTIONS = new Set([
   // This script does not enforce the date: the expiry lives in docs/SECURITY.md and is a note to a person.
   "GHSA-5gmw-xhrv-c9v3",
   "GHSA-85c8-ppgw-ccpr",
+  // vite via launch-editor, Windows-only dev-server issue; dev/test tooling, not in the gateway image. Added 2026-10-21;
+  // expires 2026-11-30 with the vitest major upgrade (vite 6.4.4 breaks the policy coverage gate under vitest 2.1.9).
+  "GHSA-587h-7wmj-h5pm",
 ]);
 
 function runAudit(): AuditReport {
