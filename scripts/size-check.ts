@@ -16,7 +16,10 @@
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { hashTool, type ToolDefinition } from "@chaperone/policy";
 
-const read = (p: string): any => JSON.parse(readFileSync(p, "utf8"));
+const read = (p: string): unknown => JSON.parse(readFileSync(p, "utf8"));
+interface Label { label: string; serverId: string; toolName: string; beforeSha256: string; afterSha256: string }
+interface ToolClass { serverId: string; toolName: string; capabilityClass: Cls }
+interface Drift { capturedBothCrawls: { serverIds: string[] }; semanticIntent: { drifted: number }; byCapability: { capabilityClass: Cls; servers: number; drifted: number }[] }
 const ORDER = ["transact", "communicate", "write", "read"] as const;
 type Cls = (typeof ORDER)[number];
 
@@ -30,13 +33,13 @@ function load(crawl: string): Map<string, Map<string, string>> {
   return out;
 }
 
-const drift = read("data/drift.json");
+const drift = read("data/drift.json") as Drift;
 const both: string[] = drift.capturedBothCrawls.serverIds;
 const c1 = load("crawl-1");
 const c2 = load("crawl-2");
 
 const semantic = new Set<string>(
-  read("data/labels.json").labels.filter((l: any) => l.label === "semantic-intent").map((l: any) => `${l.serverId}|${l.toolName}|${l.beforeSha256}|${l.afterSha256}`),
+  (read("data/labels.json") as { labels: Label[] }).labels.filter((l) => l.label === "semantic-intent").map((l) => `${l.serverId}|${l.toolName}|${l.beforeSha256}|${l.afterSha256}`),
 );
 const drifted = new Set<string>();
 for (const s of both) {
@@ -47,7 +50,7 @@ for (const s of both) {
 }
 
 const toolClass = new Map<string, Cls>();
-for (const t of read("data/crawl-1-capabilities-v2.json")) toolClass.set(`${t.serverId}|${t.toolName}`, t.capabilityClass);
+for (const t of read("data/crawl-1-capabilities-v2.json") as ToolClass[]) toolClass.set(`${t.serverId}|${t.toolName}`, t.capabilityClass);
 const serverClass = (s: string): Cls => {
   const present = new Set([...c1.get(s)!.keys()].map((n) => toolClass.get(`${s}|${n}`) ?? "read"));
   return ORDER.find((c) => present.has(c)) ?? "read";
