@@ -1,5 +1,34 @@
 # AWS Builder — the advisory pipeline
 
+![Chaperone on AWS: the resident talks to the simulated Alexa+ app, which reaches the Chaperone gateway over MCP. The gateway runs on one EC2 host with Docker Compose and Caddy, next to the demo grocery server, and reads and writes the DynamoDB ledger. A new quarantine row flows through a DynamoDB Stream, an EventBridge Pipe and Step Functions to a Lambda that scores the change with gpt-oss-120b on Groq and writes an advisory back for the consent card.](architecture.png)
+
+Every AWS service in the deployment, what it does here, and where it is
+defined. All stacks are wired together in [`infra/bin/app.ts`](../infra/bin/app.ts).
+
+| AWS service | What it does here | CDK stack file |
+|---|---|---|
+| Amazon EC2 | One `t3.micro` host with an Elastic IP runs the gateway, the demo grocery server and Caddy (TLS) under Docker Compose | [`infra/lib/ec2-gateway-stack.ts`](../infra/lib/ec2-gateway-stack.ts) |
+| Amazon VPC | One public subnet, no NAT gateway; a security group that admits only 80 and 443 | [`infra/lib/ec2-gateway-stack.ts`](../infra/lib/ec2-gateway-stack.ts) |
+| AWS Systems Manager | Shell access (Session Manager) and rollouts (`deploy.sh` over Run Command); there is no SSH | [`infra/lib/ec2-gateway-stack.ts`](../infra/lib/ec2-gateway-stack.ts) |
+| Amazon ECR | Two repositories, `chaperone-gateway` and `chaperone-demo-upstream`, immutable tags, one image per git sha | [`infra/lib/registry-stack.ts`](../infra/lib/registry-stack.ts) |
+| Amazon DynamoDB | Pins, the hash-chained ledger, sessions and resumable-SSE events (7 tables, all retained) | [`infra/lib/tables-stack.ts`](../infra/lib/tables-stack.ts) |
+| Amazon DynamoDB | The `chaperone-quarantine` and `chaperone-advisory` tables | [`infra/lib/advisory-pipeline-stack.ts`](../infra/lib/advisory-pipeline-stack.ts) |
+| DynamoDB Streams | Emits each new quarantine row (a held tool change) | [`infra/lib/advisory-pipeline-stack.ts`](../infra/lib/advisory-pipeline-stack.ts) |
+| Amazon EventBridge Pipes | Carries the stream record to the state machine | [`infra/lib/advisory-pipeline-stack.ts`](../infra/lib/advisory-pipeline-stack.ts) |
+| AWS Step Functions | Runs scoring and the changelog check in parallel, then writes the advisory | [`infra/lib/advisory-pipeline-stack.ts`](../infra/lib/advisory-pipeline-stack.ts) |
+| AWS Lambda | Three functions: score the change (calls the model), check the changelog, write the advisory row | [`infra/lib/advisory-pipeline-stack.ts`](../infra/lib/advisory-pipeline-stack.ts) |
+| AWS Secrets Manager | Holds the Groq API key; referenced by name, created outside the stack, read only by the scoring Lambda | [`infra/lib/advisory-pipeline-stack.ts`](../infra/lib/advisory-pipeline-stack.ts) |
+| Amazon CloudWatch Logs | Gateway host logs and Lambda logs, 30-day retention | [`infra/lib/ec2-gateway-stack.ts`](../infra/lib/ec2-gateway-stack.ts), [`infra/lib/advisory-pipeline-stack.ts`](../infra/lib/advisory-pipeline-stack.ts) |
+| AWS IAM | The host's instance role (only the DynamoDB actions the gateway issues), each Lambda's role, the Pipe's role | [`infra/lib/ec2-gateway-stack.ts`](../infra/lib/ec2-gateway-stack.ts), [`infra/lib/advisory-pipeline-stack.ts`](../infra/lib/advisory-pipeline-stack.ts) |
+
+DNS is outside AWS (a DuckDNS record pointing at the Elastic IP), and the model
+is not on AWS: Bedrock access was declined for this account, so the scoring
+Lambda calls `gpt-oss-120b` on Groq (see "Bedrock model availability" below).
+The diagram is a copy of a rendered image; the Mermaid source of the README's
+architecture diagram is the text version.
+
+---
+
 Phase 12, completed in a later Phase 12/13 session, and moved onto Groq on 2026-10-03. Before Phase 12, `putAdvisory`
 existed in `packages/ledger` (the storage shape) but nothing in the repo ever
 called it — no producer. Phase 12's first session built that producer:
