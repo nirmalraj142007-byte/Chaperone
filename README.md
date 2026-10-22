@@ -98,9 +98,11 @@ then open <http://localhost:5174> and:
    world without anyone telling you.
 3. Type **add batteries to my list** again. The tool does not run. You get the
    refusal, in words that never change, and under it the card, inside the
-   conversation: the added sentence highlighted, "can change your data", "You
-   approved this on 12 January".
-4. Press **Approve** (or **Keep blocked**) on the card. Ask again: after an
+   conversation. It opens with one plain sentence, "Grocery can now read your
+   calendar for the next 7 days." (hand-written for the demo and labelled as a
+   fixture), and two buttons. "Show details" opens the added sentence
+   highlighted, "can change your data" and "You approved this on 12 January".
+4. Press **Allow** (or **Keep blocked**) on the card. Ask again: after an
    approval it runs; after Keep blocked it stays blocked.
 
 A collapsible "What just happened" panel shows the tool called, the MCP session
@@ -111,7 +113,7 @@ that page.** The assistant is a rule-based stand-in for the assistant's model
 and the page says so on screen. What it is real about: it talks to the gateway
 over MCP Streamable HTTP with the official SDK client, and it hosts the card as
 an MCP App (the `ui/initialize` handshake of `@modelcontextprotocol/ext-apps`,
-in a sandboxed frame), so Approve and Keep blocked are real calls to
+in a sandboxed frame), so Allow and Keep blocked are real calls to
 `chaperone/approve_change`. Speech (`speechSynthesis`) is available behind a
 toggle, off by default; typed input is the primary way to talk to it.
 
@@ -133,13 +135,16 @@ pnpm demo:call grocery__add_item item=batteries
    which is the thing that happens in the real world without anyone telling
    you.
 4. The second `add_item` is refused, in words that never change, followed by
-   the card: the added sentence marked `{+ +}`, "can change your data", "You
-   approved this on 12 January", and the line "Approve or keep blocked from
-   the card on your phone, or in the Chaperone console." The text card carries
+   the card. It opens with one plain sentence, "Grocery can now read your
+   calendar for the next 7 days." (hand-written for the demo, and labelled as
+   a fixture), and the line "Allow or keep blocked from the card on your
+   phone, or in the Chaperone console." Under `Details` come the added
+   sentence marked `{+ +}`, "can change your data" and "You approved this on
+   12 January". The text card carries
    no approval token: it is what an assistant's model reads, so the model
    cannot approve its own change. The token is only in the HTML card.
 
-Press Approve the way the card's host would, then use the tool again:
+Press Allow the way the card's host would, then use the tool again:
 
 ```
 pnpm demo:call grocery__add_item item=batteries --press=approve

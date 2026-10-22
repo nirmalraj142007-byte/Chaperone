@@ -19,9 +19,10 @@ rehearsals and replace this paragraph with the real timings.
 - Never say Chaperone "blocks 100%" or any absolute block rate. The only
   comparison is the baseline-2 delta in beat 9.
 - The page is a *simulation*: say so in beat 1, and leave the on-screen banner
-  visible. Two items are hand-written stand-ins and are labelled on screen (the
-  one-line summary on the card, and the staged "12 January" approval); do not
-  describe either as real model output or real history.
+  visible. Three items are hand-written stand-ins and are labelled on screen (the
+  plain sentence at the top of the card, the advisory line under "Show details",
+  and the staged "12 January" approval); do not describe any of them as real
+  model output or real history.
 - A live deployment exists (https://chaperone-demo.duckdns.org, one EC2 host with
   Caddy, deployed 2026-10-16), but the filmed demo, including beat 7, runs against
   the local stack; the on-screen label says so.
@@ -65,22 +66,25 @@ screen. Keep `docker compose up -d` and the demo offline-ready per
 ### 4 · 0:34 to 1:00 · The refusal, and the card inside the conversation
 
 - **Screen:** the conversation.
-- **Do:** type `add batteries to my list` again, press Enter. Then pause on the card.
-- **Result on screen:** the frozen refusal text, and under it the card: the
-  added clause `check the household calendar for the next 7 days` highlighted,
-  the badge `can change your data`, `You approved this on 12 January`, and the
-  advisory line labelled as a fixture.
-- **Say:** "Same request. This time the tool does not run. The refusal is fixed text, so no model can reword it. And right in the conversation, a card: the sentence they approved, the sentence that replaced it, the new clause highlighted. It now reads the household calendar. The summary line under it is a hand-written fixture, and the page says so."
+- **Do:** type `add batteries to my list` again, press Enter. Pause on the card.
+  Then click **Show details** on the card.
+- **Result on screen:** the frozen refusal text, and under it the card. On top:
+  the badge `can change your data`, the plain sentence `Grocery can now read your
+  calendar for the next 7 days.` with its fixture label under it, and the two
+  buttons **Allow** and **Keep blocked**. After **Show details**: the added
+  clause `check the household calendar for the next 7 days` highlighted,
+  `You approved this on 12 January`, and the advisory line labelled as a fixture.
+- **Say:** "Same request. This time the tool does not run. The refusal is fixed text, so no model can reword it. And right in the conversation, a card that says it plainly: Grocery can now read your calendar. That sentence was written by hand for this demo, and the card says so. Show details, and there is the evidence: the sentence they approved, the one that replaced it, the new clause highlighted."
 
-### 5 · 1:00 to 1:14 · Approve
+### 5 · 1:00 to 1:14 · Allow
 
 - **Screen:** the card, then terminal B.
-- **Do:** press **Approve** on the card. Type `add batteries to my list`. Then in
+- **Do:** press **Allow** on the card. Type `add batteries to my list`. Then in
   terminal B run `pnpm demo:ledger`.
 - **Result on screen:** `approved. New definition pinned as` and a 12-character
   hash; `Added 1 × batteries to the shopping list.`; then `chain OK` with the
   event count the command prints.
-- **Say:** "The resident taps Approve. The new wording is pinned, the tool works again, and the ledger records who decided. The hash chain verifies."
+- **Say:** "The resident taps Allow. The new wording is pinned, the tool works again, and the ledger records who decided. The hash chain verifies."
 
 ### 6 · 1:14 to 1:24 · Keep blocked
 

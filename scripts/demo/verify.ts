@@ -40,7 +40,8 @@ import {
   startConsole,
   textOf,
 } from "./harness.js";
-import { REPO_ROOT } from "./fixtures.js";
+import { DEMO_PLAIN_SENTENCE, REPO_ROOT } from "./fixtures.js";
+import { PLAIN_SENTENCE_FIXTURE_LABEL, TEXT_CARD_DECISION_LINE } from "@chaperone/mcp-app";
 import { resetDemo } from "./reset.js";
 
 export interface VerifyOptions {
@@ -160,6 +161,10 @@ function beats(): Beat[] {
 
         const card = textOf(content[1]);
         s.cardText = card;
+        const [first, second, third] = card.split("\n");
+        assert.equal(first, DEMO_PLAIN_SENTENCE, "the text card should open with the plain sentence");
+        assert.equal(second, `(${PLAIN_SENTENCE_FIXTURE_LABEL})`, "the hand-written sentence must be labelled a fixture");
+        assert.equal(third, TEXT_CARD_DECISION_LINE);
         assert.match(card, /^Tool changed: add_item \(Household Grocery\)$/m);
         assert.match(card, /^Capability: can change your data$/m);
         assert.match(card, /^You approved this on 12 January$/m);
@@ -199,22 +204,31 @@ function beats(): Beat[] {
         const card = await context.newPage();
         try {
           await card.setContent(cardHtml, { waitUntil: "domcontentloaded" });
+          // Above the fold: the plain sentence, labelled a fixture, and two buttons. Nothing technical.
+          assert.equal((await card.locator(".plain").innerText()).trim(), DEMO_PLAIN_SENTENCE);
+          assert.equal((await card.locator(".plain-source").innerText()).trim(), PLAIN_SENTENCE_FIXTURE_LABEL);
+          assert.equal((await card.locator(".badge").first().innerText()).trim(), "can change your data");
+          assert.equal(await card.getByRole("button", { name: "Allow" }).isVisible(), true);
+          assert.equal(await card.getByRole("button", { name: "Keep blocked" }).isVisible(), true);
           const added = card.locator("ins.clause-add");
+          assert.equal(await added.first().isVisible(), false, "the diff should sit behind Show details");
+          const aboveTheFold = await card.locator(".pending-content").innerText();
+          assert.ok(!/quarantine|hash|schema/i.test(aboveTheFold), `a technical word is above the fold: ${aboveTheFold}`);
+          mkdirSync(SCREENSHOT_DIR, { recursive: true });
+          await card.screenshot({ path: path.join(SCREENSHOT_DIR, "consent-card.png") });
+          // Below the fold: the evidence.
+          await card.getByText("Show details").click();
           await added.first().waitFor({ state: "visible" });
           assert.match((await added.first().innerText()).toLowerCase(), /check the household calendar for the next 7 days/);
-          assert.equal((await card.locator(".badge").first().innerText()).trim(), "can change your data");
           assert.match(await card.locator(".approved-on").innerText(), /You approved this on 12 January/);
           const label = await card.locator(".advisory-label").innerText();
           assert.match(label, /fixture/i);
           assert.ok(!/model-generated/i.test(label));
-          assert.equal(await card.getByRole("button", { name: "Approve" }).isVisible(), true);
-          assert.equal(await card.getByRole("button", { name: "Keep blocked" }).isVisible(), true);
-          mkdirSync(SCREENSHOT_DIR, { recursive: true });
-          await card.screenshot({ path: path.join(SCREENSHOT_DIR, "consent-card.png") });
+          await card.screenshot({ path: path.join(SCREENSHOT_DIR, "consent-card-details.png") });
         } finally {
           await card.close();
         }
-        return "highlighted clause, capability badge, approval date, fixture label; screenshot in test-results/demo-verify/";
+        return "plain sentence (fixture label) + Allow / Keep blocked above the fold; clause, approval date, advisory fixture label under Show details; screenshots in test-results/demo-verify/";
       },
     },
     {

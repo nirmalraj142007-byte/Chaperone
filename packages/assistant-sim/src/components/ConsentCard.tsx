@@ -176,7 +176,7 @@ export function ConsentCard({ card, decide }: { card: HeldCard; decide: Decide }
     <div data-testid="consent-card" data-phase={phase}>
       <iframe
         ref={iframeRef}
-        title="Chaperone review card: the tool's old and new description, with Approve and Keep blocked"
+        title="Chaperone review card: the tool's old and new description, with Allow and Keep blocked"
         sandbox="allow-scripts"
         referrerPolicy="no-referrer"
         className="block w-full rounded-lg border border-line bg-surface"
@@ -245,7 +245,7 @@ function TextCard({
       {outcome === undefined ? (
         <div className="mt-4 flex gap-3">
           <button type="button" className="btn btn-primary" disabled={busy || action === undefined} onClick={() => void run("approve")}>
-            Approve
+            Allow
           </button>
           <button type="button" className="btn btn-secondary" disabled={busy || action === undefined} onClick={() => void run("block")}>
             Keep blocked

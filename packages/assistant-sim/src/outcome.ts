@@ -32,7 +32,7 @@ export type Classified =
  * asserts the two agree. The text card carries no token: it is
  * model-visible.
  */
-export const TEXT_CARD_DECISION_LINE = "Approve or keep blocked from the card on your phone, or in the Chaperone console.";
+export const TEXT_CARD_DECISION_LINE = "Allow or keep blocked from the card on your phone, or in the Chaperone console.";
 
 /** Whether this text block is an undecided consent card (pending, loading, or batch). */
 export function isTextCard(text: string): boolean {

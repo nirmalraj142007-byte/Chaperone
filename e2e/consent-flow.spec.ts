@@ -23,7 +23,7 @@ import {
   runVerifyLedgerScript,
   textOf,
 } from "../scripts/demo/harness.js";
-import { HOUSEHOLD_ID, STACK, freshDemo, freshSession, householdEvents, ledger, ledgerTypes } from "./support.js";
+import { HOUSEHOLD_ID, expectPlainTopThenDetails, STACK, freshDemo, freshSession, householdEvents, ledger, ledgerTypes } from "./support.js";
 
 let browser: Browser;
 
@@ -85,12 +85,7 @@ test("a changed tool is withheld, refused in frozen words, reviewed on the card,
       try {
         const page = await context.newPage();
         await page.setContent(card.html, { waitUntil: "domcontentloaded" });
-        const added = page.locator("ins.clause-add").first();
-        await expect(added).toBeVisible();
-        await expect(added).toContainText(/check the household calendar for the next 7 days/i);
-        await expect(page.locator(".badge").first()).toHaveText("can change your data");
-        await expect(page.getByRole("button", { name: "Approve" })).toBeVisible();
-        await expect(page.getByRole("button", { name: "Keep blocked" })).toBeVisible();
+        await expectPlainTopThenDetails(page);
       } finally {
         await context.close();
       }

@@ -16,12 +16,17 @@ import { FIXTURE_MODEL_ID_PREFIX } from "@chaperone/ledger";
 export const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 export const FIXTURES_PATH = path.join(REPO_ROOT, "demo", "advisory-fixtures.json");
 
+/** The demo change's hand-written top line, written out literally so demo:verify and the e2e specs notice if the fixture file changes it. */
+export const DEMO_PLAIN_SENTENCE = "Grocery can now read your calendar for the next 7 days.";
+
 const rowSchema = z.object({
   id: z.string().min(1),
   describes: z.string().min(1),
   upstreamId: z.string().min(1),
   toolName: z.string().min(1),
   mustContainAddedText: z.string().min(1),
+  /** The consent card's top line for this change, hand-written. Optional: without one the card uses its fixed template. */
+  plainSentence: z.string().trim().min(1).max(160).optional(),
   score: z.number().min(0).max(100),
   summary: z.string().trim().min(1).max(480),
 });

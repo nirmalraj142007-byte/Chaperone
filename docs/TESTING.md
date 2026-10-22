@@ -44,11 +44,14 @@ of them a model.
 experience the demo is filmed on), four tests in a real browser against the
 real stack:
 
-1. **Approve.** "add batteries to my list" runs; `pnpm demo:mutate` (the real
+1. **Allow.** "add batteries to my list" runs; `pnpm demo:mutate` (the real
    script); asking again is refused with text **equal to**
    `REFUSAL_TOOL_CHANGED`, and the card is *inside the conversation*, hosted as
    an MCP App (the `ui/initialize` handshake really completed, asserted from
-   the frame's `data-phase`). Pressing **Approve** on the card round-trips
+   the frame's `data-phase`). The card opens with the plain sentence, its
+   fixture label and the two buttons, with no "quarantine", "hash" or "schema"
+   on screen and the diff hidden until **Show details** is opened (then the
+   highlighted clause is asserted). Pressing **Allow** on the card round-trips
    through `chaperone/approve_change`; the card closes with the MCP Apps
    teardown; the next request runs. The "What just happened" panel shows the
    session ID, protocol `2025-11-25` and a latency for all four calls; the
@@ -58,7 +61,8 @@ real stack:
    request is refused again in the same words and nothing runs; the ledger has
    `REFUSED` and no `APPROVED` or `REPIN`, and the pin has not moved.
 3. **The text floor.** `?card=text` shows the text card instead, and its own
-   Approve button works the same way.
+   Allow button works the same way; its first three lines are the plain
+   sentence, its fixture label and the decision line.
 4. **Gateway not reachable.** With `/mcp` blocked at the network, the page
    shows a clear error and a "Try again" that recovers when it is unblocked.
 

@@ -37,6 +37,13 @@ export interface ConsentCardItem {
   advisorySource?: "fixture";
   /** When the household approved the version that is still pinned, already formatted for display ("12 January"). Omitted when unknown. */
   approvedOn?: string;
+  /**
+   * The plain sentence at the top of the card, when a person wrote one for
+   * this exact definition (the offline demo's fixture). The type only admits
+   * a fixture: a model never writes this line. Omitted, the card uses
+   * {@link plainSentenceFor}'s fixed template.
+   */
+  plainSentence?: { text: string; source: "fixture" };
 }
 
 export type ConsentCardModel =
@@ -122,6 +129,26 @@ function truncationNoteHtml(truncated: boolean, quarantineId: string): string {
     : "";
 }
 
+/**
+ * The first thing a resident reads. A hand-written fixture when one exists
+ * for this exact definition; otherwise a fixed template that says only what
+ * is known for certain without reading the new wording: who changed which
+ * tool. No model is involved either way.
+ */
+export function plainSentenceFor(item: Pick<ConsentCardItem, "plainSentence" | "upstreamLabel" | "toolName">): string {
+  if (item.plainSentence !== undefined) {
+    return sanitizeUpstreamText(item.plainSentence.text);
+  }
+  return `${sanitizeUpstreamText(item.upstreamLabel)} changed what its ${sanitizeUpstreamText(item.toolName)} tool says it will do.`;
+}
+
+/** Shown under a hand-written plain sentence, in the same words as the fixture advisory label. */
+export const PLAIN_SENTENCE_FIXTURE_LABEL = "Fixture: this sentence was hand-written for the offline demo, not model output.";
+
+function plainSentenceLabel(item: ConsentCardItem): string | undefined {
+  return item.plainSentence?.source === "fixture" ? PLAIN_SENTENCE_FIXTURE_LABEL : undefined;
+}
+
 function spansForSide(spans: readonly DiffSpan[], side: DiffSpan["side"]): DiffSpan[] {
   return spans.filter((span) => span.side === side).sort((a, b) => a.start - b.start);
 }
@@ -164,11 +191,20 @@ function textBeforeAfter(item: ConsentCardItem): string[] {
  * token lives only in the HTML card (a sandboxed MCP App the resident sees)
  * and is redeemed from its buttons or pasted into the console.
  */
-export const TEXT_CARD_DECISION_LINE = "Approve or keep blocked from the card on your phone, or in the Chaperone console.";
+export const TEXT_CARD_DECISION_LINE = "Allow or keep blocked from the card on your phone, or in the Chaperone console.";
+
+/** Where the text card's fold sits: everything above this line is the plain part, everything below it the evidence. */
+export const TEXT_CARD_DETAILS_HEADING = "Details";
+
+/** The lines above the fold: the plain sentence, its fixture label if it has one, and where to decide. */
+function textTop(item: ConsentCardItem): string[] {
+  const label = plainSentenceLabel(item);
+  return [plainSentenceFor(item), ...(label === undefined ? [] : [`(${label})`]), TEXT_CARD_DECISION_LINE, "", TEXT_CARD_DETAILS_HEADING];
+}
 
 /** The review id is not a credential (only the token is); it names the review in the console's queue. */
 function textActions(item: ConsentCardItem): string[] {
-  return ["", `Review ID: ${item.quarantineId}`, TEXT_CARD_DECISION_LINE];
+  return ["", `Review ID: ${item.quarantineId}`];
 }
 
 /** The label on an advisory line: a fixture is never presented as model output. */
@@ -185,6 +221,7 @@ function approvedOnLine(item: ConsentCardItem): string[] {
 function textItemBlock(item: ConsentCardItem): string {
   const toolName = sanitizeUpstreamText(item.toolName);
   const lines = [
+    ...textTop(item),
     `Tool changed: ${toolName} (${sanitizeUpstreamText(item.upstreamLabel)})`,
     `Capability: ${CAPABILITY_BADGES[item.capabilityClass]}`,
     ...approvedOnLine(item),
@@ -203,6 +240,7 @@ export function renderConsentCardText(model: ConsentCardModel): string {
   switch (model.state) {
     case "loading":
       return [
+        ...textTop(model.item),
         `Tool changed: ${sanitizeUpstreamText(model.item.toolName)} (${sanitizeUpstreamText(model.item.upstreamLabel)})`,
         `Capability: ${CAPABILITY_BADGES[model.item.capabilityClass]}`,
         ...approvedOnLine(model.item),
@@ -353,6 +391,10 @@ body {
   color: light-dark(#7A4C0A, #E0A857);
 }
 .body { padding: 16px; }
+.plain { font-size: 19px; font-weight: 600; line-height: 1.35; margin: 0; }
+.plain-source { font-size: 12px; font-style: italic; color: light-dark(#6B6862, #A39E93); margin: 6px 0 0; }
+.more { margin-top: 16px; }
+.more > summary { cursor: pointer; font-weight: 600; color: light-dark(#35566B, #8FB8CC); }
 .tool-name { font-size: 20px; font-weight: 650; letter-spacing: -0.01em; margin: 0 0 2px; }
 .upstream { font-size: 13px; color: light-dark(#6B6862, #A39E93); margin: 0 0 4px; }
 .meta {
@@ -461,10 +503,18 @@ details.batch-item[open] > summary { padding-bottom: 4px; }
 .batch-item .body { padding-top: 4px; }
 .console-token { margin-top: 14px; font-size: 12px; color: light-dark(#6B6862, #A39E93); }
 .console-token summary { cursor: pointer; }
-.console-token summary:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.console-token summary:focus-visible, .more > summary:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 .console-token code { display: block; margin-top: 6px; padding: 6px 8px; overflow-wrap: anywhere; user-select: all; background: light-dark(#ECEAE4, #201F1C); border-radius: 4px; }
 .batch-note { padding: 10px 16px; font-size: 12px; color: light-dark(#6B6862, #A39E93); border-top: 1px solid light-dark(#D9D5C9, #3A3833); }
 `;
+
+/**
+ * The stylesheet as sent: line breaks and indentation dropped, which CSS does
+ * not need. Every card carries it inline, and the whole card must stay under
+ * 12KB (render.test.ts), so it is the cheapest place to save bytes. CARD_STYLE
+ * has no comments, so nothing can be joined into one by this.
+ */
+const CARD_STYLE_MIN = CARD_STYLE.replace(/\s*\n\s*/g, "");
 
 /**
  * Vanilla-JS view side of the real `@modelcontextprotocol/ext-apps@1.7.5`
@@ -628,23 +678,43 @@ function approvalDataAttrs(item: ConsentCardItem): string {
   return `data-quarantine-id="${escapeHtml(item.quarantineId)}" data-approval-token="${escapeHtml(item.approvalToken)}"`;
 }
 
-/** The interactive item markup shared by "pending" and each expanded row of "batch". `advisorySlot` is the caller's choice of skeleton, filled line, or nothing. */
+/**
+ * Above the fold: the plain sentence (with its fixture label, if any) and the
+ * two buttons. Nothing technical: no hash, no diff, no review id.
+ */
+function plainTopHtml(item: ConsentCardItem): string {
+  const label = plainSentenceLabel(item);
+  return `<p class="plain">${escapeHtml(plainSentenceFor(item))}</p>${label === undefined ? "" : `<p class="plain-source">${escapeHtml(label)}</p>`}
+    <div class="actions">
+      <button type="button" class="approve">Allow</button>
+      <button type="button" class="block">Keep blocked</button>
+    </div>`;
+}
+
+/** Below the fold, closed by default: the evidence a resident can open, the token for the console last. */
+function detailsFoldHtml(item: ConsentCardItem, advisorySlot: string, withNames: boolean): string {
+  const names = withNames
+    ? `<p class="tool-name">${escapeHtml(sanitizeUpstreamText(item.toolName))}</p>
+      <p class="upstream">${escapeHtml(sanitizeUpstreamText(item.upstreamLabel))}</p>
+      `
+    : "";
+  return `<details class="more"><summary>Show details</summary>
+      ${names}${approvedOnHtml(item)}<p class="meta">Detected ${escapeHtml(item.detectedAt)}</p>
+      ${beforeAfterHtml(item)}
+      ${advisorySlot}
+      ${consoleTokenHtml(item)}
+    </details>`;
+}
+
+/** The interactive item markup for the single-item states. `advisorySlot` is the caller's choice of skeleton, filled line, or nothing. */
 function itemCardHtml(item: ConsentCardItem, advisorySlot: string, rootId: string): string {
   const quarantineIdJs = escapeJsString(item.quarantineId);
   const approvalTokenJs = escapeJsString(item.approvalToken);
   return `<div class="pending-content" id="${rootId}" ${approvalDataAttrs(item)}>
   ${badgeAndStrip(item, "Changed")}
   <div class="body">
-    <p class="tool-name">${escapeHtml(sanitizeUpstreamText(item.toolName))}</p>
-    <p class="upstream">${escapeHtml(sanitizeUpstreamText(item.upstreamLabel))}</p>
-    ${approvedOnHtml(item)}<p class="meta">Detected ${escapeHtml(item.detectedAt)}</p>
-    ${beforeAfterHtml(item)}
-    ${advisorySlot}
-    <div class="actions">
-      <button type="button" class="approve">Approve</button>
-      <button type="button" class="block">Keep blocked</button>
-    </div>
-    ${consoleTokenHtml(item)}
+    ${plainTopHtml(item)}
+    ${detailsFoldHtml(item, advisorySlot, true)}
   </div>
 </div>
 <script>chaperoneBindDecision(document.getElementById("${rootId}").parentNode, "${quarantineIdJs}", "${approvalTokenJs}");</script>`;
@@ -671,7 +741,7 @@ function documentShell(title: string, bodyHtml: string): string {
 <head>
 <meta charset="utf-8">
 <title>${escapeHtml(title)}</title>
-<style>${CARD_STYLE}</style>
+<style>${CARD_STYLE_MIN}</style>
 </head>
 <body>
 <script>${bridgeScript()}</script>
@@ -716,14 +786,8 @@ export function renderConsentCardHtml(model: ConsentCardModel): string {
           return `<details class="batch-item"${index === 0 ? " open" : ""}>
   <summary><span>${escapeHtml(sanitizeUpstreamText(item.toolName))}</span><span class="badge">${escapeHtml(CAPABILITY_BADGES[item.capabilityClass])}</span></summary>
   <div class="body pending-content" id="${rootId}" ${approvalDataAttrs(item)}>
-    ${approvedOnHtml(item)}<p class="meta">Detected ${escapeHtml(item.detectedAt)}</p>
-    ${beforeAfterHtml(item)}
-    ${advisory}
-    <div class="actions">
-      <button type="button" class="approve">Approve</button>
-      <button type="button" class="block">Keep blocked</button>
-    </div>
-    ${consoleTokenHtml(item)}
+    ${plainTopHtml(item)}
+    ${detailsFoldHtml(item, advisory, false)}
   </div>
 </details>
 <script>chaperoneBindDecision(document.getElementById("${rootId}").closest("details"), "${escapeJsString(item.quarantineId)}", "${escapeJsString(item.approvalToken)}");</script>`;

@@ -4,7 +4,7 @@
  *
  *   fresh demo:reset -> "add batteries" succeeds -> `pnpm demo:mutate` ->
  *   "add batteries" is refused in the frozen words with the consent card
- *   INSIDE the conversation -> the resident presses Approve (or Keep blocked)
+ *   INSIDE the conversation -> the resident presses Allow (or Keep blocked)
  *   on the card, which round-trips for real through chaperone/approve_change
  *   -> the next request succeeds (or stays blocked).
  *
@@ -23,7 +23,8 @@ import type { Browser } from "playwright";
 import { REFUSAL_TOOL_CHANGED } from "@chaperone/policy";
 import { closeBrowser, getJson, launchBrowser, newOfflineContext, runVerifyLedgerScript, startAssistant } from "../scripts/demo/harness.js";
 import { REPO_ROOT } from "../scripts/demo/fixtures.js";
-import { HOUSEHOLD_ID, STACK, freshDemo, householdEvents, ledger, ledgerTypes } from "./support.js";
+import { DEMO_PLAIN_SENTENCE, HOUSEHOLD_ID, expectPlainTopThenDetails, STACK, freshDemo, householdEvents, ledger, ledgerTypes } from "./support.js";
+import { PLAIN_SENTENCE_FIXTURE_LABEL, TEXT_CARD_DECISION_LINE } from "@chaperone/mcp-app";
 
 let browser: Browser;
 let assistant: ChildProcess | undefined;
@@ -83,11 +84,7 @@ async function reachTheCard(page: Page): Promise<void> {
     await expect(page.getByTestId("refusal")).toHaveCount(1);
     expect(await page.getByTestId("refusal").textContent()).toBe(REFUSAL_TOOL_CHANGED);
     await expect(page.locator('[data-testid="consent-card"][data-phase="live"]')).toBeVisible();
-    const frame = cardFrame(page);
-    await expect(frame.locator("ins.clause-add").first()).toContainText(/check the household calendar for the next 7 days/i);
-    await expect(frame.locator(".badge").first()).toHaveText("can change your data");
-    await expect(frame.getByRole("button", { name: "Approve" })).toBeVisible();
-    await expect(frame.getByRole("button", { name: "Keep blocked" })).toBeVisible();
+    await expectPlainTopThenDetails(cardFrame(page));
   });
 }
 
@@ -123,7 +120,7 @@ test("approving on the inline card restores the tool, and the next request runs"
     });
 
     await test.step("Approve on the card round-trips through chaperone/approve_change", async () => {
-      await cardFrame(page).getByRole("button", { name: "Approve" }).click();
+      await cardFrame(page).getByRole("button", { name: "Allow" }).click();
       const outcome = cardFrame(page).locator(".outcome.approved");
       await expect(outcome).toContainText(/approved\. New definition pinned as [0-9a-f]{12}\./);
       await expect(page.getByText("Chaperone recorded your approval.")).toBeVisible();
@@ -229,7 +226,7 @@ test("Keep blocked on the inline card records the refusal, and the tool stays bl
   }
 });
 
-test("the text card is the floor: ?card=text shows it, and its Approve button works the same way", async () => {
+test("the text card is the floor: ?card=text shows it, and its Allow button works the same way", async () => {
   await freshDemo();
   const { context } = await newOfflineContext(browser);
   const page = await context.newPage();
@@ -248,9 +245,12 @@ test("the text card is the floor: ?card=text shows it, and its Approve button wo
     // The text card is what a model reads: no token, no approve call. The
     // buttons below take the token from the HTML card the gateway also sent.
     await expect(text).not.toContainText(/approvalToken|approve_change/);
-    await expect(text).toContainText("Approve or keep blocked from the card on your phone, or in the Chaperone console.");
+    await expect(text).toContainText("Allow or keep blocked from the card on your phone, or in the Chaperone console.");
 
-    await text.getByRole("button", { name: "Approve" }).click();
+    // The plain sentence and its fixture label come first, ahead of the diff.
+    const cardLines = ((await text.locator("pre").textContent()) ?? "").split("\n");
+    expect(cardLines.slice(0, 3)).toEqual([DEMO_PLAIN_SENTENCE, `(${PLAIN_SENTENCE_FIXTURE_LABEL})`, TEXT_CARD_DECISION_LINE]);
+    await text.getByRole("button", { name: "Allow" }).click();
     await expect(text.getByRole("status")).toContainText(/Approved\. .*approved\. New definition pinned as [0-9a-f]{12}\./);
     await say(page, "add batteries to my list");
     await expect(page.getByTestId("tool-text").last()).toHaveText(/^Added 1 . batteries to the shopping list\.$/);

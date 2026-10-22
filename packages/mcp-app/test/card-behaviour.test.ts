@@ -134,6 +134,35 @@ describe("the consent card's script, run", () => {
     });
   });
 
+  it.each([
+    ["pending", { state: "pending", item: item({ plainSentence: { text: "Grocery can now read your calendar for the next 7 days.", source: "fixture" } }) }],
+    ["loading", { state: "loading", item: item() }],
+    ["batch", { state: "batch", upstreamLabel: "Grocery", items: [item({ quarantineId: "Q-A" }), item({ quarantineId: "Q-B", toolName: "place_order" })] }],
+  ] as Array<[string, ConsentCardModel]>)("%s: above the fold is the plain sentence and two buttons; the diff is in a closed Show details fold", (_state, model) => {
+    const { window } = runCard(model);
+    const roots = [...window.document.querySelectorAll(".pending-content")];
+    expect(roots.length).toBe(model.state === "batch" ? 2 : 1);
+    for (const root of roots) {
+      const fold = root.querySelector("details.more");
+      expect(fold?.querySelector("summary")?.textContent).toBe("Show details");
+      expect(fold?.hasAttribute("open")).toBe(false);
+      expect(fold?.querySelector("ins.clause-add")).not.toBeNull();
+      expect(fold?.querySelector(".console-token")).not.toBeNull();
+      // What a resident sees before opening anything: the root minus the fold's body and any script.
+      const above = root.cloneNode(true) as Element;
+      above.querySelectorAll("details.more > :not(summary), script").forEach((el) => el.remove());
+      const text = above.textContent ?? "";
+      expect(text).not.toMatch(/quarantine|hash|schema/i);
+      expect(text).not.toContain("Adds an item to the list");
+      expect(text).not.toContain("Detected");
+      expect(root.querySelector(".plain")?.textContent).toMatch(/\S/);
+      expect([...above.querySelectorAll("button")].map((b) => b.textContent)).toEqual(["Allow", "Keep blocked"]);
+      // The buttons come before the fold in reading (and tab) order.
+      const allow = root.querySelector(".approve");
+      expect(allow !== null && fold !== null && (allow.compareDocumentPosition(fold) & window.Node.DOCUMENT_POSITION_FOLLOWING) !== 0).toBe(true);
+    }
+  });
+
   it("reports its height with ui/notifications/size-changed when the environment can observe it", async () => {
     const posted: Posted[] = [];
     const dom = new JSDOM(renderConsentCardHtml({ state: "pending", item: item() }), {

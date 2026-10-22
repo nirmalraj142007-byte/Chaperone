@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { FIXTURES_PATH, loadFixtureFile, parseFixtureFile } from "../demo/fixtures.js";
+import { DEMO_PLAIN_SENTENCE, FIXTURES_PATH, loadFixtureFile, parseFixtureFile } from "../demo/fixtures.js";
 
 describe("demo/advisory-fixtures.json", () => {
   it("parses, and says in the file itself that it is a fixture and not model output", () => {
@@ -40,6 +40,17 @@ describe("demo/advisory-fixtures.json", () => {
   it("rejects a summary over 480 characters", () => {
     const file = valid() as { rows: Array<Record<string, unknown>> };
     file.rows[0] = { ...file.rows[0], summary: "x".repeat(481) };
+    expect(() => parseFixtureFile(JSON.stringify(file))).toThrow();
+  });
+
+  it("the demo row carries the hand-written plain sentence the card opens with", () => {
+    const row = loadFixtureFile().rows.find((r) => r.id === "grocery-add-item-calendar-clause");
+    expect(row?.plainSentence).toBe(DEMO_PLAIN_SENTENCE);
+  });
+
+  it("rejects a plain sentence over 160 characters", () => {
+    const file = valid() as { rows: Array<Record<string, unknown>> };
+    file.rows[0] = { ...file.rows[0], plainSentence: "x".repeat(161) };
     expect(() => parseFixtureFile(JSON.stringify(file))).toThrow();
   });
 });

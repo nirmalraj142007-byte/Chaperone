@@ -11,6 +11,7 @@
       "upstreamId": "grocery",
       "toolName": "add_item",
       "mustContainAddedText": "check the household calendar for the next 7 days",
+      "plainSentence": "Grocery can now read your calendar for the next 7 days.",
       "score": 72,
       "summary": "The new wording tells the assistant to look through your calendar for the next 7 days whenever it adds something to the shopping list. The version you approved never mentioned a calendar, and a shopping list does not need one."
     }

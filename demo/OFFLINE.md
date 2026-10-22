@@ -41,6 +41,22 @@ works"). The fixture cannot claim to describe a change it was not written
 for; if `demo-upstream`'s text changes, `demo:reset` refuses to run until the
 fixture is updated.
 
+### 1a. The plain sentence at the top of the card
+
+The card opens with one plain sentence saying what the changed tool can now
+do: `Grocery can now read your calendar for the next 7 days.` **A person wrote
+it, not a model**, and no model ever writes this line: the card's type only
+accepts one from a fixture row.
+
+| | |
+|---|---|
+| Where it lives | `demo/advisory-fixtures.json`, the `plainSentence` field of the same row as the advisory line, written by hand on 2026-10-22 |
+| How it is loaded | `pnpm demo:reset` writes it onto that row's `FIXTURE#<hash of the changed tool definition>` entry, so it can only appear next to that exact change |
+| How it is found | the gateway reads the fixture row for the changed definition's hash directly, and keeps the sentence only if the row's model ID starts with `fixture:` |
+| How it is labelled where you see it | Card (HTML): `Fixture: this sentence was hand-written for the offline demo, not model output.` directly under the sentence. Card (text): the same words in brackets on the second line. |
+| Without it | any other change (and the deployed host, which never runs `demo:reset`) gets a fixed template instead: `<upstream label> changed what its <tool> tool says it will do.`, with no label, because code wrote it and it claims nothing about the new wording |
+| What it cannot do | It cannot decide anything. The gate never reads it. |
+
 ### 2. The household's approval history: "You approved this on 12 January"
 
 A household that has used these tools since January does not exist. The demo
@@ -72,7 +88,7 @@ a tool. The provider for the advisory line and baseline 2 is Groq (`gpt-oss-120b
 | What stands in | a list of regular expressions in one file, `packages/assistant-sim/src/rules.ts`, each mapping a phrasing ("add batteries to my list", "what's on my list", "place my order") to exactly one tool call. The same words always make the same call. Unmatched input gets a reply that lists the phrases it does understand |
 | How it is labelled | a banner on every screen ("a rule-based stand-in for the assistant's model, not part of Chaperone"), a label on every assistant message, and the same sentence at the top of the collapsible "What just happened" panel |
 | What it cannot do | it cannot decide whether a tool runs. It names a tool and arguments; the gateway compares hashes and answers over MCP. The page never words a refusal itself: it shows the gateway's frozen text as written |
-| What is real about it | it speaks MCP Streamable HTTP to the real gateway with the official SDK client (`initialize`, `tools/list`, `tools/call`, and `notifications/tools/list_changed`), and it hosts the consent card as an MCP App: the `ui/initialize` handshake of `@modelcontextprotocol/ext-apps` (its `AppBridge`) with the card in a sandboxed frame. Approve and Keep blocked are real calls to `chaperone/approve_change`; the ledger records them as the resident's |
+| What is real about it | it speaks MCP Streamable HTTP to the real gateway with the official SDK client (`initialize`, `tools/list`, `tools/call`, and `notifications/tools/list_changed`), and it hosts the consent card as an MCP App: the `ui/initialize` handshake of `@modelcontextprotocol/ext-apps` (its `AppBridge`) with the card in a sandboxed frame. Allow and Keep blocked are real calls to `chaperone/approve_change`; the ledger records them as the resident's |
 | Not used, on purpose | speech *recognition*: browsers send that audio to a vendor's cloud, which would break "runs with the network off". Spoken *replies* (`speechSynthesis`) are behind a toggle, off by default |
 | Branding | an original design. No Amazon or Alexa logos, no device styling, and the page says it is not made by or affiliated with Amazon |
 | Its TODO | Not a blocker: a choice. The stand-in's `interpret()` is the one function a model call would replace, and no model is wired in. Unless that changes before 2026-10-22, the stand-in stays, labelled, and the submission says so |
@@ -176,8 +192,8 @@ run.
 | 2 | Nothing has changed yet | empty queue; ledger verifies exactly the 4 staged events; console shows "Nothing has changed since you approved it." |
 | 3 | An approved tool works | all four tools listed; `add_item` runs |
 | 4 | The upstream changes a description | clicks **Mutate add_item** on `/upstreams`; the upstream reports the change |
-| 5 | The gate refuses | first block **equals** `REFUSAL_TOOL_CHANGED`; the card text has the changed clause marked, `Capability: can change your data`, `You approved this on 12 January`, and the advisory line labelled a fixture (and never "model-generated"); the changed tool is absent from `tools/list` while `read_list` still runs |
-| 6 | The card, rendered | the HTML card in Chromium: highlighted `<ins>` clause, capability badge, approval date, fixture label, both buttons; screenshot to `test-results/demo-verify/` |
+| 5 | The gate refuses | first block **equals** `REFUSAL_TOOL_CHANGED`; the card text opens with the plain sentence, its fixture label and the decision line, then has the changed clause marked, `Capability: can change your data`, `You approved this on 12 January`, and the advisory line labelled a fixture (and never "model-generated"); the changed tool is absent from `tools/list` while `read_list` still runs |
+| 6 | The card, rendered | the HTML card in Chromium. Above the fold: the plain sentence and its fixture label, capability badge, **Allow** and **Keep blocked**, and no "quarantine", "hash" or "schema"; the diff hidden. After **Show details**: highlighted `<ins>` clause, approval date, advisory fixture label. Screenshots of both to `test-results/demo-verify/` |
 | 7 | The resident decides | console queue detail: highlighted clause, capability, `Approved Jan 12`, fixture label; pastes the token, clicks **Approve & re-pin**; the quarantine reads `approved` |
 | 8 | The tool is back | `add_item` is listed and runs again |
 | 9 | The ledger vouches | runs `packages/ledger/scripts/verify-ledger.ts` (what `pnpm verify-ledger` runs): chain OK, exactly 9 events; the gateway's `/api/ledger/verify` agrees |
@@ -189,7 +205,7 @@ run.
 simulated assistant's own flow is asserted by two Playwright specs in
 `e2e/assistant-sim.spec.ts` (`pnpm test:e2e`): reset, "add batteries" runs,
 `pnpm demo:mutate`, "add batteries" is refused with the card inline, then
-Approve (the next request runs) and, in a second test, Keep blocked (it stays
+Allow (the next request runs) and, in a second test, Keep blocked (it stays
 blocked). They also assert the refusal text equals `REFUSAL_TOOL_CHANGED`
 byte for byte, and that the page made no request to anything but this machine.
 
