@@ -2834,3 +2834,30 @@ flag: the token is no longer in any text a model reads.
 that hosts must filter `tools/list` for their model with
 `isToolVisibilityAppOnly`, or add an opt-in `AppBridge` option that rejects a
 view's call to a model-only tool.
+
+## Entry 058 — 2026-10-22
+
+**Task attempted:** Bring up the local compose stack (`docker compose up -d
+--build`) to run `pnpm test:all` and `pnpm demo:verify` before submission.
+
+**Steps taken:** Ran `docker compose ps`. Every Docker command failed with
+`request returned 500 Internal Server Error for API route and version
+http://%2F%2F.%2Fpipe%2FdockerDesktopLinuxEngine/v1.56/...`. `docker desktop
+status` reported `running`, but `wsl -l -v` showed the `docker-desktop`
+distro `Stopped`. Ran `docker desktop restart`; the engine answered (server
+29.8.2) and the stack built and started.
+
+**Expected versus actual:** Expected `docker desktop status` to report the
+engine down when its VM is not running. Actual: it said `running` while every
+engine call failed with a 500, and the error text points at API version
+negotiation, not at a stopped VM.
+
+**Severity:** minor. One restart fixed it, but the error sends you looking at
+client/server API versions first.
+
+**Workaround:** `wsl -l -v` to see whether `docker-desktop` is running, then
+`docker desktop restart`.
+
+**Actionable suggestion:** For Docker Desktop: have `docker desktop status`
+report the engine VM's state, and have the CLI say "the Docker Desktop engine
+is not running" when the named pipe answers 500 because the VM is stopped.

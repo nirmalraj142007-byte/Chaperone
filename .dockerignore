@@ -12,3 +12,4 @@ data
 corpus/attacks
 .env
 .env.*
+.kiro
