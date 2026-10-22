@@ -10,8 +10,9 @@ made the pipeline "succeed" with nothing written (051). All three are fixed,
 and the two in `infra/` are asserted by test.
 
 The local path (`docker compose up -d --build`, README Quickstart) works any
-time and needs no AWS account. The live deployment exists for judging
-(2026-11-09 to 2026-11-20).
+time and needs no AWS account. The live deployment stays running from
+submission through the end of judging (2026-11-20); the pause and resume steps
+below are kept for reference and are not planned.
 
 ## Why this is EC2 + Caddy, and not Fargate + ALB
 
@@ -560,7 +561,7 @@ under `deploy/` alters the instance's user data, which CloudFormation applies by
 stopping and starting the instance (the Elastic IP is kept); review `cdk diff`
 first. Nothing requires that deploy for a file to reach the running host.
 
-## Stop (pause), after submission on 2026-10-22
+## Stop (pause), if ever needed
 
 ```bash
 ID=$(aws cloudformation describe-stacks --stack-name ChaperoneGateway --query "Stacks[0].Outputs[?OutputKey=='InstanceId'].OutputValue" --output text)
@@ -595,7 +596,7 @@ associate a new address, then update the DuckDNS record by hand (the stack's
 own Elastic IP will drift, so do not run `cdk deploy ChaperoneGateway` again
 without reviewing the diff).
 
-## Start (resume), on 2026-11-07
+## Start (resume)
 
 ```bash
 aws ec2 start-instances --instance-ids $ID

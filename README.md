@@ -46,11 +46,11 @@ budget**, as it is against DynamoDB Local.
 What it is not: there is no household that has used it, it covers one
 hard-coded household, and it detects changed claims, not malicious behaviour.
 
-> **Live deployment:** a hosted copy runs on AWS during judging (2026-11-09 to
-> 2026-11-20) and is taken down after submission and redeployed for that window,
-> so it is not expected to be up at other times. The local `docker compose` path
-> below works any time and needs no AWS account. Deploy, pause and resume steps
-> are in [docs/RUNBOOK.md](docs/RUNBOOK.md); nothing there has been applied yet.
+> **Live deployment:** a hosted copy has run on AWS since 2026-10-16 at
+> <https://chaperone-demo.duckdns.org> (MCP endpoint `/mcp`, health at
+> `/healthz`) and stays up through judging (to 2026-11-20). The local
+> `docker compose` path below works any time and needs no AWS account. Deploy,
+> rollout and teardown steps are in [docs/RUNBOOK.md](docs/RUNBOOK.md).
 
 ## Quickstart (no AWS account)
 
@@ -258,7 +258,7 @@ tool definitions change in the wider ecosystem.
 
 Started 2026-09-15T06:19:42.282Z, finished 06:51:29.907Z
 (`data/crawl-1-report.json`). The candidate list is frozen
-(`corpus/candidates.json`) and crawl 2 runs against it unchanged.
+(`corpus/candidates.json`) and crawl 2 ran against it unchanged.
 
 | | Value | Source | Reproduce |
 |---|---:|---|---|
@@ -347,8 +347,8 @@ Resumable SSE is why the writes exist: an event a client could replay with
 
 | Command | Result |
 |---|---|
-| `pnpm test` | 1,174 tests in 106 files, all passing (run 2026-10-21), with coverage gates |
-| `pnpm spec` | 27 named conformance assertions, all passing (run 2026-10-21) |
+| `pnpm test` | 1,177 tests in 107 files, all passing (run 2026-10-22), with coverage gates |
+| `pnpm spec` | 27 named conformance assertions, all passing (run 2026-10-22) |
 | `pnpm test:stack` | 16 tests in 4 files, all passing: ten kill-and-resume iterations, a held-open stream, ledger tamper detection, "refused stays refused" |
 | `pnpm test:e2e` | 4 Playwright tests in 2 specs, all passing (38.6 s) |
 | `pnpm test:all` | exit 0 in 327 s from a fresh clone of `bafc5f5` on 2026-09-24; it also ends with `verify-ledger` green. See [`docs/TESTING.md`](docs/TESTING.md) |
@@ -496,10 +496,12 @@ Internally the gateway is a spec-2025-11-25 Streamable HTTP MCP server that
 proxies N upstream servers. The entire security property is a synchronous hash
 comparison in `packages/policy`, with no language model anywhere in that
 package's import graph, enforced by `pnpm depcruise`. Denied tools are left
-out of `tools/list` rather than annotated. Tool names are namespaced
-`{upstreamId}__{toolName}`, the one place the gateway is deliberately not
-byte-transparent, and that is asserted in the conformance suite rather than
-hidden. Storage failures fail closed: if a pin cannot be read the tool is
+out of `tools/list` rather than annotated. An upstream tool is listed with
+only the three fields the pin covers (name, description, input schema); its
+title, annotations, output schema and `_meta` are not forwarded, because an
+unpinned field could change without the gate noticing. Tool names are
+namespaced `{upstreamId}__{toolName}`, the one rewrite of a forwarded field,
+and both are asserted in the conformance suite rather than hidden. Storage failures fail closed: if a pin cannot be read the tool is
 withheld, and `/healthz` returning 503 never means permissive.
 
 ## Spec conformance
@@ -531,7 +533,7 @@ and long-stream suites that need a live stack are in `pnpm test:stack`. See
 
 `corpus/TAXONOMY.md` and `corpus/PREDICTIONS.md` were committed on 2026-09-12,
 before crawl 1, and are frozen; their commit timestamps are load-bearing.
-Crawl 1 ran 2026-09-15 and crawl 2 runs 2026-10-20: **35 days**, stated as a
+Crawl 1 ran 2026-09-15 and crawl 2 ran 2026-10-20: **35 days**, stated as a
 day count, with `pnpm check-claims` failing on rounded-week language in
 committed prose. Later changes to the taxonomy go in additive appendix files,
 never in an edit. See [`CRAWL_DATES.md`](CRAWL_DATES.md),

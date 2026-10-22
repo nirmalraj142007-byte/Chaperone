@@ -441,6 +441,20 @@ measured, so no claim in this repo rests on it. "A resident can find the
 changed clause" is a design intent, not a finding. A household usability study
 is future work.
 
+Informal check with five relatives, not a study: 3 of 5 could say what changed; the one participant without a tech background could not.
+
+## Annotation drift is unmeasured
+
+The crawler kept only `name`, `description` and `inputSchema` from each tool
+(`packages/crawler/src/boot.ts`); it dropped `title`, `annotations`,
+`outputSchema` and `_meta`. So how often annotations such as `readOnlyHint` or
+`destructiveHint` change is unmeasured, and no drift figure covers them. Since
+2026-10-21 the gateway does not forward those fields either: `tools/list`
+passes an upstream tool through as only the three pinned fields
+(`packages/gateway/test/passthrough-fields.test.ts`), so an unpinned field
+cannot change under an approval. The cost is that a host never sees an
+upstream's annotations or output schema.
+
 ## Capability class partly tracks server size
 
 The drift-by-capability table in the README may partly reflect server size.
