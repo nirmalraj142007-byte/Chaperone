@@ -5,6 +5,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { ToolListChangedNotificationSchema } from "@modelcontextprotocol/sdk/types.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
+import { isToolVisibilityAppOnly } from "@modelcontextprotocol/ext-apps/app-bridge";
 import type { UpstreamConfig, UpstreamPool } from "@chaperone/upstream";
 import { getPool } from "@chaperone/upstream";
 import {
@@ -15,6 +16,7 @@ import {
 } from "@chaperone/demo-upstream";
 import { canonicalizeTool, hashTool, REFUSAL_TOOL_CHANGED, REFUSAL_TOOL_UNPINNED } from "@chaperone/policy";
 import {
+  approvalsFromCardHtml,
   MCP_APP_RESOURCE_MIME_TYPE,
   MCP_APP_RESOURCE_URI_META_KEY,
   consentResourceUri,
@@ -427,18 +429,23 @@ describe("gateway: policy gate end to end (bootstrap -> mutate -> refuse -> appr
   it("chaperone/pending_changes surfaces the open quarantine; approving with the token restores the tool; replaying the same token fails distinctly", async () => {
     const { client } = await connectClient();
     await fetch(`http://127.0.0.1:${new URL(upstream.url).port}/control/mutate`, { method: "POST" });
-    // Trip the quarantine and capture the token from the refusal's consent card.
+    // Trip the quarantine and capture the token from the refusal's HTML
+    // consent card, the only block that carries one. The text card (what a
+    // model reads) must not.
     const refusal = await client.callTool({ name: "grocery__add_item", arguments: { item: "batteries" } });
-    const card = (refusal.content as Array<{ type: string; text?: string }>)[1]?.text ?? "";
-    const tokenMatch = /approvalToken=(\S+)/.exec(card);
-    const quarantineMatch = /quarantineId=(\S+)/.exec(card);
-    expect(tokenMatch?.[1]).toBeDefined();
-    expect(quarantineMatch?.[1]).toBeDefined();
-    const approvalToken = tokenMatch![1]!;
-    const quarantineId = quarantineMatch![1]!;
+    const blocks = refusal.content as Array<{ type: string; text?: string; resource?: { text?: string } }>;
+    const textCard = blocks[1]?.text ?? "";
+    expect(textCard).not.toMatch(/approvalToken|approve_change/);
+    const approvals = approvalsFromCardHtml(blocks.find((b) => b.type === "resource")?.resource?.text ?? "");
+    expect(approvals).toHaveLength(1);
+    const { approvalToken, quarantineId } = approvals[0]!;
+    expect(textCard).not.toContain(approvalToken);
 
     const pending = await client.callTool({ name: "chaperone/pending_changes", arguments: {} });
-    expect((pending.content as Array<{ text?: string }>)[0]?.text).toContain(quarantineId);
+    const pendingText = (pending.content as Array<{ text?: string }>)[0]?.text ?? "";
+    expect(pendingText).toContain(quarantineId);
+    expect(pendingText).not.toContain(approvalToken);
+    expect(pendingText).not.toMatch(/approvalToken|approve_change/);
 
     const approveResult = await client.callTool({
       name: "chaperone/approve_change",
@@ -490,6 +497,28 @@ describe("gateway: MCP App consent card (Phase 11)", () => {
     expect((meta?.["ui"] as { resourceUri?: string } | undefined)?.resourceUri).toBe(
       "ui://chaperone/consent/{quarantineId}",
     );
+  });
+
+  it("chaperone/approve_change is app-only (_meta.ui.visibility [\"app\"], per ext-apps 1.7.5's isToolVisibilityAppOnly); pending_changes stays model-visible", async () => {
+    const { client } = await connectClient();
+    const { tools } = await client.listTools();
+    const approveChange = tools.find((t) => t.name === "chaperone/approve_change");
+    const pendingChanges = tools.find((t) => t.name === "chaperone/pending_changes");
+    expect(approveChange).toBeDefined();
+    expect(isToolVisibilityAppOnly(approveChange!)).toBe(true);
+    expect((approveChange?._meta?.["ui"] as { visibility?: string[] } | undefined)?.visibility).toEqual(["app"]);
+    expect(isToolVisibilityAppOnly(pendingChanges!)).toBe(false);
+  });
+
+  it("approve_change rejects an unknown channel before touching the ledger", async () => {
+    const { client } = await connectClient();
+    const result = await client.callTool({
+      name: "chaperone/approve_change",
+      arguments: { quarantineId: "Q", approvalToken: "T", decision: "approve", channel: "model" },
+    });
+    expect(result.isError).toBe(true);
+    expect((result.content as Array<{ text?: string }>)[0]?.text).toContain('"channel" must be one of');
+    expect(ledgerEvents).toHaveLength(0);
   });
 
   it("lists the consent card resource template", async () => {

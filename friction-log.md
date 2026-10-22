@@ -2796,3 +2796,41 @@ partial files were set aside (not deleted) so the rerun started clean.
 `crawl.ts`, before any boot, and add the crawler's required environment to the
 RUNBOOK. Loading only the DynamoDB keys the crawler uses would stop an unrelated
 gateway setting blocking it.
+
+## Entry 057 — 2026-10-22
+
+**Task attempted:** Make `chaperone/approve_change` callable only from the
+consent card, never by the assistant's model, using the MCP Apps
+`@modelcontextprotocol/ext-apps` 1.7.5 visibility flag.
+
+**Steps taken:** Read `dist/src/spec.types.d.ts`: `McpUiToolMeta.visibility?:
+McpUiToolVisibility[]`, `"model" | "app"`, with `"app"` documented as "Tool
+callable by the app from this server only", and the helper
+`isToolVisibilityAppOnly(tool)` in `dist/src/app-bridge.d.ts`. Set
+`_meta.ui.visibility: ["app"]` on the tool. Then read `AppBridge`'s compiled
+source in `dist/src/app-bridge.js` to see what it does with the flag.
+
+**Expected versus actual:** Expected the host-side `AppBridge` to apply the
+flag: keep app-only tools out of anything it hands a model, or refuse an app's
+call to a model-only tool. Actual: it applies it nowhere. `isToolVisibilityAppOnly`
+is exported for the host to call, and when `AppBridge` is constructed with a
+client it forwards every `tools/call` from the view to the server whatever the
+tool's visibility. Filtering is entirely the host's job, and the types don't
+say so.
+
+**Severity:** minor. The flag is advisory to the host, which is a reasonable
+design, but a host author reading only the type comment could assume the
+bridge enforces it.
+
+**Workaround:** The simulated host (`packages/assistant-sim/src/gateway.ts`)
+splits `tools/list` with `isToolVisibilityAppOnly`, shows its model only the
+model-visible tools, refuses an app-only tool on the model's call path, and
+constructs `AppBridge` with a `null` client so the only forwarded call is the
+one its own `oncalltool` allows. The security property does not rest on the
+flag: the token is no longer in any text a model reads.
+
+**Actionable suggestion:** For the ext-apps maintainers: say in the
+`McpUiToolMeta.visibility` doc comment that `AppBridge` does not enforce it and
+that hosts must filter `tools/list` for their model with
+`isToolVisibilityAppOnly`, or add an opt-in `AppBridge` option that rejects a
+view's call to a model-only tool.

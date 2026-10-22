@@ -16,7 +16,11 @@ browser ──POST /mcp───▶ vite proxy ──▶ gateway chaperone/appro
 - The console makes exactly one write: it calls `chaperone/approve_change`
   over `/mcp` as an ordinary MCP client. This is the same token-checked
   function the consent card reaches. The resident pastes the one-time token
-  from the card. `/api` never serves the plaintext token or its hash; it
+  from the HTML card's "Deciding in the Chaperone console instead?" line; the
+  text card carries no token, because it is what an assistant's model reads
+  (`docs/SECURITY.md`, security fix F1). The console sends
+  `channel: "console"`, so the ledger actor reads
+  `resident:<household>:console`. `/api` never serves the plaintext token or its hash; it
   only serves `tokenHeld: boolean`. If a token was already consumed (by the
   card or by the console) or has expired, the gateway rejects it with its
   own typed error, and the page falls back to the resolved or expired state.

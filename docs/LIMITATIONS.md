@@ -340,6 +340,21 @@ The first deploy found three bugs that `cdk synth` and the stack tests had not.
 What is not covered: sustained load, and an execution graph screenshot. The
 demo's advisory line is still the labelled hand-written fixture.
 
+## A host can still hand the token to its model
+
+Security fix F1 (2026-10-22, `docs/SECURITY.md`, "Approval tokens") keeps the
+one-time approval token out of every text block a host gives its model, and
+marks `chaperone/approve_change` app-only (`_meta.ui.visibility: ["app"]`).
+Both depend on the host. The gateway cannot tell a model's `tools/call` from an
+app's, and cannot see what a host does with a result. So a host that ignores
+app-only visibility and offers `approve_change` to its model, or that feeds the
+HTML card (the embedded resource, or a `resources/read` of it) to its model as
+text, could still put the token where the model can read it and let it approve
+its own change. The simulated Alexa+ page does neither, and its tests check
+that; no other host has been checked. A host with no MCP Apps support gets the
+text card only, which carries no token, so its resident decides in the
+console.
+
 ## One household, no accounts, no sandboxing
 
 Repeated from CLAUDE.md's own "Out of scope" section: multi-tenancy, user
@@ -441,7 +456,7 @@ measured, so no claim in this repo rests on it. "A resident can find the
 changed clause" is a design intent, not a finding. A household usability study
 is future work.
 
-Informal check with five relatives, not a study: 3 of 5 could say what changed; the one participant without a tech background could not.
+Informal check with five relatives on the v1 card, not a study: 3 of 5 could say what changed; the one participant without a tech background could not.
 
 ## Annotation drift is unmeasured
 

@@ -102,8 +102,25 @@ test("approving on the inline card restores the tool, and the next request runs"
     // Labelled as what it is, before anything happens.
     await expect(page.getByTestId("simulation-banner")).toContainText("rule-based stand-in for the assistant’s model — not part of Chaperone");
 
+    await test.step("chaperone/approve_change is not in the assistant's tool list: it is app-only, for the card", async () => {
+      const modelTools = page.getByTestId("model-tools");
+      await expect(modelTools).toContainText("grocery__add_item");
+      await expect(modelTools).toContainText("chaperone/pending_changes");
+      await expect(modelTools).not.toContainText("chaperone/approve_change");
+      await expect(page.getByTestId("app-only-tools")).toContainText("chaperone/approve_change");
+    });
+
     await reachTheCard(page);
     await page.screenshot({ path: test.info().outputPath("1-refusal-with-card.png") });
+
+    await test.step("asking the assistant to approve does not reach approve_change", async () => {
+      const callsBefore = await page.getByTestId("calls").locator("li").count();
+      await say(page, "approve the change");
+      // Wait for the stand-in's answer, so the count below is taken after it acted.
+      await expect(page.getByText("I only understand a few phrases").last()).toBeVisible();
+      await expect(page.getByTestId("calls").locator("li")).toHaveCount(callsBefore);
+      await expect(page.getByTestId("calls")).not.toContainText("chaperone/approve_change");
+    });
 
     await test.step("Approve on the card round-trips through chaperone/approve_change", async () => {
       await cardFrame(page).getByRole("button", { name: "Approve" }).click();
@@ -157,7 +174,8 @@ test("approving on the inline card restores the tool, and the next request runs"
         "APPROVED",
         "REPIN",
       ]);
-      expect(events.slice(-2).map((e) => e.actor)).toEqual([`resident:${HOUSEHOLD_ID}`, `resident:${HOUSEHOLD_ID}`]);
+      // The card's buttons say which surface decided: the MCP App.
+      expect(events.slice(-2).map((e) => e.actor)).toEqual([`resident:${HOUSEHOLD_ID}:mcp-app`, `resident:${HOUSEHOLD_ID}:mcp-app`]);
       expect(events.every((e) => e.actor !== "model")).toBe(true);
     });
 
@@ -227,8 +245,10 @@ test("the text card is the floor: ?card=text shows it, and its Approve button wo
     await expect(text).toContainText("You asked for the text version of this card");
     await expect(text).toContainText("can change your data");
     await expect(page.locator("iframe")).toHaveCount(0);
-    // The one-time token is used by the button, not printed for the resident to copy.
-    await expect(text).not.toContainText(/approvalToken=(?!\(one-time)/);
+    // The text card is what a model reads: no token, no approve call. The
+    // buttons below take the token from the HTML card the gateway also sent.
+    await expect(text).not.toContainText(/approvalToken|approve_change/);
+    await expect(text).toContainText("Approve or keep blocked from the card on your phone, or in the Chaperone console.");
 
     await text.getByRole("button", { name: "Approve" }).click();
     await expect(text.getByRole("status")).toContainText(/Approved\. .*approved\. New definition pinned as [0-9a-f]{12}\./);

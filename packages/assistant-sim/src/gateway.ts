@@ -26,7 +26,8 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport, StreamableHTTPError } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import { ToolListChangedNotificationSchema } from "@modelcontextprotocol/sdk/types.js";
-import { RESOURCE_MIME_TYPE } from "@modelcontextprotocol/ext-apps/app-bridge";
+import type { Tool } from "@modelcontextprotocol/sdk/types.js";
+import { RESOURCE_MIME_TYPE, isToolVisibilityAppOnly } from "@modelcontextprotocol/ext-apps/app-bridge";
 
 /** The MCP Apps capability id. Also exported by @chaperone/mcp-app; test/protocol.test.ts asserts the two agree. */
 export const MCP_APPS_EXTENSION_ID = "io.modelcontextprotocol/ui";
@@ -64,8 +65,32 @@ export class GatewayError extends Error {
   }
 }
 
+/**
+ * Splits a `tools/list` answer the way an MCP Apps host must: a tool whose
+ * `_meta.ui.visibility` is `["app"]` is callable by an app (the consent
+ * card) and never shown to the model. Uses ext-apps 1.7.5's own
+ * `isToolVisibilityAppOnly`, so this host reads the flag exactly as the
+ * package defines it. The gateway marks `chaperone/approve_change` this way.
+ */
+export function splitByVisibility(tools: readonly Pick<Tool, "name" | "_meta">[]): { model: string[]; appOnly: string[] } {
+  const model: string[] = [];
+  const appOnly: string[] = [];
+  for (const tool of tools) {
+    (isToolVisibilityAppOnly(tool) ? appOnly : model).push(tool.name);
+  }
+  return { model, appOnly };
+}
+
+/** Thrown, before anything is sent, when the stand-in model names a tool only an app may call. */
+export class AppOnlyToolError extends Error {
+  constructor(readonly tool: string) {
+    super(`"${tool}" is callable only by the consent card, not by the assistant`);
+    this.name = "AppOnlyToolError";
+  }
+}
+
 export interface GatewayHooks {
-  /** The gateway sent `notifications/tools/list_changed`; `tools` is the refreshed list. */
+  /** The gateway sent `notifications/tools/list_changed`; `tools` is the refreshed model-visible list. */
   onListChanged: (tools: string[]) => void;
 }
 
@@ -93,14 +118,21 @@ export class GatewayConnection {
   private transport: StreamableHTTPClientTransport | undefined;
   private lastRequestId: string | undefined;
   private toolNames: string[] = [];
+  private appOnlyNames: string[] = [];
 
   constructor(
     private readonly url: URL,
     private readonly hooks: GatewayHooks,
   ) {}
 
+  /** The tools the assistant's model sees. App-only tools are not in it. */
   get tools(): readonly string[] {
     return this.toolNames;
+  }
+
+  /** Tools the gateway listed as app-only: callable from the consent card, hidden from the model. */
+  get appOnlyTools(): readonly string[] {
+    return this.appOnlyNames;
   }
 
   get info(): ConnectionInfo {
@@ -153,11 +185,35 @@ export class GatewayConnection {
   async refreshTools(): Promise<string[]> {
     const client = this.requireClient();
     const listed = await client.listTools();
-    this.toolNames = listed.tools.map((tool) => tool.name);
+    const { model, appOnly } = splitByVisibility(listed.tools);
+    this.toolNames = model;
+    this.appOnlyNames = appOnly;
     return this.toolNames;
   }
 
+  /**
+   * The model's path. Refuses an app-only tool locally, before anything is
+   * sent: the assistant cannot approve its own change even by naming the
+   * tool. Other tools are sent even when the latest `tools/list` omitted
+   * them (a quarantined tool is omitted, and calling it is how the resident
+   * gets the refusal and the card).
+   */
   async callTool(tool: string, args: Record<string, unknown>): Promise<CallOutcome> {
+    if (this.appOnlyNames.includes(tool)) {
+      throw new AppOnlyToolError(tool);
+    }
+    return this.send(tool, args);
+  }
+
+  /** The consent card's path (ConsentCard.tsx via useAssistant's `decide`): only app-only tools. */
+  async callAppTool(tool: string, args: Record<string, unknown>): Promise<CallOutcome> {
+    if (!this.appOnlyNames.includes(tool)) {
+      throw new Error(`"${tool}" is not an app-only tool, so the card may not call it`);
+    }
+    return this.send(tool, args);
+  }
+
+  private async send(tool: string, args: Record<string, unknown>): Promise<CallOutcome> {
     const client = this.requireClient();
     const started = performance.now();
     this.lastRequestId = undefined;

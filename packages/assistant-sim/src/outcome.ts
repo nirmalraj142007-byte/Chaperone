@@ -26,11 +26,28 @@ export type Classified =
   | { kind: "held"; refusal: string; card: HeldCard }
   | { kind: "error"; text: string };
 
-const ACTION_LINE = /quarantineId=(\S+) approvalToken=(\S+) decision=approve/;
+/**
+ * The line every undecided text card ends with. Copied from
+ * @chaperone/mcp-app's TEXT_CARD_DECISION_LINE; test/protocol.test.ts
+ * asserts the two agree. The text card carries no token: it is
+ * model-visible.
+ */
+export const TEXT_CARD_DECISION_LINE = "Approve or keep blocked from the card on your phone, or in the Chaperone console.";
 
-/** The quarantine id and one-time token the text card carries in its action line, or undefined if this text is not a card. */
-export function parseTextCardAction(cardText: string): { quarantineId: string; approvalToken: string } | undefined {
-  const match = ACTION_LINE.exec(cardText);
+/** Whether this text block is an undecided consent card (pending, loading, or batch). */
+export function isTextCard(text: string): boolean {
+  return text.includes(TEXT_CARD_DECISION_LINE);
+}
+
+/**
+ * The first item's quarantine id and one-time token from the HTML card,
+ * the only card that carries one. Same `data-*` attributes as
+ * @chaperone/mcp-app's approvalsFromCardHtml (asserted equal in
+ * test/protocol.test.ts). Host-side only: the HTML card is never shown to
+ * the model.
+ */
+export function approvalFromCardHtml(html: string): { quarantineId: string; approvalToken: string } | undefined {
+  const match = /data-quarantine-id="([^"]+)" data-approval-token="([^"]+)"/.exec(html);
   if (match?.[1] === undefined || match[2] === undefined) return undefined;
   return { quarantineId: match[1], approvalToken: match[2] };
 }
@@ -47,7 +64,7 @@ export function classify(outcome: Pick<CallOutcome, "isError" | "blocks">): Clas
   const resource = outcome.blocks.find(
     (block): block is Extract<Block, { type: "resource" }> => block.type === "resource" && block.uri.startsWith(CONSENT_URI_PREFIX),
   );
-  const cardText = texts.slice(1).find((text) => parseTextCardAction(text) !== undefined);
+  const cardText = texts.slice(1).find((text) => isTextCard(text));
   const first = texts[0];
   if ((resource !== undefined || cardText !== undefined) && first !== undefined) {
     return {

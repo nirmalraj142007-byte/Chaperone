@@ -22,6 +22,7 @@ export default defineConfig({
       "@chaperone/upstream": path.resolve(rootDir, "packages/upstream/src/index.ts"),
       "@chaperone/demo-upstream": path.resolve(rootDir, "packages/demo-upstream/src/lib.ts"),
       "@chaperone/gateway": path.resolve(rootDir, "packages/gateway/src/app.ts"),
+      "@chaperone/mcp-app": path.resolve(rootDir, "packages/mcp-app/src/render.ts"),
     },
   },
   test: {

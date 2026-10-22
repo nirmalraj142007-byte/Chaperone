@@ -79,7 +79,7 @@ export async function approveChange(
     lap("initialize → session open");
     const result = await client.callTool({
       name: "chaperone/approve_change",
-      arguments: { quarantineId, approvalToken, decision },
+      arguments: { quarantineId, approvalToken, decision, channel: "console" },
     });
     lap(`tools/call chaperone/approve_change (${decision})`);
     const content = Array.isArray(result.content) ? result.content : [];

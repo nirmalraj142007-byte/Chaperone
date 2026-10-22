@@ -48,7 +48,8 @@ async function quarantineAddItem(client: Awaited<ReturnType<typeof freshSession>
   const result = await client.callTool({ name: "grocery__add_item", arguments: { item: "batteries" } });
   expect(result.isError).toBe(true);
   expect(textOf(blocks(result)[0])).toBe(REFUSAL_TOOL_CHANGED);
-  return cardActionOf(textOf(blocks(result)[1]));
+  const html = blocks(result).find((b) => b.type === "resource");
+  return cardActionOf(html?.type === "resource" ? (html.resource?.text ?? "") : "");
 }
 
 function gatewayStartedAt(): string {
@@ -216,7 +217,7 @@ test("Keep blocked is final: two more tools/list calls open no new quarantine an
     expect(textOf(blocks(again)[0])).toBe(REFUSAL_TOOL_CHANGED);
     for (const block of blocks(again)) {
       if (block.type === "text") {
-        expect(block.text).not.toContain("approvalToken=");
+        expect(block.text).not.toMatch(/approvalToken|approve_change/);
       }
     }
 

@@ -42,6 +42,7 @@ const { canonicalizeTool, classifyCapability, hashTool, REFUSAL_TOOL_CHANGED } =
 const { getPool } = await import("@chaperone/upstream");
 const { buildApp: buildDemoUpstreamApp, resetControlStateForTests } = await import("@chaperone/demo-upstream");
 const { buildApp: buildGatewayApp } = await import("@chaperone/gateway");
+const { approvalsFromCardHtml } = await import("@chaperone/mcp-app");
 
 type Pool = Awaited<ReturnType<typeof getPool>>;
 type TextBlock = { type: string; text?: string };
@@ -146,13 +147,21 @@ describe("a refused change stays refused (real DynamoDB Local)", () => {
 
     await fetch(`${upstreamUrl}/control/mutate`, { method: "POST" });
 
-    // Trip the gate and take the one-time token from the refusal's consent card.
+    // Trip the gate. This gateway runs with the MCP App off, so the refusal
+    // carries only the text card, which is what a model reads and holds no
+    // token. Take the token the way the resident's card host would: read the
+    // HTML card at its ui:// address, named by the text card's Review ID.
     const refusal = await client.callTool({ name: "grocery__add_item", arguments: { item: "batteries" } });
     const card = (refusal.content as TextBlock[])[1]?.text ?? "";
-    const quarantineId = /quarantineId=(\S+)/.exec(card)?.[1];
-    const approvalToken = /approvalToken=(\S+)/.exec(card)?.[1];
-    expect(quarantineId).toBeDefined();
-    expect(approvalToken).toBeDefined();
+    expect(card).not.toMatch(/approvalToken|approve_change/);
+    const reviewId = /^Review ID: (\S+)$/m.exec(card)?.[1];
+    expect(reviewId).toBeDefined();
+    const html = (await client.readResource({ uri: `ui://chaperone/consent/${reviewId}` })).contents[0];
+    const approvals = approvalsFromCardHtml(html !== undefined && "text" in html ? html.text : "");
+    expect(approvals).toHaveLength(1);
+    const { quarantineId, approvalToken } = approvals[0]!;
+    expect(quarantineId).toBe(reviewId);
+    expect(card).not.toContain(approvalToken);
 
     const blocked = await client.callTool({
       name: "chaperone/approve_change",
@@ -188,7 +197,7 @@ describe("a refused change stays refused (real DynamoDB Local)", () => {
     const blocks = again.content as TextBlock[];
     expect(again.isError).toBe(true);
     expect(blocks[0]?.text).toBe(REFUSAL_TOOL_CHANGED);
-    expect(blocks.map((b) => b.text ?? "").join("\n")).not.toMatch(/approvalToken=/);
+    expect(blocks.map((b) => b.text ?? "").join("\n")).not.toMatch(/approvalToken|approve_change/);
     expect(await householdQuarantines()).toHaveLength(1);
     expect((await ledger.listEvents(HOUSEHOLD)).length).toBe(eventsAfterRefusal.length);
 

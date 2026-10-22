@@ -12,6 +12,7 @@ import { chromium, type Browser, type BrowserContext } from "playwright";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
+import { approvalsFromCardHtml } from "@chaperone/mcp-app";
 import { STACK, isLocalUrl } from "./env.js";
 import { CONSOLE_DIR, viteBin } from "./console.js";
 import { ASSISTANT_DIR, assistantViteBin, ensureAssistantBundle } from "./assistant.js";
@@ -150,15 +151,20 @@ export async function demoUpstreamControl(action: "mutate" | "reset"): Promise<v
 }
 
 /**
- * The quarantine id and one-time token the text card carries in its
- * `chaperone/approve_change` action lines. The token exists nowhere else.
+ * The quarantine id and one-time token from the HTML consent card, the only
+ * place a token appears: the text card is model-visible and carries none
+ * (security fix F1). Asserts exactly one undecided item.
  */
-export function cardActionOf(cardText: string): { quarantineId: string; approvalToken: string } {
-  const match = /quarantineId=(\S+) approvalToken=(\S+) decision=approve/.exec(cardText);
-  assert.ok(match, "the card should carry the quarantine id and one-time token");
-  const [, quarantineId, approvalToken] = match;
-  assert.ok(quarantineId !== undefined && approvalToken !== undefined);
-  return { quarantineId, approvalToken };
+export function cardActionOf(cardHtml: string): { quarantineId: string; approvalToken: string } {
+  const approvals = approvalsFromCardHtml(cardHtml);
+  assert.equal(approvals.length, 1, "the HTML card should carry exactly one quarantine id and one-time token");
+  return approvals[0]!;
+}
+
+/** Fails if model-visible text names the token or the approve call. */
+export function assertNoApprovalCapability(text: string, token: string): void {
+  assert.ok(!/approvalToken|approve_change/.test(text), "model-visible text must not name approvalToken or approve_change");
+  assert.ok(!text.includes(token), "model-visible text must not contain the approval token");
 }
 
 /**

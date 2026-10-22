@@ -38,6 +38,7 @@ export default defineConfig({
       "@chaperone/upstream": pkg("upstream"),
       "@chaperone/demo-upstream": pkg("demo-upstream", "lib.ts"),
       "@chaperone/gateway": pkg("gateway", "app.ts"),
+      "@chaperone/mcp-app": pkg("mcp-app", "render.ts"),
     },
   },
   test: {

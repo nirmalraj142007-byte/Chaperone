@@ -157,12 +157,18 @@ function textBeforeAfter(item: ConsentCardItem): string[] {
   ];
 }
 
+/**
+ * The text card is model-visible: every host hands tool-result text to its
+ * model. So it names where the decision is made and carries nothing that
+ * could make one: no approval token, no `approve_change` call line. The
+ * token lives only in the HTML card (a sandboxed MCP App the resident sees)
+ * and is redeemed from its buttons or pasted into the console.
+ */
+export const TEXT_CARD_DECISION_LINE = "Approve or keep blocked from the card on your phone, or in the Chaperone console.";
+
+/** The review id is not a credential (only the token is); it names the review in the console's queue. */
 function textActions(item: ConsentCardItem): string[] {
-  return [
-    "",
-    `[Approve] chaperone/approve_change quarantineId=${item.quarantineId} approvalToken=${item.approvalToken} decision=approve`,
-    `[Keep blocked] chaperone/approve_change quarantineId=${item.quarantineId} approvalToken=${item.approvalToken} decision=block`,
-  ];
+  return ["", `Review ID: ${item.quarantineId}`, TEXT_CARD_DECISION_LINE];
 }
 
 /** The label on an advisory line: a fixture is never presented as model output. */
@@ -453,6 +459,10 @@ details.batch-item > summary::-webkit-details-marker { display: none; }
 details.batch-item > summary:focus-visible { outline: 3px solid light-dark(#8FB8CC, #35566B); outline-offset: -3px; }
 details.batch-item[open] > summary { padding-bottom: 4px; }
 .batch-item .body { padding-top: 4px; }
+.console-token { margin-top: 14px; font-size: 12px; color: light-dark(#6B6862, #A39E93); }
+.console-token summary { cursor: pointer; }
+.console-token summary:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.console-token code { display: block; margin-top: 6px; padding: 6px 8px; overflow-wrap: anywhere; user-select: all; background: light-dark(#ECEAE4, #201F1C); border-radius: 4px; }
 .batch-note { padding: 10px 16px; font-size: 12px; color: light-dark(#6B6862, #A39E93); border-top: 1px solid light-dark(#D9D5C9, #3A3833); }
 `;
 
@@ -534,7 +544,7 @@ function initChaperoneBridge(){
       return ready.then(function(){
         return request("tools/call", {
           name: "chaperone/approve_change",
-          arguments: { quarantineId: quarantineId, approvalToken: approvalToken, decision: decision }
+          arguments: { quarantineId: quarantineId, approvalToken: approvalToken, decision: decision, channel: "mcp-app" }
         });
       });
     },
@@ -602,11 +612,27 @@ function beforeAfterHtml(item: ConsentCardItem): string {
   return `<h2>Before</h2><p class="desc">${beforeHtml}</p><h2>After</h2><p class="desc">${afterHtml}</p>`;
 }
 
+/**
+ * The one-time token, shown to the resident for pasting into the console.
+ * It is already in this document (the buttons' script needs it), and this
+ * HTML only ever reaches the resident's screen through a sandboxed MCP App
+ * frame, never the text the model reads. Collapsed so it is not the first
+ * thing on the card.
+ */
+function consoleTokenHtml(item: ConsentCardItem): string {
+  return `<details class="console-token"><summary>Deciding in the Chaperone console instead?</summary>Paste this one-time token there:<code>${escapeHtml(item.approvalToken)}</code></details>`;
+}
+
+/** `data-*` attributes naming the item's quarantine and token, read by {@link approvalsFromCardHtml}. */
+function approvalDataAttrs(item: ConsentCardItem): string {
+  return `data-quarantine-id="${escapeHtml(item.quarantineId)}" data-approval-token="${escapeHtml(item.approvalToken)}"`;
+}
+
 /** The interactive item markup shared by "pending" and each expanded row of "batch". `advisorySlot` is the caller's choice of skeleton, filled line, or nothing. */
 function itemCardHtml(item: ConsentCardItem, advisorySlot: string, rootId: string): string {
   const quarantineIdJs = escapeJsString(item.quarantineId);
   const approvalTokenJs = escapeJsString(item.approvalToken);
-  return `<div class="pending-content" id="${rootId}">
+  return `<div class="pending-content" id="${rootId}" ${approvalDataAttrs(item)}>
   ${badgeAndStrip(item, "Changed")}
   <div class="body">
     <p class="tool-name">${escapeHtml(sanitizeUpstreamText(item.toolName))}</p>
@@ -618,6 +644,7 @@ function itemCardHtml(item: ConsentCardItem, advisorySlot: string, rootId: strin
       <button type="button" class="approve">Approve</button>
       <button type="button" class="block">Keep blocked</button>
     </div>
+    ${consoleTokenHtml(item)}
   </div>
 </div>
 <script>chaperoneBindDecision(document.getElementById("${rootId}").parentNode, "${quarantineIdJs}", "${approvalTokenJs}");</script>`;
@@ -688,7 +715,7 @@ export function renderConsentCardHtml(model: ConsentCardModel): string {
           const rootId = `chaperone-item-${index}`;
           return `<details class="batch-item"${index === 0 ? " open" : ""}>
   <summary><span>${escapeHtml(sanitizeUpstreamText(item.toolName))}</span><span class="badge">${escapeHtml(CAPABILITY_BADGES[item.capabilityClass])}</span></summary>
-  <div class="body pending-content" id="${rootId}">
+  <div class="body pending-content" id="${rootId}" ${approvalDataAttrs(item)}>
     ${approvedOnHtml(item)}<p class="meta">Detected ${escapeHtml(item.detectedAt)}</p>
     ${beforeAfterHtml(item)}
     ${advisory}
@@ -696,6 +723,7 @@ export function renderConsentCardHtml(model: ConsentCardModel): string {
       <button type="button" class="approve">Approve</button>
       <button type="button" class="block">Keep blocked</button>
     </div>
+    ${consoleTokenHtml(item)}
   </div>
 </details>
 <script>chaperoneBindDecision(document.getElementById("${rootId}").closest("details"), "${escapeJsString(item.quarantineId)}", "${escapeJsString(item.approvalToken)}");</script>`;

@@ -15,7 +15,7 @@ Status key: **Delivered** (the evidence runs and says what the row claims) ·
 | Claim | Status | Evidence |
 |---|---|---|
 | Chaperone is an MCP server on Streamable HTTP, spec revision `2025-11-25` | Delivered | `packages/gateway/src/session.ts` (one `StreamableHTTPServerTransport` per session), `packages/gateway/src/protocol.ts`; `@modelcontextprotocol/sdk` 1.30.0 |
-| Session lifecycle is correct: id minted on `initialize`, missing id 400, unknown id 404, `DELETE` terminates | Delivered | `spec/conformance.spec.test.ts`; run with `pnpm spec` (27 named assertions) |
+| Session lifecycle is correct: id minted on `initialize`, missing id 400, unknown id 404, `DELETE` terminates | Delivered | `spec/conformance.spec.test.ts`; run with `pnpm spec` (29 named assertions) |
 | An older protocol revision is refused, naming both versions | Delivered | the same suite |
 | Transport hygiene: 406 without the required `Accept`, 403 on a disallowed `Origin`, bind to loopback by default | Delivered | `packages/gateway/src/security.ts`; conformance suite |
 | Resumable SSE: every event durable before it is sent, `Last-Event-ID` replays | Delivered locally | `packages/gateway/src/event-store.ts`; `spec/resumption.test.ts` (ten kill-and-resume iterations, `place_order` invoked exactly once each time, counted by the upstream); `pnpm resume-demo` for one narrated run |
@@ -27,7 +27,7 @@ Status key: **Delivered** (the evidence runs and says what the row claims) ·
 
 | Claim | Status | Evidence |
 |---|---|---|
-| The repo ships an Agent Skill | **Not delivered** | There is no `SKILL.md` and no skill packaging anywhere in the repository. The exact format the track means has also not been confirmed against the track page, so no format is assumed here |
+| The repo ships an Agent Skill | **Not delivered** | There is no `SKILL.md` and no skill packaging anywhere in the repository |
 | What exists in its place | Partial | The assistant-facing surface that a skill would describe does exist and is testable: the gateway's first-party tools `chaperone/pending_changes` and `chaperone/approve_change` (`packages/gateway/src/firstPartyTools.ts`), and the frozen refusal texts (`packages/policy/src/messages.ts`). A skill teaching an assistant to use them, and to call `approve_change` only on a resident's say-so, is unwritten |
 
 ## 3. A simulated Alexa+ experience
@@ -71,7 +71,7 @@ connect and keeps nothing; Chaperone is the memory.
 | Unaided model refuses 70-85% of the attack corpus (prediction 4) | **Missed** | `gpt-oss-120b`, two-turn: followed 50 of 90 (55.6%), explicitly refused 0, did not exercise 40 (44.4%); one model, one provider, one day |
 | An unaided-model comparison, reported as a delta, never an absolute block rate | Delivered, one model | `gpt-oss-120b` on Groq, two-turn: followed in 50 of 90 attack runs (55.6%), refused 0, 0 of 30 benign controls refused. `docs/BASELINE2-RUBRIC.md` was committed before the run; `data/baseline2-raw.json` holds every response; `pnpm eval:baseline2` re-scores with no model call |
 | The tautology is stated, not hidden | Delivered | README "What this does not prove"; the guard test in `packages/eval/test/guards.test.ts` fails if an absolute Chaperone block rate enters a report |
-| The dataset is published | Delivered | There is no separate dataset repository, by decision (`docs/DECISIONS.md`, "Dataset: the committed `data/` folder is the dataset"): the committed `data/` folder is the dataset, with third-party descriptions kept verbatim in `data/raw/`. `data/labels.json` and `data/labels-todo.json` are not yet committed (rehearsal labels, final ones land with `data/drift.json`) |
+| The dataset is published | Delivered | There is no separate dataset repository, by decision (`docs/DECISIONS.md`, "Dataset: the committed `data/` folder is the dataset"): the committed `data/` folder is the dataset, with third-party descriptions kept verbatim in `data/raw/`. `data/labels.json` (the 274 crawl-2 hand labels, locked in commit `9d3411c` before drift was computed) is committed with `data/drift.json` |
 | An ecosystem finding independent of the product | Delivered | 139 of 291 attempted servers (47.8%) did not start from their own setup instructions; `data/boot-rate.json` |
 
 ## 6. Hackathon-adjacent deliverables

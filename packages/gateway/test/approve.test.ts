@@ -149,11 +149,25 @@ describe("approveChange: the only path that ever re-pins", () => {
       toolName: "add_item",
       approvedHash: quarantine["toHash"],
       approvedCanonicalJson: quarantine["toCanonicalJson"],
-      approvedBy: `resident:${HOUSEHOLD_ID}`,
+      approvedBy: `resident:${HOUSEHOLD_ID}:mcp`,
     });
     expect(events.map((e) => e.type)).toEqual(["APPROVED", "REPIN"]);
-    expect(events.every((e) => e.actor === `resident:${HOUSEHOLD_ID}`)).toBe(true);
+    // No channel named: recorded as "arrived over /mcp", never guessed as the card or the console.
+    expect(events.every((e) => e.actor === `resident:${HOUSEHOLD_ID}:mcp`)).toBe(true);
     expect(resolveCalls).toEqual([[HOUSEHOLD_ID, QUARANTINE_ID, "approved", resolveCalls[0]?.[3]]]);
+  });
+
+  it.each(["mcp-app", "console"] as const)("records the %s channel in the ledger actor and the pin's approvedBy", async (channel) => {
+    vi.mocked(ledger.getQuarantine).mockResolvedValue(baseQuarantine() as never);
+    await approveChange(HOUSEHOLD_ID, QUARANTINE_ID, TOKEN, "approve", channel);
+    expect(events.map((e) => e.actor)).toEqual([`resident:${HOUSEHOLD_ID}:${channel}`, `resident:${HOUSEHOLD_ID}:${channel}`]);
+    expect(pins[0]?.approvedBy).toBe(`resident:${HOUSEHOLD_ID}:${channel}`);
+  });
+
+  it("records the channel on a block too", async () => {
+    vi.mocked(ledger.getQuarantine).mockResolvedValue(baseQuarantine() as never);
+    await approveChange(HOUSEHOLD_ID, QUARANTINE_ID, TOKEN, "block", "console");
+    expect(events.map((e) => [e.type, e.actor])).toEqual([["REFUSED", `resident:${HOUSEHOLD_ID}:console`]]);
   });
 
   it("on block: appends REFUSED, resolves as refused, and never writes a pin", async () => {

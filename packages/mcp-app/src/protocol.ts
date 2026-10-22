@@ -31,3 +31,22 @@ export function parseConsentResourceUri(uri: string): string | undefined {
   const quarantineId = uri.slice(CONSENT_URI_PREFIX.length);
   return quarantineId.length > 0 ? quarantineId : undefined;
 }
+
+/**
+ * The quarantine id and one-time token for each item in a rendered HTML
+ * consent card, in document order, read from the `data-quarantine-id` /
+ * `data-approval-token` attributes render.ts puts on each item. This is the
+ * only place outside the card's own buttons that a token can be read from a
+ * card: the text card carries none (it is model-visible). For hosts, tests
+ * and the demo harness; the values are HTML-attribute-escaped, which a
+ * base64url token and a ULID never need.
+ */
+export function approvalsFromCardHtml(html: string): Array<{ quarantineId: string; approvalToken: string }> {
+  const found: Array<{ quarantineId: string; approvalToken: string }> = [];
+  for (const match of html.matchAll(/data-quarantine-id="([^"]+)" data-approval-token="([^"]+)"/g)) {
+    if (match[1] !== undefined && match[2] !== undefined) {
+      found.push({ quarantineId: match[1], approvalToken: match[2] });
+    }
+  }
+  return found;
+}

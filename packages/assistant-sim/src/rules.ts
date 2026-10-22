@@ -18,14 +18,20 @@
  * Rules are tried top to bottom; the first that returns something wins.
  */
 
-/** Tool names as the gateway lists them: `{upstreamId}__{toolName}` for the grocery upstream, unnamespaced for the gateway's own. */
+/**
+ * Tool names as the gateway lists them: `{upstreamId}__{toolName}` for the
+ * grocery upstream, unnamespaced for the gateway's own. Every tool this
+ * stand-in model can name. `chaperone/approve_change` is deliberately not
+ * here: it is app-only, so only the consent card's buttons call it
+ * (CARD_TOOL in components/ConsentCard.tsx), and gateway.ts refuses it on
+ * the model's path even if a rule named it.
+ */
 export const TOOLS = {
   addItem: "grocery__add_item",
   readList: "grocery__read_list",
   placeOrder: "grocery__place_order",
   trackDelivery: "grocery__track_delivery",
   pendingChanges: "chaperone/pending_changes",
-  approveChange: "chaperone/approve_change",
 } as const;
 
 export type RuleId = "add-item" | "read-list" | "place-order" | "track-delivery" | "pending-changes" | "help" | "greeting" | "unmatched";

@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { classify, parseTextCardAction } from "../src/outcome";
+import { TEXT_CARD_DECISION_LINE, approvalFromCardHtml, classify, isTextCard } from "../src/outcome";
 import type { Block } from "../src/gateway";
 
 const REFUSAL = "any frozen words";
-const TEXT_CARD = "Tool changed: add_item\nquarantineId=Q1 approvalToken=T1 decision=approve\nquarantineId=Q1 approvalToken=T1 decision=block";
+const TEXT_CARD = `Tool changed: add_item\n\n${TEXT_CARD_DECISION_LINE}`;
 const text = (t: string): Block => ({ type: "text", text: t });
 const card = (uri = "ui://chaperone/consent/Q1"): Block => ({ type: "resource", uri, mimeType: "text/html;profile=mcp-app", text: "<html></html>" });
 
@@ -35,12 +35,23 @@ describe("classify", () => {
   });
 });
 
-describe("parseTextCardAction", () => {
-  it("reads the quarantine id and one-time token from the text card's action line", () => {
-    expect(parseTextCardAction(TEXT_CARD)).toEqual({ quarantineId: "Q1", approvalToken: "T1" });
+describe("isTextCard", () => {
+  it("recognises an undecided text card by its decision line", () => {
+    expect(isTextCard(TEXT_CARD)).toBe(true);
   });
 
-  it("is undefined for text that is not a card", () => {
-    expect(parseTextCardAction("Added 1 × batteries")).toBeUndefined();
+  it("is false for text that is not a card", () => {
+    expect(isTextCard("Added 1 × batteries")).toBe(false);
+  });
+});
+
+describe("approvalFromCardHtml", () => {
+  it("reads the first item's quarantine id and token from the HTML card's data attributes", () => {
+    const html = '<div class="pending-content" id="a" data-quarantine-id="Q1" data-approval-token="T1"></div><div data-quarantine-id="Q2" data-approval-token="T2"></div>';
+    expect(approvalFromCardHtml(html)).toEqual({ quarantineId: "Q1", approvalToken: "T1" });
+  });
+
+  it("is undefined for HTML with no undecided item", () => {
+    expect(approvalFromCardHtml("<html><p>Kept blocked</p></html>")).toBeUndefined();
   });
 });

@@ -20,6 +20,22 @@
  * dereference `ui://chaperone/consent/{quarantineId}` itself via
  * `resources/read` (the template registered in upstreamProxy.ts) has a
  * documented place to find that URI shape.
+ *
+ * `chaperone/approve_change` is app-only: `_meta.ui.visibility: ["app"]`.
+ * Checked against @modelcontextprotocol/ext-apps 1.7.5's own types
+ * (dist/src/spec.types.d.ts, `McpUiToolMeta`):
+ *   visibility?: McpUiToolVisibility[];   // "model" | "app"
+ *   "Who can access this tool. Default: ["model", "app"]
+ *    - "model": Tool visible to and callable by the agent
+ *    - "app": Tool callable by the app from this server only"
+ * and its host helper `isToolVisibilityAppOnly(tool)` (dist/src/app-bridge.d.ts),
+ * which is true exactly when `_meta.ui.visibility` is `["app"]`. The SDK's
+ * `AppBridge` does not filter on this itself: hiding the tool from the model
+ * is the host's job (packages/assistant-sim does it in gateway.ts). The
+ * tool stays in `tools/list` so a host can see it and route the card's
+ * call; the gateway does not, and cannot, tell a model's call from an
+ * app's. What stops the model approving its own change is that it never
+ * sees a token: no model-visible text carries one (render.ts).
  */
 import type { Tool, CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { UpstreamConfig } from "@chaperone/upstream";
@@ -31,7 +47,13 @@ import {
 import { ChaperoneError } from "@chaperone/errors";
 import { childLogger } from "@chaperone/logger";
 import { loadConsentCardModel, upstreamLabelFor } from "./consentCard.js";
-import { approveChange, listPendingChanges, type ApprovalDecision } from "./approve.js";
+import {
+  APPROVAL_CHANNELS,
+  approveChange,
+  listPendingChanges,
+  type ApprovalChannel,
+  type ApprovalDecision,
+} from "./approve.js";
 
 const log = childLogger({ component: "gateway-first-party-tools" });
 
@@ -42,19 +64,20 @@ export const APPROVE_CHANGE_TOOL: Tool = {
   name: APPROVE_CHANGE_TOOL_NAME,
   description:
     "Approve or block a tool-definition change that has been withheld pending household review. " +
-    "Requires the one-time approval token shown alongside the change.",
+    "Called by the consent card's buttons or the Chaperone console, with the one-time token only the card holds.",
   inputSchema: {
     type: "object",
     properties: {
       quarantineId: { type: "string" },
       approvalToken: { type: "string" },
       decision: { type: "string", enum: ["approve", "block"] },
+      channel: { type: "string", enum: [...APPROVAL_CHANNELS] },
     },
     required: ["quarantineId", "approvalToken", "decision"],
   },
   _meta: {
     [MCP_APP_RESOURCE_URI_META_KEY]: CONSENT_RESOURCE_URI_TEMPLATE,
-    ui: { resourceUri: CONSENT_RESOURCE_URI_TEMPLATE },
+    ui: { resourceUri: CONSENT_RESOURCE_URI_TEMPLATE, visibility: ["app"] },
   },
 };
 
@@ -74,6 +97,7 @@ interface ApproveChangeArgs {
   quarantineId: string;
   approvalToken: string;
   decision: ApprovalDecision;
+  channel: ApprovalChannel | undefined;
 }
 
 type ParsedArgs = { ok: true; value: ApproveChangeArgs } | { ok: false; message: string };
@@ -83,7 +107,7 @@ function parseApproveChangeArgs(args: unknown): ParsedArgs {
   if (typeof args !== "object" || args === null) {
     return { ok: false, message: "chaperone/approve_change requires an arguments object" };
   }
-  const { quarantineId, approvalToken, decision } = args as Record<string, unknown>;
+  const { quarantineId, approvalToken, decision, channel } = args as Record<string, unknown>;
   if (typeof quarantineId !== "string" || quarantineId.length === 0) {
     return { ok: false, message: '"quarantineId" must be a non-empty string' };
   }
@@ -93,7 +117,10 @@ function parseApproveChangeArgs(args: unknown): ParsedArgs {
   if (decision !== "approve" && decision !== "block") {
     return { ok: false, message: '"decision" must be "approve" or "block"' };
   }
-  return { ok: true, value: { quarantineId, approvalToken, decision } };
+  if (channel !== undefined && !APPROVAL_CHANNELS.includes(channel as ApprovalChannel)) {
+    return { ok: false, message: `"channel" must be one of ${APPROVAL_CHANNELS.map((c) => `"${c}"`).join(", ")} when given` };
+  }
+  return { ok: true, value: { quarantineId, approvalToken, decision, channel: channel as ApprovalChannel | undefined } };
 }
 
 /**
@@ -117,6 +144,7 @@ export async function handleApproveChange(
       parsed.value.quarantineId,
       parsed.value.approvalToken,
       parsed.value.decision,
+      parsed.value.channel,
     );
     if (result.decision === "approve") {
       onApproved();

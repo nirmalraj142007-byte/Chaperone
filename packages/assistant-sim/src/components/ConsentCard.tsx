@@ -35,9 +35,15 @@
 import { useEffect, useRef, useState } from "react";
 import { AppBridge, PostMessageTransport } from "@modelcontextprotocol/ext-apps/app-bridge";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { TOOLS } from "../rules";
 import { withCsp } from "../cardHtml";
-import { parseTextCardAction, type HeldCard } from "../outcome";
+import { TEXT_CARD_DECISION_LINE, approvalFromCardHtml, type HeldCard } from "../outcome";
+
+/**
+ * The one tool a consent card may call. App-only on the gateway
+ * (`_meta.ui.visibility: ["app"]`), so it is not in the assistant's tool
+ * list and not in rules.ts's TOOLS.
+ */
+export const CARD_TOOL = "chaperone/approve_change";
 
 const HANDSHAKE_TIMEOUT_MS = 10_000;
 
@@ -69,8 +75,8 @@ function isDecision(value: unknown): value is Decision {
 
 /** The card's tool call, checked down to its three fields. Anything else is not forwarded. */
 function parseDecisionRequest(name: string, args: Record<string, unknown> | undefined): DecisionRequest {
-  if (name !== TOOLS.approveChange) {
-    throw new Error(`this host only forwards ${TOOLS.approveChange} for a consent card, not "${name}"`);
+  if (name !== CARD_TOOL) {
+    throw new Error(`this host only forwards ${CARD_TOOL} for a consent card, not "${name}"`);
   }
   const { quarantineId, approvalToken, decision } = args ?? {};
   if (typeof quarantineId !== "string" || typeof approvalToken !== "string" || !isDecision(decision)) {
@@ -202,7 +208,10 @@ function TextCard({
 }) {
   const [outcome, setOutcome] = useState<{ decision: Decision; ok: boolean; text: string } | undefined>(undefined);
   const [busy, setBusy] = useState(false);
-  const action = card.text === undefined ? undefined : parseTextCardAction(card.text);
+  // The text card carries no token (it is what the model reads), so these
+  // buttons use the one in the HTML card when the gateway sent it. With no
+  // HTML card, this page holds no token and cannot decide here.
+  const action = card.html === undefined ? undefined : approvalFromCardHtml(card.html);
 
   async function run(decision: Decision): Promise<void> {
     if (action === undefined) return;
@@ -226,7 +235,12 @@ function TextCard({
       {card.text === undefined ? (
         <p className="text-sm">No card was included with this refusal.</p>
       ) : (
-        <pre className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed">{card.text.replace(/approvalToken=\S+/g, "approvalToken=(one-time token, used by the buttons below)")}</pre>
+        <pre className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed">{card.text}</pre>
+      )}
+      {action === undefined && (
+        <p className="mt-3 text-sm" data-testid="text-card-no-token">
+          This page was sent no interactive card, so it holds no token to decide with. {TEXT_CARD_DECISION_LINE}
+        </p>
       )}
       {outcome === undefined ? (
         <div className="mt-4 flex gap-3">

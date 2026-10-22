@@ -125,23 +125,30 @@ pnpm demo:mutate
 pnpm demo:call grocery__add_item item=batteries
 ```
 
-1. `pnpm demo:call` lists the tools the assistant can see.
+1. `pnpm demo:call` lists the tools the gateway offers. One,
+   `chaperone/approve_change`, is marked app-only: the consent card calls it,
+   and a host keeps it from its model.
 2. The first `add_item` works: `Added 1 × batteries to the shopping list.`
 3. `pnpm demo:mutate` makes the tool's server change `add_item`'s description,
    which is the thing that happens in the real world without anyone telling
    you.
 4. The second `add_item` is refused, in words that never change, followed by
    the card: the added sentence marked `{+ +}`, "can change your data", "You
-   approved this on 12 January", and two lines that begin `[Approve]` and
-   `[Keep blocked]`.
+   approved this on 12 January", and the line "Approve or keep blocked from
+   the card on your phone, or in the Chaperone console." The text card carries
+   no approval token: it is what an assistant's model reads, so the model
+   cannot approve its own change. The token is only in the HTML card.
 
-Copy the `[Approve]` line from the card, put `pnpm demo:call` in front of it,
-and run it. Then:
+Press Approve the way the card's host would, then use the tool again:
 
 ```
+pnpm demo:call grocery__add_item item=batteries --press=approve
 pnpm demo:call grocery__add_item item=batteries
 pnpm demo:ledger
 ```
+
+`--press=approve` takes the token from the HTML card, never prints it, and
+calls `chaperone/approve_change` as the card's button does.
 
 The tool works again, and `pnpm demo:ledger` walks the household's hash chain
 and prints `chain OK — 9 events verified`.
@@ -170,7 +177,8 @@ the check, the refusal text, the hashes and the ledger, is the real code.
 **Measured**, from a fresh clone of commit `bafc5f5` on the author's Windows 11
 laptop (16 threads, Docker Desktop, about 2 GB of free RAM), running every
 command above in order, then the seven demo commands (a script pulled the
-`[Approve]` line out of the card instead of a person copying it); the times are
+`[Approve]` line out of the text card instead of a person copying it, which is
+how approval worked before security fix F1); the times are
 seconds from the start of `git clone` to `chain OK`:
 
 | Run | Clone | install | build | compose up | demo:reset | demo commands | **Total** |
@@ -236,9 +244,9 @@ This is the audit of the claims this project could have made and does not.
 - **The 30 ms latency budget is not met.** It fails against DynamoDB Local
   and against DynamoDB on AWS, measured on the deployed host (added p95
   53.82 ms, 23.82 ms over).
-- **There is no readability result for the consent card.** Whether residents
-  understand the changed clause is unmeasured; a household usability study is
-  future work.
+- **Informal check with five relatives on the v1 card, not a study:** 3 of 5
+  could say what changed; the one participant without a tech background could
+  not.
 - **It detects changed claims, not malicious behaviour.**
 
 The reasoning behind each is in [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md),
@@ -347,10 +355,10 @@ Resumable SSE is why the writes exist: an event a client could replay with
 
 | Command | Result |
 |---|---|
-| `pnpm test` | 1,177 tests in 107 files, all passing (run 2026-10-22), with coverage gates |
-| `pnpm spec` | 27 named conformance assertions, all passing (run 2026-10-22) |
+| `pnpm test` | 1,202 tests in 107 files, all passing (run 2026-10-22), with coverage gates |
+| `pnpm spec` | 29 named conformance assertions, all passing (run 2026-10-22) |
 | `pnpm test:stack` | 16 tests in 4 files, all passing: ten kill-and-resume iterations, a held-open stream, ledger tamper detection, "refused stays refused" |
-| `pnpm test:e2e` | 4 Playwright tests in 2 specs, all passing (38.6 s) |
+| `pnpm test:e2e` | 8 Playwright tests in 3 specs, all passing (51.8 s, run 2026-10-22) |
 | `pnpm test:all` | exit 0 in 327 s from a fresh clone of `bafc5f5` on 2026-09-24; it also ends with `verify-ledger` green. See [`docs/TESTING.md`](docs/TESTING.md) |
 
 `packages/policy` is gated at 100% statements and branches; the rest at 80%.

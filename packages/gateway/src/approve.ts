@@ -27,6 +27,21 @@ export const APPROVAL_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 
 export type ApprovalDecision = "approve" | "block";
 
+/**
+ * Which surface the resident decided from, recorded in the ledger actor as
+ * `resident:<household>:<channel>`. Self-reported by the caller (the card's
+ * script sends "mcp-app", the console sends "console"): it is attribution,
+ * not authentication. The token is the authentication. A caller that names
+ * no channel is recorded as `resident:<household>:mcp`, meaning "arrived
+ * over /mcp without saying from where", rather than guessed.
+ */
+export const APPROVAL_CHANNELS = ["mcp-app", "console"] as const;
+export type ApprovalChannel = (typeof APPROVAL_CHANNELS)[number];
+
+export function approvalActor(householdId: string, channel: ApprovalChannel | undefined): string {
+  return `resident:${householdId}:${channel ?? "mcp"}`;
+}
+
 export interface ApproveResult {
   quarantineId: string;
   decision: ApprovalDecision;
@@ -62,6 +77,7 @@ export async function approveChange(
   quarantineId: string,
   approvalToken: string,
   decision: ApprovalDecision,
+  channel?: ApprovalChannel,
 ): Promise<ApproveResult> {
   const quarantine = await ledger.getQuarantine(householdId, quarantineId);
   if (quarantine === undefined) {
@@ -89,7 +105,7 @@ export async function approveChange(
   }
 
   const resolvedAt = new Date().toISOString();
-  const actor = `resident:${householdId}`;
+  const actor = approvalActor(householdId, channel);
   const status: ledger.QuarantineStatus = decision === "approve" ? "approved" : "refused";
 
   // The actual single-use gate: ledger.resolveQuarantine is a DynamoDB

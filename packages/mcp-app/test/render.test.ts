@@ -4,6 +4,8 @@ import {
   renderConsentCardText,
   type ConsentCardItem,
   type ConsentCardModel,
+  approvalsFromCardHtml,
+  TEXT_CARD_DECISION_LINE,
 } from "../src/render.js";
 
 function item(overrides: Partial<ConsentCardItem> = {}): ConsentCardItem {
@@ -154,7 +156,7 @@ describe("renderConsentCardHtml — all seven states", () => {
         item({ quarantineId: "q2", toolName: "place_order", approvalToken: "t2" }),
       ],
     });
-    expect(html.match(/<details/g)?.length).toBe(2);
+    expect(html.match(/<details class="batch-item"/g)?.length).toBe(2);
     expect(html).toContain(" open>");
     expect(html.match(/<button type="button" class="approve">/g)?.length).toBe(2);
     expect(html).not.toMatch(/approve.?all/i);
@@ -462,5 +464,36 @@ describe("displayed hashes", () => {
     };
     expect(renderConsentCardText(model)).toContain("pinned as abcdef012345.");
     expect(renderConsentCardHtml(model)).toContain('<span class="hash">abcdef012345</span>');
+  });
+});
+
+describe("F1: the text card (model-visible) never carries an approval token or the approve call", () => {
+  const TOKEN = "tok_SECRET-9f8e7d";
+  const undecided: ConsentCardModel[] = [
+    { state: "loading", item: item({ approvalToken: TOKEN }) },
+    { state: "pending", item: item({ approvalToken: TOKEN, advisorySummary: "A model line." }) },
+    { state: "advisory-unavailable", item: item({ approvalToken: TOKEN }) },
+    { state: "batch", upstreamLabel: "Grocery", items: [item({ approvalToken: TOKEN }), item({ quarantineId: "q2", approvalToken: `${TOKEN}-2` })] },
+  ];
+
+  it.each(undecided.map((model) => [model.state, model] as const))("%s: no token, no approve_change, and the decision line instead", (_state, model) => {
+    const text = renderConsentCardText(model);
+    expect(text).not.toContain(TOKEN);
+    expect(text).not.toMatch(/approvalToken|approve_change/);
+    expect(text).toContain(TEXT_CARD_DECISION_LINE);
+  });
+
+  it.each(undecided.map((model) => [model.state, model] as const))("%s: the HTML card still carries each item's token, readable by approvalsFromCardHtml and shown for the console", (_state, model) => {
+    const html = renderConsentCardHtml(model);
+    const items = model.state === "batch" ? model.items : [model.item];
+    expect(approvalsFromCardHtml(html)).toEqual(items.map((i) => ({ quarantineId: i.quarantineId, approvalToken: i.approvalToken })));
+    expect(html.match(/<details class="console-token">/g)?.length).toBe(items.length);
+    for (const i of items) {
+      expect(html).toContain(`<code>${i.approvalToken}</code>`);
+    }
+  });
+
+  it("the decision line is the exact sentence the resident is told", () => {
+    expect(TEXT_CARD_DECISION_LINE).toBe("Approve or keep blocked from the card on your phone, or in the Chaperone console.");
   });
 });

@@ -74,7 +74,7 @@ describe("the consent card's script, run", () => {
     const call = posted.find((m) => m.method === "tools/call");
     expect(call?.params).toEqual({
       name: "chaperone/approve_change",
-      arguments: { quarantineId: "Q-1", approvalToken: "TOKEN-1", decision: "approve" },
+      arguments: { quarantineId: "Q-1", approvalToken: "TOKEN-1", decision: "approve", channel: "mcp-app" },
     });
   });
 
@@ -85,7 +85,7 @@ describe("the consent card's script, run", () => {
     await tick();
     expect(posted.find((m) => m.method === "tools/call")?.params).toEqual({
       name: "chaperone/approve_change",
-      arguments: { quarantineId: "Q-1", approvalToken: "TOKEN-1", decision: "block" },
+      arguments: { quarantineId: "Q-1", approvalToken: "TOKEN-1", decision: "block", channel: "mcp-app" },
     });
   });
 
@@ -130,7 +130,7 @@ describe("the consent card's script, run", () => {
     await tick();
     expect(posted.filter((m) => m.method === "tools/call")).toHaveLength(1);
     expect(posted.find((m) => m.method === "tools/call")?.params).toMatchObject({
-      arguments: { quarantineId: "Q-B", approvalToken: "TOKEN-B", decision: "approve" },
+      arguments: { quarantineId: "Q-B", approvalToken: "TOKEN-B", decision: "approve", channel: "mcp-app" },
     });
   });
 

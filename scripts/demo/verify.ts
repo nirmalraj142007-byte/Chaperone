@@ -27,6 +27,7 @@ import { REFUSAL_TOOL_CHANGED } from "@chaperone/policy";
 import { STACK } from "./env.js";
 import {
   blocks,
+  assertNoApprovalCapability,
   cardActionOf,
   closeBrowser,
   connectGateway,
@@ -170,13 +171,17 @@ function beats(): Beat[] {
         );
         assert.ok(!card.includes("model-generated"), "a fixture must never be labelled model-generated");
 
-        const { quarantineId, approvalToken } = cardActionOf(card);
-        s.quarantineId = quarantineId;
-        s.approvalToken = approvalToken;
-
         const html = content[2]?.type === "resource" ? content[2].resource?.text : undefined;
         assert.ok(html !== undefined && html.includes("clause-add"), "the third block should be the HTML card, carrying the highlighted clause");
         s.cardHtml = html;
+
+        // The token is in the HTML card only; nothing the model reads carries it.
+        const { quarantineId, approvalToken } = cardActionOf(html);
+        s.quarantineId = quarantineId;
+        s.approvalToken = approvalToken;
+        for (const block of content) {
+          if (block.type === "text") assertNoApprovalCapability(textOf(block), approvalToken);
+        }
 
         // Excluded, not annotated: the model cannot see the tool it might be talked into calling.
         const names = (await s.client.listTools()).tools.map((t) => t.name);

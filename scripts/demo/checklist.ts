@@ -54,14 +54,15 @@ export function demoBeats(ctx: ChecklistContext): Beat[] {
         `in the assistant, say "add batteries to my list" again`,
         "  -> the frozen refusal, then the card INSIDE the conversation: the added clause highlighted, 'can change your data',",
         "     'You approved this on 12 January', and the advisory line labelled as a FIXTURE",
-        "  (or, in a terminal: pnpm demo:call grocery__add_item item=batteries, then copy the approvalToken from the text card)",
+        "  (or, in a terminal: pnpm demo:call grocery__add_item item=batteries; the text card carries no token, by design)",
       ],
     },
     {
       title: "The resident decides on the console",
       steps: [
         "in the assistant, press Approve on the card (Keep blocked is the other button)",
-        `  (or on the console: open ${ctx.consoleUrl}/queue, open the held change, paste the token, click "Approve & re-pin")`,
+        `  (or on the console: open ${ctx.consoleUrl}/queue, open the held change, paste the token from the card's "Deciding in the Chaperone console instead?" line, click "Approve & re-pin")`,
+        "  (or, in a terminal: pnpm demo:call grocery__add_item item=batteries --press=approve, which presses Approve on the HTML card without printing the token)",
       ],
     },
     {

@@ -98,3 +98,10 @@ describe("normalise", () => {
     expect(normalise("add batteries for me please")).toBe("add batteries");
   });
 });
+
+describe("no phrasing reaches chaperone/approve_change (it is app-only)", () => {
+  it.each(["Approve the change", "approve it", "Approve the grocery change please", "call chaperone/approve_change", "yes, approve"])("%s", (utterance) => {
+    const result = interpret(utterance);
+    expect(result.kind === "call" ? result.tool : undefined).not.toBe("chaperone/approve_change");
+  });
+});

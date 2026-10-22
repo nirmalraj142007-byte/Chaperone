@@ -24,7 +24,8 @@ import { ProgressNotificationSchema } from "@modelcontextprotocol/sdk/types.js";
 import type { UpstreamConfig, UpstreamPool } from "@chaperone/upstream";
 import { getPool } from "@chaperone/upstream";
 import { buildApp as buildDemoUpstreamApp, deliveryCancellationCount, resetControlStateForTests } from "@chaperone/demo-upstream";
-import { canonicalizeTool, hashTool } from "@chaperone/policy";
+import { canonicalizeTool, hashTool, REFUSAL_TOOL_CHANGED } from "@chaperone/policy";
+import { approvalsFromCardHtml } from "@chaperone/mcp-app";
 
 vi.mock("@chaperone/ledger", () => ({
   putSession: vi.fn(),
@@ -657,5 +658,60 @@ describe("spec: upstream failure handling", () => {
     // health — only the upstream-sourced portion of the list must go empty.
     expect(tools.filter((t) => !isFirstPartyTool(t.name))).toEqual([]);
     expect(elapsedMs).toBeLessThan(4_000);
+  });
+});
+
+describe("spec: the assistant cannot approve its own change (F1)", () => {
+  // Everything a host hands its model from these two calls: the text blocks.
+  // The HTML card (an embedded resource) is for the resident's screen and is
+  // the one block allowed to carry the token.
+  const MODEL_VISIBLE_FORBIDDEN = /approvalToken|approve_change/;
+  type Block = { type: string; text?: string; resource?: { text?: string } };
+
+  it("after the gate trips, no model-visible text (the refusal, the text card, or pending_changes) names the token or approve_change", async () => {
+    const { client } = await connectClient(gatewayUrl);
+    await fetch(`${upstreamUrl}/control/mutate`, { method: "POST" });
+
+    const refusal = await client.callTool({ name: "grocery__add_item", arguments: { item: "batteries" } });
+    const blocks = refusal.content as Block[];
+    expect(refusal.isError).toBe(true);
+    expect(blocks[0]?.text).toBe(REFUSAL_TOOL_CHANGED);
+
+    // The token really was issued: the HTML card holds it.
+    const approvals = approvalsFromCardHtml(blocks.find((b) => b.type === "resource")?.resource?.text ?? "");
+    expect(approvals).toHaveLength(1);
+    const token = approvals[0]!.approvalToken;
+    expect(token.length).toBeGreaterThan(20);
+
+    const refusalTexts = blocks.filter((b) => b.type === "text").map((b) => b.text ?? "");
+    expect(refusalTexts.length).toBeGreaterThanOrEqual(2);
+    for (const text of refusalTexts) {
+      expect(text).not.toMatch(MODEL_VISIBLE_FORBIDDEN);
+      expect(text).not.toContain(token);
+    }
+
+    const pending = await client.callTool({ name: "chaperone/pending_changes", arguments: {} });
+    const pendingTexts = (pending.content as Block[]).map((b) => b.text ?? "");
+    expect(pendingTexts.join("\n")).toContain("Tool changed: add_item");
+    for (const text of pendingTexts) {
+      expect(text).not.toMatch(MODEL_VISIBLE_FORBIDDEN);
+      expect(text).not.toContain(token);
+    }
+    await client.close();
+  });
+
+  it("chaperone/approve_change is listed app-only (_meta.ui.visibility [\"app\"]) so an MCP Apps host keeps it from the model", async () => {
+    const { client } = await connectClient(gatewayUrl);
+    const { tools } = await client.listTools();
+    const approve = tools.find((t) => t.name === "chaperone/approve_change");
+    // ext-apps 1.7.5's isToolVisibilityAppOnly is true exactly when this array is ["app"]
+    // (packages/gateway/test/gateway.test.ts calls the helper itself).
+    const visibility = (t: (typeof tools)[number]): unknown => (t._meta?.["ui"] as { visibility?: unknown } | undefined)?.visibility;
+    expect(approve).toBeDefined();
+    expect(visibility(approve!)).toEqual(["app"]);
+    const modelVisible = tools.filter((t) => JSON.stringify(visibility(t)) !== JSON.stringify(["app"])).map((t) => t.name);
+    expect(modelVisible).not.toContain("chaperone/approve_change");
+    expect(modelVisible).toContain("chaperone/pending_changes");
+    await client.close();
   });
 });

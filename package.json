@@ -62,6 +62,7 @@
     "@aws-sdk/lib-dynamodb": "3.1131.0",
     "@chaperone/config": "workspace:*",
     "@chaperone/ledger": "workspace:*",
+    "@chaperone/mcp-app": "workspace:*",
     "@chaperone/logger": "workspace:*",
     "@chaperone/policy": "workspace:*",
     "@chaperone/upstream": "workspace:*",

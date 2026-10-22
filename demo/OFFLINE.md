@@ -91,7 +91,7 @@ that looks like one and is not in this list, that is a bug; please say so.
 | **The refusal text** | the frozen constant `REFUSAL_TOOL_CHANGED`. `demo:verify` asserts the tool result's first block is byte-for-byte equal to it. |
 | **The hashes** | computed from the tool definitions the running `demo-upstream` serves, by the same `hashTool` the crawler uses. |
 | **The change** | a real `notifications/tools/list_changed` from a real MCP server, after a real description change (`POST /control/mutate`). |
-| **The quarantine and the token** | created by the gateway at the moment of the mismatch; the one-time token exists only in the card and is checked (constant-time, single use, 24h) by `chaperone/approve_change`. The console's approve button calls that same function. |
+| **The quarantine and the token** | created by the gateway at the moment of the mismatch; the one-time token exists only in the HTML card (never in the text card a model reads) and is checked (constant-time, single use, 24h) by `chaperone/approve_change`. The console's approve button calls that same function. |
 | **The ledger** | append-only, hash-chained, in DynamoDB Local. `pnpm verify-ledger` walks it; the run above ends with 9 events verified (4 staged + 5 live). |
 | **Resumption** | real: `pnpm resume-demo` and `pnpm test:resume` kill a real connection mid-call against the real gateway and count the upstream's own invocation counter. `demo:verify` does not repeat it; the 10-iteration loop is the evidence. |
 | **`/corpus` and `/bench`** | committed files only (`data/crawl-1-report.json`, `data/boot-rate.json`, `data/drift.json`), inlined into the console bundle at build time. |

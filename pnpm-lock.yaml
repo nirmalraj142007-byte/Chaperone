@@ -185,6 +185,9 @@ importers:
       '@chaperone/logger':
         specifier: workspace:*
         version: link:packages/logger
+      '@chaperone/mcp-app':
+        specifier: workspace:*
+        version: link:packages/mcp-app
       '@chaperone/policy':
         specifier: workspace:*
         version: link:packages/policy

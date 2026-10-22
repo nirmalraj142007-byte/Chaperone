@@ -74,7 +74,10 @@ test("a changed tool is withheld, refused in frozen words, reviewed on the card,
       const text = textOf(content[1]);
       const html = content[2]?.type === "resource" ? content[2].resource?.text : undefined;
       expect(html).toBeDefined();
-      card = { text, html: html ?? "", ...cardActionOf(text) };
+      card = { text, html: html ?? "", ...cardActionOf(html ?? "") };
+      // The text card is what a model reads: it carries no token and no approve call.
+      expect(text).not.toMatch(/approvalToken|approve_change/);
+      expect(text).not.toContain(card.approvalToken);
     });
 
     await test.step("the card renders with the added clause highlighted and a capability badge", async () => {
@@ -145,11 +148,12 @@ test("a changed tool is withheld, refused in frozen words, reviewed on the card,
         "system:gateway",
         "system:gateway",
         "system:gateway",
-        `resident:${HOUSEHOLD_ID}`,
-        `resident:${HOUSEHOLD_ID}`,
+        // approved over /mcp by a bare client that named no channel
+        `resident:${HOUSEHOLD_ID}:mcp`,
+        `resident:${HOUSEHOLD_ID}:mcp`,
       ]);
       const pin = await ledger.getPin(HOUSEHOLD_ID, "grocery", "add_item");
-      expect(pin?.approvedBy).toBe(`resident:${HOUSEHOLD_ID}`);
+      expect(pin?.approvedBy).toBe(`resident:${HOUSEHOLD_ID}:mcp`);
       expect(pin?.approvedHash).toBe(String(live[4]?.payload["approvedHash"]));
     });
   } finally {

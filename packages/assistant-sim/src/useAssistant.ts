@@ -11,11 +11,11 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { GatewayConnection, GatewayError, type CallOutcome, type ConnectionInfo } from "./gateway";
+import { AppOnlyToolError, GatewayConnection, GatewayError, type CallOutcome, type ConnectionInfo } from "./gateway";
 import { classify, textBlocks, type Classified, type HeldCard } from "./outcome";
 import { TOOLS, interpret, type RuleId } from "./rules";
 import { speak } from "./speech";
-import type { Decision, DecisionRequest } from "./components/ConsentCard";
+import { CARD_TOOL, type Decision, type DecisionRequest } from "./components/ConsentCard";
 
 export type Entry =
   | { id: number; role: "resident"; text: string }
@@ -41,7 +41,7 @@ export interface CallRecord {
 
 export type ConnectionState =
   | { state: "connecting" }
-  | { state: "ready"; info: ConnectionInfo; tools: readonly string[]; connectMs: number }
+  | { state: "ready"; info: ConnectionInfo; tools: readonly string[]; appOnlyTools: readonly string[]; connectMs: number }
   | { state: "unreachable"; message: string; kind: GatewayError["kind"] };
 
 const GATEWAY_URL = new URL("/mcp", window.location.href);
@@ -92,7 +92,7 @@ export function useAssistant(speechOn: boolean) {
     const conn = new GatewayConnection(GATEWAY_URL, {
       onListChanged: (tools) => {
         if (cancelled) return;
-        setConnection((current) => (current.state === "ready" ? { ...current, info: conn.info, tools } : current));
+        setConnection((current) => (current.state === "ready" ? { ...current, info: conn.info, tools, appOnlyTools: conn.appOnlyTools } : current));
         push({ role: "notice", tone: "info", text: "The gateway said its tool list changed (notifications/tools/list_changed). The assistant re-read it." });
       },
     });
@@ -105,7 +105,7 @@ export function useAssistant(speechOn: boolean) {
           void conn.close();
           return;
         }
-        setConnection({ state: "ready", info: conn.info, tools: conn.tools, connectMs: Math.round(performance.now() - started) });
+        setConnection({ state: "ready", info: conn.info, tools: conn.tools, appOnlyTools: conn.appOnlyTools, connectMs: Math.round(performance.now() - started) });
       },
       (error: unknown) => {
         if (cancelled) return;
@@ -132,7 +132,7 @@ export function useAssistant(speechOn: boolean) {
   const refreshInfo = useCallback(() => {
     const conn = gateway.current;
     if (conn === undefined) return;
-    setConnection((current) => (current.state === "ready" ? { ...current, info: conn.info, tools: conn.tools } : current));
+    setConnection((current) => (current.state === "ready" ? { ...current, info: conn.info, tools: conn.tools, appOnlyTools: conn.appOnlyTools } : current));
   }, []);
 
   /** A GatewayError mid-conversation: say so once, in plain words, and stop treating the session as usable. */
@@ -171,6 +171,10 @@ export function useAssistant(speechOn: boolean) {
         try {
           outcome = await conn.callTool(step.tool, step.args);
         } catch (error) {
+          if (error instanceof AppOnlyToolError) {
+            say("I can't do that one. Only the review card's buttons can.");
+            return;
+          }
           connectionLost(error);
           return;
         }
@@ -200,6 +204,7 @@ export function useAssistant(speechOn: boolean) {
    * The consent card's decision, made through the same gateway session as
    * everything else. Called by the MCP App bridge (ConsentCard.tsx), which
    * has already checked this is `chaperone/approve_change` and nothing else.
+   * Goes through `callAppTool`, the one path to an app-only tool.
    */
   const decide = useCallback(
     async (request: DecisionRequest): Promise<CallToolResult> => {
@@ -207,7 +212,7 @@ export function useAssistant(speechOn: boolean) {
       if (conn === undefined) throw new Error("not connected to the gateway");
       let outcome: CallOutcome;
       try {
-        outcome = await conn.callTool(TOOLS.approveChange, { ...request });
+        outcome = await conn.callAppTool(CARD_TOOL, { ...request, channel: "mcp-app" });
       } catch (error) {
         connectionLost(error);
         throw error;
@@ -215,7 +220,7 @@ export function useAssistant(speechOn: boolean) {
       const decision: Decision = request.decision;
       const ok = !outcome.isError;
       record({
-        tool: TOOLS.approveChange,
+        tool: CARD_TOOL,
         via: "card",
         phrase: decision === "approve" ? "Approve (card button)" : "Keep blocked (card button)",
         ms: outcome.ms,

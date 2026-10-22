@@ -69,14 +69,28 @@ export function HappenedPanel({ connection, calls }: { connection: ConnectionSta
               </Row>
               <Row label="Server">{connection.info.server ?? "(unknown)"}</Row>
               <Row label="Connect">initialize + tools/list, {connection.connectMs} ms</Row>
-              <Row label="Tools listed">
-                {connection.tools.length === 0
-                  ? "none"
-                  : connection.tools.map((tool) => (
-                      <span key={tool} className="mr-2 inline-block font-mono text-xs">
-                        {tool}
-                      </span>
-                    ))}
+              <Row label="Tools the assistant sees">
+                <span data-testid="model-tools">
+                  {connection.tools.length === 0
+                    ? "none"
+                    : connection.tools.map((tool) => (
+                        <span key={tool} className="mr-2 inline-block font-mono text-xs">
+                          {tool}
+                        </span>
+                      ))}
+                </span>
+              </Row>
+              <Row label="Card-only tools">
+                <span data-testid="app-only-tools">
+                  {connection.appOnlyTools.length === 0
+                    ? "none"
+                    : connection.appOnlyTools.map((tool) => (
+                        <span key={tool} className="mr-2 inline-block font-mono text-xs">
+                          {tool}
+                        </span>
+                      ))}{" "}
+                  <span className="text-xs text-muted">(hidden from the assistant; only the card&apos;s buttons call them)</span>
+                </span>
               </Row>
             </dl>
           )}
