@@ -6,6 +6,26 @@ entries are written live, in the session where the friction happened — never
 batched at the end, never reconstructed from memory, never embellished. An
 honest thin entry is worth more than a polished invented one.
 
+**Top 5.** The five entries with the most consequence, for a reader short on
+time. The entries below are unchanged and in their original order.
+
+1. [Entry 037](#entry-037--2026-09-23): Bedrock's first invocation was refused
+   with an account-verification hold that named no model and no IAM action;
+   Bedrock access was later declined and the advisory model moved to Groq.
+   (blocker)
+2. [Entry 051](#entry-051--2026-10-16): an EventBridge Pipe hands Step
+   Functions an array even with `batchSize: 1`, so the deployed pipeline
+   reported `SUCCEEDED` while writing nothing. (major)
+3. [Entry 054](#entry-054--2026-10-16): the account's only IAM user was denied
+   almost every read, so whether the account could deploy at all stayed
+   unknown until a separate identity was used. (major)
+4. [Entry 011](#entry-011--2026-09-13): `McpServer.registerTool` accepts only
+   Zod, so a proxy re-exposing upstream JSON Schema has to use the low-level
+   `Server` class; this set the gateway's architecture. (major)
+5. [Entry 001](#entry-001--2026-09-12): the MCP TypeScript SDK is split into a
+   v1 package and new v2 packages on a later revision, and which one supports
+   `2025-11-25` has to be worked out by hand. (major)
+
 Every entry uses exactly these six fields, in this order:
 
 1. **Task attempted**
