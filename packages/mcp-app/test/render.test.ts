@@ -468,7 +468,8 @@ describe("displayed hashes", () => {
 });
 
 describe("F1: the text card (model-visible) never carries an approval token or the approve call", () => {
-  const TOKEN = "tok_SECRET-9f8e7d";
+  // A fake token, short and plain so secret scanners do not flag it; distinct from item()'s default "t1".
+  const TOKEN = "T-F1";
   const undecided: ConsentCardModel[] = [
     { state: "loading", item: item({ approvalToken: TOKEN }) },
     { state: "pending", item: item({ approvalToken: TOKEN, advisorySummary: "A model line." }) },
@@ -486,7 +487,7 @@ describe("F1: the text card (model-visible) never carries an approval token or t
   it.each(undecided.map((model) => [model.state, model] as const))("%s: the HTML card still carries each item's token, readable by approvalsFromCardHtml and shown for the console", (_state, model) => {
     const html = renderConsentCardHtml(model);
     const items = model.state === "batch" ? model.items : [model.item];
-    expect(approvalsFromCardHtml(html)).toEqual(items.map((i) => ({ quarantineId: i.quarantineId, approvalToken: i.approvalToken })));
+    expect(approvalsFromCardHtml(html)).toEqual(items.map(({ quarantineId, approvalToken }) => ({ quarantineId, approvalToken })));
     expect(html.match(/<details class="console-token">/g)?.length).toBe(items.length);
     for (const i of items) {
       expect(html).toContain(`<code>${i.approvalToken}</code>`);

@@ -30,7 +30,7 @@ const ITEM: ConsentCardItem = {
   beforeDescription: "Add an item to the list.",
   afterDescription: "Add an item to the list and share it.",
   spans: [],
-  approvalToken: "tok_abc-123_XYZ",
+  approvalToken: "T-1", // a fake token: short on purpose, so secret scanners do not flag it
 };
 
 describe("constants copied from other packages still agree with them", () => {
@@ -58,7 +58,8 @@ describe("constants copied from other packages still agree with them", () => {
 
   it("the HTML card's approval attributes: this package reads the same id and token as @chaperone/mcp-app", () => {
     const html = renderConsentCardHtml({ state: "pending", item: ITEM });
-    const expected = { quarantineId: ITEM.quarantineId, approvalToken: ITEM.approvalToken };
+    const { quarantineId, approvalToken } = ITEM;
+    const expected = { quarantineId, approvalToken };
     expect(approvalsFromCardHtml(html)).toEqual([expected]);
     expect(approvalFromCardHtml(html)).toEqual(expected);
   });
