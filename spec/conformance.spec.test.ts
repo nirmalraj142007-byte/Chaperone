@@ -10,7 +10,9 @@
  *
  * `{upstreamId}__{toolName}` namespacing is asserted directly (see "tools/list
  * equivalence") as the one place this proxy is deliberately not
- * byte-transparent, per CLAUDE.md.
+ * byte-transparent, per CLAUDE.md. An upstream tool is forwarded as only its
+ * pinned fields (name, description, inputSchema); unpinned fields such as
+ * title and annotations are dropped, and that is asserted there too.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Server as HttpServer } from "node:http";
@@ -392,7 +394,7 @@ describe("spec: tools/list equivalence", () => {
     );
   });
 
-  it("stripping that prefix exactly reconstructs the upstream's own tool name set, with every other field byte-identical", async () => {
+  it("stripping that prefix exactly reconstructs the upstream's own tool name set, with the pinned fields (description, inputSchema) byte-identical and nothing else forwarded", async () => {
     const { client: direct } = await connectClient(upstreamUrl);
     const { client: viaGateway } = await connectClient(gatewayUrl);
 
@@ -405,7 +407,12 @@ describe("spec: tools/list equivalence", () => {
 
     for (const directTool of directTools) {
       const gatewayTool = gatewayTools.find((t) => t.name === `${GROCERY_PREFIX}${directTool.name}`);
-      expect({ ...gatewayTool, name: directTool.name }).toEqual(directTool);
+      const pinned = {
+        name: directTool.name,
+        ...(directTool.description !== undefined ? { description: directTool.description } : {}),
+        inputSchema: directTool.inputSchema,
+      };
+      expect({ ...gatewayTool, name: directTool.name }).toEqual(pinned);
     }
   });
 });

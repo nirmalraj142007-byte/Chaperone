@@ -6,9 +6,11 @@
  * unchanged, this module just fans a single `tools/list`/`tools/call` out
  * over N pooled upstreams instead of one).
  *
- * Every field of every tool definition passes through byte-identical to
- * what the upstream declared, with exactly one deliberate exception:
- * `{upstreamId}__{toolName}` namespacing on `tools/list`, undone on
+ * On `tools/list`, an upstream tool is forwarded as exactly the fields the
+ * pin covers — name, description, inputSchema — byte-identical to what the
+ * upstream declared (toPinnedFieldsOnly, below; unpinned fields such as
+ * annotations are dropped since 2026-10-21). The name carries the one
+ * deliberate rewrite: `{upstreamId}__{toolName}` namespacing, undone on
  * `tools/call` by matching the longest configured upstream-id prefix. This
  * is the one place this proxy is not byte-transparent, and spec/ asserts it
  * directly rather than leaving it implicit.
@@ -32,7 +34,7 @@ import {
   ReadResourceRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import type { CallToolResult, ProgressNotification } from "@modelcontextprotocol/sdk/types.js";
-import type { UpstreamConfig, UpstreamPool } from "@chaperone/upstream";
+import type { UpstreamConfig, UpstreamPool, ToolDefinition as WireToolDefinition } from "@chaperone/upstream";
 import { UpstreamError } from "@chaperone/errors";
 import { REFUSAL_TOOL_CHANGED, REFUSAL_TOOL_UNPINNED, REFUSAL_UPSTREAM_UNAVAILABLE } from "@chaperone/policy";
 import {
@@ -80,6 +82,22 @@ export function resolveNamespacedTool(
     }
   }
   return undefined;
+}
+
+/**
+ * Forwards only the three fields the pin hash covers (name, description,
+ * inputSchema), name namespaced. Anything else an upstream declares (title,
+ * annotations, outputSchema, _meta) is dropped: it is not pinned, so it
+ * could change after approval without the gate noticing, and the assistant
+ * must not read unapproved text. Chaperone's own first-party tools are not
+ * built here and keep their _meta (the MCP App card link).
+ */
+export function toPinnedFieldsOnly(upstreamId: string, tool: WireToolDefinition): WireToolDefinition {
+  return {
+    name: namespacedToolName(upstreamId, tool.name),
+    ...(tool.description !== undefined ? { description: tool.description } : {}),
+    inputSchema: tool.inputSchema,
+  };
 }
 
 export interface PassthroughServer {
@@ -219,9 +237,7 @@ export function buildPassthroughServer(
       notifyListChanged(server, "tool quarantined during tools/list");
     }
 
-    const tools = decisions
-      .filter((d) => d.allowed)
-      .map((d) => ({ ...d.tool, name: namespacedToolName(d.upstreamId, d.tool.name) }));
+    const tools = decisions.filter((d) => d.allowed).map((d) => toPinnedFieldsOnly(d.upstreamId, d.tool));
 
     return { tools: [...tools, ...FIRST_PARTY_TOOLS] };
   });

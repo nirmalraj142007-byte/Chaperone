@@ -210,7 +210,7 @@ async function connectClient(): Promise<{ client: Client; transport: StreamableH
 }
 
 describe("gateway: initialize and passthrough", () => {
-  it("lists the upstream's tools under the grocery__ namespace, byte-identical except name, plus the gateway's own two tools", async () => {
+  it("lists the upstream's tools under the grocery__ namespace, pinned fields only, plus the gateway's own two tools", async () => {
     const { client } = await connectClient();
     const { tools } = await client.listTools();
     expect(tools.map((t) => t.name).sort()).toEqual([
