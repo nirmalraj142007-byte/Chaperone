@@ -9,13 +9,12 @@
 import "../scripts/demo/env.js";
 import { execFileSync } from "node:child_process";
 import { expect, type FrameLocator, type Page } from "@playwright/test";
-import { PLAIN_SENTENCE_FIXTURE_LABEL } from "@chaperone/mcp-app";
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { loadConfig } from "@chaperone/config";
 import * as ledger from "@chaperone/ledger";
 import { STACK } from "../scripts/demo/env.js";
-import { DEMO_PLAIN_SENTENCE, REPO_ROOT } from "../scripts/demo/fixtures.js";
-import { connectGateway, isServing, pollUntil } from "../scripts/demo/harness.js";
+import { REPO_ROOT } from "../scripts/demo/fixtures.js";
+import { DEMO_TOP_LINE, connectGateway, isServing, pollUntil } from "../scripts/demo/harness.js";
 import { resetDemo } from "../scripts/demo/reset.js";
 
 export { STACK };
@@ -49,16 +48,17 @@ export function compose(...args: string[]): string {
 
 export { ledger };
 
-export { DEMO_PLAIN_SENTENCE };
+export { DEMO_TOP_LINE };
 
 /**
- * F2: the card a resident opens. Above the fold, the plain sentence (labelled
- * a fixture), the capability badge and two buttons, with no technical word;
- * the diff appears only once "Show details" is opened.
+ * F2+: the card a resident opens. Above the fold, the top line quoted from
+ * the diff, the capability badge and two buttons, with no technical word and
+ * no fixture label; the before/after diff appears only once "Show details" is
+ * opened.
  */
 export async function expectPlainTopThenDetails(card: Page | FrameLocator): Promise<void> {
-  await expect(card.locator(".plain").first()).toHaveText(DEMO_PLAIN_SENTENCE);
-  await expect(card.locator(".plain-source").first()).toHaveText(PLAIN_SENTENCE_FIXTURE_LABEL);
+  await expect(card.locator(".plain").first()).toHaveText(DEMO_TOP_LINE);
+  await expect(card.locator(".plain-source")).toHaveCount(0);
   await expect(card.locator(".badge").first()).toHaveText("can change your data");
   await expect(card.getByRole("button", { name: "Allow" })).toBeVisible();
   await expect(card.getByRole("button", { name: "Keep blocked" })).toBeVisible();
@@ -66,8 +66,9 @@ export async function expectPlainTopThenDetails(card: Page | FrameLocator): Prom
   await expect(added).toBeHidden();
   // innerText leaves out a closed <details> body: this is exactly what is on screen.
   const aboveTheFold = await card.locator(".pending-content").first().innerText();
-  expect(aboveTheFold).not.toMatch(/quarantine|hash|schema/i);
-  expect(aboveTheFold).not.toContain("check the household calendar");
+  expect(aboveTheFold).not.toMatch(/quarantine|hash|schema|fixture/i);
+  // The unchanged part of the description is evidence, so it stays below the fold.
+  expect(aboveTheFold).not.toContain("Use this when a resident asks");
   await card.getByText("Show details").first().click();
   await expect(added).toBeVisible();
   await expect(added).toContainText(/check the household calendar for the next 7 days/i);

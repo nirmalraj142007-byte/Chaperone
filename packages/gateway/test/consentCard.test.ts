@@ -216,60 +216,14 @@ describe("loadConsentCardModel — fixture advisories and the approval date", ()
     const q = quarantine();
     vi.mocked(ledger.getQuarantine).mockResolvedValue(q as never);
     vi.mocked(ledger.listQuarantineByStatus).mockResolvedValue([q] as never);
-    // A plainSentence on a model row must never reach the card: only fixture rows may supply one.
-    vi.mocked(ledger.getAdvisory).mockResolvedValue({ ...FIXTURE_ROW, modelId: "us.amazon.nova-lite-v1:0", summary: "Model line.", plainSentence: "MODEL SENTENCE" });
+    vi.mocked(ledger.getAdvisory).mockResolvedValue({ ...FIXTURE_ROW, modelId: "us.amazon.nova-lite-v1:0", summary: "Model line." });
     vi.mocked(ledger.getFixtureAdvisory).mockResolvedValue(FIXTURE_ROW);
     const model = await loadConsentCardModel(HOUSEHOLD_ID, UPSTREAMS, "q1", { approvalToken: "tok" });
-    expect(model?.state).toBe("pending");
+    expect(ledger.getFixtureAdvisory).not.toHaveBeenCalled();
     if (model?.state === "pending") {
-      // The advisory line is the model's; the fixture is read only for the plain sentence (it has none here).
       expect(model.item.advisorySummary).toBe("Model line.");
       expect(model.item.advisorySource).toBeUndefined();
-      expect(model.item.plainSentence).toBeUndefined();
     }
-  });
-
-  describe("F2: the card's plain sentence comes only from a fixture row", () => {
-    it("uses the fixture's hand-written sentence, marked as a fixture, even when a real advisory exists", async () => {
-      const q = quarantine();
-      vi.mocked(ledger.getQuarantine).mockResolvedValue(q as never);
-      vi.mocked(ledger.listQuarantineByStatus).mockResolvedValue([q] as never);
-      vi.mocked(ledger.getAdvisory).mockResolvedValue({ ...FIXTURE_ROW, modelId: "us.amazon.nova-lite-v1:0", summary: "Model line." });
-      vi.mocked(ledger.getFixtureAdvisory).mockResolvedValue({ ...FIXTURE_ROW, plainSentence: "Grocery can now read your calendar." });
-      const model = await loadConsentCardModel(HOUSEHOLD_ID, UPSTREAMS, "q1", { approvalToken: "tok" });
-      expect(ledger.getFixtureAdvisory).toHaveBeenCalledWith(q.toHash);
-      expect(model?.state).toBe("pending");
-      if (model?.state === "pending") {
-        expect(model.item.plainSentence).toEqual({ text: "Grocery can now read your calendar.", source: "fixture" });
-        expect(model.item.advisorySummary).toBe("Model line.");
-      }
-    });
-
-    it("ignores a sentence on a row in the fixture slot whose modelId is not a fixture's", async () => {
-      const q = quarantine();
-      vi.mocked(ledger.getQuarantine).mockResolvedValue(q as never);
-      vi.mocked(ledger.listQuarantineByStatus).mockResolvedValue([q] as never);
-      vi.mocked(ledger.getFixtureAdvisory).mockResolvedValue({ ...FIXTURE_ROW, modelId: "us.amazon.nova-lite-v1:0", plainSentence: "MODEL SENTENCE" });
-      const model = await loadConsentCardModel(HOUSEHOLD_ID, UPSTREAMS, "q1", { approvalToken: "tok" });
-      if (model?.state === "loading" || model?.state === "pending" || model?.state === "advisory-unavailable") {
-        expect(model.item.plainSentence).toBeUndefined();
-      } else {
-        throw new Error(`unexpected state ${model?.state}`);
-      }
-    });
-
-    it("a failed fixture read leaves the sentence off (the card uses its template) and never throws", async () => {
-      const q = quarantine();
-      vi.mocked(ledger.getQuarantine).mockResolvedValue(q as never);
-      vi.mocked(ledger.listQuarantineByStatus).mockResolvedValue([q] as never);
-      vi.mocked(ledger.getFixtureAdvisory).mockRejectedValue(new Error("ddb down"));
-      const model = await loadConsentCardModel(HOUSEHOLD_ID, UPSTREAMS, "q1", { approvalToken: "tok" });
-      if (model?.state === "loading" || model?.state === "pending" || model?.state === "advisory-unavailable") {
-        expect(model.item.plainSentence).toBeUndefined();
-      } else {
-        throw new Error(`unexpected state ${model?.state}`);
-      }
-    });
   });
 
   it("carries the date the still-pinned version was approved", async () => {

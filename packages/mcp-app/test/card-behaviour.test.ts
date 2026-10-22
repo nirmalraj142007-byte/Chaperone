@@ -135,7 +135,7 @@ describe("the consent card's script, run", () => {
   });
 
   it.each([
-    ["pending", { state: "pending", item: item({ plainSentence: { text: "Grocery can now read your calendar for the next 7 days.", source: "fixture" } }) }],
+    ["pending", { state: "pending", item: item() }],
     ["loading", { state: "loading", item: item() }],
     ["batch", { state: "batch", upstreamLabel: "Grocery", items: [item({ quarantineId: "Q-A" }), item({ quarantineId: "Q-B", toolName: "place_order" })] }],
   ] as Array<[string, ConsentCardModel]>)("%s: above the fold is the plain sentence and two buttons; the diff is in a closed Show details fold", (_state, model) => {
@@ -155,7 +155,7 @@ describe("the consent card's script, run", () => {
       expect(text).not.toMatch(/quarantine|hash|schema/i);
       expect(text).not.toContain("Adds an item to the list");
       expect(text).not.toContain("Detected");
-      expect(root.querySelector(".plain")?.textContent).toMatch(/\S/);
+      expect(root.querySelector(".plain")?.textContent).toMatch(/^Grocery's \S+ now also says: ".+"$/);
       expect([...above.querySelectorAll("button")].map((b) => b.textContent)).toEqual(["Allow", "Keep blocked"]);
       // The buttons come before the fold in reading (and tab) order.
       const allow = root.querySelector(".approve");

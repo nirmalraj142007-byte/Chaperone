@@ -23,8 +23,8 @@ import type { Browser } from "playwright";
 import { REFUSAL_TOOL_CHANGED } from "@chaperone/policy";
 import { closeBrowser, getJson, launchBrowser, newOfflineContext, runVerifyLedgerScript, startAssistant } from "../scripts/demo/harness.js";
 import { REPO_ROOT } from "../scripts/demo/fixtures.js";
-import { DEMO_PLAIN_SENTENCE, HOUSEHOLD_ID, expectPlainTopThenDetails, STACK, freshDemo, householdEvents, ledger, ledgerTypes } from "./support.js";
-import { PLAIN_SENTENCE_FIXTURE_LABEL, TEXT_CARD_DECISION_LINE } from "@chaperone/mcp-app";
+import { DEMO_TOP_LINE, HOUSEHOLD_ID, expectPlainTopThenDetails, STACK, freshDemo, householdEvents, ledger, ledgerTypes } from "./support.js";
+import { TEXT_CARD_DECISION_LINE } from "@chaperone/mcp-app";
 
 let browser: Browser;
 let assistant: ChildProcess | undefined;
@@ -247,9 +247,9 @@ test("the text card is the floor: ?card=text shows it, and its Allow button work
     await expect(text).not.toContainText(/approvalToken|approve_change/);
     await expect(text).toContainText("Allow or keep blocked from the card on your phone, or in the Chaperone console.");
 
-    // The plain sentence and its fixture label come first, ahead of the diff.
+    // The top line quoted from the diff and the decision line come first, ahead of the diff.
     const cardLines = ((await text.locator("pre").textContent()) ?? "").split("\n");
-    expect(cardLines.slice(0, 3)).toEqual([DEMO_PLAIN_SENTENCE, `(${PLAIN_SENTENCE_FIXTURE_LABEL})`, TEXT_CARD_DECISION_LINE]);
+    expect(cardLines.slice(0, 2)).toEqual([DEMO_TOP_LINE, TEXT_CARD_DECISION_LINE]);
     await text.getByRole("button", { name: "Allow" }).click();
     await expect(text.getByRole("status")).toContainText(/Approved\. .*approved\. New definition pinned as [0-9a-f]{12}\./);
     await say(page, "add batteries to my list");

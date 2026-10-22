@@ -17,12 +17,6 @@ export interface Advisory {
    */
   changelogEvidence?: "release" | "tag" | "commit-message" | "none";
   changelogEvidenceUrl?: string;
-  /**
-   * Fixture rows only: the hand-written plain sentence for the top of the
-   * consent card. The gateway reads it only from a row `isFixtureAdvisory`
-   * says is a fixture, so a model-written row can never supply it.
-   */
-  plainSentence?: string;
 }
 
 function partitionKey(quarantineId: string): string {

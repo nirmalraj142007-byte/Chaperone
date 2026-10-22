@@ -37,13 +37,6 @@ export interface ConsentCardItem {
   advisorySource?: "fixture";
   /** When the household approved the version that is still pinned, already formatted for display ("12 January"). Omitted when unknown. */
   approvedOn?: string;
-  /**
-   * The plain sentence at the top of the card, when a person wrote one for
-   * this exact definition (the offline demo's fixture). The type only admits
-   * a fixture: a model never writes this line. Omitted, the card uses
-   * {@link plainSentenceFor}'s fixed template.
-   */
-  plainSentence?: { text: string; source: "fixture" };
 }
 
 export type ConsentCardModel =
@@ -129,24 +122,55 @@ function truncationNoteHtml(truncated: boolean, quarantineId: string): string {
     : "";
 }
 
+/** The longest quote the top line carries before it is cut with "…". */
+export const TOP_LINE_QUOTE_MAX_CHARS = 140;
+
 /**
- * The first thing a resident reads. A hand-written fixture when one exists
- * for this exact definition; otherwise a fixed template that says only what
- * is known for certain without reading the new wording: who changed which
- * tool. No model is involved either way.
+ * The first sentence of the new wording that the diff marks as added: the
+ * whole sentence around the first "add" span on the after side, so a clause
+ * inserted mid-sentence still reads as a sentence. Undefined when nothing was
+ * added (a removal-only or schema-only change). Taken from the same spans the
+ * "Show details" highlight uses, so the top line and the evidence below it
+ * cannot disagree.
  */
-export function plainSentenceFor(item: Pick<ConsentCardItem, "plainSentence" | "upstreamLabel" | "toolName">): string {
-  if (item.plainSentence !== undefined) {
-    return sanitizeUpstreamText(item.plainSentence.text);
+function firstAddedSentence(item: Pick<ConsentCardItem, "afterDescription" | "spans">): string | undefined {
+  const after = truncateForRender(sanitizeUpstreamText(item.afterDescription)).text;
+  const added = clipSpansToLength(spansForSide(item.spans, "after"), after.length).find((span) => span.kind === "add");
+  if (added === undefined) {
+    return undefined;
   }
-  return `${sanitizeUpstreamText(item.upstreamLabel)} changed what its ${sanitizeUpstreamText(item.toolName)} tool says it will do.`;
+  const lead = /^[\s\S]*[.!?]\s+/.exec(after.slice(0, added.start));
+  const start = lead === null ? 0 : lead[0].length;
+  const stop = /[.!?](?=\s|$)/.exec(after.slice(added.start));
+  const end = stop === null ? after.length : added.start + stop.index + 1;
+  const sentence = after.slice(start, end).replace(/\s+/g, " ").trim();
+  return sentence.length === 0 ? undefined : sentence;
 }
 
-/** Shown under a hand-written plain sentence, in the same words as the fixture advisory label. */
-export const PLAIN_SENTENCE_FIXTURE_LABEL = "Fixture: this sentence was hand-written for the offline demo, not model output.";
+/** Cuts a quote to {@link TOP_LINE_QUOTE_MAX_CHARS}, at a word break when there is one near the end, and marks the cut with "…". */
+function trimQuote(text: string): string {
+  if (text.length <= TOP_LINE_QUOTE_MAX_CHARS) {
+    return text;
+  }
+  const cut = text.slice(0, TOP_LINE_QUOTE_MAX_CHARS - 1);
+  const space = cut.lastIndexOf(" ");
+  return `${(space >= TOP_LINE_QUOTE_MAX_CHARS - 40 ? cut.slice(0, space) : cut).trimEnd()}…`;
+}
 
-function plainSentenceLabel(item: ConsentCardItem): string | undefined {
-  return item.plainSentence?.source === "fixture" ? PLAIN_SENTENCE_FIXTURE_LABEL : undefined;
+/**
+ * The first thing a resident reads, built only from the diff: who changed
+ * which tool, and the first sentence the new wording added, quoted as the
+ * server wrote it. When nothing was added, a fixed sentence that says only
+ * that the tool's wording changed. No model and no hand-written text is
+ * involved either way.
+ */
+export function plainSentenceFor(item: Pick<ConsentCardItem, "upstreamLabel" | "toolName" | "afterDescription" | "spans">): string {
+  const label = sanitizeUpstreamText(item.upstreamLabel);
+  const tool = sanitizeUpstreamText(item.toolName);
+  const added = firstAddedSentence(item);
+  return added === undefined
+    ? `${label} changed what its ${tool} tool says it will do.`
+    : `${label}'s ${tool} now also says: "${trimQuote(added)}"`;
 }
 
 function spansForSide(spans: readonly DiffSpan[], side: DiffSpan["side"]): DiffSpan[] {
@@ -196,10 +220,9 @@ export const TEXT_CARD_DECISION_LINE = "Allow or keep blocked from the card on y
 /** Where the text card's fold sits: everything above this line is the plain part, everything below it the evidence. */
 export const TEXT_CARD_DETAILS_HEADING = "Details";
 
-/** The lines above the fold: the plain sentence, its fixture label if it has one, and where to decide. */
+/** The lines above the fold: the plain sentence and where to decide. */
 function textTop(item: ConsentCardItem): string[] {
-  const label = plainSentenceLabel(item);
-  return [plainSentenceFor(item), ...(label === undefined ? [] : [`(${label})`]), TEXT_CARD_DECISION_LINE, "", TEXT_CARD_DETAILS_HEADING];
+  return [plainSentenceFor(item), TEXT_CARD_DECISION_LINE, "", TEXT_CARD_DETAILS_HEADING];
 }
 
 /** The review id is not a credential (only the token is); it names the review in the console's queue. */
@@ -392,7 +415,6 @@ body {
 }
 .body { padding: 16px; }
 .plain { font-size: 19px; font-weight: 600; line-height: 1.35; margin: 0; }
-.plain-source { font-size: 12px; font-style: italic; color: light-dark(#6B6862, #A39E93); margin: 6px 0 0; }
 .more { margin-top: 16px; }
 .more > summary { cursor: pointer; font-weight: 600; color: light-dark(#35566B, #8FB8CC); }
 .tool-name { font-size: 20px; font-weight: 650; letter-spacing: -0.01em; margin: 0 0 2px; }
@@ -679,12 +701,11 @@ function approvalDataAttrs(item: ConsentCardItem): string {
 }
 
 /**
- * Above the fold: the plain sentence (with its fixture label, if any) and the
- * two buttons. Nothing technical: no hash, no diff, no review id.
+ * Above the fold: the plain sentence and the two buttons. Nothing technical:
+ * no hash, no diff, no review id.
  */
 function plainTopHtml(item: ConsentCardItem): string {
-  const label = plainSentenceLabel(item);
-  return `<p class="plain">${escapeHtml(plainSentenceFor(item))}</p>${label === undefined ? "" : `<p class="plain-source">${escapeHtml(label)}</p>`}
+  return `<p class="plain">${escapeHtml(plainSentenceFor(item))}</p>
     <div class="actions">
       <button type="button" class="approve">Allow</button>
       <button type="button" class="block">Keep blocked</button>

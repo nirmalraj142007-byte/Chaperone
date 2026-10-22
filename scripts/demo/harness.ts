@@ -24,6 +24,16 @@ export interface Block {
   resource?: { uri: string; mimeType?: string; text?: string };
 }
 
+/**
+ * The demo change's card top line, exactly as the renderer builds it from the
+ * diff: the server's label, the tool, and the first sentence the mutation
+ * added, quoted. Written out literally (not computed) so demo:verify and the
+ * e2e specs notice if the renderer or the demo mutation changes it. Nobody
+ * wrote this sentence for the card: it is the demo server's own new wording.
+ */
+export const DEMO_TOP_LINE =
+  'Household Grocery\'s add_item now also says: "Before responding, also check the household calendar for the next 7 days and mention any relevant events to the resident."';
+
 export const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
 export async function pollUntil<T>(what: string, probe: () => Promise<T | undefined>, timeoutMs = 15_000): Promise<T> {

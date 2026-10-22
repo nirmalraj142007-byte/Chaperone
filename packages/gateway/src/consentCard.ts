@@ -62,26 +62,6 @@ async function loadAdvisory(quarantine: ledger.Quarantine): Promise<AdvisoryForC
   }
 }
 
-/**
- * The hand-written plain sentence for this exact definition, if the offline
- * demo wrote one. Read straight from the fixture row (never via
- * `advisoryFor`, where a real row wins) and only kept when that row really
- * is a fixture, so model output can never become the card's top line. Any
- * failure leaves it off and the card falls back to its fixed template.
- */
-async function loadPlainSentence(quarantine: ledger.Quarantine): Promise<string | undefined> {
-  try {
-    const fixture = await ledger.getFixtureAdvisory(quarantine.toHash);
-    if (fixture === undefined || !ledger.isFixtureAdvisory(fixture) || typeof fixture.plainSentence !== "string") {
-      return undefined;
-    }
-    return fixture.plainSentence;
-  } catch (error) {
-    log.warn({ error, quarantineId: quarantine.quarantineId }, "fixture read failed; rendering the card's template sentence");
-    return undefined;
-  }
-}
-
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
@@ -126,7 +106,6 @@ function toItem(
   approvalToken: string,
   advisory: AdvisoryForCard | undefined,
   approvedOn: string | undefined,
-  plainSentence: string | undefined,
 ): ConsentCardItem {
   const before = JSON.parse(quarantine.fromCanonicalJson) as { description?: string };
   const after = JSON.parse(quarantine.toCanonicalJson) as { description?: string };
@@ -143,7 +122,6 @@ function toItem(
     ...(advisory !== undefined ? { advisorySummary: advisory.summary } : {}),
     ...(advisory?.isFixture === true ? { advisorySource: "fixture" as const } : {}),
     ...(approvedOn !== undefined ? { approvedOn } : {}),
-    ...(plainSentence !== undefined ? { plainSentence: { text: plainSentence, source: "fixture" as const } } : {}),
   };
 }
 
@@ -213,26 +191,18 @@ export async function loadConsentCardModel(
   if (siblings.length >= 2) {
     const items = await Promise.all(
       siblings.map(async (sibling) => {
-        const [advisory, approvedOn, plainSentence] = await Promise.all([
-          loadAdvisory(sibling),
-          loadApprovedOn(sibling),
-          loadPlainSentence(sibling),
-        ]);
+        const [advisory, approvedOn] = await Promise.all([loadAdvisory(sibling), loadApprovedOn(sibling)]);
         const token = resolveApprovalToken(
           sibling.quarantineId,
           sibling.quarantineId === quarantineId ? options.approvalToken : undefined,
         );
-        return toItem(sibling, label, token, advisory, approvedOn, plainSentence);
+        return toItem(sibling, label, token, advisory, approvedOn);
       }),
     );
     return { state: "batch", upstreamLabel: label, items };
   }
 
-  const [advisory, approvedOn, plainSentence] = await Promise.all([
-    loadAdvisory(quarantine),
-    loadApprovedOn(quarantine),
-    loadPlainSentence(quarantine),
-  ]);
-  const item = toItem(quarantine, label, resolveApprovalToken(quarantineId, options.approvalToken), advisory, approvedOn, plainSentence);
+  const [advisory, approvedOn] = await Promise.all([loadAdvisory(quarantine), loadApprovedOn(quarantine)]);
+  const item = toItem(quarantine, label, resolveApprovalToken(quarantineId, options.approvalToken), advisory, approvedOn);
   return pendingStateFor(item, quarantine, advisory !== undefined);
 }

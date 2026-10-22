@@ -48,9 +48,9 @@ real stack:
    script); asking again is refused with text **equal to**
    `REFUSAL_TOOL_CHANGED`, and the card is *inside the conversation*, hosted as
    an MCP App (the `ui/initialize` handshake really completed, asserted from
-   the frame's `data-phase`). The card opens with the plain sentence, its
-   fixture label and the two buttons, with no "quarantine", "hash" or "schema"
-   on screen and the diff hidden until **Show details** is opened (then the
+   the frame's `data-phase`). The card opens with the first added sentence
+   quoted from the diff and the two buttons, with no fixture label and no
+   "quarantine", "hash" or "schema" on screen, and the diff hidden until **Show details** is opened (then the
    highlighted clause is asserted). Pressing **Allow** on the card round-trips
    through `chaperone/approve_change`; the card closes with the MCP Apps
    teardown; the next request runs. The "What just happened" panel shows the
@@ -61,8 +61,8 @@ real stack:
    request is refused again in the same words and nothing runs; the ledger has
    `REFUSED` and no `APPROVED` or `REPIN`, and the pin has not moved.
 3. **The text floor.** `?card=text` shows the text card instead, and its own
-   Allow button works the same way; its first three lines are the plain
-   sentence, its fixture label and the decision line.
+   Allow button works the same way; its first two lines are the sentence
+   quoted from the diff and the decision line.
 4. **Gateway not reachable.** With `/mcp` blocked at the network, the page
    shows a clear error and a "Try again" that recovers when it is unblocked.
 

@@ -180,7 +180,6 @@ export async function resetDemo(options: ResetOptions = {}): Promise<ResetResult
           modelId: fixtures.modelId,
           generatedAt: `${fixtures.writtenOn}T00:00:00.000Z`,
           promptSha: "fixture",
-          ...(row.plainSentence !== undefined ? { plainSentence: row.plainSentence } : {}),
         });
         fixtureHashes.push({ id: row.id, toHash });
       }
