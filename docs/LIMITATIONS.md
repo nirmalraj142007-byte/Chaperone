@@ -449,7 +449,7 @@ above applies to all of them. `data/drift.json` reports how many labels
 were needed (`labels.required`) and how many overrode the mechanical
 proposal (`labels.humanOverrodeProposal`).
 
-## No readability result for the consent card
+## Informal readability check on the v1 card (relatives, not a study)
 
 Whether a resident can read the consent card and say what changed has not been
 measured, so no claim in this repo rests on it. "A resident can find the
