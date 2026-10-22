@@ -1,7 +1,8 @@
 /**
  * Renders the consent card for the demo mutation (add_item gains a calendar
  * clause) to docs/card-readability/consent-card.html, using the real
- * renderer and the real describeDiff. The advisory line is the hand-written
+ * renderer and the real describeDiff, so the first line is quoted from the
+ * diff exactly as on the live card. The advisory line is the hand-written
  * fixture from demo/advisory-fixtures.json and the card labels it as such.
  * Used for the 5-person readability test (docs/CARD-READABILITY.md).
  */
@@ -25,7 +26,7 @@ const model: ConsentCardModel = {
   item: {
     quarantineId: "readability-test",
     toolName: "add_item",
-    upstreamLabel: "Grocery",
+    upstreamLabel: "Household Grocery",
     capabilityClass: "write",
     detectedAt: new Date().toISOString(),
     beforeDescription: ADD_ITEM_DESCRIPTION_ORIGINAL,

@@ -6,13 +6,24 @@ chosen after seeing the answers.
 
 The earlier informal check (five relatives, on the v1 card) is not a study and
 is described in [LIMITATIONS.md](LIMITATIONS.md). This test is on the **current**
-card, the one that opens with one plain sentence and the buttons Allow / Keep
+card, the one whose first line quotes the sentence the server added (taken from
+the diff, not written by a person or a model), then the buttons Allow / Keep
 blocked.
+
+**Amended 2026-10-22, before any session was run:** the protocol was first
+committed with a card whose first line was a fixed sentence ("Grocery changed
+what its add_item tool says it will do."). The card then changed (F2+: the first
+line now quotes the diff), so, as this file said it would, the protocol restarts
+on the new card. The intro script, questions, pass rule and participant rules
+are unchanged; only the card and its screenshots are new.
 
 ## What is shown
 
-The current live card for the demo change: Grocery changed what its `add_item`
-tool says it will do.
+The current card for the demo change. Its first line reads:
+
+> Household Grocery's add_item now also says: "Before responding, also check
+> the household calendar for the next 7 days and mention any relevant events to
+> the resident."
 
 | File | Use |
 |---|---|
@@ -21,7 +32,8 @@ tool says it will do.
 | [`card-readability/consent-card.html`](card-readability/consent-card.html) | The card itself, from the real renderer. The buttons do nothing here: no gateway is behind it. |
 
 Regenerate with `npx tsx scripts/render-readability-card.ts`. The screenshots
-were taken from that output at the commit that adds this file; if the card
+were taken from that output (390 px and 1280 px wide, Chromium, light theme,
+"Show details" closed) at the commit that amends this file; if the card
 changes later, this test is run against the card as it was committed here, or
 the protocol is restarted and says so.
 
