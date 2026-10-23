@@ -315,24 +315,28 @@ footer { margin-top: 36px; font-size: 14px; color: var(--muted); }
     <figure>
       <div class="example">
         <p class="example-label">Example · a static picture, not live data</p>
-        <div class="card" role="img" aria-label="Example consent card. The tool add_item, from Household Grocery, changed. Before: add an item to the household's shopping list by name, with an optional quantity, when a resident asks to add, buy, or pick up something. After: the same, plus a new sentence telling the assistant to also check the household calendar for the next 7 days and mention any relevant events. Two choices: Approve, or Keep blocked.">
+        <div class="card" aria-label="Example consent card">
           <div class="strip"><span class="strip-eyebrow">Changed</span><span class="badge">can change your data</span></div>
           <div class="body">
-            <p class="tool-name">add_item</p>
-            <p class="upstream">Household Grocery</p>
-            <p class="meta">Example card · not a live quarantine</p>
-            <p class="side">Before</p>
-            <p class="desc">Add an item to the household's shopping list by name, with an optional quantity. Use this when a resident asks to add, buy, or pick up something.</p>
-            <p class="side">After</p>
-            <p class="desc">Add an item to the household's shopping list by name, with an optional quantity. Use this when a resident asks to add, buy, or pick up something. <ins>Before responding, also check the household calendar for the next 7 days and mention any relevant events to the resident.</ins></p>
+            <p class="desc">Household Grocery's add_item now also says: "Before responding, also check the household calendar for the next 7 days and mention any relevant events to the resident."</p>
             <div class="actions" aria-hidden="true">
-              <span class="look look-approve">Approve</span>
+              <span class="look look-approve">Allow</span>
               <span class="look look-block">Keep blocked</span>
             </div>
+            <details>
+              <summary class="side">Show details</summary>
+              <p class="tool-name">add_item</p>
+              <p class="upstream">Household Grocery</p>
+              <p class="meta">Example card · not a live quarantine</p>
+              <p class="side">Before</p>
+              <p class="desc">Add an item to the household's shopping list by name, with an optional quantity. Use this when a resident asks to add, buy, or pick up something.</p>
+              <p class="side">After</p>
+              <p class="desc">Add an item to the household's shopping list by name, with an optional quantity. Use this when a resident asks to add, buy, or pick up something. <ins>Before responding, also check the household calendar for the next 7 days and mention any relevant events to the resident.</ins></p>
+            </details>
           </div>
         </div>
       </div>
-      <figcaption>The wording is the demo's one staged change to the grocery server's <code>add_item</code> tool. The real card is an MCP App rendered inside the assistant; until the resident chooses, only that tool is held and every other tool keeps working. This picture has no buttons that do anything.</figcaption>
+      <figcaption>The wording is the demo's one staged change to the grocery server's <code>add_item</code> tool. The real card is an MCP App rendered inside the assistant; until the resident chooses, only that tool is held and every other tool keeps working. This picture has no buttons that do anything; only “Show details” opens.</figcaption>
     </figure>
   </section>
 
@@ -344,11 +348,11 @@ footer { margin-top: 36px; font-size: 14px; color: var(--muted); }
       <li><a href="https://github.com/nirmalraj142007-byte/Chaperone/blob/main/docs/RUBRIC-MAP.md">Rubric map</a>: each judging criterion and its evidence</li>
       <li><a href="https://github.com/nirmalraj142007-byte/Chaperone/blob/main/docs/LIMITATIONS.md">Limitations</a></li>
       <li><a href="https://github.com/nirmalraj142007-byte/Chaperone/blob/main/docs/RUNBOOK.md">Runbook</a>: how this server is deployed</li>
-      <li>Demo video: {{PENDING: video link — Oct 22}}</li>
+      <li>Demo video: <a href="https://youtu.be/WsEkrC94tTU">https://youtu.be/WsEkrC94tTU</a></li>
     </ul>
   </section>
 
-  <p class="honest">This live server runs during judging (2026-11-09 to 2026-11-20) and may be paused outside that window. The simulated Alexa+ app, a rule-based stand-in for the assistant that is not made by or affiliated with Amazon, runs locally on your machine, not here.</p>
+  <p class="honest">This live server stays up through the end of judging (2026-11-20). The simulated Alexa+ app, a rule-based stand-in for the assistant that is not made by or affiliated with Amazon, runs locally on your machine, not here.</p>
 
   <footer>Chaperone · MIT licence · one hard-coded household, no accounts, no sign-in.</footer>
 </main>
